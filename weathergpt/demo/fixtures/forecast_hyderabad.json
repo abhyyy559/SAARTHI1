@@ -1,0 +1,18 @@
+{
+  "source": "IMD",
+  "endpoint": "cityforecastloc",
+  "raw": {
+    "status": "ok",
+    "city": "Hyderabad",
+    "issued_at": "2026-09-15T18:00:00+05:30",
+    "forecast": [
+      { "date": "2026-09-15", "condition": "Thunderstorm", "min": 24, "max": 31, "rain": 15 },
+      { "date": "2026-09-16", "condition": "Light Rain", "min": 23, "max": 30, "rain": 22 },
+      { "date": "2026-09-17", "condition": "Partly Cloudy", "min": 24, "max": 32, "rain": 4 },
+      { "date": "2026-09-18", "condition": "Sunny", "min": 25, "max": 34, "rain": 0 },
+      { "date": "2026-09-19", "condition": "Partly Cloudy", "min": 25, "max": 33, "rain": 2 },
+      { "date": "2026-09-20", "condition": "Light Rain", "min": 24, "max": 31, "rain": 18 },
+      { "date": "2026-09-21", "condition": "Thunderstorm", "min": 23, "max": 29, "rain": 26 }
+    ]
+  }
+}

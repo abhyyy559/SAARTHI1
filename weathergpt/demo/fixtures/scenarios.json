@@ -1,0 +1,25 @@
+{
+  "scenarios": [
+    {
+      "id": "A",
+      "name": "General user",
+      "location": "Hyderabad",
+      "question": "Will it rain tomorrow?",
+      "demonstrates": ["location", "forecast", "chat", "source"]
+    },
+    {
+      "id": "B",
+      "name": "Severe weather",
+      "location": "Hyderabad",
+      "question": "Is there any dangerous weather near me?",
+      "demonstrates": ["warning", "validation", "risk", "advisory", "evidence"]
+    },
+    {
+      "id": "C",
+      "name": "Telugu voice",
+      "location": "Hyderabad",
+      "question": "రేపు హైదరాబాద్‌లో వర్షం పడుతుందా?",
+      "demonstrates": ["voice", "telugu", "weather_retrieval", "tts"]
+    }
+  ]
+}

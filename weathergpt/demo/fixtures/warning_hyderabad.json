@@ -1,0 +1,18 @@
+{
+  "source": "IMD",
+  "endpoint": "districtwarning",
+  "raw": {
+    "status": "ok",
+    "district": "Hyderabad",
+    "state": "Telangana",
+    "warnings": [
+      {
+        "type": "Thunderstorm",
+        "severity": "YELLOW",
+        "message": "Thunderstorm with lightning likely at isolated places.",
+        "issued_at": "2026-09-15T18:00:00+05:30",
+        "valid_until": "2026-09-15T22:00:00+05:30"
+      }
+    ]
+  }
+}
