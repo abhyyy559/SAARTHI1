@@ -24,3 +24,5 @@ services:
     plan: free
     healthCheckPath: /api/health
     autoDeploy: true
+    # Explicit (matches the proven Dockerfile CMD): run uvicorn from /app
+    dockerCommand: sh -c "cd /app && python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT}"
