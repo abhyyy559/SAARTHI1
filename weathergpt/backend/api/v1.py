@@ -49,8 +49,8 @@ async def v1_warning_by_id(warning_id: str):
     try:
         alerts, prov = await cap_adapter.fetch_alerts()
     except AdapterUnavailable:
-        alerts, prov = cap_adapter.demo_fixture()
-        prov = "DEMO"
+        return {"status": "unavailable", "provenance": "UNAVAILABLE",
+                "note": "no official CAP feed configured - nothing invented"}
     for a in alerts:
         if a.get("identifier") == warning_id:
             return {"warning": a, "provenance": prov}
@@ -64,8 +64,9 @@ async def v1_impact(lat1: float, lon1: float, lat2: float, lon2: float, user_typ
 
 
 @router.get("/advisories")
-async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: str = "general"):
-    return await advisory_mod.advisory(severity, hazard, user_type)
+async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: str = "general",
+                        language: str = "en"):
+    return await advisory_mod.advisory(severity, hazard, user_type, language)
 
 
 @router.post("/chat")

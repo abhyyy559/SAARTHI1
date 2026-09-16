@@ -24,15 +24,23 @@ from .weather import _live_current, _live_forecast
 
 router = APIRouter()
 
-UNAVAILABLE_ANSWER = (
-    "Weather information is temporarily unavailable. "
-    "No verified warning, observation or forecast could be retrieved right now, "
-    "so I cannot answer from data. Please try again shortly."
-)
+UNAVAILABLE_ANSWERS = {
+    "en": ("Weather information is temporarily unavailable. No verified warning, "
+           "observation or forecast could be retrieved right now, so I cannot answer "
+           "from data. Please try again shortly."),
+    "hi": ("मौसम की जानकारी अभी उपलब्ध नहीं है। अभी कोई सत्यापित चेतावनी, माप या पूर्वानुमान "
+           "नहीं मिला, इसलिए मैं आंकड़ों से जवाब नहीं दे सकता। कृपया थोड़ी देर बाद फिर कोशिश करें।"),
+    "te": ("వాతావరణ సమాచారం ఇప్పుడు అందుబాటులో లేదు. ఇప్పుడు ఏ ధృవీకరించిన హెచ్చరిక, కొలత "
+           "లేదా అంచనా అందలేదు, కాబట్టి డేటా ఆధారంగా సమాధానం చెప్పలేను. దయచేసి కొద్దిసేపట్లో మళ్లీ ప్రయత్నించండి."),
+}
+
+
+def _unavailable_answer(language: str) -> str:
+    return UNAVAILABLE_ANSWERS.get(language, UNAVAILABLE_ANSWERS["en"])
 
 
 def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answer,
-                    advisory, language, weather_block, provenance_map) -> ChatResponse:
+                    advisory, language, weather_block, provenance_map, fallback=False) -> ChatResponse:
     warn = verified_dict or {}
     return ChatResponse(
         answer=answer,
@@ -54,7 +62,7 @@ def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answe
             for e in provenance_map
         ],
         language=language,
-        structured_fallback=answer.startswith("[STRUCTURED]"),
+        structured_fallback=bool(fallback),
         generated_at=iso_now(),
     )
 
@@ -139,12 +147,13 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_live(loc, lat, lon)
         if current_dict is None and forecast_dict is None and not verified_dict.get("verified"):
             risk = RiskService().risk({"severity": "GREEN", "hazard": ""}, req.user_type)
-            return _build_response(loc, verified_dict, risk, None, None, UNAVAILABLE_ANSWER,
-                                   advisory_for({"verified": False}, req.user_type),
-                                   req.language, {"status": "unavailable", "provenance": "UNAVAILABLE"}, [])
+            return _build_response(loc, verified_dict, risk, None, None,
+                                   _unavailable_answer(req.language),
+                                   advisory_for({"verified": False}, req.user_type, req.language),
+                                   req.language, {"status": "unavailable", "provenance": "UNAVAILABLE"}, [], True)
 
     risk = RiskService().risk(verified_dict, req.user_type)
-    advisory = advisory_for(verified_dict, req.user_type)
+    advisory = advisory_for(verified_dict, req.user_type, req.language)
     evidence = build_evidence_package(
         location=loc, current=current_dict or {}, forecast=forecast_dict or {},
         verified=verified_dict, risk=risk, user_type=req.user_type,
@@ -152,7 +161,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     evidence["source_name"] = notes.get("source_name", "IMD")
 
     llm = LLMService()
-    answer, fallback = llm.generate_grounded_response(evidence)
+    answer, fallback = await llm.generate(evidence, req.message, req.language)
 
     # Post-LLM response validation (§10, §43): the gate before delivery.
     from ..services.response_validator import validate as validate_answer
@@ -165,16 +174,15 @@ async def _handle(req: ChatRequest) -> ChatResponse:
             for v in (day or {}).values():
                 if isinstance(v, (int, float)):
                     numbers.append(float(v))
-    answer, findings = validate_answer(answer, verified_dict, numbers)
+    answer, findings = validate_answer(answer, verified_dict, numbers, req.language)
     if findings:
         evidence["validation_findings"] = findings
         fallback = True
-    answer = f"[STRUCTURED] {answer}" if fallback else answer
     answer = f"{answer}\n\n{advisory}"
 
     weather_block = {"current": current_dict, "forecast_days": (forecast_dict or {}).get("days", [])[:3]}
     return _build_response(loc, verified_dict, risk, current_dict or {}, forecast_dict or {},
-                           answer, advisory, req.language, weather_block, ev)
+                           answer, advisory, req.language, weather_block, ev, fallback)
 
 
 @router.post("/api/chat")

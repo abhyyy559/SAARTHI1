@@ -1,20 +1,13 @@
-import { Component, Suspense, lazy } from 'react';
+import { Component, Suspense } from 'react';
 import { AppProvider, useApp } from './store';
 import { Sidebar, TopBar, MobileNav, StatusBanner } from './components/Shell';
-import { SituationView, AskView, EvidenceView, AlertsView, ClimateView, TrustView } from './views';
+import { HomeView, AskView, AlertsView } from './views';
 import { Loading } from './components/ui';
 
-// Leaflet lives behind this boundary so it never blocks first paint.
-const MapView = lazy(() => import('./MapView'));
-
 const VIEWS = {
-  situation: SituationView,
+  home: HomeView,
   ask: AskView,
-  evidence: EvidenceView,
-  map: MapView,
   alerts: AlertsView,
-  climate: ClimateView,
-  trust: TrustView,
 };
 
 /** One broken view must never take the console down - and never fake data. */
@@ -48,7 +41,7 @@ class Boundary extends Component {
 
 function Console() {
   const { view, lang } = useApp();
-  const Active = VIEWS[view] || SituationView;
+  const Active = VIEWS[view] || HomeView;
   return (
     <div className="app">
       <a className="skip-link" href="#main">Skip to content</a>

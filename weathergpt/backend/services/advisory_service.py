@@ -1,18 +1,88 @@
-"""Advisory engine — persona-specific guidance from verified facts. No unsupported claims."""
-PERSONA_ADVISORIES = {
-    "general": "Avoid waterlogged roads and follow local authority instructions.",
-    "farmer": "Monitor field drainage and protect harvested produce from exposure.",
-    "driver": "Check road conditions before travelling and avoid flooded roads.",
-    "fisherman": "Avoid venturing into the sea during active warnings and follow marine bulletins.",
-    "researcher": "Observed series, model spread and provenance are in the evidence panel for your analysis.",
-    "disaster_manager": "Official warnings take precedence. This output is decision support, not an authority directive.",
+"""Persona-aware, multilingual safety advisory. Grounded: no warning -> no invented advice.
+
+The persona (fisherman/farmer/...) changes *what to do*; the UI language
+(en/hi/te) changes *which language* the advice is delivered in. Official
+severity is never upgraded and no warning is invented.
+"""
+
+_NO_WARN = {
+    "general": {
+        "en": "No active official warning was found for your area. Keep following regular weather updates.",
+        "hi": "आपके क्षेत्र के लिए कोई सक्रिय सरकारी चेतावनी नहीं मिली। नियमित मौसम अपडेट देखते रहें।",
+        "te": "మీ ప్రాంతానికి సక్రియ అధికారిక హెచ్చరిక లేదు. సాధారణ వాతావరణ సమాచారం చూస్తూ ఉండండి.",
+    },
+    "fisherman": {
+        "en": "No severe-weather warning for the coast right now. Check again before sailing - seas can change quickly.",
+        "hi": "फिलहाल तट के लिए कोई गंभीर मौसम चेतावनी नहीं है। समुद्र में जाने से पहले दोबारा जाँचें - हालात जल्दी बदल सकते हैं।",
+        "te": "ప్రస్తుతం తీరానికి తీవ్ర వాతావరణ హెచ్చరిక లేదు. బయలుదేరే ముందు మళ్లీ తనిఖీ చేయండి - పరిస్థితులు వేగంగా మారుతాయి.",
+    },
+    "farmer": {
+        "en": "No active severe-weather warning for your district. Check again before irrigating or spraying.",
+        "hi": "आपके जिले के लिए कोई सक्रिय गंभीर मौसम चेतावनी नहीं है। सिंचाई या छिड़काव से पहले दोबारा जाँचें।",
+        "te": "మీ జిల్లాకు సక్రియ తీవ్ర వాతావరణ హెచ్చరిక లేదు. నీటిపారుదల లేదా పిచికారీ ముందు మళ్లీ తనిఖీ చేయండి.",
+    },
+    "driver": {
+        "en": "No active severe-weather warning for your route area. Roads can still flood locally - check before long drives.",
+        "hi": "आपके मार्ग क्षेत्र के लिए कोई सक्रिय चेतावनी नहीं है। सड़कें स्थानीय रूप से भर सकती हैं - लंबी यात्रा से पहले जाँचें।",
+        "te": "మీ మార్గం ప్రాంతానికి సక్రియ హెచ్చరిక లేదు. రోడ్లు నీటిలో మునిగే అవకాశం ఉంది - దూర ప్రయాణానికి ముందు తనిఖీ చేయండి.",
+    },
+    "researcher": {
+        "en": "No active warning in the verified feed. Observed series, model spread and provenance are in the evidence panel.",
+        "hi": "सत्यापित फ़ीड में कोई सक्रिय चेतावनी नहीं। अवलोकन श्रृंखला, मॉडल विस्तार और स्रोत साक्ष्य पैनल में हैं।",
+        "te": "ధృవీకరించిన ఫీడ్‌లో సక్రియ హెచ్చరిక లేదు. పరిశీలన శ్రేణి, మోడల్ విస్తరణ, మూలాధారాలు సాక్ష్య ప్యానెల్‌లో ఉన్నాయి.",
+    },
+    "disaster_manager": {
+        "en": "No active official warning in the verified feed. Official bulletins take precedence over this output.",
+        "hi": "सत्यापित फ़ीड में कोई सक्रिय सरकारी चेतावनी नहीं। सरकारी बुलेटिन इस आउटपुट से बढ़कर हैं।",
+        "te": "ధృవీకరించిన ఫీడ్‌లో సక్రియ అధికారిక హెచ్చరిక లేదు. అధికారిక ప్రకటనలు ప్రాధాన్యం పొందుతాయి.",
+    },
+}
+
+_ACTION = {
+    "general": {
+        "en": "Avoid waterlogged roads and low-lying areas. Follow local authority instructions.",
+        "hi": "जलभराव वाली सड़कों और निचले इलाकों से बचें। स्थानीय प्रशासन के निर्देश मानें।",
+        "te": "నీరు నిలిచిన రోడ్లకు దూరంగా ఉండండి. స్థానిక అధికారుల సూచనలు పాటించండి.",
+    },
+    "fisherman": {
+        "en": "Do not venture into the sea. Return to shore if already out, and follow marine bulletins.",
+        "hi": "समुद्र में न जाएँ। बाहर हों तो तट पर लौटें और मरीन बुलेटिन सुनते रहें।",
+        "te": "సముద్రంలోకి వెళ్లవద్దు. బయట ఉంటే తీరానికి తిరిగి రండి, మెరైన్ బులెటిన్లు వింటూ ఉండండి.",
+    },
+    "farmer": {
+        "en": "Secure harvested produce, clear field drainage, and hold spraying or irrigation until it passes.",
+        "hi": "फसल और उपज सुरक्षित करें, खेत की जल निकासी खोलें, छिड़काव-सिंचाई अभी रोक दें।",
+        "te": "పంటను సురక్షితంగా ఉంచండి, పొలం నీటి పారుదల తెరవండి, పిచికారీ-నీటిపారుదల ఆపివేయండి.",
+    },
+    "driver": {
+        "en": "Avoid flooded and exposed routes. Never drive through standing water.",
+        "hi": "जलभराव और खुले रास्तों से बचें। पानी में गाड़ी कभी न चलाएँ।",
+        "te": "నీటిలో మునిగిన రోడ్లకు దూరంగా ఉండండి. నీటిలో వాహనం నడపవద్దు.",
+    },
+    "researcher": {
+        "en": "Warning, model spread and provenance details are in the evidence panel for your analysis.",
+        "hi": "चेतावनी, मॉडल विस्तार और स्रोत विवरण विश्लेषण हेतु साक्ष्य पैनल में हैं।",
+        "te": "హెచ్చరిక, మోడల్ విస్తరణ, మూలాధారాల వివరాలు విశ్లేషణ కోసం సాక్ష్య ప్యానెల్‌లో ఉన్నాయి.",
+    },
+    "disaster_manager": {
+        "en": "Official warnings take precedence. This output is decision support, not an authority directive.",
+        "hi": "सरकारी चेतावनियाँ सर्वोपरि हैं। यह निर्णय सहायता है, आधिकारिक आदेश नहीं।",
+        "te": "అధికారిక హెచ్చరికలకు ప్రాధాన్యం. ఇది నిర్ణయ సహాయకం మాత్రమే, అధికార ఆదేశం కాదు.",
+    },
+}
+
+_ACTIVE = {
+    "en": "{sev} {haz} warning is active - follow local authority and IMD instructions.",
+    "hi": "{sev} {haz} चेतावनी सक्रिय है - स्थानीय प्रशासन और IMD के निर्देश मानें।",
+    "te": "{sev} {haz} హెచ్చరిక సక్రియంగా ఉంది - స్థానిక అధికారులు మరియు IMD సూచనలు పాటించండి.",
 }
 
 
-def advisory_for(verified: dict, user_type: str) -> str:
-    base = PERSONA_ADVISORIES.get(user_type, PERSONA_ADVISORIES["general"])
-    if not verified.get("verified"):
-        return "No active official warning was found for your area. Continue following regular weather updates."
-    if verified.get("severity") in ("RED", "ORANGE"):
-        return f"{base} {verified.get('hazard', 'Severe weather')} is indicated — stay alert."
-    return base
+def advisory_for(verified: dict, user_type: str = "general", language: str = "en") -> str:
+    key = user_type if user_type in _NO_WARN else "general"
+    lang = language if language in ("en", "hi", "te") else "en"
+    if not (verified and verified.get("verified")):
+        return _NO_WARN[key][lang]
+    sev = (verified.get("severity") or "GREEN").upper()
+    haz = verified.get("hazard") or "Severe weather"
+    return f"{_ACTIVE[lang].format(sev=sev, haz=haz)} {_ACTION[key][lang]}"

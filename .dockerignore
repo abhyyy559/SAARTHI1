@@ -1,12 +1,29 @@
+# caches / junk
 __pycache__/
 *.pyc
+*.log
+.venv/
+venv/
+.pytest_cache/
+# dependencies must be installed INSIDE the image (linux binaries) - never copy
+# the host's node_modules over them (this broke esbuild/rolldon native binaries)
 node_modules/
-frontend-react/src/
-frontend-react/public/
+**/node_modules/
+# frontend bundle is produced inside the image (stage "web"), never copied from host
+weathergpt/frontend-react/dist/
+# git / tooling
 .git/
 .opencode/
-*.log
+.vercel/
+# local runtime stores (the container creates its own under /app/data)
 weathergpt_cache.json
 emergency_store.json
 community_reports.json
+# secrets - never baked into an image
 .env
+
+# scratch files
+weathergpt/compose-up.log
+weathergpt/deploy-build.log
+weathergpt/run-deploy-build.ps1
+

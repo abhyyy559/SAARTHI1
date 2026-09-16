@@ -5,18 +5,23 @@ import { useApp } from '../store';
 import { answerOffline } from '../offline';
 import Icon from './icons';
 
-const SUGGESTIONS = [
-  'Will it rain in Hyderabad tomorrow?',
-  'Is there any dangerous weather near me?',
-  'Is there a red alert right now?',
-];
+// Persona-aware question chips: the user sees questions that make sense for them.
+const PERSONA_QUESTIONS = {
+  fisherman: ['q1', 'q2', 'q3'],
+  farmer: ['q1', 'q4', 'q3'],
+  driver: ['q1', 'q3'],
+  researcher: ['q1', 'q3'],
+  disaster_manager: ['q1', 'q3'],
+  general: ['q1', 'q2', 'q3'],
+};
 
 export default function ChatPanel() {
-  const { lang, persona, handleResult, registerAsk } = useApp();
+  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak } = useApp();
   const [log, setLog] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [showEv, setShowEv] = useState({});
+  const SUGGESTIONS = PERSONA_QUESTIONS[persona] || PERSONA_QUESTIONS.general;
 
   const ask = useCallback(async (text) => {
     const q = (typeof text === 'string' && text ? text : input).trim();
@@ -33,6 +38,9 @@ export default function ChatPanel() {
         risk: r.risk, warning: r.warning, id: Date.now(),
       }]);
       handleResult(r);
+      // Voice-first: answers are spoken aloud via the server TTS in the
+      // selected language (Sarvam when configured, browser voice otherwise).
+      speak(r.answer);
     } catch {
       const off = answerOffline(q, lang);
       setLog((l) => [...l, {
@@ -41,7 +49,7 @@ export default function ChatPanel() {
       }]);
     }
     setBusy(false);
-  }, [input, busy, lang, persona, handleResult]);
+  }, [input, busy, lang, persona, handleResult, speak]);
 
   // Publish this handler for the voice panel and the safety probe. Registered from
   // an EFFECT (never during render) - which is also what kept it off the lint list.
@@ -49,6 +57,15 @@ export default function ChatPanel() {
     registerAsk(ask);
     return () => registerAsk(null);
   }, [ask, registerAsk]);
+
+  // A question raised on Home (tap or voice) is consumed once here on mount.
+  useEffect(() => {
+    if (!pendingAskRef.current) return undefined;
+    const text = pendingAskRef.current;
+    pendingAskRef.current = null;
+    ask(text);
+    return undefined;
+  }, [pendingAskRef, ask]);
 
   return (
     <section className="card" aria-label="Conversation">
@@ -117,9 +134,9 @@ export default function ChatPanel() {
         </button>
       </form>
       <div className="row">
-        {SUGGESTIONS.map((s) => (
-          <button key={s} type="button" className="btn ghost sm" onClick={() => ask(s)} disabled={busy}>
-            {s}
+        {SUGGESTIONS.map((k) => (
+          <button key={k} type="button" className="btn ghost sm" onClick={() => ask(t(lang, k))} disabled={busy}>
+            {t(lang, k)}
           </button>
         ))}
       </div>

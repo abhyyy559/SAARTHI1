@@ -1,8 +1,7 @@
 // App shell: persistent sidebar (desktop), bottom tab bar (mobile), top status bar.
 // Navigation is a real <nav> with aria-current - no scroll-wall of stacked panels.
-import { t, NAV, PERSONAS } from '../i18n';
+import { t, NAV, PERSONAS, PERSONA_LABELS } from '../i18n';
 import { useApp } from '../store';
-import { setOfflineSim } from '../api';
 import Icon from './icons';
 
 const CONN_COLOR = { LIVE: 'var(--live)', OFFLINE: 'var(--off)' };
@@ -48,7 +47,7 @@ export function Sidebar() {
         <span className="brand-mark"><Icon name="bolt" size={20} /></span>
         <span className="brand-text">
           <b>WeatherGPT</b>
-          <span>Trust Console</span>
+          <span>Ask. Listen. Stay safe.</span>
         </span>
       </div>
       <nav className="nav" aria-label="Sections">
@@ -60,7 +59,7 @@ export function Sidebar() {
             aria-current={view === n.id ? 'page' : undefined}
             onClick={() => setView(n.id)}
           >
-            <Icon name={n.icon} />
+            <Icon name={n.icon} size={19} />
             <span>{t(lang, n.label)}</span>
           </button>
         ))}
@@ -94,29 +93,25 @@ export function MobileNav() {
 }
 
 export function TopBar() {
-  const { lang, setLang, persona, setPersona, conn, simOffline, setSimOffline } = useApp();
+  const { lang, setLang, persona, setPersona, conn } = useApp();
   const color = connColor(conn);
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <span className="topbar-title">Trust Console <em>| verification layer</em></span>
+        <span className="topbar-title">WeatherGPT <em>| speak, listen, stay safe</em></span>
         <span className="conn" style={{ color }}>
           <span className="dot" style={{ background: color }} />
-          {simOffline ? 'OFFLINE (simulated)' : conn}
+          {conn}
         </span>
         <div className="topbar-spacer" />
         <label className="mono">
-          <input
-            type="checkbox"
-            checked={simOffline}
-            onChange={(e) => { setSimOffline(e.target.checked); setOfflineSim(e.target.checked); }}
-          />
-          simulate offline
-        </label>
-        <label className="mono">
-          {t(lang, 'persona')}
-          <select value={persona} onChange={(e) => setPersona(e.target.value)} aria-label={t(lang, 'persona')}>
-            {PERSONAS.map((p) => <option key={p} value={p}>{p}</option>)}
+          {t(lang, 'iAm')}
+          <select value={persona} onChange={(e) => setPersona(e.target.value)} aria-label={t(lang, 'iAm')}>
+            {PERSONAS.map((p) => (
+              <option key={p} value={p}>
+                {(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][p]) || p}
+              </option>
+            ))}
           </select>
         </label>
         <label className="mono">

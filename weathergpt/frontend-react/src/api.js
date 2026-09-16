@@ -1,15 +1,20 @@
-// Backend client — v1 versioned API. Same origin (dist served by FastAPI).
+// Backend client — v1 versioned API.
+// Same origin by default (dist served by FastAPI). Set VITE_API_BASE at build
+// time to point at a separately-hosted backend (e.g. https://saarthi-api.onrender.com).
+const BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+const full = (p) => (p.startsWith('/api') ? `${BASE}${p}` : p);
+
 let offlineSim = false;
 export const setOfflineSim = (v) => { offlineSim = v; };
 
 async function j(url, opts) {
   if (offlineSim) throw new Error('OFFLINE (simulated) — showing cached data only');
-  const r = await fetch(url, opts);
+  const r = await fetch(full(url), opts);
   if (!r.ok) throw new Error(`HTTP ${r.status} on ${url}`);
   return r.json();
 }
 const post = (url, body) =>
-  j(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  j(full(url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
 const V = '/api/v1';
 
@@ -37,8 +42,15 @@ export const api = {
   report: (payload) => post(`${V}/reports`, payload),
   reports: (district = '') => j(`${V}/reports?district=${encodeURIComponent(district)}`),
   voiceStatus: () => j('/api/voice/status'),
+  transcribe: (blob, language) => {
+    const fd = new FormData();
+    fd.append('file', blob, 'speech.webm');
+    fd.append('language', language);
+    return fetch(full('/api/voice/transcribe'), { method: 'POST', body: fd }).then(j);
+  },
   synthesize: (text, language) =>
     post('/api/voice/synthesize', { text, language }),
+  speak: (text, language) => post('/api/voice/synthesize', { text, language }),
 };
 
 export const HYD = { lat: 17.385, lon: 78.4867, district: 'Hyderabad' };

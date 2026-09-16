@@ -9,6 +9,7 @@ to the frontend). After adding a key, restart the server and check
 | Env var | Get it here | Steps | Unlocks |
 |---|---|---|---|
 | `OWM_API_KEY` | https://openweathermap.org → **Sign Up** (free) | Confirm email → **API keys** tab → copy default key (free tier: 60 calls/min) | Second-opinion disagree panel |
+| `LLM_API_KEY` | https://console.groq.com → **API Keys** → Create key | Paste into `.env` (model defaults to `qwen/qwen3.8-27b`; override with `LLM_MODEL`) | Real conversational answers in EN/HI/TE — without it the app uses the rule-based template |
 | `DATAGOV_API_KEY` | https://data.gov.in → **Register/Login** | **My Account → API** → Generate token | Official records |
 | `DATAGOV_RESOURCE_ID` | same site | Search dataset (e.g. “IMD rainfall district”) → open it → **API** tab → copy the `resource_id` from the sample URL (`…/resource/<id>`) | Pairs with the key above |
 | `SARVAM_API_KEY` | https://dashboard.sarvam.ai → **Sign up** | **API Keys** → create subscription key (check current free credits on the site) | Server Telugu/Hindi/English STT (`saarika`) + TTS (`bulbul`); without it the app uses browser voice + shows the fallback badge |
@@ -22,16 +23,19 @@ No key today? Everything real still works keyless (Open-Meteo, ERA5, NWP models,
 ```bash
 # single container (builds React + FastAPI together)
 docker compose up --build
-# open http://localhost:8003  →  /api/sources should show LIVE where keys exist
+# open http://localhost:8000  →  /api/sources should show LIVE where keys exist
+# host already busy on 8000? pick another: WGPT_PORT=8010 docker compose up -d
 ```
 
 ## 3. Deploy (pick one)
 
 - **VPS (simplest):** install Docker → copy repo + `.env` → `docker compose up -d --build` →
-  reverse-proxy (nginx/Caddy) for HTTPS → `https://your-domain` to port 8003.
+  reverse-proxy (nginx/Caddy) for HTTPS → `https://your-domain` to the published host port
+  (`${WGPT_PORT:-8000}` → container 8000).
 - **Render/Railway/Fly:** connect repo, set Dockerfile deploy, add env vars from `.env`
-  in the dashboard (never commit them), expose 8003.
-- **Cloud Run:** `gcloud run deploy --source .` with env vars set via `--set-env-vars`.
+  in the dashboard (never commit them), expose container port 8000.
+- **Cloud Run:** `gcloud run deploy --source .` with env vars set via `--set-env-vars`
+  (container listens on `$PORT`).
 
 HTTPS is mandatory in production (voice mic, geolocation and service workers
 require secure contexts).

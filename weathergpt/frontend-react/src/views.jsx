@@ -1,29 +1,23 @@
-// The seven console views. Each is a thin composition of feature components -
-// all fetching, validation and safety logic stays inside those components.
-import { t } from './i18n';
-import { useApp } from './store';
-import { Card } from './components/ui';
-import Situation from './components/Situation';
-import GapHero from './components/GapHero';
-import Pipeline from './components/Pipeline';
+// Three views, fisherman-first: Home (safety + speak/tap to ask), Ask
+// (conversation + voice), Alerts (official warnings + resilient SOS network).
+// Every former dossier view either became background evidence inside a grounded
+// answer or was retired - the product is conversation, speech and alerts.
+import Home from './components/Home';
 import ChatPanel from './components/ChatPanel';
 import VoicePanel from './components/VoicePanel';
-import EvidencePanel from './components/EvidencePanel';
 import AlertCenter from './components/AlertCenter';
 import Emergency from './components/Emergency';
-import { ModelsPanel, ClimatePanel } from './components/DataPanels';
-import SafetyPanel from './components/SafetyPanel';
-import Manager from './components/Manager';
-import SourceStrip from './components/SourceStrip';
 import ViewHead from './components/ViewHead';
+import { useApp } from './store';
+import { t } from './i18n';
+import { Card } from './components/ui';
+import SourceStrip from './components/SourceStrip';
 
-export function SituationView() {
+export function HomeView() {
   return (
     <>
-      <ViewHead titleKey="navSituation" subKey="viewSituationSub" />
-      <Situation />
-      <GapHero />
-      <Pipeline />
+      <ViewHead titleKey="navHome" subKey="viewHomeSub" />
+      <Home />
     </>
   );
 }
@@ -40,16 +34,6 @@ export function AskView() {
   );
 }
 
-export function EvidenceView() {
-  return (
-    <>
-      <ViewHead titleKey="viewEvidence" subKey="viewEvidenceSub" />
-      <EvidencePanel />
-      <Manager />
-    </>
-  );
-}
-
 export function AlertsView() {
   return (
     <>
@@ -60,24 +44,11 @@ export function AlertsView() {
   );
 }
 
-export function ClimateView() {
-  return (
-    <>
-      <ViewHead titleKey="viewClimate" subKey="viewClimateSub" />
-      <div className="grid-2">
-        <ModelsPanel />
-        <ClimatePanel />
-      </div>
-    </>
-  );
-}
-
 export function TrustView() {
   const { lang } = useApp();
   return (
     <>
       <ViewHead titleKey="viewTrust" subKey="viewTrustSub" />
-      <SafetyPanel />
       <Card
         title={t(lang, 'tag')}
         sub="Every source reports its own status. Nothing is labelled LIVE unless it is."

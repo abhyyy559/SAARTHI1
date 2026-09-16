@@ -13,14 +13,39 @@ SEVERITIES = ("GREEN", "YELLOW", "ORANGE", "RED")
 _RANK = {s: i for i, s in enumerate(SEVERITIES)}
 _PCT = re.compile(r"(\d{1,3})\s*%")
 
+_NEGATION = ("no ", "not ", "n't ", "neither", "without")
 
-def validate(answer: str, verified: dict, evidence_numbers: list[float]) -> tuple[str, list[str]]:
+_FALLBACKS = {
+    True: {
+        "en": "There is an active official warning: {sev} - {haz}. Valid until {until}. Follow local authority instructions.",
+        "hi": "एक सरकारी चेतावनी सक्रिय है: {sev} - {haz}. यह {until} तक लागू है। स्थानीय प्रशासन के निर्देश मानें।",
+        "te": "ఒక అధికారిక హెచ్చరిక సక్రియంగా ఉంది: {sev} - {haz}. ఇది {until} వరకు అమలులో ఉంటుంది. స్థానిక అధికారుల సూచనలు పాటించండి.",
+    },
+    False: {
+        "en": "No active verified warning was found for your area based on currently available data.",
+        "hi": "उपलब्ध आंकड़ों के आधार पर आपके क्षेत्र के लिए कोई सक्रिय सत्यापित चेतावनी नहीं मिली।",
+        "te": "అందుబాటులో ఉన్న డేటా ప్రకారం మీ ప్రాంతానికి ఎటువంటి సక్రియ ధృవీకరించిన హెచ్చరిక లేదు.",
+    },
+}
+
+
+def _negated(answer: str, pos: int) -> bool:
+    window = answer[max(0, pos - 12):pos].lower()
+    return any(neg in window for neg in _NEGATION)
+
+
+def validate(answer: str, verified: dict, evidence_numbers: list[float], language: str = "en") -> tuple[str, list[str]]:
     """Returns (answer_to_send, findings). Findings empty when clean."""
     findings: list[str] = []
     official = (verified.get("severity") or "GREEN").upper()
     active = bool(verified.get("verified"))
 
-    mentioned = [s for s in SEVERITIES if re.search(rf"\b{s}\b", answer)]
+    mentioned = []
+    for s in SEVERITIES:
+        for m in re.finditer(rf"\b{s}\b", answer):
+            if not _negated(answer, m.start()):
+                mentioned.append(s)
+                break
     escalated = [s for s in mentioned if _RANK.get(s, 0) > _RANK.get(official, 0)]
     if escalated and official in SEVERITIES:
         findings.append(f"severity-escalation: answer mentions {escalated}, official is {official}")
@@ -38,16 +63,15 @@ def validate(answer: str, verified: dict, evidence_numbers: list[float]) -> tupl
         findings.append("fake-government-instruction")
 
     if findings:
-        safe = _safe_fallback(verified)
-        return safe, findings
+        return _safe_fallback(verified, language), findings
     return answer, findings
 
 
-def _safe_fallback(verified: dict) -> str:
+def _safe_fallback(verified: dict, language: str = "en") -> str:
     if verified.get("verified"):
-        return (
-            f"[STRUCTURED] There is an active official warning: {verified.get('severity')} — "
-            f"{verified.get('hazard', 'Severe weather')}. Valid until {verified.get('valid_until')}. "
-            f"Follow local authority instructions."
-        )
-    return "[STRUCTURED] No active verified warning was found for your area based on currently available data."
+        text = _FALLBACKS[True].get(language, _FALLBACKS[True]["en"]).format(
+            sev=verified.get("severity"), haz=verified.get("hazard", "Severe weather"),
+            until=verified.get("valid_until"))
+    else:
+        text = _FALLBACKS[False].get(language, _FALLBACKS[False]["en"])
+    return f"[STRUCTURED] {text}"

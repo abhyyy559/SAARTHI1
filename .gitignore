@@ -9,3 +9,8 @@ weathergpt_cache.json
 emergency_store.json
 community_reports.json
 emergency.key
+.vercel/
+weathergpt/compose-up.log
+weathergpt/deploy-build.log
+weathergpt/run-deploy-build.ps1
+weathergpt/_tts_check.wav

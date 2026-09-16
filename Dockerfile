@@ -19,5 +19,5 @@ VOLUME ["/app/data"]
 ENV CACHE_FILE=/app/data/weathergpt_cache.json DEMO_MODE=false PORT=8003
 EXPOSE 8003
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8003/api/health')"
+  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://localhost:%d/api/health' % int(os.environ.get('PORT','8003')))"
 CMD ["sh", "-c", "cd /app && DEMO_MODE=${DEMO_MODE:-false} CACHE_FILE=${CACHE_FILE} python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8003}"]

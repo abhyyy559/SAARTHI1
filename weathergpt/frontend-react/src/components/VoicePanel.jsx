@@ -11,6 +11,7 @@ export default function VoicePanel() {
   const [providers, setProviders] = useState({ stt: '?', tts: '?' });
   const [heard, setHeard] = useState('');
   const [speaking, setSpeaking] = useState(false);
+  const [listening, setListening] = useState(false);
   const [note, setNote] = useState('');
   const recRef = useRef(null);
   const lastAnswer = (result && result.answer) || '';
@@ -23,13 +24,57 @@ export default function VoicePanel() {
     return () => { alive = false; };
   }, []);
 
-  function listen() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setNote('Browser speech recognition is unavailable - type your question instead.');
+  async function listen() {
+    if (listening) { stopRec(); return; }
+    // Prefer the server Sarvam STT (works in every browser, tested live);
+    // fall back to Web Speech only if media recording is unsupported.
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      browserListen();
       return;
     }
-    if (recRef.current) { recRef.current.stop(); recRef.current = null; return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks = [];
+      const rec = new MediaRecorder(stream);
+      recRef.current = rec;
+      setListening(true);
+      setNote('');
+      rec.ondataavailable = (e) => chunks.push(e.data);
+        rec.onstop = async () => {
+          stream.getTracks().forEach((tr) => tr.stop());
+          setListening(false);
+          recRef.current = null;
+          try {
+            const j = await api.transcribe(new Blob(chunks, { type: 'audio/webm' }), lang);
+            if (j.text) {
+              setHeard(j.text);
+              if (j.provider) setProviders((p) => ({ ...p, stt: j.provider }));
+              ask(j.text);
+            } else {
+              setNote('Could not hear anything - try again or type the question.');
+            }
+          } catch {
+            setNote('Voice upload failed - using browser recognition instead.');
+            browserListen();
+          }
+        };
+      rec.start();
+    } catch {
+      setNote('Microphone permission denied - type your question instead.');
+    }
+  }
+
+  function stopRec() {
+    if (recRef.current) { recRef.current.stop(); }
+  }
+
+  // Browser-only fallback (Web Speech API), used when MediaRecorder is unavailable.
+  function browserListen() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setNote('Voice input is unavailable in this browser - type your question instead.');
+      return;
+    }
     const r = new SR();
     r.lang = SR_LANG[lang] || 'en-IN';
     r.onresult = (e) => {
@@ -40,7 +85,6 @@ export default function VoicePanel() {
     };
     r.onend = () => { recRef.current = null; };
     recRef.current = r;
-    setNote('');
     try {
       r.start();
     } catch {

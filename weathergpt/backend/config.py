@@ -37,6 +37,11 @@ SARVAM_TTS_URL = _get("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
 SARVAM_TTS_MODEL = _get("SARVAM_TTS_MODEL", "bulbul:v3")
 SARVAM_TTS_SPEAKER = _get("SARVAM_TTS_SPEAKER", "priya")
 
+# Conversational layer (OpenAI-compatible endpoint; Groq by default)
+LLM_BASE_URL = _get("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+LLM_MODEL = _get("LLM_MODEL", "qwen/qwen3.8-27b")
+LLM_TIMEOUT = float(_get("LLM_TIMEOUT", "25"))
+
 CACHE_FILE = _get("CACHE_FILE", "weathergpt_cache.json")
 DEFAULT_LAT = float(_get("DEFAULT_LAT", "17.385"))
 DEFAULT_LON = float(_get("DEFAULT_LON", "78.4867"))

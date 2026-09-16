@@ -22,9 +22,10 @@ const writePref = (key, value) => {
 };
 
 export function AppProvider({ children }) {
-  const [view, setView] = useState('situation');
+  const [view, setView] = useState('home');
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));
-  const [persona, setPersona] = useState('general');
+  const [persona, setPersona] = useState(() => readPref('wgpt.persona', 'fisherman'));
+  const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
   const [theme, setTheme] = useState(() => readPref('wgpt.theme', 'auto'));
   const [demoMode, setDemoMode] = useState(true);
   const [backendState, setBackendState] = useState('…');
@@ -40,6 +41,34 @@ export function AppProvider({ children }) {
   const registerAsk = useCallback((fn) => { askRef.current = fn; }, []);
   const ask = useCallback((text) => { if (askRef.current) askRef.current(text); }, []);
 
+  // Speak an answer aloud: server TTS (Sarvam, in the selected language) first,
+  // browser speechSynthesis as fallback. Singleton audio - a new answer stops the old one.
+  const audioRef = useRef(null);
+  const speak = useCallback(async (text) => {
+    if (!text) return;
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch { /* already stopped */ }
+      audioRef.current = null;
+    }
+    try {
+      const r = await api.speak(text, lang);
+      if (r && r.audio) {
+        const el = new Audio(`data:${r.format || 'audio/mpeg'};base64,${r.audio}`);
+        audioRef.current = el;
+        try { await el.play(); } catch { /* autoplay blocked until user gesture */ }
+        return;
+      }
+    } catch { /* server TTS unavailable - fall through to browser voice */ }
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'te' ? 'te-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
+      synth.speak(u);
+    } catch { /* no voice available in this browser */ }
+  }, [lang]);
+
   useEffect(() => {
     writePref('wgpt.theme', theme);
     const el = document.documentElement;
@@ -51,6 +80,15 @@ export function AppProvider({ children }) {
     writePref('wgpt.lang', lang);
     cacheGuidance(api, lang);
   }, [lang]);
+
+  useEffect(() => {
+    writePref('wgpt.persona', persona);
+  }, [persona]);
+
+  // One-shot question hand-off: ChatPanel consumes it once on mount, then clears.
+  const setPendingAsk = useCallback((text) => {
+    pendingAskRef.current = typeof text === 'string' && text.trim() ? text.trim() : null;
+  }, []);
 
   useEffect(() => {
     let dead = false;
@@ -96,10 +134,11 @@ export function AppProvider({ children }) {
     conn, offline, online, simOffline, setSimOffline,
     pipe, setPipe, result, handleResult,
     disaster, setDisaster,
-    ask, registerAsk,
+    ask, registerAsk, speak,
+    pendingAskRef, setPendingAsk,
     loc: HYD,
   }), [view, lang, persona, theme, demoMode, backendState, sources, conn, offline, online,
-    simOffline, pipe, result, handleResult, disaster, ask, registerAsk]);
+    simOffline, pipe, result, handleResult, disaster, ask, registerAsk, speak, setPendingAsk]);
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
