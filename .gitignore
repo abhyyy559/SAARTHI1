@@ -18,5 +18,7 @@ weathergpt/uvicorn.err.log
 weathergpt/uvicorn.out.log
 weathergpt/vercel-deploy.log
 weathergpt/vercel-deploy.err.log
+weathergpt/docker-build.log
+weathergpt/docker-build.err.log
 
 .vercel
