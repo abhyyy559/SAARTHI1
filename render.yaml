@@ -4,10 +4,16 @@
 # Create it: Render dashboard -> New + -> Blueprint -> pick this repo.
 # Fill the sync:false env vars in the dashboard (they are never committed).
 #
-# If you create a NATIVE Python service instead of Docker, its Start Command
-# must be (Render's default `gunicorn your_application.wsgi` is a Django
-# placeholder — gunicorn is not in our requirements):
-#   cd weathergpt && python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+# If you create a NATIVE Python service instead of Docker, note that the Start
+# Command runs INSIDE the service's Root Directory, and Render's default
+# `gunicorn your_application.wsgi` is a Django placeholder (gunicorn is not in
+# our requirements). Match the command to the Root Directory:
+#   Root Directory empty (repo root):
+#     cd weathergpt && python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+#   Root Directory = weathergpt:
+#     python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+#   Root Directory = weathergpt/backend:
+#     cd .. && python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
 services:
   - type: web
     name: saarthi-api
