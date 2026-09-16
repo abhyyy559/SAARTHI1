@@ -1,0 +1,12 @@
+# Render Blueprint — SAARTHI (FastAPI + React dist in one container).
+# Deploys from this repo root using ./Dockerfile (python:3.11-slim base —
+# deterministic wheels; native-runtime Python-version roulette is avoided).
+# Create it: Render dashboard -> New + -> Blueprint -> pick this repo.
+# Fill the sync:false env vars in the dashboard (they are never committed).
+services:
+  - type: web
+    name: saarthi-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
