@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeatherGPT — Interactive Preview (Demo Data)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#0f172a; --surface:#1e293b; --surface2:#334155; --text:#f1f5f9; --text2:#94a3b8; --primary:#38bdf8; --green:#22c55e; --yellow:#eab308; --orange:#f97316; --red:#ef4444; }
+  body { font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  .demo-banner { background:var(--yellow); color:#000; text-align:center; padding:8px; font-size:.85rem; font-weight:600; }
+  .header { display:flex; justify-content:space-between; align-items:center; padding:16px 24px; border-bottom:1px solid var(--surface2); background:var(--surface); flex-wrap:wrap; gap:10px; }
+  .header h1 { font-size:1.4rem; } .header h1 span { color:var(--primary); }
+  .lang-btns button { background:none; border:1px solid var(--surface2); color:var(--text); padding:6px 12px; border-radius:6px; cursor:pointer; margin-left:4px; }
+  .lang-btns button.active { background:var(--primary); color:#000; }
+  .dashboard { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:24px; max-width:1200px; margin:auto; }
+  .full { grid-column:1/-1; }
+  .card { background:var(--surface); border-radius:12px; padding:20px; border:1px solid var(--surface2); }
+  .card h2 { font-size:.8rem; text-transform:uppercase; letter-spacing:1px; color:var(--text2); margin-bottom:14px; }
+  .big-temp { font-size:3rem; font-weight:700; }
+  .condition { color:var(--text2); margin:4px 0 10px; }
+  .detail { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--surface2); font-size:.9rem; }
+  .source { font-size:.75rem; color:var(--text2); margin-top:8px; }
+  .warning-card { border-left:4px solid var(--yellow); }
+  .sev { display:inline-block; padding:6px 14px; border-radius:6px; font-weight:600; margin-bottom:10px; background:rgba(234,179,8,.15); color:var(--yellow); }
+  .action-btn { background:var(--primary); color:#000; border:none; padding:10px 18px; border-radius:6px; cursor:pointer; font-weight:600; margin-top:10px; }
+  .risk-bar { background:var(--surface); border-radius:12px; padding:14px 20px; border:1px solid var(--surface2); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .risk-bar .label { font-size:.8rem; color:var(--text2); }
+  .forecast-strip { display:flex; gap:12px; overflow-x:auto; }
+  .fd { min-width:88px; text-align:center; padding:12px 8px; background:var(--surface2); border-radius:8px; }
+  .fd.today { border:2px solid var(--primary); }
+  .fd .lbl { font-size:.75rem; color:var(--text2); } .fd .icon { font-size:1.5rem; margin:6px 0; } .fd .rain { font-size:.75rem; color:var(--primary); }
+  #map { height:280px; border-radius:8px; }
+  .chat-window { max-height:380px; overflow-y:auto; padding:8px; }
+  .msg { padding:12px 16px; border-radius:12px; margin-bottom:10px; max-width:85%; font-size:.92rem; line-height:1.5; }
+  .msg.user { background:var(--primary); color:#000; margin-left:auto; text-align:right; }
+  .msg.bot { background:var(--surface2); }
+  .msg .src { font-size:.75rem; color:var(--text2); margin-top:8px; padding-top:8px; border-top:1px solid var(--surface2); }
+  .toggle { font-size:.78rem; color:var(--primary); cursor:pointer; }
+  .chat-row { display:flex; gap:10px; padding:10px; border-top:1px solid var(--surface2); }
+  .chat-row input { flex:1; background:var(--surface2); border:none; color:var(--text); padding:12px 14px; border-radius:6px; }
+  .chat-row button { background:var(--primary); color:#000; border:none; padding:12px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
+  .chat-row .mic { background:var(--red); color:#fff; }
+  .persona-bar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .persona-bar button { background:var(--surface2); border:none; color:var(--text); padding:8px 14px; border-radius:6px; cursor:pointer; }
+  .persona-bar button.active { background:var(--primary); color:#000; }
+  .ev { margin-top:8px; background:var(--surface); border:1px solid var(--surface2); border-radius:8px; padding:12px; display:none; }
+  .ev.visible { display:block; }
+  .ev .row { display:flex; justify-content:space-between; padding:4px 0; font-size:.8rem; border-bottom:1px solid var(--surface2); }
+  .pass { color:var(--green); } .fail { color:var(--red); } .unknown { color:var(--yellow); }
+  @media(max-width:768px){ .dashboard{grid-template-columns:1fr;padding:12px;} }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">⚠ DEMO MODE — Simulated IMD-like scenario (Hyderabad, Thunderstorm-Yellow). Not live official data.</div>
+
+<header class="header">
+  <h1>🌦 <span>Weather</span>GPT</h1>
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <span style="color:var(--text2)">📍 Hyderabad, Telangana</span>
+    <div class="lang-btns">
+      <button class="active" data-l="en" onclick="setLang('en')">EN</button>
+      <button data-l="hi" onclick="setLang('hi')">हिंदी</button>
+      <button data-l="te" onclick="setLang('te')">తెలుగు</button>
+    </div>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <div class="card">
+    <h2 id="i_current">Current Weather</h2>
+    <div class="big-temp">28°C</div>
+    <div class="condition">Cloudy</div>
+    <div class="detail"><span id="i_humidity">Humidity</span><span>82%</span></div>
+    <div class="detail"><span id="i_wind">Wind</span><span>9 km/h</span></div>
+    <div class="detail"><span id="i_rain">Rainfall</span><span>12 mm</span></div>
+    <div class="source">Source: IMD · Updated: 6:00 PM IST</div>
+  </div>
+
+  <div class="card warning-card">
+    <h2>⚠ <span id="i_warn_title">ACTIVE WARNING</span></h2>
+    <div class="sev">🟡 <span id="i_sev">Yellow Alert</span></div>
+    <h3 style="margin:6px 0">Thunderstorm</h3>
+    <div class="detail"><span id="i_source">Source</span><span>India Meteorological Department</span></div>
+    <div class="detail"><span>Issued</span><span>6:00 PM IST</span></div>
+    <div class="detail"><span id="i_until">Valid until</span><span>10:00 PM IST</span></div>
+    <button class="action-btn" onclick="ask('What should I do during the thunderstorm?')">What should I do?</button>
+  </div>
+
+  <div class="full risk-bar">
+    <div><span class="label" id="i_official">Official warning</span> &nbsp;<span style="font-weight:700;color:var(--yellow)">🟡 YELLOW (IMD)</span></div>
+    <div><span class="label" id="i_wgpt_risk">WeatherGPT Risk</span> &nbsp;<span style="font-weight:700;color:var(--yellow)">MODERATE</span></div>
+    <div style="flex-basis:100%;font-size:.75rem;color:var(--text2)">ⓘ WeatherGPT Risk is our interpretation. It is not an IMD rating.</div>
+  </div>
+
+  <div class="card full">
+    <h2>7-Day Forecast</h2>
+    <div class="forecast-strip" id="forecast"></div>
+  </div>
+
+  <div class="card full">
+    <h2>MAP</h2>
+    <div id="map"></div>
+  </div>
+
+  <div class="card full">
+    <h2 id="i_chat_title">Ask WeatherGPT</h2>
+    <div class="persona-bar">
+      <button class="active" data-p="general" onclick="setPersona('general')">🧑 General</button>
+      <button data-p="farmer" onclick="setPersona('farmer')">🌾 Farmer</button>
+      <button data-p="driver" onclick="setPersona('driver')">🚗 Driver</button>
+      <button data-p="fisherman" onclick="setPersona('fisherman')">🐟 Fisherman</button>
+    </div>
+    <div class="chat-window" id="chat"></div>
+    <div class="chat-row">
+      <input id="input" placeholder="Ask WeatherGPT..." onkeydown="if(event.key==='Enter')ask(this.value)">
+      <button class="mic" onclick="listen()">🎙</button>
+      <button onclick="ask(document.getElementById('input').value)">➤</button>
+    </div>
+    <div class="ev" id="evidence">
+      <h3 style="font-size:.8rem;color:var(--text2);margin-bottom:8px">WHY THIS ANSWER?</h3>
+      <div class="row"><span>Official Source</span><span>India Meteorological Department</span></div>
+      <div class="row"><span>Information Used</span><span>District Warning · City Forecast · Current Obs</span></div>
+      <div class="row"><span>Validation</span><span>Source <span class="pass">PASS</span> · Freshness <span class="pass">PASS</span> · Location <span class="pass">PASS</span> · Validity <span class="pass">PASS</span> · Complete <span class="pass">PASS</span></span></div>
+      <div class="row"><span>Validity</span><span>15 Sep 2026, 18:00 → 22:00 IST</span></div>
+      <div class="row"><span>AI Role</span><span>The warning was NOT generated by AI. Severity was NOT modified by AI.</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const I18N = {
+  en:{ current:"Current Weather", humid:"Humidity", wind:"Wind", rain:"Rainfall", act:"ACTIVE WARNING", sev:"Yellow Alert", src:"Source", until:"Valid until", official:"Official warning", wgpt:"WeatherGPT Risk", chat:"Ask WeatherGPT", ask:"Ask WeatherGPT...", q:"Will it rain tomorrow?", why:"Why this answer?" },
+  hi:{ current:"वर्तमान मौसम", humid:"आर्द्रता", wind:"हवा", rain:"वर्षा", act:"सक्रिय चेतावनी", sev:"पीली चेतावनी", src:"स्रोत", until:"वैध तक", official:"आधिकारिक चेतावनी", wgpt:"WeatherGPT जोखिम", chat:"WeatherGPT से पूछें", ask:"WeatherGPT से पूछें...", q:"क्या कल बारिश होगी?", why:"यह उत्तर क्यों?" },
+  te:{ current:"ప్రస్తుత వాతావరణం", humid:"తేమ", wind:"గాలి", rain:"వర్షపాతం", act:"క్రియాశీల హెచ్చరిక", sev:"పసుపు హెచ్చరిక", src:"మూలం", until:"వరకు చెల్లుబాటు", official:"అధికారిక హెచ్చరిక", wgpt:"WeatherGPT ప్రమాదం", chat:"WeatherGPT ను అడగండి", ask:"WeatherGPT ను అడగండి...", q:"రేపు వర్షం పడుతుందా?", why:"ఈ సమాధానం ఎందుకు?" }
+};
+let lang='en', persona='general', map=null;
+
+const ANSWERS = {
+  general: {
+    rain: "Rain is possible tomorrow in your area according to the latest available IMD forecast.\n\nForecast (tomorrow): 24–31°C, 15 mm expected rainfall.\n\nCurrent warning: 🟡 Thunderstorm activity is indicated for your district, valid until 10:00 PM IST.\n\nWhat you can do: carry rain protection and avoid exposed areas during active thunderstorms.",
+    danger: "🌦 There is an active official warning for Hyderabad: 🟡 YELLOW — Thunderstorm.\n\nValid until 10:00 PM IST.\n\nFor your safety: avoid exposed areas during active thunderstorms and follow local authority instructions.\n\nWeatherGPT Risk Interpretation: MODERATE (our interpretation, not an IMD rating).",
+    do: "🟡 An official Thunderstorm warning is active for your district until 10:00 PM IST.\n\n• Avoid exposed/open areas\n• Follow local authority instructions\n• Carry rain protection if you must go out\n\nThis is practical guidance, not an official government instruction."
+  },
+  farmer: {
+    rain: "🌾 Rain is expected tomorrow (15 mm, 24–31°C).\n\nGiven expected rainfall, additional irrigation may not be necessary tomorrow. Monitor field drainage and protect harvested produce from heavy rainfall.\n\nⓘ General guidance, not a crop-specific agronomic recommendation. Continue following official agricultural advisories.",
+    danger: "🌾 Thunderstorm warning active (🟡 YELLOW) until 10:00 PM IST. Monitor field drainage and protect harvested produce from exposure.\n\nⓘ WeatherGPT Risk: MODERATE — not an IMD rating.",
+    do: "🌾 For farming: ensure field drainage channels are clear, protect harvested produce, and avoid field work during active thunderstorms."
+  },
+  driver: {
+    rain: "🚗 Based on the latest available IMD information, rain and thunderstorm conditions may affect travel tomorrow morning.\n\nWeatherGPT Risk: MODERATE. Official warning: 🟡 YELLOW (Thunderstorm).\n\nCheck road conditions before departure and avoid flooded or visibly hazardous routes. We cannot confirm it is definitively safe — verify before travelling.",
+    danger: "🚗 Thunderstorm active in your area until 10 PM. Reduce speed, keep headlights on, avoid flooded/waterlogged roads, and check road conditions before travel.\n\nWeatherGPT Risk: MODERATE.",
+    do: "🚗 For drivers: avoid flooded roads, reduce speed during thunderstorms, watch for reduced visibility, and check road conditions before departure."
+  },
+  fisherman: {
+    rain: "🐟 Rain/thunderstorm expected (🟡 YELLOW). For coastal/marine activity: avoid venturing into the sea during active warnings and follow marine bulletins. WeatherGPT Risk: MODERATE.",
+    danger: "🐟 Active thunderstorm warning until 10 PM. Avoid venturing into the sea during active warnings and follow marine bulletins from IMD.",
+    do: "🐟 For fishermen: stay ashore during the active warning window; follow IMD marine bulletins before any voyage."
+  }
+};
+
+function I(k){ return (I18N[lang]||I18N.en)[k]||k; }
+function setLang(l){ lang=l; document.querySelectorAll('.lang-btns button').forEach(b=>b.classList.toggle('active',b.dataset.l===l));
+  document.getElementById('i_current').textContent=I('current');
+  document.getElementById('i_humidity').textContent=I('humid');
+  document.getElementById('i_wind').textContent=I('wind');
+  document.getElementById('i_rain').textContent=I('rain');
+  document.getElementById('i_warn_title').textContent=I('act');
+  document.getElementById('i_sev').textContent=I('sev');
+  document.getElementById('i_source').textContent=I('src');
+  document.getElementById('i_until').textContent=I('until');
+  document.getElementById('i_official').textContent=I('official');
+  document.getElementById('i_wgpt_risk').textContent=I('wgpt');
+  document.getElementById('i_chat_title').textContent=I('chat');
+  document.getElementById('input').placeholder=I('ask');
+  renderForecast(); }
+function setPersona(p){ persona=p; document.querySelectorAll('.persona-bar button').forEach(b=>b.classList.toggle('active',b.dataset.p===p)); }
+
+const DAYS=[["Today","⛈","24–31°C",15],["Tue","🌧","23–30°C",22],["Wed","⛅","24–32°C",4],["Thu","☀️","25–34°C",0],["Fri","⛅","25–33°C",2],["Sat","🌧","24–31°C",18],["Sun","🌧","23–29°C",26]];
+function renderForecast(){ document.getElementById('forecast').innerHTML = DAYS.map((d,i)=>`<div class="fd ${i===0?'today':''}"><div class="lbl">${d[0]}</div><div class="icon">${d[1]}</div><div class="temps" style="font-weight:600">${d[2]}</div><div class="rain">${d[3]} mm</div></div>`).join(''); }
+
+function addMsg(text, type){
+  const c=document.getElementById('chat');
+  const d=document.createElement('div'); d.className='msg '+type;
+  d.innerHTML=(type==='bot') ? text.replace(/\n/g,'<br/>')
+    + `<div class="src">Source: IMD · Issued 6:00 PM IST · Valid until 10:00 PM IST<br/><span class="toggle" onclick="toggleEv()">ℹ️ ${I('why')}</span></div>`
+    : text;
+  c.appendChild(d); c.scrollTop=c.scrollHeight;
+  if(type==='bot') speak(text);
+}
+function pick(q){
+  q=q.toLowerCase();
+  if(/rain|irrigat|travel|danger|red|alert|should|do|sea|fish/.test(q)){
+    if(/irrigat|field/.test(q)) return ANSWERS[persona].rain;
+    if(/travel/.test(q)) return ANSWERS.driver.rain;
+    if(/sea|fish/.test(q)) return ANSWERS.fisherman.rain;
+    if(/red/.test(q)) return "No verified red alert was found for Hyderabad. The currently active official warning is: 🟡 YELLOW — Thunderstorm. Source: IMD · Valid until 10:00 PM IST. ✅ Safety: model refused to escalate.";
+    if(/danger|alert|should|do/.test(q)) return ANSWERS[persona].danger || ANSWERS.general.danger;
+    return ANSWERS[persona].rain || ANSWERS.general.rain;
+  }
+  return ANSWERS[persona].rain;
+}
+function ask(q){
+  if(!q||!q.trim()) return;
+  addMsg(q,'user'); document.getElementById('input').value='';
+  setTimeout(()=>addMsg(pick(q),'bot'), 500);
+}
+function toggleEv(){ document.getElementById('evidence').classList.toggle('visible'); }
+function listen(){
+  if(!('webkitSpeechRecognition' in window)){ alert('Speech recognition not supported in this browser.'); return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; const r=new SR();
+  r.lang=lang==='hi'?'hi-IN':lang==='te'?'te-IN':'en-IN'; r.onresult=e=>{ const t=e.results[0][0].transcript; document.getElementById('input').value=t; ask(t); }; r.start();
+}
+function speak(t){ if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(t.replace(/[^\w\s.,!?]/g,'')); u.lang=lang==='hi'?'hi-IN':lang==='te'?'te-IN':'en-IN'; speechSynthesis.speak(u);} }
+
+renderForecast();
+map=L.map('map').setView([17.385,78.4867],10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(map);
+L.marker([17.385,78.4867]).addTo(map).bindPopup('📍 Hyderabad').openPopup();
+L.circle([17.385,78.4867],{radius:25000,color:'#eab308',fillColor:'#eab308',fillOpacity:.25}).addTo(map).bindPopup('🟡 Thunderstorm warning');
+addMsg("Try asking: “Will it rain tomorrow?” · “Is there any dangerous weather near me?” · “Is there a red alert?” · or the 🎙 mic (Telugu: “రేపు హైదరాబాద్‌లో వర్షం పడుతుందా?”)","bot");
+</script>
+</body>
+</html>

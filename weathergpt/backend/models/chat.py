@@ -14,8 +14,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     location: dict[str, Any] = Field(default_factory=dict)
+    weather: dict[str, Any] = Field(default_factory=dict)
     risk: dict[str, Any] = Field(default_factory=dict)
     warning: dict[str, Any] = Field(default_factory=dict)
+    advisory: str = ""
     evidence: list[dict[str, Any]] = Field(default_factory=list)
     language: str = "en"
     structured_fallback: bool = False

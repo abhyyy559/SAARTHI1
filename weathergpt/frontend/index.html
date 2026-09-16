@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeatherGPT</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+
+<div class="demo-banner">⚠ DEMO MODE — Simulated IMD-like scenario. Not live official data.</div>
+<div class="offline-banner" id="offline-banner">
+  ⚠ LIMITED CONNECTIVITY — <span id="offline-ts"></span>
+</div>
+
+<header class="header">
+  <h1>🌦 <span>Weather</span>GPT</h1>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span id="loc-label" style="color:var(--text2)">📍 Hyderabad</span>
+    <button class="loc-btn" onclick="useLocation()">📍 Use my location</button>
+    <div class="lang-btns">
+      <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">हिंदी</button>
+      <button class="lang-btn" data-lang="te" onclick="setLang('te')">తెలుగు</button>
+    </div>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <!-- CURRENT WEATHER -->
+  <div class="card" id="current-card">
+    <h2>CURRENT WEATHER</h2>
+    <div class="big-temp" id="temp-val">—°C</div>
+    <div class="condition" id="cond-val">Loading...</div>
+    <div class="detail"><span>Humidity</span><span id="humidity-val">—</span></div>
+    <div class="detail"><span>Wind</span><span id="wind-val">—</span></div>
+    <div class="detail"><span>Rainfall</span><span id="rainfall-val">—</span></div>
+    <div class="source" id="current-source"></div>
+    <div class="source" id="current-updated"></div>
+  </div>
+
+  <!-- WARNING -->
+  <div class="card warning-card" id="warning-card">
+    <h2>⚠ ACTIVE WARNING</h2>
+    <div class="loading">Loading...</div>
+  </div>
+
+  <!-- RISK -->
+  <div class="full-width risk-bar" id="risk-bar"></div>
+
+  <!-- FORECAST -->
+  <div class="card full-width">
+    <h2>7-DAY FORECAST</h2>
+    <div class="forecast-strip" id="forecast-strip">
+      <div class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="card full-width">
+    <h2>MAP</h2>
+    <div id="map"></div>
+    <div class="map-legend">
+      <span>📍 You</span><span>🟡 Yellow</span><span>🟠 Orange</span><span>🔴 Red</span>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="card full-width">
+    <h2>ASK WEATHERGPT</h2>
+    <div class="persona-bar">
+      <button class="persona-btn active" data-persona="general" onclick="setPersona('general')">🧑 General</button>
+      <button class="persona-btn" data-persona="farmer" onclick="setPersona('farmer')">🌾 Farmer</button>
+      <button class="persona-btn" data-persona="driver" onclick="setPersona('driver')">🚗 Driver</button>
+      <button class="persona-btn" data-persona="fisherman" onclick="setPersona('fisherman')">🐟 Fisherman</button>
+    </div>
+    <div class="chat-window" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chat-input" placeholder="Ask WeatherGPT..." onkeydown="if(event.key==='Enter')sendChat(this.value)">
+      <button class="mic" id="mic-btn" onclick="toggleVoice()" title="Speak">🎙</button>
+      <button onclick="sendChat(document.getElementById('chat-input').value)">➤</button>
+    </div>
+    <div class="evidence-panel" id="evidence-panel">
+      <h3>WHY THIS ANSWER?</h3>
+      <div id="evidence-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="loading full-width" style="display:none">Loading...</div>
+
+<script src="/i18n.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

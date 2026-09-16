@@ -1,0 +1,10 @@
+{
+  "source": "data.gov.in (DEMO fixture — simulated IMD-style rainfall records)",
+  "provenance": "DEMO",
+  "records": [
+    {"district": "Hyderabad", "date": "2026-09-14", "rainfall_mm": 12.4, "station": "Hyderabad (A)"},
+    {"district": "Hyderabad", "date": "2026-09-13", "rainfall_mm": 4.1, "station": "Hyderabad (A)"},
+    {"district": "Rangareddy", "date": "2026-09-14", "rainfall_mm": 18.9, "station": "Shamshabad"},
+    {"district": "Medchal", "date": "2026-09-14", "rainfall_mm": 7.2, "station": "Kompally"}
+  ]
+}

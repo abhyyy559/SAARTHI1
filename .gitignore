@@ -1,0 +1,11 @@
+.env
+weathergpt/.env
+*.key
+__pycache__/
+*.pyc
+node_modules/
+frontend-react/dist/
+weathergpt_cache.json
+emergency_store.json
+community_reports.json
+emergency.key

@@ -50,10 +50,15 @@ class LLMService:
         location_name = evidence.get("location", {}).get("city") or evidence.get("location", {}).get("district")
         loc = location_name or "your area"
         user_type = evidence.get("user_type", "general")
+        src = evidence.get("source_name", evidence.get("source", "IMD"))
+
+        days = forecast.get("days") or []
+        tomorrow = days[1] if len(days) > 1 else (days[0] if days else {})
+        fc_rain = tomorrow.get("rainfall")
+        fc_min = tomorrow.get("min_temperature")
+        fc_max = tomorrow.get("max_temperature")
 
         lines = []
-        temp = current.get("temperature")
-        fc_rain = forecast.get("rainfall")
         warn = verified.get("verified", False)
 
         if warn:
@@ -61,19 +66,24 @@ class LLMService:
                 f"There is an active official warning for {loc}: {verified.get('severity')} — {verified.get('hazard')}."
             )
             if verified.get("valid_until"):
-                lines.append(f"Valid until {verified.get('valid_until')}.")
+                lines.append(f"It is valid until {verified.get('valid_until')}.")
         else:
             lines.append(f"No active severe weather warning was found for {loc}.")
 
         if fc_rain is not None and fc_rain > 0:
-            lines.append(f"Rain is possible according to the latest IMD forecast (expected rainfall: {fc_rain} mm).")
+            lines.append(f"Rain is possible tomorrow in {loc} according to the latest {src} forecast (expected rainfall: {fc_rain} mm).")
         elif fc_rain == 0:
-            lines.append("The IMD forecast shows no significant rainfall expected.")
+            lines.append(f"The {src} forecast shows no significant rainfall expected tomorrow.")
         else:
-            lines.append("Forecast rainfall information is not available from the current data.")
+            lines.append("Tomorrow's forecast rainfall information is not available from the current data.")
 
-        if temp is not None:
-            lines.append(f"Current temperature: {temp}°C.")
+        if fc_min is not None and fc_max is not None:
+            lines.append(f"Tomorrow's temperature range: {fc_min}–{fc_max}°C.")
+
+        if warn:
+            lines.append(
+                "What you can do: stay alert, follow local authority instructions, and avoid exposed areas during the warning period."
+            )
 
         lines.append(f"WeatherGPT Risk Interpretation for you ({user_type}): {risk}.")
         lines.append("This is our interpretation, not an IMD rating.")

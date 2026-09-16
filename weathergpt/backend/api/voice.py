@@ -1,17 +1,38 @@
-"""Voice endpoints - STT/TTS. For robust hackathon demo use browser Web Speech API when keys absent."""
-from fastapi import APIRouter, UploadFile, File
-from ..services.translation_service import translate
+"""Voice endpoints — Sarvam-compatible STT/TTS with honest browser fallback (§19).
+
+Without SARVAM_API_KEY the API says so explicitly (provider=browser-fallback)
+and the frontend uses the Web Speech API. Rural-accessible either way.
+"""
+from fastapi import APIRouter, File, UploadFile
+
+from ..adapters import stt_provider, tts_provider
+from ..adapters.registry import AdapterUnavailable
 
 router = APIRouter()
 
 
 @router.post("/api/voice/transcribe")
-async def transcribe(audio: UploadFile = File(...)) -> dict:
-    # Without STT_API_KEY, client falls back to Web Speech API.
-    return {"text": "", "using_browser_speech": True}
+async def transcribe(audio: UploadFile = File(...), language: str = "en") -> dict:
+    data = await audio.read()
+    try:
+        text, provider = await stt_provider.transcribe(data, audio.filename or "audio.webm", language)
+        return {"text": text, "provider": provider, "using_browser_speech": False}
+    except AdapterUnavailable:
+        return {"text": "", "provider": "browser-fallback", "using_browser_speech": True}
 
 
 @router.post("/api/voice/synthesize")
 async def synthesize(payload: dict) -> dict:
     text = payload.get("text", "")
-    return {"text": text, "audio_url": None, "client_speech": True}
+    language = payload.get("language", "en")
+    try:
+        audio_b64, provider = await tts_provider.synthesize(text, language)
+        return {"audio_base64": audio_b64, "mime": "audio/wav",
+                "provider": provider, "client_speech": False}
+    except AdapterUnavailable:
+        return {"text": text, "audio_url": None, "provider": "browser-fallback", "client_speech": True}
+
+
+@router.get("/api/voice/status")
+async def voice_status() -> dict:
+    return {"stt": stt_provider.provider_name(), "tts": tts_provider.provider_name()}

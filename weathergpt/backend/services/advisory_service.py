@@ -4,6 +4,8 @@ PERSONA_ADVISORIES = {
     "farmer": "Monitor field drainage and protect harvested produce from exposure.",
     "driver": "Check road conditions before travelling and avoid flooded roads.",
     "fisherman": "Avoid venturing into the sea during active warnings and follow marine bulletins.",
+    "researcher": "Observed series, model spread and provenance are in the evidence panel for your analysis.",
+    "disaster_manager": "Official warnings take precedence. This output is decision support, not an authority directive.",
 }
 
 
