@@ -3,6 +3,11 @@
 # deterministic wheels; native-runtime Python-version roulette is avoided).
 # Create it: Render dashboard -> New + -> Blueprint -> pick this repo.
 # Fill the sync:false env vars in the dashboard (they are never committed).
+#
+# If you create a NATIVE Python service instead of Docker, its Start Command
+# must be (Render's default `gunicorn your_application.wsgi` is a Django
+# placeholder — gunicorn is not in our requirements):
+#   cd weathergpt && python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
 services:
   - type: web
     name: saarthi-api
