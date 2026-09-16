@@ -23,7 +23,14 @@ from .. import config
 from ..models.emergency import EmergencyMessage
 from ..utils.time import IST, iso_now, now_ist
 
-_STORE = Path(getattr(config, "CACHE_FILE", "weathergpt_cache.json")).parent / "emergency_store.json"
+# Store location: CACHE_FILE's folder by default; overridable via env so the
+# test suite can isolate itself from the real runtime store (never pollute prod).
+_STORE = Path(
+    os.environ.get(
+        "EMERGENCY_STORE_FILE",
+        str(Path(getattr(config, "CACHE_FILE", "weathergpt_cache.json")).parent / "emergency_store.json"),
+    )
+)
 REPLAY_WINDOW = timedelta(hours=72)
 MAX_HOPS = 10
 

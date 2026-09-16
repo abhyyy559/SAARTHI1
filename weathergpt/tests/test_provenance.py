@@ -16,7 +16,11 @@ def test_nwp_wrf_unconfigured_and_models_known():
     print("PASS: test_nwp_wrf_unconfigured_and_models_known")
 
 
-def test_voice_fallback_without_keys():
+def test_voice_fallback_without_keys(monkeypatch):
+    # Deterministic: force the no-key path regardless of the developer's real .env
+    import backend.config as cfg
+    monkeypatch.setattr(cfg, "SARVAM_API_KEY", "")
+
     async def go():
         try:
             await stt_provider.transcribe(b"fake", "a.webm", "te")

@@ -109,7 +109,9 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
         if v:
             verified_dict = v.model_dump(mode="json")
     except AdapterUnavailable:
-        pass
+        # Honesty: mark the warning service state so no downstream layer
+        # reports "no active warning" while we actually could not check.
+        verified_dict["warning_service"] = "unavailable"
 
     ev = []
     if current_dict:
@@ -167,10 +169,12 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     from ..services.response_validator import validate as validate_answer
     numbers: list[float] = []
     for blob in (current_dict, forecast_dict):
+        if not isinstance(blob, dict):
+            continue  # current or forecast may be None when a source is down
         for v in blob.values():
             if isinstance(v, (int, float)):
                 numbers.append(float(v))
-        for day in blob.get("days", []) if isinstance(blob, dict) else []:
+        for day in blob.get("days", []):
             for v in (day or {}).values():
                 if isinstance(v, (int, float)):
                     numbers.append(float(v))

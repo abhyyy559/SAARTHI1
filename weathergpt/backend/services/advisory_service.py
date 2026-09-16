@@ -38,6 +38,41 @@ _NO_WARN = {
     },
 }
 
+# Warning service unreachable: we may NOT say "no warning". Absence of data
+# is not evidence of safety. Honest state, per persona, per language.
+_UNREACHABLE = {
+    "general": {
+        "en": "The official warning service is unreachable right now - we cannot confirm whether a warning is active. Please check IMD or local authorities directly.",
+        "hi": "सरकारी चेतावनी सेवा अभी उपलब्ध नहीं है - हम पुष्टि नहीं कर सकते कि चेतावनी सक्रिय है या नहीं। कृपया IMD या स्थानीय प्रशासन से सीधे जाँचें।",
+        "te": "అధికారిక హెచ్చరిక సేవ ప్రస్తుతం అందుబాటులో లేదు - హెచ్చరిక ఉందో లేదో ఖరారీ చేయలేము. దయచేసి IMD లేదా స్థానిక అధికారులను నేరుగా సంప్రదించండి.",
+    },
+    "fisherman": {
+        "en": "The official warning service is unreachable right now - we cannot confirm coastal warnings. Check with the harbour or fisheries office before sailing.",
+        "hi": "सरकारी चेतावनी सेवा अभी उपलब्ध नहीं है - तट की चेतावनियों की पुष्टि नहीं हो सकती। समुद्र में जाने से पहले हार्बर या मत्स्य कार्यालय से जाँचें।",
+        "te": "అధికారిక హెచ్చరిక సేవ ప్రస్తుతం అందుబాటులో లేదు - తీర హెచ్చరికలను ఖరారీ చేయలేము. సముద్రంలోకి వెళ్లే ముందు హార్బర్ లేదా మత్స్య కార్యాలయంతో తనిఖీ చేయండి.",
+    },
+    "farmer": {
+        "en": "The official warning service is unreachable - we cannot confirm warnings for your district. Check local announcements before irrigating or spraying.",
+        "hi": "सरकारी चेतावनी सेवा उपलब्ध नहीं - आपके जिले की चेतावनियों की पुष्टि नहीं हो सकती। सिंचाई या छिड़काव से पहले स्थानीय सूचना जाँचें।",
+        "te": "హెచ్చరిక సేవ అందుబాటులో లేదు - మీ జిల్లా హెచ్చరికలను ఖరారీ చేయలేము. నీటిపారుదల లేదా పిచికారీ ముందు స్థానిక ప్రకటనలు తనిఖీ చేయండి.",
+    },
+    "driver": {
+        "en": "The official warning service is unreachable - we cannot confirm route warnings. Roads can still flood locally - drive carefully.",
+        "hi": "चेतावनी सेवा उपलब्ध नहीं - मार्ग की चेतावनियों की पुष्टि नहीं हो सकती। सड़कें स्थानीय रूप से भर सकती हैं - सावधानी से चलें।",
+        "te": "హెచ్చరిక సేవ అందుబాటులో లేదు - మార్గ హెచ్చరికలను ఖరారీ చేయలేము. రోడ్లు నీటిలో మునిగే అవకాశం ఉంది - జాగ్రత్తగా నడపండి.",
+    },
+    "researcher": {
+        "en": "Warning service unreachable - no verified warning status available. See the provenance panel for live source status.",
+        "hi": "चेतावनी सेवा उपलब्ध नहीं - सत्यापित चेतावनी स्थिति उपलब्ध नहीं। स्रोत स्थिति साक्ष्य पैनल में देखें।",
+        "te": "హెచ్చరిక సేవ అందుబాటులో లేదు - ధృవీకరించిన హెచ్చరిక స్థితి లభించదు. మూలాధార స్థితి సాక్ష్య ప్యానెల్‌లో చూడండి.",
+    },
+    "disaster_manager": {
+        "en": "Warning service unreachable - verification cannot be completed. Rely on official bulletins until service returns.",
+        "hi": "चेतावनी सेवा उपलब्ध नहीं - सत्यापन पूर्ण नहीं हो सकता। सेवा बहाल होने तक आधिकारिक बुलेटिन पर भरोसा करें।",
+        "te": "హెచ్చరిక సేవ అందుబాటులో లేదు - ధృవీకరణ పూర్తి కాదు. సేవ తిరిగి వచ్చే వరకు అధికారిక ప్రకటనలపై ఆధారపడండి.",
+    },
+}
+
 _ACTION = {
     "general": {
         "en": "Avoid waterlogged roads and low-lying areas. Follow local authority instructions.",
@@ -78,9 +113,20 @@ _ACTIVE = {
 }
 
 
-def advisory_for(verified: dict, user_type: str = "general", language: str = "en") -> str:
+def advisory_for(
+    verified: dict,
+    user_type: str = "general",
+    language: str = "en",
+    warning_status: str = "",
+) -> str:
     key = user_type if user_type in _NO_WARN else "general"
     lang = language if language in ("en", "hi", "te") else "en"
+    # Honesty rule: unreachable service must never be reported as "no warning".
+    unreachable = warning_status == "unavailable" or (
+        isinstance(verified, dict) and verified.get("warning_service") == "unavailable"
+    )
+    if unreachable:
+        return _UNREACHABLE[key][lang]
     if not (verified and verified.get("verified")):
         return _NO_WARN[key][lang]
     sev = (verified.get("severity") or "GREEN").upper()
