@@ -14,5 +14,9 @@ weathergpt/compose-up.log
 weathergpt/deploy-build.log
 weathergpt/run-deploy-build.ps1
 weathergpt/_tts_check.wav
+weathergpt/uvicorn.err.log
+weathergpt/uvicorn.out.log
+weathergpt/vercel-deploy.log
+weathergpt/vercel-deploy.err.log
 
 .vercel
