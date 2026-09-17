@@ -1,26 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api, HYD } from '../api';
-import { t } from '../i18n';
+// Chat: the main feature. Questions carry WHO the user is (persona) and WHERE
+// they are (district) - the backend answers, advises and assesses risk for that
+// person in that place, in the selected language. Answers are spoken aloud in
+// the selected language (user can mute). Question chips match the persona.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '../api';
+import { t, PERSONA_LABELS, PERSONA_QUESTIONS } from '../i18n';
 import { useApp } from '../store';
 import { answerOffline } from '../offline';
 import Icon from './icons';
 
-// Persona-aware question chips: the user sees questions that make sense for them.
-const PERSONA_QUESTIONS = {
-  fisherman: ['q1', 'q2', 'q3'],
-  farmer: ['q1', 'q4', 'q3'],
-  driver: ['q1', 'q3'],
-  researcher: ['q1', 'q3'],
-  disaster_manager: ['q1', 'q3'],
-  general: ['q1', 'q2', 'q3'],
-};
-
 export default function ChatPanel() {
-  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak } = useApp();
+  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc } = useApp();
   const [log, setLog] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [muted, setMuted] = useState(false);
   const [showEv, setShowEv] = useState({});
+  const logRef = useRef(null);
   const SUGGESTIONS = PERSONA_QUESTIONS[persona] || PERSONA_QUESTIONS.general;
 
   const ask = useCallback(async (text) => {
@@ -31,16 +27,16 @@ export default function ChatPanel() {
     setLog((l) => [...l, { role: 'user', text: q }]);
     try {
       const r = await api.chat({
-        message: q, latitude: HYD.lat, longitude: HYD.lon, language: lang, user_type: persona,
+        message: q, latitude: loc.lat, longitude: loc.lon, language: lang, user_type: persona,
       });
       setLog((l) => [...l, {
         role: 'bot', text: r.answer, evidence: r.evidence || [],
         risk: r.risk, warning: r.warning, id: Date.now(),
       }]);
-      handleResult(r);
+      handleResult({ ...r, _context: `${lang}:${persona}:${loc.district}` });
       // Voice-first: answers are spoken aloud via the server TTS in the
       // selected language (Sarvam when configured, browser voice otherwise).
-      speak(r.answer);
+      if (!muted) speak(r.answer);
     } catch {
       const off = answerOffline(q, lang);
       setLog((l) => [...l, {
@@ -49,7 +45,7 @@ export default function ChatPanel() {
       }]);
     }
     setBusy(false);
-  }, [input, busy, lang, persona, handleResult, speak]);
+  }, [input, busy, lang, persona, handleResult, speak, muted, loc]);
 
   // Publish this handler for the voice panel and the safety probe. Registered from
   // an EFFECT (never during render) - which is also what kept it off the lint list.
@@ -69,10 +65,13 @@ export default function ChatPanel() {
 
   return (
     <section className="card" aria-label="Conversation">
-      <p className="sub">Grounded in retrieved data. Every fact carries provenance.</p>
-      <div className="chatlog" role="log" aria-live="polite" aria-relevant="additions">
+      <p className="sub">
+        {t(lang, 'askAs')} <b>{(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona}</b>
+        {' · '}{loc.district}
+      </p>
+      <div className="chatlog" ref={logRef} role="log" aria-live="polite" aria-relevant="additions">
         {log.length === 0 && (
-          <p className="empty">No queries yet - ask about rain, warnings, travel or climate.</p>
+          <p className="empty">{t(lang, 'chatEmpty')}</p>
         )}
         {log.map((m, i) => (
           <div className={`msg ${m.role}`} key={i}>
@@ -113,7 +112,7 @@ export default function ChatPanel() {
                 {m.risk && (
                   <div className="evrow">
                     <span className="k">WeatherGPT risk</span>
-                    <span>{m.risk.level} (not an IMD rating)</span>
+                    <span>{m.risk.level}{m.risk.reason ? ` - ${m.risk.reason}` : ''} (not an IMD rating)</span>
                   </div>
                 )}
               </div>
@@ -139,6 +138,15 @@ export default function ChatPanel() {
             {t(lang, k)}
           </button>
         ))}
+        <button
+          type="button"
+          className="btn ghost sm"
+          aria-pressed={muted}
+          onClick={() => { stopSpeaking(); setMuted((m) => !m); }}
+          title="Spoken answers"
+        >
+          <Icon name="speaker" size={14} />{muted ? t(lang, 'muted') : t(lang, 'soundOn')}
+        </button>
       </div>
     </section>
   );

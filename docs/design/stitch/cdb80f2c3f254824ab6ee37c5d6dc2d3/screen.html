@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>SAARTHI Multilingual Decision-Support Assistant</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#a6f2d1", "on-secondary-fixed": "#002116", "surface-container-lowest": "#ffffff", "surface-container-high": "#e2e7ff", "primary-fixed": "#dce1ff", "tertiary-fixed": "#d3e4fe", "on-surface-variant": "#444651", "surface-container-highest": "#dae2fd", "inverse-surface": "#283044", "error-container": "#ffdad6", "on-primary": "#ffffff", "surface-tint": "#4059aa", "background": "#faf8ff", "outline": "#757682", "on-primary-fixed": "#00164e", "inverse-primary": "#b6c4ff", "on-secondary": "#ffffff", "surface-dim": "#d2d9f4", "on-secondary-fixed-variant": "#00513b", "on-secondary-container": "#237157", "primary": "#00236f", "primary-container": "#1e3a8a", "on-tertiary-fixed-variant": "#38485d", "tertiary-container": "#314156", "secondary": "#1b6b51", "on-error-container": "#93000a", "secondary-container": "#a6f2d1", "surface-bright": "#faf8ff", "on-primary-container": "#90a8ff", "tertiary": "#1b2b3f", "tertiary-fixed-dim": "#b7c8e1", "surface-variant": "#dae2fd", "error": "#ba1a1a", "inverse-on-surface": "#eef0ff", "primary-fixed-dim": "#b6c4ff", "outline-variant": "#c5c5d3", "surface-container": "#eaedff", "on-tertiary-container": "#9dadc6", "surface": "#faf8ff", "on-primary-fixed-variant": "#264191", "on-tertiary-fixed": "#0b1c30", "on-surface": "#131b2e", "on-background": "#131b2e", "on-error": "#ffffff", "secondary-fixed-dim": "#8bd6b6", "on-tertiary": "#ffffff", "surface-container-low": "#f2f3ff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-md": "2rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem", "space-xl": "2.5rem", "margin-lg": "3rem", "gutter-lg": "2rem", "space-md": "1rem", "margin": "1rem", "gutter-md": "1.5rem", "space-lg": "1.5rem" }, "fontFamily": { "body-sm": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "label-md": ["Inter"], "display-lg": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-xl": ["Inter"], "body-lg": ["Inter"], "body-md": ["Inter"], "label-sm": ["Inter"], "label-lg": ["Inter"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }], "display-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "headline-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "body-xl": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-[1180px] mx-auto px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">neurology</span></div><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-primary">SAARTHI</span></div><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container"><span class="material-symbols-outlined text-[14px]">volume_up</span><span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Audio Ready</span></div></div><nav class="flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-low" data-active-classes="bg-primary text-on-primary rounded-lg"><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="ask-and-voice" href="#">Ask &amp; Voice</a><a aria-current="page" class="px-space-md py-1.5 transition-colors font-label-lg bg-primary text-on-primary rounded-lg" data-path="advisory" href="#">Advisory</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="alerts-and-safety" href="#">Alerts &amp; Safety</a></nav><div class="flex items-center gap-space-md"><div class="hidden lg:flex items-center p-0.5 rounded-full bg-surface-container"><button class="px-space-sm py-0.5 rounded-full bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]" type="button">EN</button><button class="px-space-sm py-0.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">हिन्दी</button><button class="px-space-sm py-0.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">తెలుగు</button></div><div class="hidden sm:flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface"><span class="material-symbols-outlined text-outline text-[18px]">commute</span><span class="font-label-md text-label-md font-medium">9-to-5 Commuter</span><span class="material-symbols-outlined text-outline text-[16px]">expand_more</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="max-w-[1180px] mx-auto px-gutter-lg py-space-xl"><div class="flex flex-col w-full">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-semibold">Active Matrix · Delhi-NCR</span>
+</div>
+<div class="flex items-baseline gap-space-md">
+<span class="font-display-lg text-display-lg text-primary tracking-tight">Visual Advisory</span>
+<span class="font-label-md text-label-md text-outline">Updated 12m ago</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-lowest shadow-sm self-start md:self-auto overflow-x-auto max-w-full" id="profile-filters">
+<button class="profile-btn flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-primary text-on-primary transition-all" data-profile="commuter" type="button">
+<svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-label-md text-label-md">Commuter</span>
+</button>
+<button class="profile-btn flex items-center gap-space-xs px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all" data-profile="citizen" type="button">
+<svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-label-md text-label-md">Citizen</span>
+</button>
+<button class="profile-btn flex items-center gap-space-xs px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all" data-profile="logistics" type="button">
+<svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8h4.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-label-md text-label-md">Logistics</span>
+</button>
+<button class="profile-btn flex items-center gap-space-xs px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all" data-profile="farmer" type="button">
+<svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-label-md text-label-md">Farmer</span>
+</button>
+</div>
+</div>
+<div class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-space-lg shadow-sm mb-space-xl">
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-space-lg">
+<div class="flex items-center gap-space-lg">
+<div class="w-20 h-20 shrink-0 rounded-xl bg-surface-container-low flex items-center justify-center text-primary">
+<svg class="w-14 h-14" fill="none" viewbox="0 0 48 48">
+<circle cx="24" cy="24" r="9" stroke="currentColor" stroke-width="2.5"></circle>
+<path d="M24 6V9M24 39V42M6 24H9M39 24H42M11.3 11.3L13.4 13.4M34.6 34.6L36.7 36.7M11.3 36.7L13.4 34.6M34.6 13.4L36.7 11.3" stroke="currentColor" stroke-linecap="round" stroke-width="2.5"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">28°C</span>
+<span class="font-headline-md text-headline-md text-secondary font-medium">Clear &amp; Favorable</span>
+</div>
+<div class="flex items-center gap-space-md text-on-surface-variant font-label-md text-label-md mt-space-xs">
+<span class="flex items-center gap-1">
+<svg class="w-3.5 h-3.5 text-secondary" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              Peak Travel Window Clean
+            </span>
+<span class="text-outline">•</span>
+<span>Humidity 45%</span>
+<span class="text-outline">•</span>
+<span>Wind 9 km/h NW</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<button class="group flex items-center gap-space-sm px-space-lg py-3 rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-container transition-all" id="master-audio-btn" type="button">
+<svg class="w-5 h-5 text-current animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<div class="flex flex-col text-left">
+<span class="font-label-lg text-label-lg font-semibold leading-none">Listen Audio</span>
+<span class="font-label-sm text-label-sm text-primary-fixed-dim mt-0.5">Briefing 0:40</span>
+</div>
+</button>
+<div class="hidden sm:flex items-center gap-1 h-8 px-space-sm rounded-lg bg-surface-container-low text-primary">
+<span class="w-0.5 h-3 bg-primary rounded-full animate-bounce"></span>
+<span class="w-0.5 h-5 bg-primary rounded-full animate-bounce [animation-delay:0.1s]"></span>
+<span class="w-0.5 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></span>
+<span class="w-0.5 h-6 bg-primary rounded-full animate-bounce [animation-delay:0.3s]"></span>
+<span class="w-0.5 h-4 bg-primary rounded-full animate-bounce [animation-delay:0.15s]"></span>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg">
+<div class="group relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8h4.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h2" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="7.5" cy="16.5" fill="currentColor" r="1.5"></circle>
+<circle cx="16.5" cy="16.5" fill="currentColor" r="1.5"></circle>
+</svg>
+</div>
+<button class="tile-audio w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors" title="Listen Audio" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072M12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<div class="my-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Road &amp; Commute</span>
+<div class="font-headline-md text-headline-md text-on-surface mt-0.5">Dry &amp; Smooth</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm border-t-0">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold">Clear till 6:00 PM</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Speed: 42 km/h</span>
+</div>
+</div>
+<div class="group relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<rect height="15" rx="3" stroke="currentColor" width="16" x="4" y="3"></rect>
+<circle cx="8" cy="14" fill="currentColor" r="1"></circle>
+<circle cx="16" cy="14" fill="currentColor" r="1"></circle>
+<path d="M4 10h16M9 6h6M7 21l2-3M17 21l-2-3" stroke="currentColor" stroke-linecap="round"></path>
+</svg>
+</div>
+<button class="tile-audio w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors" title="Listen Audio" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072M12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<div class="my-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Public Transit</span>
+<div class="font-headline-md text-headline-md text-on-surface mt-0.5">On Schedule</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm border-t-0">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold">Normal Frequency</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Wait &lt; 3m</span>
+</div>
+</div>
+<div class="group relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9.59 4.59A2 2 0 1111 8H2m10.59 11.41A2 2 0 1014 16H2m15.73-8.27A2.5 2.5 0 1119.5 12H2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button class="tile-audio w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors" title="Listen Audio" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072M12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<div class="my-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Air Quality</span>
+<div class="flex items-baseline gap-space-xs mt-0.5">
+<span class="font-headline-md text-headline-md text-on-surface">AQI 64</span>
+<span class="font-body-sm text-body-sm text-outline">PM2.5: 18µg</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm border-t-0">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold">Good Air Quality</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Mask Optional</span>
+</div>
+</div>
+<div class="group relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button class="tile-audio w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors" title="Listen Audio" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072M12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<div class="my-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Visual Range</span>
+<div class="font-headline-md text-headline-md text-on-surface mt-0.5">8+ km</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm border-t-0">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold">Zero Fog</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Full Daylight</span>
+</div>
+</div>
+<div class="group relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button class="tile-audio w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors" title="Listen Audio" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072M12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<div class="my-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Temp &amp; Humidity</span>
+<div class="font-headline-md text-headline-md text-on-surface mt-0.5">28°C / 45%</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm border-t-0">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold">Comfortable</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Heat Index 29°</span>
+</div>
+</div>
+<div class="group relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M8 21l1-2M12 21l1-2M16 21l1-2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button class="tile-audio w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors" title="Listen Audio" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15.536 8.464a5 5 0 010 7.072M12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<div class="my-space-md">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Rain Probability</span>
+<div class="font-headline-md text-headline-md text-on-surface mt-0.5">15% Day / 60% Night</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm border-t-0">
+<div class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-label-sm text-label-sm font-semibold">Dusk Showers</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Expect ~8 PM</span>
+</div>
+</div>
+</div>
+<div class="mt-space-xl p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Hourly Atmospheric Confidence</span>
+<span class="font-body-sm text-body-sm text-outline">Predictive model aggregation across IMD &amp; OpenMeteo telemetry</span>
+</div>
+</div>
+<div class="flex items-center gap-space-lg w-full md:w-auto justify-between md:justify-end">
+<div class="flex items-center gap-space-xs text-center">
+<span class="font-label-sm text-label-sm text-outline">14:00</span>
+<span class="w-12 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Optimal</span>
+</div>
+<div class="flex items-center gap-space-xs text-center">
+<span class="font-label-sm text-label-sm text-outline">17:00</span>
+<span class="w-12 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Clear</span>
+</div>
+<div class="flex items-center gap-space-xs text-center">
+<span class="font-label-sm text-label-sm text-outline">20:00</span>
+<span class="w-12 h-1.5 rounded-full bg-primary"></span>
+<span class="font-label-sm text-label-sm font-semibold text-primary">Rain</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const filterButtons = document.querySelectorAll('.profile-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-primary', 'text-on-primary');
+          b.classList.add('text-on-surface-variant', 'hover:bg-surface-container');
+        });
+        btn.classList.add('bg-primary', 'text-on-primary');
+        btn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container');
+      });
+    });
+
+    const masterAudioBtn = document.getElementById('master-audio-btn');
+    let isPlaying = false;
+    if(masterAudioBtn) {
+      masterAudioBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        const textElem = masterAudioBtn.querySelector('span.font-label-lg');
+        if(textElem) {
+          textElem.textContent = isPlaying ? 'Playing Audio...' : 'Listen Audio';
+        }
+      });
+    }
+
+    const tileAudios = document.querySelectorAll('.tile-audio');
+    tileAudios.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        btn.classList.toggle('bg-primary');
+        btn.classList.toggle('text-on-primary');
+        btn.classList.toggle('bg-surface-container-low');
+        btn.classList.toggle('text-on-surface-variant');
+      });
+    });
+  })();
+</script></div></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)]"><div class="max-w-[1180px] mx-auto px-gutter-lg py-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-primary font-semibold">SAARTHI</span><span class="font-body-sm text-body-sm text-outline">• Multilingual Decision-Support Utility</span></div><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-secondary"></span><span class="font-label-sm text-label-sm text-on-surface">Atmospheric Feeds Live</span></div><span class="font-body-sm text-body-sm text-outline">© 2025 SAARTHI Core Systems</span></div></div></footer></body></html>

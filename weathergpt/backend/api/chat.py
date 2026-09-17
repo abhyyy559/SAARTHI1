@@ -48,6 +48,7 @@ def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answe
         weather=weather_block,
         risk={"level": risk.get("level"), "hazard": risk.get("hazard", ""), "source": risk.get("source")},
         warning={
+            "status": warn.get("warning_service", "available"),
             "active": bool(warn.get("verified", False)),
             "severity": warn.get("severity"),
             "hazard": warn.get("hazard"),
@@ -148,7 +149,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     else:
         current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_live(loc, lat, lon)
         if current_dict is None and forecast_dict is None and not verified_dict.get("verified"):
-            risk = RiskService().risk({"severity": "GREEN", "hazard": ""}, req.user_type)
+            risk = RiskService().risk({**verified_dict, "warning_service": "unavailable"}, req.user_type)
             return _build_response(loc, verified_dict, risk, None, None,
                                    _unavailable_answer(req.language),
                                    advisory_for({"verified": False}, req.user_type, req.language),

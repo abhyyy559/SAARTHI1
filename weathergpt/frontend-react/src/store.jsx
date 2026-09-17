@@ -2,6 +2,7 @@
 // `ask()` is registered by ChatPanel from inside an EFFECT (never during render).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, HYD } from './api';
+import { DISTRICTS } from './i18n';
 import { cacheGuidance, useOnline } from './offline';
 
 const AppCtx = createContext(null);
@@ -28,6 +29,8 @@ export function AppProvider({ children }) {
   const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
   const [theme, setTheme] = useState(() => readPref('wgpt.theme', 'auto'));
   const [demoMode, setDemoMode] = useState(true);
+  const [districts] = useState(DISTRICTS); // district picker options (coastal + inland)
+  const [loc, setLoc] = useState(HYD); // { district, lat, lon } - every question/answer is "here"
   const [backendState, setBackendState] = useState('…');
   const [sources, setSources] = useState(null);
   const [pipe, setPipe] = useState({ lit: [], detail: {} });
@@ -44,30 +47,68 @@ export function AppProvider({ children }) {
   // Speak an answer aloud: server TTS (Sarvam, in the selected language) first,
   // browser speechSynthesis as fallback. Singleton audio - a new answer stops the old one.
   const audioRef = useRef(null);
+  const speechId = useRef(0);
+  const [speechState, setSpeechState] = useState('idle');
+  const [speechNote, setSpeechNote] = useState('');
+  const cancelAudio = useCallback(() => {
+    speechId.current++;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    window.speechSynthesis?.cancel();
+  }, []);
+  const stopSpeaking = useCallback(() => {
+    cancelAudio();
+    setSpeechState('idle');
+  }, [cancelAudio]);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    return cancelAudio;
+  }, [lang, persona, loc.district, cancelAudio]);
   const speak = useCallback(async (text) => {
     if (!text) return;
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch { /* already stopped */ }
-      audioRef.current = null;
-    }
+    stopSpeaking();
+    const id = speechId.current;
+    setSpeechState('loading');
+    setSpeechNote('');
+    // Split complete sentences/chunks instead of silently dropping safety advice
+    // after character 600. Replay and automatic speech share this single player.
+    const chunks = text.match(/[\s\S]{1,450}(?:\s|$)|[\s\S]{1,450}/g) || [text];
     try {
-      const r = await api.speak(text, lang);
-      if (r && r.audio) {
-        const el = new Audio(`data:${r.format || 'audio/mpeg'};base64,${r.audio}`);
-        audioRef.current = el;
-        try { await el.play(); } catch { /* autoplay blocked until user gesture */ }
-        return;
+      for (const chunk of chunks) {
+        if (id !== speechId.current) return;
+        const r = await api.speak(chunk, lang);
+        if (id !== speechId.current) return;
+        if (!r?.audio_base64) throw new Error('provider unavailable');
+        const audio = new Audio(`data:${r.mime || 'audio/wav'};base64,${r.audio_base64}`);
+        audioRef.current = audio;
+        setSpeechState('playing');
+        await new Promise((resolve, reject) => {
+          audio.onended = resolve;
+          audio.onpause = resolve;
+          audio.onerror = reject;
+          audio.play().catch(reject);
+        });
       }
-    } catch { /* server TTS unavailable - fall through to browser voice */ }
-    try {
+      if (id === speechId.current) setSpeechState('idle');
+    } catch (error) {
+      if (id !== speechId.current) return;
+      audioRef.current?.pause();
+      if (error?.name === 'NotAllowedError') {
+        setSpeechNote('voiceBlocked'); setSpeechState('idle'); return;
+      }
       const synth = window.speechSynthesis;
-      if (!synth) return;
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang === 'te' ? 'te-IN' : lang === 'hi' ? 'hi-IN' : 'en-IN';
-      synth.speak(u);
-    } catch { /* no voice available in this browser */ }
-  }, [lang]);
+      const code = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
+      const voice = synth?.getVoices().find((v) => v.lang.startsWith(lang));
+      if (!synth || !voice) {
+        setSpeechNote('voiceFailed'); setSpeechState('idle'); return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = code; utterance.voice = voice;
+      utterance.onend = () => { if (id === speechId.current) setSpeechState('idle'); };
+      utterance.onerror = () => { if (id === speechId.current) { setSpeechState('idle'); setSpeechNote('voiceBlocked'); } };
+      setSpeechNote('voiceFallback'); setSpeechState('playing'); synth.speak(utterance);
+    }
+  }, [lang, stopSpeaking]);
 
   useEffect(() => {
     writePref('wgpt.theme', theme);
@@ -98,13 +139,17 @@ export function AppProvider({ children }) {
       .then((s) => { if (!dead) setBackendState(s.state); })
       .catch(() => { if (!dead) setBackendState('?'); });
     // Disaster mode: verified ORANGE/RED collapses the console to safety-first.
-    api.warnings(HYD.district, HYD.lat, HYD.lon)
+    api.warnings(loc.district, loc.lat, loc.lon)
       .then((w) => {
-        const v = w && w.verified;
+        const v = w && (w.verified || (w.warning && w.warning.verified));
         if (!dead && v && v.verified && (v.severity === 'ORANGE' || v.severity === 'RED')) setDisaster(true);
       })
       .catch(() => {});
     return () => { dead = true; };
+  }, [loc.district, loc.lat, loc.lon]);
+
+  const setDistrict = useCallback((d) => {
+    if (d && d.district) setLoc({ district: d.district, lat: d.lat, lon: d.lon });
   }, []);
 
   // A grounded answer arrives: record it and light the real path it travelled.
@@ -134,11 +179,12 @@ export function AppProvider({ children }) {
     conn, offline, online, simOffline, setSimOffline,
     pipe, setPipe, result, handleResult,
     disaster, setDisaster,
-    ask, registerAsk, speak,
+    ask, registerAsk, speak, stopSpeaking, speechState, speechNote,
     pendingAskRef, setPendingAsk,
-    loc: HYD,
+    loc, setDistrict, districts,
   }), [view, lang, persona, theme, demoMode, backendState, sources, conn, offline, online,
-    simOffline, pipe, result, handleResult, disaster, ask, registerAsk, speak, setPendingAsk]);
+    simOffline, pipe, result, handleResult, disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, setPendingAsk,
+    loc, setDistrict, districts]);
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }

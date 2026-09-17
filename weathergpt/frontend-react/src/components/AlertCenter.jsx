@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
-import { api, HYD } from '../api';
+import { api } from '../api';
+import { useApp } from '../store';
 
 // Full CAP field display (§13) + community reports (labelled, never official).
 const CAP_FIELDS = ['event', 'urgency', 'severity', 'certainty', 'area', 'effective', 'onset',
   'expires', 'headline', 'description', 'instruction', 'sender', 'sent', 'identifier'];
 
 export default function AlertCenter() {
+  const { loc } = useApp();
   const [warn, setWarn] = useState(null);
   const [sel, setSel] = useState(0);
   const [reports, setReports] = useState([]);
   const [form, setForm] = useState({ report_type: 'flooding', text: '' });
 
   useEffect(() => {
-    api.warnings(HYD.district, HYD.lat, HYD.lon).then(setWarn).catch(() => setWarn({ status: 'unavailable' }));
-    api.reports(HYD.district).then((d) => setReports(d.reports || [])).catch(() => {});
-  }, []);
+    api.warnings(loc.district, loc.lat, loc.lon).then(setWarn).catch(() => setWarn({ status: 'unavailable' }));
+    api.reports(loc.district).then((d) => setReports(d.reports || [])).catch(() => {});
+  }, [loc.district, loc.lat, loc.lon]);
 
   const alerts = [...(warn?.cap_alerts || [])];
   if (warn?.warning) alerts.unshift({ ...warn.warning, headline: warn.warning.message, area: warn.warning.district });
@@ -22,7 +24,7 @@ export default function AlertCenter() {
 
   async function submitReport(e) {
     e.preventDefault();
-    const r = await api.report({ ...form, latitude: HYD.lat, longitude: HYD.lon, district: HYD.district });
+    const r = await api.report({ ...form, latitude: loc.lat, longitude: loc.lon, district: loc.district });
     if (r.report) setReports((x) => [...x, r.report]);
     setForm({ report_type: 'flooding', text: '' });
   }

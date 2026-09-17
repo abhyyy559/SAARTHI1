@@ -1,0 +1,19 @@
+{
+  "title": "SAARTHI Web - Alerts & Safety Hub",
+  "screen_id": "b650ebe8614c4ef3ad8f957e1171c375",
+  "project_id": "18005686446919134555",
+  "image_dimensions": [
+    2560,
+    2980
+  ],
+  "files": {
+    "screen-full.png": {
+      "bytes": 386624,
+      "sha256": "cddaf000ccc05968c100093e3d44236f95a064da613633f078e04ba839fbf766"
+    },
+    "screen.html": {
+      "bytes": 27969,
+      "sha256": "67dbafcbfbdc433808dffcc1230982d1eefa8074568601f436134560ac28367c"
+    }
+  }
+}

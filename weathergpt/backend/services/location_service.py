@@ -10,6 +10,13 @@ GAZETTEER = [
     {"city": "Delhi", "district": "New Delhi", "state": "Delhi", "latitude": 28.6139, "longitude": 77.209},
     {"city": "Bengaluru", "district": "Bengaluru Urban", "state": "Karnataka", "latitude": 12.9716, "longitude": 77.5946},
     {"city": "Chennai", "district": "Chennai", "state": "Tamil Nadu", "latitude": 13.0827, "longitude": 80.2707},
+    {"city": "Visakhapatnam", "district": "Visakhapatnam", "state": "Andhra Pradesh", "latitude": 17.6868, "longitude": 83.2185},
+    {"city": "Kakinada", "district": "Kakinada", "state": "Andhra Pradesh", "latitude": 16.9891, "longitude": 82.2475},
+    {"city": "Machilipatnam", "district": "Krishna", "state": "Andhra Pradesh", "latitude": 16.1873, "longitude": 81.1389},
+    {"city": "Nellore", "district": "Nellore", "state": "Andhra Pradesh", "latitude": 14.4426, "longitude": 79.9865},
+    {"city": "Kochi", "district": "Kerala", "state": "Kerala", "latitude": 9.9312, "longitude": 76.2673},
+    {"city": "Panaji", "district": "North Goa", "state": "Goa", "latitude": 15.4909, "longitude": 73.8278},
+    {"city": "Veraval", "district": "Gir Somnath", "state": "Gujarat", "latitude": 20.9067, "longitude": 70.3683},
 ]
 
 

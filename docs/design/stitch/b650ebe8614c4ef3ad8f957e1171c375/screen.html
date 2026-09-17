@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>SAARTHI Multilingual Decision-Support Assistant</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#a6f2d1", "on-secondary-fixed": "#002116", "surface-container-lowest": "#ffffff", "surface-container-high": "#e2e7ff", "primary-fixed": "#dce1ff", "tertiary-fixed": "#d3e4fe", "on-surface-variant": "#444651", "surface-container-highest": "#dae2fd", "inverse-surface": "#283044", "error-container": "#ffdad6", "on-primary": "#ffffff", "surface-tint": "#4059aa", "background": "#faf8ff", "outline": "#757682", "on-primary-fixed": "#00164e", "inverse-primary": "#b6c4ff", "on-secondary": "#ffffff", "surface-dim": "#d2d9f4", "on-secondary-fixed-variant": "#00513b", "on-secondary-container": "#237157", "primary": "#00236f", "primary-container": "#1e3a8a", "on-tertiary-fixed-variant": "#38485d", "tertiary-container": "#314156", "secondary": "#1b6b51", "on-error-container": "#93000a", "secondary-container": "#a6f2d1", "surface-bright": "#faf8ff", "on-primary-container": "#90a8ff", "tertiary": "#1b2b3f", "tertiary-fixed-dim": "#b7c8e1", "surface-variant": "#dae2fd", "error": "#ba1a1a", "inverse-on-surface": "#eef0ff", "primary-fixed-dim": "#b6c4ff", "outline-variant": "#c5c5d3", "surface-container": "#eaedff", "on-tertiary-container": "#9dadc6", "surface": "#faf8ff", "on-primary-fixed-variant": "#264191", "on-tertiary-fixed": "#0b1c30", "on-surface": "#131b2e", "on-background": "#131b2e", "on-error": "#ffffff", "secondary-fixed-dim": "#8bd6b6", "on-tertiary": "#ffffff", "surface-container-low": "#f2f3ff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-md": "2rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem", "space-xl": "2.5rem", "margin-lg": "3rem", "gutter-lg": "2rem", "space-md": "1rem", "margin": "1rem", "gutter-md": "1.5rem", "space-lg": "1.5rem" }, "fontFamily": { "body-sm": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "label-md": ["Inter"], "display-lg": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-xl": ["Inter"], "body-lg": ["Inter"], "body-md": ["Inter"], "label-sm": ["Inter"], "label-lg": ["Inter"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }], "display-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "headline-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "body-xl": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-[1180px] mx-auto px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">neurology</span></div><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-primary">SAARTHI</span></div><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container"><span class="material-symbols-outlined text-[14px]">volume_up</span><span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Audio Ready</span></div></div><nav class="flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-low" data-active-classes="bg-primary text-on-primary rounded-lg"><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="ask-and-voice" href="#">Ask &amp; Voice</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="advisory" href="#">Advisory</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="alerts-and-safety" href="#">Alerts &amp; Safety</a></nav><div class="flex items-center gap-space-md"><div class="hidden lg:flex items-center p-0.5 rounded-full bg-surface-container"><button class="px-space-sm py-0.5 rounded-full bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]" type="button">EN</button><button class="px-space-sm py-0.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">हिन्दी</button><button class="px-space-sm py-0.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">తెలుగు</button></div><div class="hidden sm:flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface"><span class="material-symbols-outlined text-outline text-[18px]">commute</span><span class="font-label-md text-label-md font-medium">9-to-5 Commuter</span><span class="material-symbols-outlined text-outline text-[16px]">expand_more</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="max-w-[1180px] mx-auto px-gutter-lg py-space-xl"><div class="flex flex-col w-full gap-space-xl">
+<!-- Primary Status Banner (Safe / All Clear) -->
+<section class="w-full bg-secondary text-on-secondary rounded-xl p-space-lg md:p-space-xl shadow-md relative overflow-hidden">
+<div class="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-secondary-fixed opacity-10 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-space-lg">
+<div class="flex items-center gap-space-lg">
+<div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-secondary-fixed/20 flex items-center justify-center shrink-0">
+<svg class="w-12 h-12 md:w-14 md:h-14 text-secondary-fixed" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+<path d="m9 12 2 2 4-4"></path>
+</svg>
+</div>
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="px-space-sm py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm uppercase tracking-wider font-semibold">
+              Live Safe Zone
+            </span>
+<span class="flex items-center gap-1 font-label-md text-label-md text-secondary-fixed">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+              NDMA Verified
+            </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg md:text-display-lg font-bold tracking-tight text-on-secondary">
+            All Systems Clear
+          </h1>
+<p class="font-body-md text-body-md text-secondary-fixed-dim">
+            Zero active environmental warnings or advisories across monitored sectors.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-space-md self-start md:self-center bg-secondary-fixed/10 px-space-md py-space-sm rounded-xl">
+<div class="relative flex items-center justify-center w-8 h-8">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-fixed opacity-60"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary-fixed"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary-fixed-dim font-semibold">Atmospheric Radar</span>
+<span class="font-label-md text-label-md font-semibold text-on-secondary">Live Sync • 12s ago</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Middle Grid: Regional Radar & Sector Indicators -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-stretch">
+<!-- Zone Status Map / Visual Radar Tile -->
+<div class="lg:col-span-7 bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">radar</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Sector Hazard Radar</span>
+</div>
+<span class="font-label-sm text-label-sm px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-semibold">
+          4 / 4 Clear
+        </span>
+</div>
+<!-- Clean Architectural SVG Radar Map -->
+<div class="relative w-full aspect-[16/9] max-h-72 bg-surface-container-low rounded-lg flex items-center justify-center overflow-hidden">
+<svg class="w-full h-full p-4" fill="none" viewbox="0 0 600 300">
+<circle cx="300" cy="150" r="130" stroke="#757682" stroke-dasharray="4 4" stroke-opacity="0.15" stroke-width="1.5"></circle>
+<circle cx="300" cy="150" r="85" stroke="#757682" stroke-opacity="0.2" stroke-width="1.5"></circle>
+<circle cx="300" cy="150" r="40" stroke="#757682" stroke-opacity="0.25" stroke-width="1.5"></circle>
+<line stroke="#757682" stroke-opacity="0.2" stroke-width="1" x1="300" x2="300" y1="20" y2="280"></line>
+<line stroke="#757682" stroke-opacity="0.2" stroke-width="1" x1="170" x2="430" y1="150" y2="150"></line>
+<!-- Sector Nodes -->
+<!-- North -->
+<g transform="translate(300, 65)">
+<circle cx="0" cy="0" fill="#1b6b51" r="16"></circle>
+<circle cx="0" cy="0" fill="#a6f2d1" r="6"></circle>
+<text class="font-label-sm text-label-sm" fill="#131b2e" font-weight="600" x="24" y="4">NORTH • SECTOR 01</text>
+</g>
+<!-- Central -->
+<g transform="translate(300, 150)">
+<circle cx="0" cy="0" fill="#1e3a8a" r="18"></circle>
+<circle cx="0" cy="0" fill="#ffffff" r="6"></circle>
+<text class="font-label-sm text-label-sm" fill="#131b2e" font-weight="600" x="24" y="4">METRO • CORE</text>
+</g>
+<!-- South -->
+<g transform="translate(300, 235)">
+<circle cx="0" cy="0" fill="#1b6b51" r="16"></circle>
+<circle cx="0" cy="0" fill="#a6f2d1" r="6"></circle>
+<text class="font-label-sm text-label-sm" fill="#131b2e" font-weight="600" x="24" y="4">SOUTH • INLAND</text>
+</g>
+<!-- Coastal East -->
+<g transform="translate(420, 150)">
+<circle cx="0" cy="0" fill="#1b6b51" r="16"></circle>
+<circle cx="0" cy="0" fill="#a6f2d1" r="6"></circle>
+<text class="font-label-sm text-label-sm" fill="#131b2e" font-weight="600" text-anchor="middle" x="0" y="30">COASTAL EAST</text>
+</g>
+</svg>
+<div class="absolute bottom-3 left-3 bg-surface-container-lowest/90 px-space-sm py-0.5 rounded shadow-sm flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm text-on-surface">Live Sweep Frequency: 5 GHz</span>
+</div>
+</div>
+<!-- Quick Metrics Strip -->
+<div class="grid grid-cols-4 gap-space-sm pt-space-xs">
+<div class="flex flex-col items-center justify-center p-space-sm bg-surface-container-low rounded-lg text-center">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">North</span>
+<span class="font-label-md text-label-md font-semibold text-secondary">0 Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center p-space-sm bg-surface-container-low rounded-lg text-center">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Central</span>
+<span class="font-label-md text-label-md font-semibold text-secondary">0 Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center p-space-sm bg-surface-container-low rounded-lg text-center">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">South</span>
+<span class="font-label-md text-label-md font-semibold text-secondary">0 Alerts</span>
+</div>
+<div class="flex flex-col items-center justify-center p-space-sm bg-surface-container-low rounded-lg text-center">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Coastal</span>
+<span class="font-label-md text-label-md font-semibold text-secondary">0 Alerts</span>
+</div>
+</div>
+</div>
+<!-- Quick Audio Advisory & Visual Voice Triage -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- 24/7 Voice Support Card -->
+<div class="bg-primary text-on-primary rounded-xl p-space-lg flex flex-col justify-between flex-1 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+<svg class="w-6 h-6 text-on-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+<path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+</svg>
+</div>
+<span class="px-space-sm py-1 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm uppercase tracking-wider font-semibold">
+            Multilingual AI Triage
+          </span>
+</div>
+<div class="my-space-md">
+<div class="font-headline-sm text-headline-sm font-semibold mb-space-xs text-on-primary">
+            Instant Spoken Safety Help
+          </div>
+<p class="font-body-sm text-body-sm text-primary-fixed-dim">
+            Connect to automated regional triage in 12 Indian languages.
+          </p>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex-1 h-12 px-space-md bg-surface-container-lowest text-primary rounded-lg font-label-lg text-label-lg font-semibold flex items-center justify-center gap-space-xs hover:bg-surface-container-high transition-colors" id="voiceAlertTrigger">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+<span>Speak Your Emergency</span>
+</button>
+</div>
+</div>
+<!-- Preparedness Status Pill Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">health_and_safety</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Emergency Kit Status</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Checklist updated for current season</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]">check_circle</span>
+</div>
+</div>
+</section>
+<!-- Visual Warning Matrix (4 Glanceable Alert Categories) -->
+<section class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+        Hazard Matrix &amp; Live Threat Vectors
+      </h2>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Threshold Monitor</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- 1. Flood Risk -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+<path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+<path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+</svg>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+            Safe
+          </span>
+</div>
+<div class="mt-space-lg">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Hydrology</span>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface mt-0.5">Flood Risk</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md font-semibold text-primary">Level 0</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">• Normal Flows</span>
+</div>
+</div>
+</div>
+<!-- 2. Cyclone & Wind -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"></path>
+<path d="M9.6 4.6A2 2 0 1 1 11 8H2"></path>
+<path d="M12.6 19.4A2 2 0 1 0 14 16H2"></path>
+</svg>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+            Calm
+          </span>
+</div>
+<div class="mt-space-lg">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Barometric</span>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface mt-0.5">Cyclone &amp; Wind</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md font-semibold text-primary">12</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">km/h • Breeze</span>
+</div>
+</div>
+</div>
+<!-- 3. Heatwave -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path>
+<circle cx="12" cy="18" fill="currentColor" r="1.5"></circle>
+</svg>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+            Nominal
+          </span>
+</div>
+<div class="mt-space-lg">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Thermal Stress</span>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface mt-0.5">Heat Index</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md font-semibold text-primary">28°C</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">• Wet Bulb Safe</span>
+</div>
+</div>
+</div>
+<!-- 4. Lightning -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
+</svg>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+            Zero Threat
+          </span>
+</div>
+<div class="mt-space-lg">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Atmospheric Charge</span>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface mt-0.5">Lightning Activity</div>
+<div class="flex items-baseline gap-space-xs mt-space-xs">
+<span class="font-headline-md text-headline-md font-semibold text-primary">0</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Strikes • 50km radius</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Emergency Hotlines & One-Click Dispatch Trigger Hub -->
+<section class="bg-surface-container-lowest rounded-xl p-space-lg md:p-space-xl shadow-sm">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md mb-space-lg">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-error-container text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">e911_emergency</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+            Instant Emergency Dispatch
+          </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Direct priority satellite bridges. Operational without internet connection.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm font-semibold uppercase">Cellular Tower Relay Active</span>
+</div>
+</div>
+<!-- Hotlines Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- 1077 Disaster Relief -->
+<a class="group flex items-center justify-between p-space-lg rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-container transition-colors" href="tel:1077">
+<div class="flex items-center gap-space-lg">
+<div class="w-14 h-14 rounded-xl bg-on-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+<svg class="w-8 h-8 text-on-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+</svg>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary-fixed-dim font-semibold">State Disaster Management Authority</span>
+<div class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-primary">1077</div>
+<span class="font-body-sm text-body-sm text-primary-fixed">1-Touch Relief Helpline</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-on-primary/10 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+<span class="material-symbols-outlined text-[20px]">call</span>
+</div>
+</a>
+<!-- SOS 112 National Unified Emergency -->
+<a class="group flex items-center justify-between p-space-lg rounded-xl bg-error text-on-error shadow-sm hover:bg-on-error-container transition-colors" href="tel:112">
+<div class="flex items-center gap-space-lg">
+<div class="w-14 h-14 rounded-xl bg-on-error/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+<svg class="w-8 h-8 text-on-error" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="m4.93 4.93 4.24 4.24"></path>
+<path d="m14.83 9.17 4.24-4.24"></path>
+<path d="m14.83 14.83 4.24 4.24"></path>
+<path d="m9.17 14.83-4.24 4.24"></path>
+<circle cx="12" cy="12" r="4"></circle>
+</svg>
+</div>
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-error-container font-semibold">Unified National SOS</span>
+<div class="font-headline-lg text-headline-lg font-bold tracking-tight text-on-error">112</div>
+<span class="font-body-sm text-body-sm text-error-container">Police • Fire • Medical Ambulances</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-full bg-on-error/10 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+<span class="material-symbols-outlined text-[20px]">sos</span>
+</div>
+</a>
+</div>
+</section>
+</div>
+<script>
+  // Quick tactile voice simulation trigger
+  document.getElementById('voiceAlertTrigger')?.addEventListener('click', function() {
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">sync</span><span>Listening for SOS...</span>';
+    btn.classList.add('bg-secondary-container', 'text-on-secondary-container');
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">check</span><span>Safe: No Immediate Hazard</span>';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+      }, 2500);
+    }, 1800);
+  });
+</script></div></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)]"><div class="max-w-[1180px] mx-auto px-gutter-lg py-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-primary font-semibold">SAARTHI</span><span class="font-body-sm text-body-sm text-outline">• Multilingual Decision-Support Utility</span></div><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-secondary"></span><span class="font-label-sm text-label-sm text-on-surface">Atmospheric Feeds Live</span></div><span class="font-body-sm text-body-sm text-outline">© 2025 SAARTHI Core Systems</span></div></div></footer></body></html>

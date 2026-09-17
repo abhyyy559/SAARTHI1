@@ -31,6 +31,7 @@ export const api = {
     j(`/api/weather/nowcast?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
   models: (lat, lon) => j(`/api/weather/models?lat=${lat}&lon=${lon}`),
   climate: (lat, lon) => j(`${V}/climate/trends?lat=${lat}&lon=${lon}&years=20`),
+  profileAdvisory: (loc, persona, language) => j(`${V}/advisories?district=${encodeURIComponent(loc.district)}&lat=${loc.lat}&lon=${loc.lon}&user_type=${encodeURIComponent(persona)}&language=${encodeURIComponent(language)}`),
   advisory: (severity, userType) => j(`${V}/advisories?severity=${severity}&user_type=${userType}`),
   impact: (a, b, userType = 'driver') =>
     j(`${V}/impact/analyze?lat1=${a.lat}&lon1=${a.lon}&lat2=${b.lat}&lon2=${b.lon}&user_type=${userType}`),
@@ -44,9 +45,9 @@ export const api = {
   voiceStatus: () => j('/api/voice/status'),
   transcribe: (blob, language) => {
     const fd = new FormData();
-    fd.append('file', blob, 'speech.webm');
-    fd.append('language', language);
-    return fetch(full('/api/voice/transcribe'), { method: 'POST', body: fd }).then(j);
+    const extension = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : blob.type.includes('wav') ? 'wav' : 'webm';
+    fd.append('file', blob, `speech.${extension}`);
+    return j(`/api/voice/transcribe?language=${encodeURIComponent(language)}`, { method: 'POST', body: fd });
   },
   synthesize: (text, language) =>
     post('/api/voice/synthesize', { text, language }),

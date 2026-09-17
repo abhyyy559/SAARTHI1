@@ -23,12 +23,13 @@ export function HomeView() {
 }
 
 export function AskView() {
+  const { lang, persona, loc } = useApp();
   return (
     <>
       <ViewHead titleKey="viewAsk" subKey="viewAskSub" />
       <div className="grid-2">
-        <ChatPanel />
-        <VoicePanel />
+        <ChatPanel key={`${lang}:${persona}:${loc.district}`} />
+        <VoicePanel key={`${lang}:${persona}:${loc.district}`} />
       </div>
     </>
   );

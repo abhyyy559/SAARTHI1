@@ -36,17 +36,29 @@ def _key(kind: str, lat: float, lon: float, extra: str = "") -> str:
     return f"{kind}:{round(lat, 2)}:{round(lon, 2)}:{extra}"
 
 
+def _as_json(x) -> dict:
+    """Adapters return pydantic models or dicts; normalize for cache/response."""
+    return x if isinstance(x, dict) else x.model_dump(mode="json")
+
+
 async def _live_current(lat: float, lon: float) -> tuple[dict, str]:
+    """Open-Meteo primary, OpenWeatherMap fallback, file cache last (all honest)."""
     try:
         obs, _ = await openmeteo_adapter.get_current(lat, lon)
         data = obs.model_dump(mode="json")
         cache.set(_key("current", lat, lon), data, TTLS["current"])
         return data, "LIVE"
     except AdapterUnavailable:
-        cached = cache.get(_key("current", lat, lon))
-        if cached:
-            return {**cached, "stale_note": "Showing last retrieved information; may be outdated."}, "CACHED"
-        raise
+        try:
+            obs, _ = await owm_adapter.get_current(lat, lon)
+            data = _as_json(obs)
+            cache.set(_key("current", lat, lon), data, TTLS["current"])
+            return data, "LIVE"
+        except AdapterUnavailable:
+            cached = cache.get(_key("current", lat, lon))
+            if cached:
+                return {**cached, "stale_note": "Showing last retrieved information; may be outdated."}, "CACHED"
+            raise
 
 
 async def _live_forecast(lat: float, lon: float) -> tuple[dict, str]:

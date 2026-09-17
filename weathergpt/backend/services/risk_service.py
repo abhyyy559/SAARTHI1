@@ -7,6 +7,9 @@ USER_EXPOSURE = {"general": 1, "farmer": 2, "driver": 2, "fisherman": 3}
 
 class RiskService:
     def risk(self, verified: dict, user_type: str) -> dict:
+        if verified.get("warning_service") == "unavailable":
+            return {"level": "UNKNOWN", "hazard": "", "official_severity": None,
+                    "source": "WEATHERGPT"}
         severity = verified.get("severity", "GREEN")
         base = SEVERITY_WEIGHT.get(severity, 0)
         exposure = USER_EXPOSURE.get(user_type, 1)

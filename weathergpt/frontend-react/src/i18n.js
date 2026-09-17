@@ -43,6 +43,10 @@ const S = {
     homeNoMic: 'Voice input is not available in this browser - type your question on the Ask page.',
     homeNoHear: 'Could not hear you clearly. Tap the mic and try again.',
     iAm: 'I am a',
+    district: 'District',
+    askAs: 'Answering as',
+    muted: 'Muted',
+    soundOn: 'Sound on',
     q1: 'Will it rain tomorrow?',
     q2: 'Is it safe to go to sea?',
     q3: 'Is there a red alert now?',
@@ -103,6 +107,10 @@ const S = {
     homeNoMic: 'इस ब्राउज़र में आवाज़ उपलब्ध नहीं — Ask पेज पर टाइप करें।',
     homeNoHear: 'आवाज़ साफ़ नहीं आई। माइक दबाकर फिर कोशिश करें।',
     iAm: 'मैं हूँ',
+    district: 'जिला',
+    askAs: 'उत्तर दे रहा है',
+    muted: 'शांत',
+    soundOn: 'ध्वनि चालू',
     q1: 'कल बारिश होगी?',
     q2: 'क्या समुद्र में जाना सुरक्षित है?',
     q3: 'क्या अभी रेड अलर्ट है?',
@@ -156,6 +164,10 @@ const S = {
     homeNoMic: 'ఈ బ్రౌజర్‌లో వాయిస్ లేదు — Ask పేజీలో టైప్ చేయండి.',
     homeNoHear: 'మీ గొంతు సరిగా వినిపించలేదు. మైక్ నొక్కి మళ్లీ ప్రయత్నించండి.',
     iAm: 'నేను',
+    district: 'జిల్లా',
+    askAs: 'సమాధానం ఇస్తోంది',
+    muted: 'నిశ్శబ్దం',
+    soundOn: 'ధ్వని ఆన్',
     q1: 'రేపు వర్షం పడుతుందా?',
     q2: 'సముద్రంలోకి వెళ్లడం సురక్షితమేనా?',
     q3: 'ఇప్పుడు రెడ్ అలర్ట్ ఉందా?',
@@ -171,7 +183,19 @@ const S = {
   },
 };
 
-export const t = (lang, key) => (S[lang] && S[lang][key]) || S.en[key] || key;
+// Shared by Home and Ask so a profile change updates both entry points.
+export const PERSONA_QUESTIONS = {
+  fisherman: ['q2', 'q1', 'q3'], farmer: ['q4', 'q1', 'q3'],
+  driver: ['qDriver', 'q1', 'q3'], researcher: ['qResearch', 'q1', 'q3'],
+  disaster_manager: ['qEmergency', 'q3', 'q1'], general: ['q1', 'q3'],
+};
+
+const EXTRA = {
+  en: { qDriver: 'What should I check before driving today?', qResearch: 'What are the sources and limits of this forecast?', qEmergency: 'What verified warnings need attention?', adviceFor: 'Guidance for you', adviceNote: 'Decision support, not an official instruction.', stop: 'Stop', processing: 'Understanding your speech…', voiceReady: 'Tap to speak. Tap again to finish.', voiceFailed: 'Voice service unavailable. Try again or type your question.', voiceBlocked: 'Audio could not play. Tap Replay or read the answer.', voiceFallback: 'Using a browser voice; language support depends on your device.', chatEmpty: 'Ask a question about your work or plans.', send: 'Send', voice: 'Speak and listen', viewAsk: 'Ask SAARTHI', viewAskSub: 'Tell us your plans. Get an answer for your profile, place and language.', sourcesDetails: 'Data sources and availability', checking: 'Checking current guidance…', adviceFailed: 'Guidance could not load. Try asking a question.', homeTapMic: 'Tap to start recording. Tap again to finish and send your question.' },
+  hi: { qDriver: 'आज गाड़ी चलाने से पहले क्या जाँचूँ?', qResearch: 'इस पूर्वानुमान के स्रोत और सीमाएँ क्या हैं?', qEmergency: 'किन सत्यापित चेतावनियों पर ध्यान देना चाहिए?', adviceFor: 'आपके लिए सलाह', adviceNote: 'निर्णय सहायता, सरकारी निर्देश नहीं।', stop: 'रोकें', processing: 'आपकी बात समझ रहे हैं…', voiceReady: 'बोलने के लिए दबाएँ। पूरा होने पर फिर दबाएँ।', voiceFailed: 'आवाज़ सेवा उपलब्ध नहीं। फिर कोशिश करें या सवाल लिखें।', voiceBlocked: 'आवाज़ नहीं चली। दोबारा सुनें दबाएँ या उत्तर पढ़ें।', voiceFallback: 'ब्राउज़र की आवाज़ का उपयोग हो रहा है; भाषा आपके उपकरण पर निर्भर है।', chatEmpty: 'अपने काम या योजना के बारे में पूछें।', send: 'भेजें', voice: 'बोलें और सुनें', viewAsk: 'SAARTHI से पूछें', viewAskSub: 'अपनी योजना बताएँ। अपनी भूमिका, जगह और भाषा में उत्तर पाएँ।', sourcesDetails: 'डेटा स्रोत और उपलब्धता', checking: 'वर्तमान सलाह जाँच रहे हैं…', adviceFailed: 'सलाह नहीं मिली। सवाल पूछकर कोशिश करें।', homeTapMic: 'रिकॉर्डिंग शुरू करने के लिए दबाएँ। सवाल भेजने के लिए फिर दबाएँ।' },
+  te: { qDriver: 'ఈ రోజు వాహనం నడిపే ముందు ఏమి తనిఖీ చేయాలి?', qResearch: 'ఈ అంచనా మూలాలు, పరిమితులు ఏమిటి?', qEmergency: 'ఏ ధృవీకరించిన హెచ్చరికలపై దృష్టి పెట్టాలి?', adviceFor: 'మీ కోసం సూచనలు', adviceNote: 'నిర్ణయ సహాయం మాత్రమే, అధికారిక ఆదేశం కాదు.', stop: 'ఆపండి', processing: 'మీ మాటలను అర్థం చేసుకుంటున్నాం…', voiceReady: 'మాట్లాడటానికి నొక్కండి. ముగించడానికి మళ్లీ నొక్కండి.', voiceFailed: 'వాయిస్ సేవ అందుబాటులో లేదు. మళ్లీ ప్రయత్నించండి లేదా ప్రశ్న రాయండి.', voiceBlocked: 'ఆడియో వినిపించలేదు. మళ్లీ వినండి నొక్కండి లేదా సమాధానం చదవండి.', voiceFallback: 'బ్రౌజర్ వాయిస్ ఉపయోగిస్తున్నాం; భాష మద్దతు మీ పరికరంపై ఆధారపడుతుంది.', chatEmpty: 'మీ పని లేదా ప్రణాళిక గురించి అడగండి.', send: 'పంపండి', voice: 'మాట్లాడండి, వినండి', viewAsk: 'SAARTHIని అడగండి', viewAskSub: 'మీ ప్రణాళిక చెప్పండి. మీ వృత్తి, ప్రాంతం, భాషకు తగిన సమాధానం పొందండి.', sourcesDetails: 'సమాచార మూలాలు, లభ్యత', checking: 'ప్రస్తుత సూచనలను తనిఖీ చేస్తున్నాం…', adviceFailed: 'సూచనలు రాలేదు. ప్రశ్న అడిగి ప్రయత్నించండి.', homeTapMic: 'రికార్డింగ్ ప్రారంభించడానికి నొక్కండి. ప్రశ్న పంపడానికి మళ్లీ నొక్కండి.' },
+};
+export const t = (lang, key) => EXTRA[lang]?.[key] || S[lang]?.[key] || EXTRA.en[key] || S.en[key] || key;
 
 export const PERSONAS = ['general', 'farmer', 'driver', 'fisherman', 'researcher', 'disaster_manager'];
 
@@ -187,4 +211,19 @@ export const NAV = [
   { id: 'home', icon: 'home', label: 'navHome' },
   { id: 'ask', icon: 'mic', label: 'navAsk' },
   { id: 'alerts', icon: 'bell', label: 'navAlerts' },
+];
+
+// User's own coast/district list - same names the backend resolves.
+export const DISTRICTS = [
+  { district: 'Hyderabad', lat: 17.385, lon: 78.4867 },
+  { district: 'Visakhapatnam', lat: 17.6868, lon: 83.2185 },
+  { district: 'Kakinada', lat: 16.9891, lon: 82.2475 },
+  { district: 'Krishna', lat: 16.1873, lon: 81.1389 },
+  { district: 'Nellore', lat: 14.4426, lon: 79.9865 },
+  { district: 'Warangal', lat: 18.0, lon: 79.58 },
+  { district: 'Mumbai', lat: 19.076, lon: 72.8777 },
+  { district: 'Chennai', lat: 13.0827, lon: 80.2707 },
+  { district: 'Ernakulam', lat: 9.9312, lon: 76.2673 },
+  { district: 'North Goa', lat: 15.4909, lon: 73.8278 },
+  { district: 'Gir Somnath', lat: 20.9067, lon: 70.3683 },
 ];

@@ -65,7 +65,21 @@ async def v1_impact(lat1: float, lon1: float, lat2: float, lon2: float, user_typ
 
 @router.get("/advisories")
 async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: str = "general",
-                        language: str = "en"):
+                        language: str = "en", district: Optional[str] = None,
+                        lat: Optional[float] = None, lon: Optional[float] = None):
+    if district is not None:
+        from ..services.advisory_service import advisory_for
+        data = await weather_mod.warnings(district, lat, lon)
+        verified = data.get("verified") or {}
+        unavailable = data.get("status") == "unavailable" or not data.get("provenance") or data.get("provenance") == "UNAVAILABLE"
+        return {
+            "advisory": advisory_for(verified, user_type, language,
+                                     warning_status="unavailable" if unavailable else ""),
+            "user_type": user_type, "language": language,
+            "official_instruction": False,
+            "provenance": data.get("provenance", "UNAVAILABLE"),
+            "generated_at": iso_now(),
+        }
     return await advisory_mod.advisory(severity, hazard, user_type, language)
 
 
@@ -84,7 +98,10 @@ async def v1_chat(payload: dict):
     d = r.model_dump(mode="json")
     warn = d.get("warning") or {}
     d["risk"] = {**d.get("risk", {}),
-                 "reason": f"{warn.get('severity')} {warn.get('hazard')}" if warn.get("active") else "no active verified hazard"}
+                 "reason": ("Official warning information is unavailable; risk cannot be confirmed."
+                            if d.get("risk", {}).get("level") == "UNKNOWN" else
+                            f"{warn.get('severity')} {warn.get('hazard')}" if warn.get("active")
+                            else "no active verified hazard")}
     d["location_affected"] = bool(warn.get("active"))
     provs = [e.get("provenance") for e in d.get("evidence", [])]
     d["data_freshness"] = provs[0] if provs else "UNAVAILABLE"

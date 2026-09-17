@@ -1,12 +1,12 @@
 {
   "documents": {
-    "mausam_imd_gov_in.md": {
-      "url": "https://mausam.imd.gov.in/",
-      "title": "होम | भारत मौसम विज्ञान विभाग",
-      "fetchedAt": "2026-09-15T17:04:19.264Z",
-      "expiresAt": "2026-09-16T17:04:19.264Z",
-      "size": 113
+    "opencode_ai_docs_tui_.md": {
+      "url": "https://opencode.ai/docs/tui/",
+      "title": "TUI | OpenCode",
+      "fetchedAt": "2026-09-16T17:39:49.171Z",
+      "expiresAt": "2026-09-17T17:39:49.171Z",
+      "size": 9880
     }
   },
-  "lastUpdated": "2026-09-15T17:04:19.268Z"
+  "lastUpdated": "2026-09-16T17:39:49.178Z"
 }

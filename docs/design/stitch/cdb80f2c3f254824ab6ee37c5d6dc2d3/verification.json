@@ -1,0 +1,19 @@
+{
+  "title": "SAARTHI Web - Visual Advisory Hub",
+  "screen_id": "cdb80f2c3f254824ab6ee37c5d6dc2d3",
+  "project_id": "18005686446919134555",
+  "image_dimensions": [
+    2560,
+    2200
+  ],
+  "files": {
+    "screen-full.png": {
+      "bytes": 282712,
+      "sha256": "94c782cd5c9d8a6d4ee40ff534a70462beba307a5accc0a12b8d2454d39d23a8"
+    },
+    "screen.html": {
+      "bytes": 29488,
+      "sha256": "005e1d892ef22864f2c4196c2bb468c57c823133fb58eef3f2608ab0158bfdfd"
+    }
+  }
+}

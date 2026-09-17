@@ -1,0 +1,19 @@
+{
+  "title": "SAARTHI Web - Ask & Voice Hub",
+  "screen_id": "6114e0f7988a467495910c81b74568c9",
+  "project_id": "18005686446919134555",
+  "image_dimensions": [
+    2560,
+    2200
+  ],
+  "files": {
+    "screen-full.png": {
+      "bytes": 713089,
+      "sha256": "17dc123d9ac433f154bf140a820db46e4724044453df7daa407cd80fcc48b734"
+    },
+    "screen.html": {
+      "bytes": 25652,
+      "sha256": "479165aec19bee4b58a47e9945c5de631620fa8a5bfba8609babc8d5858f02fb"
+    }
+  }
+}

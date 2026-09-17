@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>SAARTHI Multilingual Decision-Support Assistant</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#a6f2d1", "on-secondary-fixed": "#002116", "surface-container-lowest": "#ffffff", "surface-container-high": "#e2e7ff", "primary-fixed": "#dce1ff", "tertiary-fixed": "#d3e4fe", "on-surface-variant": "#444651", "surface-container-highest": "#dae2fd", "inverse-surface": "#283044", "error-container": "#ffdad6", "on-primary": "#ffffff", "surface-tint": "#4059aa", "background": "#faf8ff", "outline": "#757682", "on-primary-fixed": "#00164e", "inverse-primary": "#b6c4ff", "on-secondary": "#ffffff", "surface-dim": "#d2d9f4", "on-secondary-fixed-variant": "#00513b", "on-secondary-container": "#237157", "primary": "#00236f", "primary-container": "#1e3a8a", "on-tertiary-fixed-variant": "#38485d", "tertiary-container": "#314156", "secondary": "#1b6b51", "on-error-container": "#93000a", "secondary-container": "#a6f2d1", "surface-bright": "#faf8ff", "on-primary-container": "#90a8ff", "tertiary": "#1b2b3f", "tertiary-fixed-dim": "#b7c8e1", "surface-variant": "#dae2fd", "error": "#ba1a1a", "inverse-on-surface": "#eef0ff", "primary-fixed-dim": "#b6c4ff", "outline-variant": "#c5c5d3", "surface-container": "#eaedff", "on-tertiary-container": "#9dadc6", "surface": "#faf8ff", "on-primary-fixed-variant": "#264191", "on-tertiary-fixed": "#0b1c30", "on-surface": "#131b2e", "on-background": "#131b2e", "on-error": "#ffffff", "secondary-fixed-dim": "#8bd6b6", "on-tertiary": "#ffffff", "surface-container-low": "#f2f3ff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-md": "2rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem", "space-xl": "2.5rem", "margin-lg": "3rem", "gutter-lg": "2rem", "space-md": "1rem", "margin": "1rem", "gutter-md": "1.5rem", "space-lg": "1.5rem" }, "fontFamily": { "body-sm": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "label-md": ["Inter"], "display-lg": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-xl": ["Inter"], "body-lg": ["Inter"], "body-md": ["Inter"], "label-sm": ["Inter"], "label-lg": ["Inter"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }], "display-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "headline-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "body-xl": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-[1180px] mx-auto px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">neurology</span></div><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-primary">SAARTHI</span></div><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container"><span class="material-symbols-outlined text-[14px]">volume_up</span><span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Audio Ready</span></div></div><nav class="flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-low" data-active-classes="bg-primary text-on-primary rounded-lg"><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="ask-and-voice" href="#">Ask &amp; Voice</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="advisory" href="#">Advisory</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-label-lg text-label-lg" data-path="alerts-and-safety" href="#">Alerts &amp; Safety</a></nav><div class="flex items-center gap-space-md"><div class="hidden lg:flex items-center p-0.5 rounded-full bg-surface-container"><button class="px-space-sm py-0.5 rounded-full bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)]" type="button">EN</button><button class="px-space-sm py-0.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">हिन्दी</button><button class="px-space-sm py-0.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">తెలుగు</button></div><div class="hidden sm:flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface"><span class="material-symbols-outlined text-outline text-[18px]">commute</span><span class="font-label-md text-label-md font-medium">9-to-5 Commuter</span><span class="material-symbols-outlined text-outline text-[16px]">expand_more</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="max-w-[1180px] mx-auto px-gutter-lg py-space-xl"><div class="flex flex-col w-full">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg lg:gap-space-xl items-start">
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<div class="relative bg-surface-container-lowest rounded-xl shadow-md p-space-lg lg:p-space-xl overflow-hidden">
+<div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-primary-fixed/35 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-secondary-fixed/40 blur-3xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-full flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs px-space-md py-1 rounded-full bg-surface-container-low text-on-surface">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+<span class="font-label-sm text-label-sm tracking-wider uppercase font-semibold text-secondary">Acoustic Channel Live</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">translate</span>
+<span>auto-detect</span>
+</div>
+</div>
+<div class="relative flex items-center justify-center my-space-lg py-space-sm">
+<div class="absolute w-44 h-44 rounded-full bg-primary/10 animate-pulse" id="pulse-ring-1"></div>
+<div class="absolute w-56 h-56 rounded-full bg-primary/5 transition-transform duration-700" id="pulse-ring-2"></div>
+<button aria-label="Microphone Voice Input" class="relative z-20 w-32 h-32 rounded-full bg-primary-container text-on-primary shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center justify-center group focus:outline-none" id="voice-trigger-btn" type="button">
+<span class="material-symbols-outlined text-[48px] group-hover:scale-110 transition-transform">mic</span>
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-primary-fixed mt-1">TAP TO SPEAK</span>
+</button>
+</div>
+<div class="flex items-center gap-space-sm mb-space-md">
+<span class="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface" id="voice-timer">Listening • 00:03</span>
+</div>
+<div class="w-full max-w-sm h-14 bg-surface-container-low rounded-xl px-space-md flex items-center justify-center gap-1.5 shadow-sm">
+<div class="w-1.5 rounded-full bg-primary-container h-3 transition-all duration-150 animate-[bounce_1.1s_infinite_100ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-8 transition-all duration-150 animate-[bounce_1.1s_infinite_200ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-12 transition-all duration-150 animate-[bounce_1.1s_infinite_300ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-6 transition-all duration-150 animate-[bounce_1.1s_infinite_150ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-10 transition-all duration-150 animate-[bounce_1.1s_infinite_400ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-4 transition-all duration-150 animate-[bounce_1.1s_infinite_250ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-11 transition-all duration-150 animate-[bounce_1.1s_infinite_350ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-5 transition-all duration-150 animate-[bounce_1.1s_infinite_180ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-9 transition-all duration-150 animate-[bounce_1.1s_infinite_280ms]"></div>
+<div class="w-1.5 rounded-full bg-primary-container h-3 transition-all duration-150 animate-[bounce_1.1s_infinite_120ms]"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-space-md text-outline text-[22px]">search</span>
+<input class="w-full h-12 pl-12 pr-28 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 transition-all" id="quick-input" placeholder="Or type a query (e.g., Yellow Line metro crowd)..." type="text"/>
+<div class="absolute right-space-xs flex items-center gap-1">
+<button aria-label="Attach context" class="w-8 h-8 rounded-md flex items-center justify-center text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">add_location_alt</span>
+</button>
+<button aria-label="Send Query" class="w-9 h-9 rounded-md bg-primary text-on-primary flex items-center justify-center shadow-sm hover:opacity-90 active:scale-95 transition-all" id="send-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+</button>
+</div>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-space-sm px-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Instant Context Tiles</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Live Sensors Connected</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm">
+<button class="group flex flex-col p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all text-left" type="button">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-space-sm group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+<path d="M16 14v6"></path>
+<path d="M8 14v6"></path>
+<path d="M12 16v6"></path>
+</svg>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface font-semibold">Rain</span>
+<span class="font-label-md text-label-md text-on-surface-variant">6:30 PM (85%)</span>
+</button>
+<button class="group flex flex-col p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all text-left" type="button">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-secondary mb-space-sm group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<rect height="16" rx="2" width="16" x="4" y="3"></rect>
+<path d="M4 11h16"></path>
+<path d="M12 3v8"></path>
+<path d="m8 19-2 3"></path>
+<path d="m18 22-2-3"></path>
+<circle cx="8" cy="15" r="1"></circle>
+<circle cx="16" cy="15" r="1"></circle>
+</svg>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface font-semibold">Metro Transit</span>
+<span class="font-label-md text-label-md text-secondary font-medium">On Schedule</span>
+</button>
+<button class="group flex flex-col p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all text-left" type="button">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-space-sm group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+</svg>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface font-semibold">AQI Metric</span>
+<span class="font-label-md text-label-md text-on-surface-variant">112 • Moderate</span>
+</button>
+<button class="group flex flex-col p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-all text-left" type="button">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-secondary mb-space-sm group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+<path d="m9 12 2 2 4-4"></path>
+</svg>
+</div>
+<span class="font-headline-sm text-[16px] text-on-surface font-semibold">Route Risk</span>
+<span class="font-label-md text-label-md text-secondary font-medium">Clear • Safe</span>
+</button>
+</div>
+</div>
+</div>
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-lg flex flex-col gap-space-md relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-semibold">Synthesized Advisory</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-1 rounded-md bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Just now</span>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-center gap-space-md">
+<div class="w-16 h-16 shrink-0 rounded-xl bg-surface-container-lowest flex items-center justify-center shadow-sm">
+<svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 2v2"></path>
+<path d="m4.93 4.93 1.41 1.41"></path>
+<path d="M20 12h2"></path>
+<path d="m19.07 4.93-1.41 1.41"></path>
+<path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"></path>
+<path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Commute Verdict</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-snug">
+              Safe commute now. Showers after 6:30 PM.
+            </h2>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-space-xs text-center py-space-xs">
+<div class="p-space-sm rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-outline block">Temp</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">28°C</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-outline block">Precip</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">85%</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-outline block">Wind</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">14 km/h</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">record_voice_over</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Spoken Audio Brief</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-space-xs py-0.5 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<button class="px-1.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-semibold" type="button">EN</button>
+<button class="px-1.5 py-0.5 rounded-full hover:text-on-surface" type="button">हि</button>
+<button class="px-1.5 py-0.5 rounded-full hover:text-on-surface" type="button">తె</button>
+</div>
+</div>
+<div class="flex items-center gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline w-8">0:14</span>
+<div class="relative flex-1 h-2 bg-surface-container rounded-full overflow-hidden cursor-pointer">
+<div class="h-full bg-primary-container rounded-full w-2/5"></div>
+</div>
+<span class="font-label-sm text-label-sm text-outline w-8 text-right">0:35</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-space-xs">
+<button aria-label="Playback speed 0.8" class="px-space-sm py-0.5 rounded-full bg-surface-container-lowest text-outline hover:text-on-surface font-label-sm text-label-sm" type="button">0.8x</button>
+<button aria-label="Playback speed 1.0" class="px-space-sm py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold" type="button">1.0x</button>
+<button aria-label="Playback speed 1.2" class="px-space-sm py-0.5 rounded-full bg-surface-container-lowest text-outline hover:text-on-surface font-label-sm text-label-sm" type="button">1.2x</button>
+</div>
+<div class="flex items-center gap-space-sm">
+<button aria-label="Rewind 10 seconds" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-lowest transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">replay_10</span>
+</button>
+<button aria-label="Play or Pause Audio" class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all" id="play-pause-btn" type="button">
+<span class="material-symbols-outlined text-[24px]" id="play-pause-icon">pause</span>
+</button>
+<button aria-label="Fast forward 10 seconds" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-lowest transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">forward_10</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="relative h-28 rounded-xl overflow-hidden shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Subtle cinematic wide shot of an urban commuter walking beside modern metro rail transit tracks under calm blue sky with light clouds, clean Nordic lighting and high visual contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-5EPCeDz4RG9rnzcidp_srtuYEtqovH5ZxrMJ8xS2mBZ-X5b6ceh5kgtdMHK_Qrrds7yZAt0hEmfF8I8s-cLfN-Kh49XR_ec_Jx6RRAO_jeGXA1sbiCRLfz0HfcJjeMmbjf-oFqXOxoEcW6k8KvXuwlN8QQ_ECbBP7--3r8fKEZipPvumpy-pfPvml8S1qbW7WnXby8UMo8XO-C_cKucTuVsgte7kP5qIfz40kI86wnORVsCef0Mj5Q"/>
+<div class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-inverse-surface/30 to-transparent p-space-sm flex flex-col justify-end text-inverse-on-surface">
+<span class="font-label-sm text-label-sm tracking-wider uppercase font-semibold">Corridor Status</span>
+<span class="font-body-sm text-body-sm font-medium">Outer Ring: Flowing</span>
+</div>
+</div>
+<div class="relative h-28 rounded-xl overflow-hidden shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Serene outdoor city weather station with anemometer sensor and clean atmospheric telemetry station in daylight, minimalist architecture with navy accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVOXxzGbQYkHAm8Eq0VVmApi38Wsko9rUo-GsYnRG0RAbT5KZZvKo_CPCVxBim8i8RWwFJUIFlp99Z9iTdMVmfJvPNEix5du0CB_shxqgHxvDadKZLOb9681xqOklOiVqqObRJwLS7hYCdTw0ZdxxAOM9tnqzGv35r0udVWwcdKBPEAvE6-fEzlkjcpqCv46ms9xZCiK2S991auIajzyy4W2mW0pEECXiqDFIeDKTarfEpUb5w9ArY8Q"/>
+<div class="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-inverse-surface/30 to-transparent p-space-sm flex flex-col justify-end text-inverse-on-surface">
+<span class="font-label-sm text-label-sm tracking-wider uppercase font-semibold">Precipitation Hub</span>
+<span class="font-body-sm text-body-sm font-medium">Next Wave: 18:30</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const voiceBtn = document.getElementById('voice-trigger-btn');
+    const timer = document.getElementById('voice-timer');
+    const ring2 = document.getElementById('pulse-ring-2');
+    const playBtn = document.getElementById('play-pause-btn');
+    const playIcon = document.getElementById('play-pause-icon');
+    
+    let listening = true;
+    let seconds = 3;
+    let intervalId = null;
+
+    function startTimer() {
+      intervalId = setInterval(() => {
+        seconds++;
+        const s = seconds < 10 ? '0' + seconds : seconds;
+        if (timer) timer.textContent = 'Listening • 00:' + s;
+      }, 1000);
+    }
+    startTimer();
+
+    if (voiceBtn) {
+      voiceBtn.addEventListener('click', () => {
+        listening = !listening;
+        if (listening) {
+          seconds = 0;
+          timer.textContent = 'Listening • 00:00';
+          ring2.classList.remove('scale-75', 'opacity-30');
+          ring2.classList.add('scale-100', 'opacity-100');
+          startTimer();
+        } else {
+          clearInterval(intervalId);
+          timer.textContent = 'Ready • Tap Mic';
+          ring2.classList.remove('scale-100', 'opacity-100');
+          ring2.classList.add('scale-75', 'opacity-30');
+        }
+      });
+    }
+
+    let isPlaying = true;
+    if (playBtn && playIcon) {
+      playBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        playIcon.textContent = isPlaying ? 'pause' : 'play_arrow';
+      });
+    }
+  })();
+</script></div></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)]"><div class="max-w-[1180px] mx-auto px-gutter-lg py-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-primary font-semibold">SAARTHI</span><span class="font-body-sm text-body-sm text-outline">• Multilingual Decision-Support Utility</span></div><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-secondary"></span><span class="font-label-sm text-label-sm text-on-surface">Atmospheric Feeds Live</span></div><span class="font-body-sm text-body-sm text-outline">© 2025 SAARTHI Core Systems</span></div></div></footer></body></html>

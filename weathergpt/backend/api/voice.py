@@ -12,10 +12,10 @@ router = APIRouter()
 
 
 @router.post("/api/voice/transcribe")
-async def transcribe(audio: UploadFile = File(...), language: str = "en") -> dict:
-    data = await audio.read()
+async def transcribe(audio: UploadFile = File(..., alias="file"), language: str = "en") -> dict:
+    audio_bytes = await audio.read()
     try:
-        text, provider = await stt_provider.transcribe(data, audio.filename or "audio.webm", language)
+        text, provider = await stt_provider.transcribe(audio_bytes, audio.filename or "audio.webm", language)
         return {"text": text, "provider": provider, "using_browser_speech": False}
     except AdapterUnavailable:
         return {"text": "", "provider": "browser-fallback", "using_browser_speech": True}

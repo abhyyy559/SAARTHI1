@@ -1,6 +1,6 @@
 // App shell: persistent sidebar (desktop), bottom tab bar (mobile), top status bar.
 // Navigation is a real <nav> with aria-current - no scroll-wall of stacked panels.
-import { t, NAV, PERSONAS, PERSONA_LABELS } from '../i18n';
+import { t, NAV, PERSONAS, PERSONA_LABELS, DISTRICTS } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 
@@ -93,7 +93,7 @@ export function MobileNav() {
 }
 
 export function TopBar() {
-  const { lang, setLang, persona, setPersona, conn } = useApp();
+  const { lang, setLang, persona, setPersona, conn, loc, setDistrict, districts } = useApp();
   const color = connColor(conn);
   return (
     <header className="topbar">
@@ -112,6 +112,19 @@ export function TopBar() {
                 {(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][p]) || p}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="mono">
+          {t(lang, 'district')}
+          <select
+            value={loc.district}
+            onChange={(e) => {
+              const d = DISTRICTS.find((x) => x.district === e.target.value);
+              if (d) setDistrict(d);
+            }}
+            aria-label={t(lang, 'district')}
+          >
+            {districts.map((d) => <option key={d.district} value={d.district}>{d.district}</option>)}
           </select>
         </label>
         <label className="mono">
