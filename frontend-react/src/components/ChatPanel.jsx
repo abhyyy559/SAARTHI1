@@ -150,10 +150,11 @@ export default function ChatPanel() {
   const logRef = useRef(null);
   const SUGGESTIONS = PERSONA_QUESTIONS[persona] || PERSONA_QUESTIONS.general;
   // Dictate-then-send mic: speech fills the input as editable text, nothing
-  // is sent until the user hits enter — like OS dictation (Win+H). This is the
-  // ONLY mic affordance in this component; everything else here is speaker
-  // output (replay, mute), not input.
-  const dictation = useVoiceInput(lang, (text) => setInput(text));
+  // is sent until the user hits enter — like OS dictation (Win+H). Interim
+  // partials land in the input live while speaking; the final transcript
+  // replaces them. This is the ONLY mic affordance in this component;
+  // everything else here is speaker output (replay, mute), not input.
+  const dictation = useVoiceInput(lang, (text) => setInput(text), (partial) => setInput(partial));
   // Demo-safe example prompts shown on an empty chat; tapping one sends it.
   const EXAMPLE_CHIPS = ['chipHyd', 'chipCyclone', 'chipMumbai'];
 

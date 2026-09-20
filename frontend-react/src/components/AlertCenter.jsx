@@ -50,11 +50,13 @@ function AlertCard({ a, nowMs, nearby = false, onOpen }) {
   const ask = (e) => {
     e.stopPropagation();
     setPendingAsk(`Tell me about this alert: ${a.hazard || a.event || ''} in ${area || loc.district}`);
-    setView('ask');
+    // IA dedup: the conversation lives on Home now — no Ask route.
+    setView('home');
   };
   const open = () => {
     setSelectedAlert(a);
-    setView('details');
+    // IA dedup: alert detail expands inline in the Alerts route.
+    setView('alerts');
   };
   // Lifecycle state from backend — never re-derived here
   const lifecycleState = String(a.lifecycle_state || a.state || 'UPCOMING').toUpperCase();

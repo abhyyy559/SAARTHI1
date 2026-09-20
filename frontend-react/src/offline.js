@@ -90,6 +90,17 @@ export function alertCacheStatus(snap, nowMs = Date.now()) {
   };
 }
 
+// Advisory snapshot: last-known advisory cards with a checked stamp. Saved by
+// the Advisory view on every successful fetch; the Offline & P2P panel renders
+// them stale-labelled when the backend is unreachable. Never invented.
+export function saveAdvisorySnapshot(cards, district) {
+  if (cards) saveCache('advisory', { cards, district, at: new Date().toISOString() });
+}
+
+export function readAdvisorySnapshot() {
+  return (readCache().advisory || {}).data || null;
+}
+
 // Offline query queue: localStorage, HARD CAP 20 entries, oldest evicted.
 // Each entry is a small JSON blob (<2KB) — quota-safe by three orders.
 // (IndexedDB migration only if spare time allows; the cap is the safety.)

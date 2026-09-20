@@ -96,3 +96,43 @@ def sanitize_for_tts(text: str, max_chars: int = 600) -> str:
     # (Logging will be done by caller to avoid import cycles)
     
     return text
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?।])\s+")
+
+
+def split_sentences(text: str, max_chars: int = 450) -> list:
+    """Split text into sentence-aware chunks of at most max_chars.
+
+    Sentences (split on . ! ? and the Hindi danda ।) are packed greedily;
+    a single sentence longer than max_chars is hard-split on whitespace,
+    mirroring the old frontend 450-char chunker. Used by the streaming TTS
+    endpoint so each chunk can be emitted as soon as its own provider call
+    returns. Returns [] for empty/blank input.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+    sentences = [s.strip() for s in _SENTENCE_END.split(text) if s.strip()]
+    chunks = []
+    cur = ""
+
+    def flush():
+        nonlocal cur
+        if cur:
+            chunks.append(cur)
+            cur = ""
+
+    for s in sentences:
+        while len(s) > max_chars:
+            flush()
+            cut = s.rfind(" ", 0, max_chars)
+            if cut <= 0:
+                cut = max_chars
+            chunks.append(s[:cut].strip())
+            s = s[cut:].strip()
+        if cur and len(cur) + 1 + len(s) > max_chars:
+            flush()
+        cur = f"{cur} {s}".strip() if cur else s
+    flush()
+    return chunks or [text]

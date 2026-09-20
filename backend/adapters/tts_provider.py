@@ -12,7 +12,7 @@ import logging
 import httpx
 
 from .. import config
-from ..utils.speak_sanitize import sanitize_for_tts
+from ..utils.speak_sanitize import sanitize_for_tts, split_sentences
 from .registry import LIVE, UNCONFIGURED, AdapterUnavailable, report
 
 logger = logging.getLogger(__name__)
@@ -58,3 +58,25 @@ async def synthesize(text: str, language: str = "en-IN") -> tuple[str, str]:
         raise AdapterUnavailable(f"TTS provider failed: {exc}") from exc
     report(NAME, LIVE, f"synthesized {len(text)} chars ({lang})")
     return base64.b64encode(raw).decode("ascii"), "sarvam-live"
+
+
+async def synthesize_chunked(text: str, language: str = "en-IN"):
+    """Yield (audio_base64, provider, index, total) per sentence-chunk.
+
+    HONESTY NOTE: Sarvam bulbul has no streaming API — this is
+    sentence-chunked progressive generation, NOT provider streaming. Each
+    chunk is yielded as soon as its own synthesize() call completes, so a
+    streaming endpoint can emit audio progressively instead of waiting for
+    the whole text. Raises AdapterUnavailable if no chunk could be made.
+
+    Chunking happens on the RAW text (then each chunk is sanitized): the
+    whole-text sanitize_for_tts() truncates at 600 chars, which would
+    silently drop safety advice on long texts.
+    """
+    chunks = [c for c in (sanitize_for_tts(c) for c in split_sentences(text, max_chars=450)) if c]
+    if not chunks:
+        report(NAME, UNCONFIGURED, "empty text after sanitize — browser fallback")
+        raise AdapterUnavailable("browser-fallback")
+    for i, chunk in enumerate(chunks):
+        audio_b64, provider = await synthesize(chunk, language)
+        yield audio_b64, provider, i, len(chunks)

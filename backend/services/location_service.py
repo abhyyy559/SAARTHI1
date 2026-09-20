@@ -7,6 +7,7 @@ import math
 from difflib import SequenceMatcher
 
 from .. import config as cfg
+from ..adapters.registry import LIVE, report
 from . import district_service
 from .district_service import norm_name
 from .gis_service import haversine_km
@@ -186,6 +187,8 @@ class LocationService:
         if not (math.isfinite(lat) and math.isfinite(lon)):
             lat, lon = cfg.DEFAULT_LAT, cfg.DEFAULT_LON
         entry = min(GAZETTEER, key=lambda e: haversine_km(lat, lon, e["latitude"], e["longitude"]))
+        # GIS Job 1 "Where am I?" just ran for real — refresh its source status.
+        report("gis-location", LIVE, f"nearest district to GPS fix: {entry.get('district')}")
         return dict(entry)
 
     def search(self, query: str) -> list[dict]:

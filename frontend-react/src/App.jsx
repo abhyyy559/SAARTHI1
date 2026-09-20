@@ -2,23 +2,23 @@ import { Component, Suspense } from 'react';
 import { AppProvider, useApp } from './store';
 import { t } from './i18n';
 import Shell from './components/Shell';
-import { HomeView, AskView, AlertsView, NotificationsView, AdvisorView, AdvisoryView, AdminView, TrustView, DetailsView, SourcesView } from './views';
+import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, OfflineView, AviationView, SettingsView } from './views';
 import { Loading } from './components/ui';
 
 // Every id the store's `?view=` whitelist accepts must be registered here.
-// `trust` was whitelisted but missing, so /?view=trust silently rendered Home
-// instead of the source-status and GIS/WIS explanation it promises.
+// IA dedup (2026-09-20): ask/advisor/details/sources are gone — their content
+// was folded into Home (chat), Advisory, and Alerts (inline detail). A stale
+// deep link to one of them falls back to Home; there is no public route.
 const VIEWS = {
   home: HomeView,
-  ask: AskView,
   alerts: AlertsView,
   notifications: NotificationsView,
-  advisor: AdvisorView,
   advisory: AdvisoryView,
+  offline: OfflineView,
+  aviation: AviationView,
+  trust: TrustSourcesView,
+  settings: SettingsView,
   admin: AdminView,
-  trust: TrustView,
-  details: DetailsView,
-  sources: SourcesView,
 };
 
 /** One broken view must never take the console down - and never fake data. */

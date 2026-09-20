@@ -72,7 +72,7 @@ function AdviceCard({ ut, active, onPick }) {
                     <Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}
                   </button>
                   <button type="button" className="btn btn-ghost sm"
-                    onClick={() => { setPendingAsk(`Explain this advice for a ${ut.id} in ${loc.district}: ${data.advisory}`); setView('ask'); }}>
+                    onClick={() => { setPendingAsk(`Explain this advice for a ${ut.id} in ${loc.district}: ${data.advisory}`); setView('home'); }}>
                     {t(lang, 'homeAskAbout')}
                   </button>
                 </div>

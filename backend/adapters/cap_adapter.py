@@ -302,6 +302,20 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
     When `district` is given, the Hyderabad sample text is retargeted to it so
     prototype testing works anywhere. Provenance stays DEMO throughout.
     """
+    # Location-switcher presets (services/district_demo.py): a preset district
+    # gets its OWN sample alert set — Visakhapatnam's cyclone, Mumbai's
+    # thunderstorm, Chennai's honest calm (empty list is a real answer, not a
+    # missing one). None here means "not a preset": the generic fixture path
+    # below handles Hyderabad / Medchal Malkajgiri / unknown names.
+    try:
+        from ..services import district_demo
+        preset_alerts = district_demo.demo_cap_alerts(district)
+    except Exception:
+        preset_alerts = None
+    if preset_alerts is not None:
+        alerts = [_normalize(a) for a in preset_alerts]
+        report("cap", DEMO, f"preset fixture (demo mode): {district}")
+        return alerts, DEMO
     try:
         raw = json.loads(_FIXTURE.read_text(encoding="utf-8"))
         alerts = [_normalize(a) for a in (raw.get("alerts") or [])]

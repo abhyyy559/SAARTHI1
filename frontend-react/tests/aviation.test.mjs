@@ -65,17 +65,16 @@ test('AviationBriefing: alert severity goes through SevStamp (never re-graded)',
   assert.ok(!/data-sev/.test(code) || /SevStamp/.test(code), 'no ad-hoc severity derivation');
 });
 
-// --- placement: its own section inside the Details route ----------------------
-test('DetailsView renders the aviation briefing as a separate section', () => {
+// --- placement: its own route under More -------------------------------------
+// IA dedup (2026-09-20): aviation left the old Details route entirely — it is
+// a first-class route (view 'aviation') reachable from the More sheet.
+test('AviationView renders the aviation briefing as its own route', () => {
   const views = read('../src/views.jsx');
   assert.ok(/AviationBriefing/.test(views), 'views.jsx must reference AviationBriefing');
-  const details = views.match(/export function DetailsView\(\) \{([\s\S]*?)\n\}/);
-  assert.ok(details, 'DetailsView must exist');
-  assert.ok(/<AviationBriefing \/>/.test(details[1]), 'DetailsView must render <AviationBriefing />');
-  // It is placed after the alert details branch, not inside AlertDetails.
-  const tagPos = details[1].indexOf('<AviationBriefing />');
-  const alertPos = details[1].indexOf('<AlertDetails');
-  assert.ok(tagPos > alertPos, 'briefing must sit below the alert details, not inside it');
+  const av = views.match(/export function AviationView\(\) \{([\s\S]*?)\n\}/);
+  assert.ok(av, 'AviationView must exist');
+  assert.ok(/<AviationBriefing \/>/.test(av[1]), 'AviationView must render <AviationBriefing />');
+  assert.doesNotMatch(views, /DetailsView/, 'the old Details route is gone');
 });
 
 test('api client calls the aviation briefing endpoint exactly once', () => {

@@ -228,11 +228,17 @@ async def act_on_alert(alert_id: str, action: str, payload: dict | None = None) 
 
 @router.post("/relay")
 async def simulate_relay(payload: dict) -> dict:
-    """One P2P hop: the alert travels device-to-device with no internet.
+    """One P2P hop (or a short chain of hops): the alert travels
+    device-to-device with no internet.
+
+    Payload: {alert_id*, from_device?, to_device?, hops? (1-5, default 1),
+              fail_at_hop? (1..hops — the hop that "fails", to demo the
+              failed state on stage)}.
 
     Honest labelling: this records a P2P_RELAYED ledger entry and returns a hop
     trace marked SIMULATED. It proves the store-and-forward mechanism on stage;
-    it is not a claim of nationwide P2P capability.
+    it is not a claim of nationwide P2P capability. A failed hop is reported
+    as status "failed" — never as a delivery that happened.
     """
     _require_demo()
     data = payload or {}
@@ -242,21 +248,64 @@ async def simulate_relay(payload: dict) -> dict:
         raise HTTPException(status_code=404, detail="unknown alert")
     from_device = str(data.get("from_device") or "device-B")
     to_device = str(data.get("to_device") or "device-A")
-    now = iso_now()
-    ledger_error = None
+    raw_hops = data.get("hops")
     try:
-        delivery_service.record_relay(alert_id, to_device, from_device)
-    except Exception as exc:  # noqa: BLE001 - a ledger failure must not fake a successful relay
-        ledger_error = f"{type(exc).__name__}: {exc}"
-    # P2P test #2: a relay writes a durable server notification so the
-    # Notifications list shows it — honest SIMULATED labelling, the alert's
-    # own authoritative severity, zero client invention.
+        hops = 1 if raw_hops is None else int(raw_hops)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="hops must be an integer 1-5")
+    if not 1 <= hops <= 5:
+        raise HTTPException(status_code=400, detail="hops must be an integer 1-5")
+    fail_at_hop = data.get("fail_at_hop")
+    if fail_at_hop is not None:
+        try:
+            fail_at_hop = int(fail_at_hop)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="fail_at_hop must be an integer 1..hops")
+        if not 1 <= fail_at_hop <= hops:
+            raise HTTPException(status_code=400, detail="fail_at_hop must be within 1..hops")
+    failed = fail_at_hop is not None
+    now = iso_now()
+
+    # Hop-by-hop trace. The frontend animates idle -> sending -> relayed/failed
+    # from these final states; the server reports the outcome, never invents it.
+    trace = [
+        {"node": "you", "state": "has-alert", "at": now,
+         "detail": f"{from_device} holds the alert (cached on the phone)"},
+    ]
+    hop_states: list[dict] = []
+    for i in range(1, hops + 1):
+        if fail_at_hop is not None and i > fail_at_hop:
+            st = "not-attempted"
+        elif fail_at_hop == i:
+            st = "failed"
+        else:
+            st = "relayed"
+        hop_states.append({"hop": i, "state": st})
+        trace.append({"node": f"hop-{i}", "state": st, "at": now,
+                      "detail": "device-to-device transfer, no internet" if st == "relayed"
+                      else ("transfer failed at this hop (simulated)" if st == "failed"
+                            else "never attempted")})
+    trace.append({"node": "out", "state": "failed" if failed else "delivered", "at": now,
+                  "detail": f"{to_device} received the alert" if not failed
+                  else f"{to_device} never got it — hop {fail_at_hop} failed (simulated)"})
+
+    ledger_error = None
+    if not failed:
+        try:
+            delivery_service.record_relay(alert_id, to_device, from_device)
+        except Exception as exc:  # noqa: BLE001 - a ledger failure must not fake a successful relay
+            ledger_error = f"{type(exc).__name__}: {exc}"
+    # Every relay attempt — success or failure — is written to the durable
+    # notification log so the Notifications list shows it, with honest
+    # SIMULATED labelling and the alert's own authoritative severity.
     try:
         notification_service.log(
             "p2p-relay",
-            f"SIMULATED relay: {alert.get('title') or alert.get('hazard') or alert_id}",
-            f"This is a demo. Device {from_device} relayed the alert to {to_device} "
-            "over the simulated phone-to-phone mesh — no real delivery happened.",
+            f"SIMULATED relay {'failed' if failed else 'delivered'}: {alert.get('title') or alert.get('hazard') or alert_id}",
+            ("This is a demo. The relay " +
+             (f"FAILED at hop {fail_at_hop} of {hops} — " if failed else "") +
+             f"Device {from_device} {'tried to reach' if failed else 'relayed the alert to'} {to_device} "
+             "over the simulated phone-to-phone mesh — no real delivery happened."),
             district=str(alert.get("district") or ""),
             alert_id=alert_id,
             severity=str(alert.get("severity") or ""),
@@ -264,21 +313,26 @@ async def simulate_relay(payload: dict) -> dict:
         )
     except Exception:  # noqa: BLE001
         pass
-    trace = [
-        {"node": "you", "state": "has-alert", "at": now, "detail": f"{from_device} holds the alert (cached)"},
-        {"node": "relay-a", "state": "p2p", "at": now, "detail": "device-to-device transfer, no internet"},
-        {"node": "out", "state": "delivered", "at": now, "detail": f"{to_device} received the alert"},
-    ]
     # Engagement bookkeeping must never 500 a relay that already happened.
     ledger = None
-    try:
-        ledger = delivery_service.record_event(alert_id, to_device, "opened")
-    except Exception as exc:  # noqa: BLE001
-        ledger_error = ledger_error or f"{type(exc).__name__}: {exc}"
+    if not failed:
+        try:
+            ledger = delivery_service.record_event(alert_id, to_device, "opened")
+        except Exception as exc:  # noqa: BLE001
+            ledger_error = ledger_error or f"{type(exc).__name__}: {exc}"
+    if failed:
+        status = "failed"
+    elif ledger_error is None:
+        status = "relayed"
+    else:
+        status = "relayed-with-ledger-error"
     response = {
-        "status": "relayed" if ledger_error is None else "relayed-with-ledger-error",
+        "status": status,
         "alert_id": alert_id,
         "transport": "P2P (simulated)",
+        "hops": hops,
+        "hop_states": hop_states,
+        "failed_at_hop": fail_at_hop,
         "trace": trace,
         "ledger": ledger,
         "generated_at": now,

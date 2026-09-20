@@ -6,7 +6,7 @@ worst-point-wins with explicit reason. Never declares a route safe — reports r
 from __future__ import annotations
 
 from ..adapters import openmeteo_adapter
-from ..adapters.registry import AdapterUnavailable
+from ..adapters.registry import LIVE, AdapterUnavailable, report
 from ..models.emergency import ImpactAssessment
 from ..services.gis_service import haversine_km
 from ..services.imd_service import IMDService
@@ -21,6 +21,8 @@ async def analyze_route(lat1: float, lon1: float, lat2: float, lon2: float,
     o, d = loc.resolve(lat1, lon1), loc.resolve(lat2, lon2)
     mid = {"latitude": (lat1 + lat2) / 2, "longitude": (lon1 + lon2) / 2}
     dist_km = round(haversine_km(lat1, lon1, lat2, lon2), 1)
+    # GIS Job 3 "Hazard distance" just ran for real — refresh its source status.
+    report("gis-hazard", LIVE, f"route distance {dist_km} km")
 
     points, provenances = [], set()
     for label, p in (("origin", {"latitude": lat1, "longitude": lon1}),

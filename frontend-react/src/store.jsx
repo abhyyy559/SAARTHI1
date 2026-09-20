@@ -6,8 +6,34 @@ import { DISTRICTS, t } from './i18n';
 import { cacheGuidance, useOnline } from './offline';
 import { askNotifyPermission, forgetNotified, hasPushSubscription, notify, notifySupport, subscribeToPush, unsubscribeFromPush } from './notify';
 import { tagFor, transition } from './alertWatch';
+import { splitSpeakChunks } from './speakChunks';
 
 const AppCtx = createContext(null);
+
+// /api/voice/status is fetched once and cached for 60s (in-flight requests
+// are shared). Lets speak() skip the doomed server round-trip entirely when
+// the backend has no TTS provider. A failed status check is treated as
+// browser-fallback (offline ⇒ server TTS is unreachable) and cached the
+// same way, so an offline device doesn't pay a 5s timeout on every tap.
+const voiceStatusCache = { value: null, at: 0, inflight: null };
+function getVoiceStatus() {
+  const now = Date.now();
+  if (voiceStatusCache.value && now - voiceStatusCache.at < 60000) {
+    return Promise.resolve(voiceStatusCache.value);
+  }
+  if (!voiceStatusCache.inflight) {
+    voiceStatusCache.inflight = api.voiceStatus()
+      .then((s) => {
+        voiceStatusCache.value = s; voiceStatusCache.at = Date.now(); return s;
+      })
+      .catch(() => {
+        const fb = { stt: 'browser-fallback', tts: 'browser-fallback' };
+        voiceStatusCache.value = fb; voiceStatusCache.at = Date.now(); return fb;
+      })
+      .finally(() => { voiceStatusCache.inflight = null; });
+  }
+  return voiceStatusCache.inflight;
+}
 
 // The three source modes (docs/SOURCE-MODES.md). Labels live in i18n so the
 // switch reads in the user's language; the mode ids stay machine-readable.
@@ -57,12 +83,14 @@ const readDevice = () => {
 };
 
 export function AppProvider({ children }) {
-  // One-way deep link: /?view=ask opens straight into the conversation.
+  // One-way deep link. IA dedup (2026-09-20): the only public views are
+  // home · alerts · advisory + the More sheet's notifications · offline ·
+  // aviation · trust · settings. admin stays hidden (PIN-gated direct URL).
   // (Initial state only — in-app navigation stays via setView.)
   const [view, setView] = useState(() => {
     try {
       const v = new URLSearchParams(window.location.search).get('view');
-      return ['home', 'ask', 'advisory', 'alerts', 'notifications', 'advisor', 'admin', 'trust', 'details', 'sources'].includes(v) ? v : 'home';
+      return ['home', 'alerts', 'advisory', 'notifications', 'offline', 'aviation', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));
@@ -203,14 +231,28 @@ export function AppProvider({ children }) {
   const registerAsk = useCallback((fn) => { askRef.current = fn; }, []);
   const ask = useCallback((text) => { if (askRef.current) askRef.current(text); }, []);
 
-  // Speak an answer aloud: server TTS (Sarvam, in the selected language) first,
-  // browser speechSynthesis as fallback. Singleton audio - a new answer stops the old one.
+  // Speak an answer aloud. Latency-first, honesty-first:
+  //  1. The speaking indicator flips to 'loading' synchronously — the UI shows
+  //     "speaking…" on the next frame, never blocked on network.
+  //  2. /api/voice/status is checked once and cached: when the backend reports
+  //     browser-fallback, native speechSynthesis starts INSTANTLY — no doomed
+  //     server round-trip is awaited first.
+  //  3. When server TTS is live, /api/voice/synthesize-stream is consumed
+  //     progressively: the first audio chunk plays as soon as it arrives
+  //     while later chunks are still generating (play while generating).
+  //  4. If the stream endpoint is missing (older backend), degrade to legacy
+  //     sequential per-chunk non-streaming calls; if that fails too, honest
+  //     browser speechSynthesis with the voiceFallback note.
+  // Singleton audio - a new answer stops the old one.
   const audioRef = useRef(null);
+  const ttsAbort = useRef(null);
   const speechId = useRef(0);
   const [speechState, setSpeechState] = useState('idle');
   const [speechNote, setSpeechNote] = useState('');
   const cancelAudio = useCallback(() => {
     speechId.current++;
+    ttsAbort.current?.abort();
+    ttsAbort.current = null;
     audioRef.current?.pause();
     audioRef.current = null;
     window.speechSynthesis?.cancel();
@@ -223,51 +265,122 @@ export function AppProvider({ children }) {
     document.documentElement.lang = lang;
     return cancelAudio;
   }, [lang, persona, loc.district, cancelAudio]);
+  // Browser-native speech, started instantly when the server has no TTS
+  // provider (or when server TTS fails). The voiceFallback note stays honest.
+  const speakWithBrowser = useCallback((text, id, noteKey = 'voiceFallback') => {
+    const synth = window.speechSynthesis;
+    const code = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
+    const voice = synth?.getVoices().find((v) => v.lang.startsWith(lang));
+    if (!synth || !voice) {
+      setSpeechNote('voiceFailed'); setSpeechState('idle'); return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = code; utterance.voice = voice;
+    utterance.onend = () => { if (id === speechId.current) setSpeechState('idle'); };
+    utterance.onerror = () => { if (id === speechId.current) { setSpeechState('idle'); setSpeechNote('voiceBlocked'); } };
+    setSpeechNote(noteKey); setSpeechState('playing'); synth.speak(utterance);
+  }, [lang]);
+  // Legacy degradation for backends without /synthesize-stream: sequential
+  // per-chunk non-streaming calls (the pre-streaming behaviour), using the
+  // sentence-aware chunker so no advice is silently dropped past char 600.
+  const speakLegacyChunks = useCallback(async (text, id) => {
+    const chunks = splitSpeakChunks(text);
+    for (const chunk of chunks) {
+      if (id !== speechId.current) return;
+      const r = await api.speak(chunk, lang);
+      if (id !== speechId.current) return;
+      if (!r?.audio_base64) throw new Error('provider unavailable');
+      const audio = new Audio(`data:${r.mime || 'audio/wav'};base64,${r.audio_base64}`);
+      audioRef.current = audio;
+      setSpeechState('playing');
+      await new Promise((resolve, reject) => {
+        audio.onended = resolve;
+        audio.onpause = resolve;
+        audio.onerror = reject;
+        audio.play().catch(reject);
+      });
+    }
+  }, [lang]);
+  // Progressive playback: chunk audios queue up as the stream yields them and
+  // play in order; the first chunk starts the moment it arrives.
+  const playStreamedTts = useCallback(async (text, id, signal) => {
+    const pending = [];
+    let finished = false, failed = null, wake = null;
+    const notify = () => { const w = wake; wake = null; if (w) w(); };
+    (async () => {
+      try {
+        for await (const line of api.speakStream(text, lang, { signal })) {
+          if (id !== speechId.current) return;
+          if (line?.done) {
+            if (line.client_speech || line.provider === 'browser-fallback') {
+              failed = new Error('provider unavailable');
+            }
+            break;
+          }
+          if (line?.audio_base64) {
+            const audio = new Audio(`data:${line.mime || 'audio/wav'};base64,${line.audio_base64}`);
+            pending.push(audio);
+            notify();
+          }
+        }
+      } catch (e) { failed = e; }
+      finally { finished = true; notify(); }
+    })();
+    for (;;) {
+      if (id !== speechId.current) return; // superseded — resolve quietly
+      const audio = pending.shift();
+      if (audio) {
+        audioRef.current = audio;
+        setSpeechState('playing');
+        await new Promise((resolve) => {
+          audio.onended = resolve;
+          audio.onpause = resolve;
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
+        continue;
+      }
+      if (failed) throw failed;
+      if (finished) return;
+      await new Promise((resolve) => { wake = resolve; });
+    }
+  }, [lang]);
   const speak = useCallback(async (text) => {
     if (!text) return;
     stopSpeaking();
     const id = speechId.current;
+    // Optimistic: the indicator renders on the next frame, within 100ms of the tap.
     setSpeechState('loading');
     setSpeechNote('');
-    // Split complete sentences/chunks instead of silently dropping safety advice
-    // after character 600. Replay and automatic speech share this single player.
-    const chunks = text.match(/[\s\S]{1,450}(?:\s|$)|[\s\S]{1,450}/g) || [text];
+    const status = await getVoiceStatus();
+    if (id !== speechId.current) return;
+    if (status?.tts === 'browser-fallback') {
+      speakWithBrowser(text, id, 'voiceFallback');
+      return;
+    }
+    const ctrl = new AbortController();
+    ttsAbort.current = ctrl;
     try {
-      for (const chunk of chunks) {
-        if (id !== speechId.current) return;
-        const r = await api.speak(chunk, lang);
-        if (id !== speechId.current) return;
-        if (!r?.audio_base64) throw new Error('provider unavailable');
-        const audio = new Audio(`data:${r.mime || 'audio/wav'};base64,${r.audio_base64}`);
-        audioRef.current = audio;
-        setSpeechState('playing');
-        await new Promise((resolve, reject) => {
-          audio.onended = resolve;
-          audio.onpause = resolve;
-          audio.onerror = reject;
-          audio.play().catch(reject);
-        });
-      }
+      await playStreamedTts(text, id, ctrl.signal);
       if (id === speechId.current) setSpeechState('idle');
     } catch (error) {
       if (id !== speechId.current) return;
-      audioRef.current?.pause();
       if (error?.name === 'NotAllowedError') {
         setSpeechNote('voiceBlocked'); setSpeechState('idle'); return;
       }
-      const synth = window.speechSynthesis;
-      const code = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
-      const voice = synth?.getVoices().find((v) => v.lang.startsWith(lang));
-      if (!synth || !voice) {
-        setSpeechNote('voiceFailed'); setSpeechState('idle'); return;
+      try {
+        // Older backend without the stream endpoint: legacy path, then browser.
+        await speakLegacyChunks(text, id);
+        if (id === speechId.current) setSpeechState('idle');
+      } catch {
+        if (id !== speechId.current) return;
+        audioRef.current?.pause();
+        speakWithBrowser(text, id, 'voiceFallback');
       }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = code; utterance.voice = voice;
-      utterance.onend = () => { if (id === speechId.current) setSpeechState('idle'); };
-      utterance.onerror = () => { if (id === speechId.current) { setSpeechState('idle'); setSpeechNote('voiceBlocked'); } };
-      setSpeechNote('voiceFallback'); setSpeechState('playing'); synth.speak(utterance);
+    } finally {
+      if (ttsAbort.current === ctrl) ttsAbort.current = null;
     }
-  }, [lang, stopSpeaking]);
+  }, [stopSpeaking, speakWithBrowser, speakLegacyChunks, playStreamedTts]);
 
   useEffect(() => {
     writePref('wgpt.lang', lang);

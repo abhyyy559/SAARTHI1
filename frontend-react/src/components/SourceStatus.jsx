@@ -26,6 +26,9 @@ const WANT = [
   { id: 'open-meteo', label: 'Open-Meteo', icon: 'globe' },
   { id: 'wis2', label: 'WIS2', icon: 'radio' },
   { id: 'imd', label: 'IMD', icon: 'thermometer' },
+  { id: 'gis-location', label: 'GIS — nearest district', icon: 'pin' },
+  { id: 'gis-polygon', label: 'GIS — warning polygon', icon: 'map' },
+  { id: 'gis-hazard', label: 'GIS — hazard distance', icon: 'route' },
 ];
 
 const CITIZEN_KEY = {

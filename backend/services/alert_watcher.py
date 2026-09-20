@@ -149,6 +149,46 @@ _DEMO_NOTIFY: dict[str, str] = {
 }
 
 
+def _cap_fingerprint(gathered: dict[str, Any]) -> str:
+    """Stable identity of the current official-alert set for one district.
+
+    Two polls can return the SAME verdict level while the underlying bulletins
+    changed — a bulletin re-issued at the same severity, or its text updated.
+    The fingerprint catches that so the user hears "Alert update" instead of
+    silence. Severity itself is never derived here; it stays the verdict's.
+    """
+    parts = []
+    for a in gathered.get("relevant") or []:
+        if not isinstance(a, dict):
+            continue
+        aid = str(a.get("id") or a.get("identifier") or "")
+        stamp = str(a.get("updated") or a.get("sent") or a.get("effective") or "")
+        parts.append(f"{aid}@{stamp}")
+    return "|".join(sorted(parts))
+
+
+def _official_alert_key(district: str, gathered: dict[str, Any],
+                        verdict: dict[str, Any]) -> str:
+    """Stable grouping key so the inbox timelines one official warning.
+
+    Prefers the strongest relevant CAP alert's own id (the notification
+    carries the real alert id, never an invented one). Falls back to a
+    district+hazard key so a verdict without visible alert ids still groups
+    its start/update/clear into one trail.
+    """
+    for a in gathered.get("relevant") or []:
+        if isinstance(a, dict) and a.get("id"):
+            return f"cap:{a['id']}"
+    hazard = str(verdict.get("hazard") or "warning")
+    return f"official:{district}:{hazard}"
+
+
+# Internal watcher bookkeeping lives under underscore keys in the same store
+# (like `_demo_notified`); `status()` skips them so they never surface as
+# phantom "districts".
+_FP_KEY = "_fp:{district}"
+
+
 def demo_message_for(alert: dict[str, Any], kind: str) -> dict[str, Any]:
     """Build a push payload from a demo-store alert (same shape as CAP).
 
@@ -312,7 +352,14 @@ def auto_advance_demo() -> list[dict[str, Any]]:
 
 
 async def check_district(district: str) -> dict[str, Any]:
-    """Compute one district's verdict and push if it changed. Never raises."""
+    """Compute one district's verdict, push on change, and log the transition.
+
+    Every transition the watcher detects (start / escalate / clear on the
+    official SACHET/IMD chain, plus `updated` when a bulletin changes without
+    moving the level) is BOTH pushed to subscribed devices AND written to the
+    notification log — the OS push is fire-and-forget, the Notification Center
+    is the durable trail the user can scroll. Bookkeeping never raises.
+    """
     loc = LocationService().lookup(district) or {"district": district, "latitude": None, "longitude": None}
     try:
         gathered = await alert_service.gather_alerts(
@@ -338,7 +385,20 @@ async def check_district(district: str) -> dict[str, Any]:
     state = _load_state()
     prev = state.get(district)
     kind = decide(prev, verdict)
+    fp_key = _FP_KEY.format(district=district)
+    prev_fp = state.get(fp_key)
+    cur_fp = _cap_fingerprint(gathered)
+    # A new or changed official bulletin at the SAME level is an update, not
+    # silence: the verdict did not move, but the warning did change and the
+    # user must hear about it. Never fires on the first sighting (prev is
+    # None — the fingerprint is recorded, nothing is announced), and never on
+    # an unchanged fingerprint.
+    if (not kind and prev is not None and cur_fp and prev_fp
+            and cur_fp != prev_fp
+            and hazard_of(prev) and hazard_of(prev) == hazard_of(verdict)):
+        kind = "updated"
     state[district] = verdict
+    state[fp_key] = cur_fp
     _save_state(state)
 
     if not kind:
@@ -346,6 +406,19 @@ async def check_district(district: str) -> dict[str, Any]:
 
     payload = message_for(kind, verdict, district)
     result = push_service.broadcast(payload, district=district)
+    # The push happened (or was attempted): record it in the history the user
+    # scrolls. This was the missing link — official-chain transitions pushed
+    # to devices but never reached the in-app inbox.
+    try:
+        notification_service.log(
+            kind, payload.get("title", ""), payload.get("body", ""),
+            district=district,
+            alert_id=_official_alert_key(district, gathered, verdict),
+            severity=str(payload.get("severity") or ""),
+            push={k: result.get(k) for k in ("targeted", "delivered", "failed", "pruned")},
+        )
+    except Exception as exc:  # noqa: BLE001 - bookkeeping must not stop alerts
+        log.warning("notification bookkeeping failed: %s", exc)
     log.info("push %s for %s -> %s", kind, district, result)
     return {"district": district, "level": verdict.get("level"), "notified": kind, "push": result}
 

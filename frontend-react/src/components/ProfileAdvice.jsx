@@ -63,7 +63,7 @@ export default function ProfileAdvice() {
           <button className="btn btn-ghost sm" type="button" onClick={() => speak(current.data.advisory)} aria-label={t(lang, 'alertsListen')}>
             <Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}
           </button>
-          <button className="btn btn-ghost sm" type="button" onClick={() => { setPendingAsk(`Explain this advice for a ${persona} in ${loc.district}: ${current.data.advisory}`); setView('ask'); }}>
+          <button className="btn btn-ghost sm" type="button" onClick={() => { setPendingAsk(`Explain this advice for a ${persona} in ${loc.district}: ${current.data.advisory}`); setView('home'); }}>
             {t(lang, 'homeAskAbout')}
           </button>
           <span className="mono sub">{current.data.provenance}</span>

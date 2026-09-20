@@ -18,7 +18,8 @@ UNCONFIGURED = "UNCONFIGURED"
 OFFLINE = "OFFLINE"
 ERROR = "ERROR"
 
-_KNOWN_SOURCES = ("imd", "open-meteo", "govdata", "cap", "owm", "stt", "tts")
+_KNOWN_SOURCES = ("imd", "open-meteo", "govdata", "cap", "owm", "stt", "tts",
+                  "wis2", "gis-location", "gis-polygon", "gis-hazard")
 
 
 @dataclass
@@ -81,6 +82,24 @@ def _initial_state(name: str) -> tuple[str, str]:
         if config.IMD_ADAPTER == "demo":
             return (READY, "demo adapter: IMD-grade fixtures (stamped DEMO) until IMD API access is issued")
         return (UNCONFIGURED, "no IMD_API_KEY — IMD platform is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
+    if name == "wis2":
+        # Mirrors wis2_adapter.status() honesty: even with a broker set, the live
+        # subscription is not implemented in the MVP — CAP polling does the work.
+        if getattr(config, "WIS2_BROKER", ""):
+            return (UNCONFIGURED, "broker set but live subscription not implemented in MVP — CAP polling used instead")
+        return (UNCONFIGURED, "WIS2_BROKER not set — CAP polling used instead")
+    if name == "gis-location":
+        # GIS Job 1 "Where am I?": pure haversine nearest-district math — no key,
+        # no network, nothing that can be unconfigured. Always live-capable.
+        return (LIVE, "haversine nearest-district from GPS — local math, no key needed")
+    if name == "gis-polygon":
+        # GIS Job 2 "Am I inside the warning polygon?": the code path exists, but
+        # live CAP feeds carry no polygon/circle geometry, so it stays idle and
+        # district-name matching does the work instead.
+        return (UNCONFIGURED, "live CAP feeds carry no polygon geometry — district-name matching does the work")
+    if name == "gis-hazard":
+        # GIS Job 3 "Hazard distance": pure haversine route math — always live.
+        return (LIVE, "haversine route-to-hazard distance — local math, no key needed")
     return (READY, "no key required — verified on first use")  # open-meteo
 
 

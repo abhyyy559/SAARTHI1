@@ -28,7 +28,7 @@ export default function HeroCard() {
 
   const askFromHome = (text) => {
     setPendingAsk(text);
-    setView('ask');
+    setView('home');
   };
 
   const [stale, setStale] = useState(false);

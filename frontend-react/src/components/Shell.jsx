@@ -4,7 +4,7 @@
 // mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet.
 // Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
-import { HIDDEN_VIEWS, NAV, t } from '../i18n';
+import { HIDDEN_VIEWS, NAV, PRIMARY_VIEWS, t } from '../i18n';
 import { useApp, SOURCE_MODES } from '../store';
 import Icon from './icons';
 import InstallPrompt from './InstallPrompt';
@@ -12,28 +12,45 @@ import OnboardingTour from './OnboardingTour';
 
 const NAV_ICONS = {
   home: 'home',
-  ask: 'chat',
-  advisor: 'user',
   alerts: 'alert',
-  notifications: 'bell',
   advisory: 'sun',
-  admin: 'layers',
+  notifications: 'bell',
+  offline: 'offline',
+  aviation: 'send',
   trust: 'shield',
-  details: 'file',
-  sources: 'database',
+  settings: 'list',
+  admin: 'layers',
 };
 
+// IA dedup: three primary tabs; everything else lives in the More sheet.
 const MORE_ROWS = [
-  { view: 'advisory', labelKey: 'navAdvisory', icon: 'sun' },
   { view: 'notifications', labelKey: 'navNotifications', icon: 'bell' },
-  { view: 'advisor', labelKey: 'navAdvisor', icon: 'user' },
-  { view: 'trust', labelKey: 'navTrust', icon: 'shield' },
-  { view: 'details', labelKey: 'navDetails', icon: 'file' },
-  { view: 'sources', labelKey: 'navSources', icon: 'database' },
+  { view: 'offline', labelKey: 'navOffline', icon: 'offline' },
+  { view: 'aviation', labelKey: 'navAviation', icon: 'send' },
+  { view: 'trust', labelKey: 'navTrustSources', icon: 'shield' },
+  { view: 'settings', labelKey: 'navSettings', icon: 'list' },
 ];
 // NOTE: the old admin row was removed from MORE_ROWS on purpose — admin
 // stays a HIDDEN_VIEW (i18n.js) and is never a public nav row. The
 // HIDDEN_VIEWS filter above remains as a guard for any future rows.
+
+// Global "speaking…" indicator. speak() sets speechState='loading'
+// synchronously on tap, so this renders on the next frame — within 100ms of
+// tapping any Listen/speaker button, with a stop control. aria-live so
+// screen readers announce it.
+function SpeakingIndicator() {
+  const { lang, speechState, stopSpeaking } = useApp();
+  if (speechState !== 'loading' && speechState !== 'playing') return null;
+  return (
+    <div className="speaking-chip" role="status" aria-live="polite">
+      <span className="speaking-dot" aria-hidden="true" />
+      {t(lang, 'speaking')}
+      <button type="button" className="btn btn-ghost sm" onClick={stopSpeaking} aria-label={t(lang, 'stop')}>
+        {t(lang, 'stop')}
+      </button>
+    </div>
+  );
+}
 
 function StatusBanner({ kind, children }) {
   return (
@@ -50,8 +67,8 @@ function MobileNav({ current, onPick, moreOpen }) {
   const { lang, setView } = useApp();
   const tabs = [
     { view: 'home', label: t(lang, 'navHome'), icon: 'home' },
-    { view: 'ask', label: t(lang, 'navAsk'), icon: 'chat' },
     { view: 'alerts', label: t(lang, 'navAlerts'), icon: 'alert' },
+    { view: 'advisory', label: t(lang, 'navAdvisory'), icon: 'sun' },
   ];
   return (
     <nav className="mobile-nav" aria-label={t(lang, 'navLabel')}>
@@ -155,9 +172,9 @@ export default function Shell({ children }) {
 
   const demoLive = sourceMode === 'demo';
   // The demo-data banner only belongs where demo/sample content can appear:
-  // never on Admin, Sources, or Trust. SOS carries its own
+  // never on Admin or Trust chrome. SOS carries its own
   // "SIMULATED — FOR DEMO ONLY" stamp and lives inside the alerts view.
-  const demoBannerViews = new Set(['home', 'ask', 'alerts', 'advisory', 'notifications', 'details']);
+  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'offline', 'aviation', 'trust']);
   const showDemoBanner = demoLive && demoBannerViews.has(view);
 
   return (
@@ -174,18 +191,36 @@ export default function Shell({ children }) {
           </span>
         </div>
         <nav className="rail-nav">
-          {/* Team-only views (HIDDEN_VIEWS) never appear in the public nav. */}
-          {NAV.filter((n) => !HIDDEN_VIEWS.includes(n.id)).map((n) => (
+          {/* Team-only views (HIDDEN_VIEWS) never appear in the public nav.
+              Three primary tabs, then the More sheet's rows as a section. */}
+          {PRIMARY_VIEWS.map((id) => {
+            const n = NAV.find((x) => x.id === id);
+            if (!n) return null;
+            return (
+              <button
+                key={n.id}
+                type="button"
+                className={`rail-item${view === n.id ? ' is-active' : ''}`}
+                data-tour={n.id === 'alerts' ? 'nav-alerts' : undefined}
+                aria-current={view === n.id ? 'page' : undefined}
+                onClick={() => setView(n.id)}
+              >
+                <span className="rail-icon"><Icon name={NAV_ICONS[n.id] || 'info'} size={20} /></span>
+                <span>{t(lang, n.label)}</span>
+              </button>
+            );
+          })}
+          <div className="rail-more-label"><span>{t(lang, 'menuMore')}</span></div>
+          {MORE_ROWS.filter((r) => !HIDDEN_VIEWS.includes(r.view)).map((r) => (
             <button
-              key={n.id}
+              key={r.view}
               type="button"
-              className={`rail-item${view === n.id ? ' is-active' : ''}`}
-              data-tour={n.id === 'alerts' ? 'nav-alerts' : undefined}
-              aria-current={view === n.id ? 'page' : undefined}
-              onClick={() => setView(n.id)}
+              className={`rail-item rail-sub${view === r.view ? ' is-active' : ''}`}
+              aria-current={view === r.view ? 'page' : undefined}
+              onClick={() => setView(r.view)}
             >
-              <span className="rail-icon"><Icon name={NAV_ICONS[n.id] || 'info'} size={20} /></span>
-              <span>{t(lang, n.label)}</span>
+              <span className="rail-icon"><Icon name={r.icon} size={20} /></span>
+              <span>{t(lang, r.labelKey)}</span>
             </button>
           ))}
         </nav>
@@ -296,6 +331,7 @@ export default function Shell({ children }) {
           {toast.text}
         </div>
       )}
+      <SpeakingIndicator />
     </div>
   );
 }

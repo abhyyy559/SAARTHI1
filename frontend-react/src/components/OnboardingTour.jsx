@@ -1,26 +1,36 @@
-// Spotlight onboarding: points AT the real button, not a popup about it.
-// Each step navigates to a view, highlights one element with a cutout ring,
-// and shows an icon-led card beside it. Built for low-literacy users:
-// icons carry meaning, text stays one line + one short sentence.
+// Spotlight onboarding: points AT the real control, not a popup about it.
+// Four icon-led steps, one short line each, built for low-literacy users —
+// the icon carries the meaning, the text only confirms.
+//
+// SELECTOR CONTRACTS (Agent 4 / anyone touching IA — read before renaming):
+//   1. hero   -> '[data-tour="verdict"]'     on the Home HeroCard (components/HeroCard.jsx).
+//   2. chat   -> '[data-tour="home-chat"]'   on the HOME chat composer. This is
+//      the contract for the home composer: whoever mounts it MUST carry
+//      data-tour="home-chat", or the step skips itself honestly (see below).
+//      (The Ask view's composer keeps the older 'chatbox' hook; the tour no
+//      longer navigates away from home for the chat step.)
+//   3. alerts -> '[data-tour="nav-alerts"]'  on the alerts tab (components/Shell.jsx,
+//      rail on desktop + tab bar on mobile — whichever is rendered wins).
+//   4. offline -> '[data-tour="conn"]' with '.conn-pill' fallback, the topbar
+//      connectivity pill (components/Shell.jsx, always rendered).
+//
+// A step whose selector never appears (missing hook, display:none) is SKIPPED,
+// never ringed on empty space. The deep-link guard stands: a launch URL naming
+// a view (?view= / #view=) always wins over the first-run auto-start.
+// Replay: window.dispatchEvent(new Event('wgpt:tour')) — the More/Settings
+// "Take the tour" entry dispatches exactly this.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { t } from '../i18n';
 import { useApp } from '../store';
+import Icon from './icons';
 
 const SEEN_KEY = 'wgpt-onboarded';
 
 const STEPS = [
-  { view: 'home', sel: null, icon: 'check', title: 'obt1t', body: 'obt1b' },
-  // FIX: the only mic in the app is the Ask dictation button — the old
-  // home view + '[data-tour="mic"]' matched nothing, so the ring drew on
-  // empty space. The tour now navigates to ask and points at the real mic.
-  { view: 'ask', sel: '[data-tour="mic"]', icon: 'mic', title: 'obt2t', body: 'obt2b' },
-  { view: 'home', sel: '[data-tour="verdict"]', icon: 'shield', title: 'obt3t', body: 'obt3b' },
-  // The "who is asking" step points at the role grid itself — the ten
-  // persona cards are the same control on desktop and mobile, so the ring
-  // always lands somewhere real.
-  { view: 'advisor', sel: '[data-tour="persona-grid"]', icon: 'person', title: 'obt4t', body: 'obt4b' },
-  { view: 'ask', sel: '[data-tour="chatbox"]', icon: 'chat', title: 'obt5t', body: 'obt5b' },
-  { view: 'ask', sel: '[data-tour="nav-alerts"]', icon: 'bell', title: 'obt6t', body: 'obt6b' },
+  { view: 'home', sels: ['[data-tour="verdict"]'], icon: 'sun', title: 'ot1t', body: 'ot1b' },
+  { view: 'home', sels: ['[data-tour="home-chat"]'], icon: 'chat', title: 'ot2t', body: 'ot2b' },
+  { view: 'home', sels: ['[data-tour="nav-alerts"]'], icon: 'bell', title: 'ot3t', body: 'ot3b' },
+  { view: 'home', sels: ['[data-tour="conn"]', '.conn-pill'], icon: 'offline', title: 'ot4t', body: 'ot4b' },
 ];
 
 export default function OnboardingTour() {
@@ -44,13 +54,14 @@ export default function OnboardingTour() {
   // path advances the tour, which needs goStep, which calls measure.
   const goStepRef = useRef(null);
 
-  const measure = useCallback((sel, stepIdx) => {
-    if (!sel) {
+  const measure = useCallback((sels, stepIdx) => {
+    const list = Array.isArray(sels) ? sels : [sels];
+    if (list.length === 0) {
       setRect(null);
       return;
     }
-    // The new view renders async (alerts/advice fetch), so the target may not
-    // exist on the first tick. Poll briefly; if it never appears — e.g. a
+    // The target may render async (alerts/advice fetch), so poll briefly; if
+    // it never appears — e.g. the home composer hook is not mounted yet, or a
     // desktop-only control on mobile — skip the step instead of spotlighting
     // empty space. A zero-size hit (display:none) counts as missing too.
     const SKIP_AFTER_MS = 2500;
@@ -59,9 +70,16 @@ export default function OnboardingTour() {
       if (stepIdx >= STEPS.length - 1) close(true);
       else goStepRef.current(stepIdx + 1);
     };
+    const find = () => {
+      for (const sel of list) {
+        const el = document.querySelector(sel);
+        if (el) return el;
+      }
+      return null;
+    };
     const tick = () => {
       if (stepRef.current !== stepIdx) return; // user moved on
-      const el = document.querySelector(sel);
+      const el = find();
       if (el) {
         try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* ignore */ }
         // Measure after scroll settles so the ring lands on the element.
@@ -87,7 +105,7 @@ export default function OnboardingTour() {
     setView(s.view);
     setRect(null);
     setActive(true);
-    measure(s.sel, idx);
+    measure(s.sels, idx);
   }, [setView, measure]);
   goStepRef.current = goStep;
 
@@ -97,9 +115,9 @@ export default function OnboardingTour() {
     const replay = () => goStepRef.current(0);
     window.addEventListener('wgpt:tour', replay);
     let tId = null;
-    // FIX: a deep link (?view=) must win over the first-run auto-start. A push
-    // notification that lands on ?view=alerts used to be yanked back to Home
-    // 900ms later. Auto-start now stays silent whenever the launch URL names
+    // FIX (kept): a deep link (?view=) must win over the first-run auto-start.
+    // A push notification that lands on ?view=alerts used to be yanked back to
+    // Home 900ms later. Auto-start stays silent whenever the launch URL names
     // a view; the tour remains re-openable from "Take the tour".
     let deepLinked = false;
     try {
@@ -109,7 +127,7 @@ export default function OnboardingTour() {
     if (!seen && !deepLinked) tId = setTimeout(() => goStepRef.current(0), 900);
     const onResize = () => {
       const s = STEPS[stepRef.current];
-      if (s && s.sel) measure(s.sel, stepRef.current);
+      if (s && s.sels) measure(s.sels, stepRef.current);
     };
     window.addEventListener('resize', onResize);
     return () => {
@@ -120,10 +138,9 @@ export default function OnboardingTour() {
   }, [measure]);
 
   // Escape closes the tour. It is a modal dialog, and a desktop user who opens
-  // it by accident (or by pressing the sidebar button) must not have to hunt for
-  // the Skip control. Treated like Skip rather than like a stray backdrop click:
-  // Escape is deliberate, so it counts as having seen the tour. It stays
-  // re-openable from "Take the tour", so nothing is lost.
+  // it by accident must not have to hunt for the Skip control. Treated like
+  // Skip rather than like a stray backdrop click: Escape is deliberate, so it
+  // counts as having seen the tour. It stays re-openable from "Take the tour".
   useEffect(() => {
     if (!active) return undefined;
     const onKey = (e) => {
@@ -144,13 +161,12 @@ export default function OnboardingTour() {
 
   if (!active) return null;
   const s = STEPS[step];
-  const pad = 8;
   const tipTop = rect ? rect.top + rect.height + 12 : null;
   const flip = tipTop != null && tipTop > window.innerHeight - 220;
 
   // Black console tooltip, signal-yellow title — reads like the rest of
-  // the board. The deep-link guard above is unchanged: a launch URL naming a
-  // view always wins over first-run auto-start.
+  // the board. The icon leads (low-literacy users read the picture first);
+  // the deep-link guard above is unchanged.
   return (
     <>
       <div className="tour-scrim" onClick={() => close(false)} />
@@ -159,10 +175,10 @@ export default function OnboardingTour() {
           aria-hidden
           className="tour-ring"
           style={{
-            top: Math.max(4, rect.top - pad),
-            left: Math.max(4, rect.left - pad),
-            width: rect.width + pad * 2,
-            height: rect.height + pad * 2,
+            top: Math.max(4, rect.top - 8),
+            left: Math.max(4, rect.left - 8),
+            width: rect.width + 16,
+            height: rect.height + 16,
           }}
         />
       )}
@@ -177,6 +193,7 @@ export default function OnboardingTour() {
         }}
       >
         <span className="tour-count">{step + 1}/{STEPS.length}</span>
+        <span className="tour-icon" aria-hidden="true"><Icon name={s.icon} size={30} /></span>
         <div className="display">{t(lang, s.title)}</div>
         <p>{t(lang, s.body)}</p>
         <div className="tour-actions">

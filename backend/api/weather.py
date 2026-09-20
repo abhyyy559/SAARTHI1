@@ -143,7 +143,11 @@ async def current_wx(lat: float = 17.385, lon: float = 78.4867, district: Option
     if district:
         loc["district"] = district
     if config.DEMO_MODE:
-        obs = await s["imd"].get_current_weather(loc["latitude"], loc["longitude"])
+        # district= lets the location-switcher presets serve their own sample
+        # weather (Visakhapatnam rain, Chennai clear); without it the generic
+        # Hyderabad sample answers, exactly as before.
+        obs = await s["imd"].get_current_weather(
+            loc["latitude"], loc["longitude"], district=loc.get("district"))
         cross, cross_prov = None, "UNCONFIGURED"
         prov = "DEMO"
     else:
@@ -181,11 +185,13 @@ async def current_wx(lat: float = 17.385, lon: float = 78.4867, district: Option
 
 
 @router.get("/weather/forecast")
-async def forecast(lat: float = 17.385, lon: float = 78.4867) -> dict:
+async def forecast(lat: float = 17.385, lon: float = 78.4867, district: Optional[str] = None) -> dict:
     s = _services()
     loc = s["loc"].resolve(lat, lon)
+    if district:
+        loc["district"] = district
     if config.DEMO_MODE:
-        fc = await s["imd"].get_forecast(loc["latitude"], loc["longitude"])
+        fc = await s["imd"].get_forecast(loc["latitude"], loc["longitude"], district=loc.get("district"))
         return {"location": loc, "forecast": fc.model_dump(mode="json"), "provenance": "DEMO", "generated_at": iso_now()}
     try:
         data, prov = await _live_forecast(loc["latitude"], loc["longitude"])

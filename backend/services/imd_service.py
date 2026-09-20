@@ -9,7 +9,8 @@ import httpx
 from .. import config
 from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, report
 from ..models.weather import WeatherObservation, WeatherForecast, WeatherWarning
-from ..utils.time import IST
+from ..utils.time import IST, now_ist
+from . import district_demo
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures"
 
@@ -76,9 +77,21 @@ class IMDService:
             resp.raise_for_status()
             return resp.json()
 
-    async def get_current_weather(self, latitude: float, longitude: float) -> WeatherObservation:
+    async def get_current_weather(self, latitude: float, longitude: float,
+                                district: str | None = None) -> WeatherObservation:
+        """`district` is demo-only: the location switcher names the district so
+        each preset gets its own sample weather (Visakhapatnam rain, Chennai
+        clear). Live mode ignores it — real coords, real station."""
         if self.adapter == "demo":
             raw = _load_fixture("current_hyderabad.json")["raw"]
+            preset = district_demo.demo_current(district)
+            if preset:
+                entry = district_demo.preset_for(district) or {}
+                name = entry.get("district") or district
+                raw = {**raw, "temp": preset["temp"], "humidity": preset["humidity"],
+                       "rainfall": preset["rainfall"], "windspeed": preset["windspeed"],
+                       "condition": preset["condition"], "district": name,
+                       "station": name}
         else:
             try:
                 raw = await self._get(config.IMD_PATH_CURRENT, {"lat": latitude, "lng": longitude, "station": "Hyderabad"})
@@ -95,9 +108,22 @@ class IMDService:
             observed_at=_parse_ts(raw.get("obs_time")) if self.adapter == "live" else _relative_ts(),
         )
 
-    async def get_forecast(self, latitude: float, longitude: float) -> WeatherForecast:
+    async def get_forecast(self, latitude: float, longitude: float,
+                           district: str | None = None) -> WeatherForecast:
         if self.adapter == "demo":
             raw = _load_fixture("forecast_hyderabad.json")["raw"]
+            preset_days = district_demo.demo_forecast(district)
+            if preset_days:
+                # Fresh dates: a fixed 2026-09-15 row would silently expire.
+                entry = district_demo.preset_for(district) or {}
+                name = entry.get("district") or district or raw.get("city")
+                today = now_ist().date()
+                raw = {**raw, "city": name, "forecast": [
+                    {"date": (today + timedelta(days=i)).isoformat(),
+                     "condition": d["condition"], "min": d["min"],
+                     "max": d["max"], "rain": d["rain"]}
+                    for i, d in enumerate(preset_days)
+                ]}
         else:
             try:
                 raw = await self._get(config.IMD_PATH_FORECAST, {"lat": latitude, "lng": longitude, "city": "Hyderabad"})
@@ -118,11 +144,23 @@ class IMDService:
 
     async def get_district_warning(self, district: str) -> WeatherWarning | None:
         if self.adapter == "demo":
-            raw = _load_fixture("warning_hyderabad.json")["raw"]
-            # Demo fixtures are single-district samples: retarget the fixture to
-            # the requested district so prototype testing works anywhere.
-            # Provenance stays DEMO — never presented as a live IMD warning.
-            raw = {**raw, "district": district}
+            entry = district_demo.demo_warning(district)
+            if entry is None:
+                # Explicit calm preset (Chennai): the service answered and has
+                # nothing to report — an honest all-clear, never a guess.
+                return None
+            if entry is district_demo.FALLBACK:
+                raw = _load_fixture("warning_hyderabad.json")["raw"]
+                # Demo fixtures are single-district samples: retarget the fixture to
+                # the requested district so prototype testing works anywhere.
+                # Provenance stays DEMO — never presented as a live IMD warning.
+                raw = {**raw, "district": district}
+            else:
+                # Location-switcher preset: the district's own sample warning.
+                # Severity comes from the fixed district_demo table only.
+                raw = {"status": "ok", "district": district, "warnings": [{
+                    "type": entry["type"], "severity": entry["severity"],
+                    "message": entry["message"]}]}  # type: ignore[index]
         else:
             try:
                 raw = await self._get(config.IMD_PATH_WARNING, {"district": district})
@@ -160,7 +198,11 @@ class IMDService:
 
     async def get_district_nowcast(self, district: str) -> str:
         if self.adapter == "demo":
-            raw = _load_fixture("nowcast_hyderabad.json")["raw"]
+            text = district_demo.demo_nowcast(district)
+            if text is None:
+                raw = _load_fixture("nowcast_hyderabad.json")["raw"]
+                text = raw.get("nowcast", {}).get("phenomenon", "")
+            return text
         else:
             try:
                 raw = await self._get(config.IMD_PATH_NOWCAST, {"district": district})

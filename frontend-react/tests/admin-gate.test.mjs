@@ -11,12 +11,13 @@ import { test } from 'node:test';
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 // --- hidden from every public nav ------------------------------------------
+// IA dedup (2026-09-20): the rail renders PRIMARY_VIEWS (home/alerts/advisory)
+// plus MORE_ROWS filtered by HIDDEN_VIEWS — admin is in neither.
 test('rail nav filters out HIDDEN_VIEWS', () => {
   const code = read('../src/components/Shell.jsx');
   assert.match(code, /HIDDEN_VIEWS/, 'Shell must import HIDDEN_VIEWS');
-  assert.match(
-    code,
-    /NAV\.filter\(\(n\) => !HIDDEN_VIEWS\.includes\(n\.id\)\)\.map/,
+  assert.ok(
+    /PRIMARY_VIEWS\.map/.test(code) && /MORE_ROWS\.filter\(\(r\) => !HIDDEN_VIEWS\.includes\(r\.view\)\)/.test(code),
     'rail nav must exclude hidden views',
   );
 });

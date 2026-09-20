@@ -15,7 +15,16 @@ Hard rules (eval params 1, 3, 4 · key features 5, 6):
 - Every card cites its basis facts with named provenance (LIVE/CACHED/DEMO/
   UNAVAILABLE), e.g. "Forecast day +2 (22 Sep): 62mm rain (Open-Meteo, LIVE)".
 - Every user-facing string exists in EN/HI/TE. No Tamil script anywhere.
+
+Dynamic re-evaluation (diff_cards / evaluate_change / snapshot_inputs) lets
+the alert watcher re-run this engine as inputs change and diff the results.
+Diffing never invents or escalates severity: escalation is only ever
+*detected* from the inputs (official grade got more urgent, or a rain-cited
+card cites a larger number), and UNKNOWN severity never escalates.
 """
+
+import re
+from datetime import datetime, timezone
 
 from .advisory_service import _ACTION, _first_num, _lang_of
 
@@ -382,6 +391,27 @@ _T = {
         "en": "they could not be verified",
         "hi": "उनका सत्यापन नहीं हो सका",
         "te": "వాటిని ధృవీకరించలేకపోయాం",
+    },
+    # --- dynamic diff summary lines (only new user-facing strings) --------
+    "diff_added": {
+        "en": "New advisory: {title} [{sev}]",
+        "hi": "नई सलाह: {title} [{sev}]",
+        "te": "కొత్త సలహా: {title} [{sev}]",
+    },
+    "diff_removed": {
+        "en": "Advisory ended: {title}",
+        "hi": "सलाह समाप्त: {title}",
+        "te": "సలహా ముగిసింది: {title}",
+    },
+    "diff_escalated_sev": {
+        "en": "Advisory escalated: {title} [{old_sev} → {new_sev}]",
+        "hi": "सलाह तीव्र हुई: {title} [{old_sev} → {new_sev}]",
+        "te": "సలహా తీవ్రమైంది: {title} [{old_sev} → {new_sev}]",
+    },
+    "diff_escalated_rain": {
+        "en": "Advisory worsened: {title} [{old_v}mm → {new_v}mm rain]",
+        "hi": "सलाह बिगड़ी: {title} [{old_v} मिमी → {new_v} मिमी वर्षा]",
+        "te": "సలహా దిగజారింది: {title} [{old_v}మిమీ → {new_v}మిమీ వర్షం]",
     },
 }
 
@@ -759,3 +789,224 @@ def template_langs() -> dict[str, set[str]]:
             if isinstance(val, dict) and lang in val:
                 per.setdefault(lang, set()).add(key)
     return per
+
+
+# ---------------------------------------------------------------------------
+# Dynamic re-evaluation: diff two card sets, rebuild from stored snapshots,
+# and decide what is worth a user notification. None of this changes the card
+# rules above — it only compares their outputs across input snapshots.
+# ---------------------------------------------------------------------------
+_READABLE_SEV = {"RED", "ORANGE", "YELLOW", "GREEN"}
+# The rules engine formats the number with Latin digits in every language
+# (f"{v:g}") but the unit word is localised: "mm" / "मिमी" / "మిమీ".
+_RAIN_CITE_RE = re.compile(r"(\d+(?:\.\d+)?)\s?(?:mm|मिमी|మిమీ)")
+
+
+def _card_rain_mm(card: dict | None) -> float | None:
+    """Rain value (mm) cited on a card, or None.
+
+    Scans title/body/basis for the first '<n>mm' citation. The rules engine
+    cites exactly one rain figure per card (the triggering day's value), so
+    the first match is the card's cited number — never invented here.
+    """
+    if not isinstance(card, dict):
+        return None
+    text = " ".join([str(card.get("title") or ""), str(card.get("body") or "")] +
+                    [str(b) for b in (card.get("basis") or [])])
+    m = _RAIN_CITE_RE.search(text)
+    return float(m.group(1)) if m else None
+
+
+def _escalation(old_card: dict, new_card: dict) -> dict | None:
+    """Describe a worsening for one stable card id, or None.
+
+    Two honest worsening signals, both *detected* from the inputs — severity
+    is never invented or promoted:
+    - official grade got more urgent (RED outranks ORANGE outranks YELLOW
+      outranks GREEN), but ONLY from a readable baseline: UNKNOWN never
+      escalates;
+    - a rain-cited card now cites a larger rain number.
+    Downgrades, unchanged cards, and unreadable severities return None.
+    """
+    o_sev, n_sev = old_card.get("severity_word"), new_card.get("severity_word")
+    if o_sev in _READABLE_SEV and n_sev in _READABLE_SEV \
+            and _SEV_RANK[n_sev] < _SEV_RANK[o_sev]:
+        return {"id": new_card["id"], "kind": new_card.get("kind"),
+                "title": new_card.get("title"), "signal": "severity",
+                "old_severity_word": o_sev, "new_severity_word": n_sev,
+                "old_rain_mm": None, "new_rain_mm": None}
+    o_rain, n_rain = _card_rain_mm(old_card), _card_rain_mm(new_card)
+    if o_rain is not None and n_rain is not None and n_rain > o_rain:
+        return {"id": new_card["id"], "kind": new_card.get("kind"),
+                "title": new_card.get("title"), "signal": "rain",
+                "old_severity_word": o_sev, "new_severity_word": n_sev,
+                "old_rain_mm": o_rain, "new_rain_mm": n_rain}
+    return None
+
+
+def _diff_summary_lines(lang: str, added: list[dict], removed: list[dict],
+                        escalated: list[dict]) -> list[str]:
+    lines = []
+    for c in added:
+        lines.append(_T["diff_added"][lang].format(
+            title=c.get("title") or "", sev=c.get("severity_word") or ""))
+    for c in removed:
+        lines.append(_T["diff_removed"][lang].format(title=c.get("title") or ""))
+    for e in escalated:
+        if e["signal"] == "rain":
+            lines.append(_T["diff_escalated_rain"][lang].format(
+                title=e.get("title") or "",
+                old_v=f"{e['old_rain_mm']:g}", new_v=f"{e['new_rain_mm']:g}"))
+        else:
+            lines.append(_T["diff_escalated_sev"][lang].format(
+                title=e.get("title") or "",
+                old_sev=e.get("old_severity_word") or "",
+                new_sev=e.get("new_severity_word") or ""))
+    return lines
+
+
+def diff_cards(old: list[dict] | None, new: list[dict] | None) -> dict:
+    """Diff two advisory-card sets by stable card id.
+
+    Returns {"added", "removed", "escalated", "summary"}:
+    - added: cards present in `new` but not `old` (by card id),
+    - removed: cards present in `old` but not `new`,
+    - escalated: same id in both with a detected worsening (official grade
+      more urgent from a readable baseline, or a larger cited rain number),
+    - summary: trilingual one-liner lists, {"en": [...], "hi": [...],
+      "te": [...]}.
+    """
+    old_by_id = {c["id"]: c for c in (old or [])
+                 if isinstance(c, dict) and c.get("id")}
+    new_by_id = {c["id"]: c for c in (new or [])
+                 if isinstance(c, dict) and c.get("id")}
+    added = [new_by_id[i] for i in new_by_id if i not in old_by_id]
+    removed = [old_by_id[i] for i in old_by_id if i not in new_by_id]
+    escalated = []
+    for cid, new_c in new_by_id.items():
+        if cid in old_by_id:
+            esc = _escalation(old_by_id[cid], new_c)
+            if esc:
+                escalated.append(esc)
+    summary = {lang: _diff_summary_lines(lang, added, removed, escalated)
+               for lang in ("en", "hi", "te")}
+    return {"added": added, "removed": removed, "escalated": escalated,
+            "summary": summary}
+
+
+def snapshot_inputs(current: dict | None = None,
+                    forecast: dict | None = None,
+                    alerts: list[dict] | None = None,
+                    verdict: dict | None = None,
+                    current_prov: str = "LIVE", forecast_prov: str = "LIVE",
+                    alerts_prov: str = "LIVE") -> dict:
+    """Capture exactly what card-building needs, with a timestamp.
+
+    Cheap for the alert watcher to store and compare between polls: only the
+    four engine inputs plus provenance labels. Matches the shapes emitted by
+    the /advisory/cards endpoint (adapter model_dump dicts, CAP alert dicts,
+    build_verdict output).
+    """
+    return {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "current": current,
+        "forecast": forecast,
+        "alerts": list(alerts) if alerts else [],
+        "verdict": dict(verdict) if verdict else {},
+        "provenance": {"current": current_prov, "forecast": forecast_prov,
+                       "alerts": alerts_prov},
+    }
+
+
+def _snap_parts(snap: dict | None):
+    snap = snap if isinstance(snap, dict) else {}
+    prov = snap.get("provenance")
+    prov = prov if isinstance(prov, dict) else {}
+    return (snap.get("current"), snap.get("forecast"), snap.get("alerts"),
+            snap.get("verdict"), prov)
+
+
+def _prov_for(explicit: str | None, snap_prov: dict, key: str) -> str:
+    if explicit:
+        return explicit
+    v = snap_prov.get(key)
+    return str(v) if v else "LIVE"
+
+
+def _notify_items(new_cards: list[dict], diff: dict, old_cards: list[dict]) -> list[dict]:
+    """Notification-worthy changes — nothing more.
+
+    A new card notifies only when (a) its severity rank is RED/ORANGE (rank
+    <= 1) or it is an alert_safety card (a newly confirmed official warning
+    is always worth telling the user about), or (b) its cited rain value
+    crossed the 50mm heavy-rain threshold upward since the previous snapshot
+    (same id, else same kind, else treated as no prior reading). Downgrades,
+    calm re-evaluations, and sub-threshold changes notify nothing.
+    Each item carries the card's own title/body plus its cited basis facts,
+    in the requested language.
+    """
+    added_ids = {c["id"] for c in diff["added"] if isinstance(c, dict)}
+    old_by_id = {c["id"]: c for c in old_cards
+                 if isinstance(c, dict) and c.get("id")}
+    old_by_kind: dict[str, dict] = {}
+    for c in old_cards:
+        if isinstance(c, dict) and c.get("kind") and c["kind"] not in old_by_kind:
+            old_by_kind[c["kind"]] = c
+    notify, seen = [], set()
+    for c in new_cards:
+        if not isinstance(c, dict) or not c.get("id") or c["id"] in seen:
+            continue
+        sev_rank = _SEV_RANK.get(c.get("severity_word"), 9)
+        rule_a = c["id"] in added_ids and (
+            sev_rank <= 1 or c.get("kind") == "alert_safety")
+        rule_b = False
+        rain = _card_rain_mm(c)
+        if rain is not None and rain >= _RAIN_HEAVY_MM:
+            old_c = old_by_id.get(c["id"]) or old_by_kind.get(c.get("kind"))
+            old_rain = _card_rain_mm(old_c) if old_c is not None else None
+            rule_b = old_rain is None or old_rain < _RAIN_HEAVY_MM
+        if rule_a or rule_b:
+            seen.add(c["id"])
+            notify.append({
+                "card_id": c["id"],
+                "kind": c.get("kind"),
+                "title": c.get("title"),
+                "body": c.get("body"),
+                "severity_word": c.get("severity_word"),
+                "basis": list(c.get("basis") or []),
+            })
+    return notify
+
+
+def evaluate_change(previous_inputs: dict | None,
+                    current_inputs: dict | None,
+                    persona: str = "general", lang: str = "en",
+                    current_prov: str | None = None,
+                    forecast_prov: str | None = None,
+                    alerts_prov: str | None = None) -> dict:
+    """Rebuild cards from two input snapshots, diff them, pick notifications.
+
+    `previous_inputs` / `current_inputs` are snapshot_inputs() dicts (raw
+    input bundles missing the wrapper are tolerated). Each snapshot's own
+    stored provenance is used unless an explicit prov argument overrides it.
+    Both snapshots are evaluated with the same persona/lang so the diff is
+    apples-to-apples.
+
+    Returns {"cards": new_cards, "changes": diff_cards(...),
+             "notify": [...]} — see _notify_items for what qualifies.
+    """
+    pc, pf, pa, pv, pprov = _snap_parts(previous_inputs)
+    cc, cf, ca, cv, cprov = _snap_parts(current_inputs)
+    old_cards = advisory_cards(
+        pc, pf, pa, pv, persona=persona, lang=lang,
+        current_prov=_prov_for(current_prov, pprov, "current"),
+        forecast_prov=_prov_for(forecast_prov, pprov, "forecast"),
+        alerts_prov=_prov_for(alerts_prov, pprov, "alerts"))
+    new_cards = advisory_cards(
+        cc, cf, ca, cv, persona=persona, lang=lang,
+        current_prov=_prov_for(current_prov, cprov, "current"),
+        forecast_prov=_prov_for(forecast_prov, cprov, "forecast"),
+        alerts_prov=_prov_for(alerts_prov, cprov, "alerts"))
+    diff = diff_cards(old_cards, new_cards)
+    return {"cards": new_cards, "changes": diff,
+            "notify": _notify_items(new_cards, diff, old_cards)}

@@ -19,6 +19,10 @@ const LABELS = {
   owm: 'OpenWeatherMap',
   stt: 'Speech-to-text',
   tts: 'Text-to-speech',
+  wis2: 'WIS 2.0',
+  'gis-location': 'GIS — nearest district',
+  'gis-polygon': 'GIS — warning polygon',
+  'gis-hazard': 'GIS — hazard distance',
 };
 
 // One meaningful icon per source — never a repeated generic glyph.
@@ -30,6 +34,10 @@ const SRC_ICON = {
   owm: 'cloud',
   stt: 'mic',
   tts: 'speaker',
+  wis2: 'radio',
+  'gis-location': 'pin',
+  'gis-polygon': 'map',
+  'gis-hazard': 'route',
 };
 
 // "2026-09-17T22:20:18.426805+05:30" -> "22:20". Empty -> "".

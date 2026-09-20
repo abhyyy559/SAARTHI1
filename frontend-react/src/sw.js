@@ -78,4 +78,11 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PING') {
     event.source?.postMessage({ type: 'PONG', pushCapable: true });
   }
+  // Agent 2: the Offline & P2P panel asks whether the worker is actually
+  // controlling this page before it claims "ready for offline". A worker that
+  // is merely registered but not controlling the page cannot serve the app
+  // shell from cache — reporting that honestly beats a green dot that lies.
+  if (event.data && event.data.type === 'OFFLINE_PROBE') {
+    event.source?.postMessage({ type: 'OFFLINE_PROBE_RESULT', controlling: true });
+  }
 });

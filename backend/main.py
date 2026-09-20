@@ -80,7 +80,7 @@ app.add_middleware(CORSMiddleware, allow_origins=_cors_origins(), allow_methods=
 # stops runaway loops. Per-IP sliding window.
 _RATE_LIMIT_PATHS = {
     "/api/chat", "/api/chat/query", "/api/v1/chat",
-    "/api/voice/transcribe", "/api/voice/synthesize",
+    "/api/voice/transcribe", "/api/voice/synthesize", "/api/voice/synthesize-stream",
     "/api/advisory", "/api/v1/advisories",
 }
 _RATE_LIMIT_MAX = 120        # requests per window per IP

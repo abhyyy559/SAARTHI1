@@ -84,11 +84,14 @@ test('the error boundary copy is not hardcoded English', () => {
 
 // --- accessible names on icon-only controls ----------------------------------
 
-test('the Home notification listen control has an accessible name', () => {
-  // It was a clickable <span aria-hidden> nested inside a <button>: no name, no
-  // keyboard path, and invalid nested interactive content.
-  assert.doesNotMatch(home, /h-notif-speak[^>]*aria-hidden/);
-  assert.match(home, /className="h-notif-speak"[\s\S]{0,160}?aria-label=\{t\(lang, 'alertsListen'\)\}/);
+test('the notification listen control has an accessible name', () => {
+  // IA dedup (2026-09-20): notifications moved off Home into their own route.
+  // The Listen control is a real <button> with icon + translated text, never
+  // an icon-only span: the text node gives it its accessible name.
+  const ntf = src('components/NotificationCenter.jsx');
+  assert.doesNotMatch(ntf, /<span aria-hidden[^>]*>\s*<\/span>\s*<\/button>/);
+  assert.match(ntf, /<button[^>]*>[\s\S]{0,120}?t\(lang, 'alertsListen'\)/);
+  assert.doesNotMatch(home, /h-notif-speak/, 'Home no longer carries the notification strip');
 });
 
 test('chrome labels come from the string files, not hardcoded English', () => {

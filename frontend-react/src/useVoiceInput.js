@@ -4,9 +4,14 @@ import { t } from './i18n';
 import { useOnline } from './offline';
 
 // Recording is shared by Home and Ask; never silently re-record after a failure.
-export function useVoiceInput(lang, onText) {
+// onPartial (optional): called with interim (non-final) transcripts as the
+// user speaks, so the UI can surface streaming partials live in the input.
+// The server transcribe path currently returns final transcripts only —
+// onPartial is wired for when the backend gains partial support.
+export function useVoiceInput(lang, onText, onPartial) {
   const [state, setState] = useState('idle');
   const [heard, setHeard] = useState('');
+  const [partial, setPartial] = useState('');
   const [note, setNote] = useState('');
   const session = useRef(0);
   const recorder = useRef(null);
@@ -52,10 +57,20 @@ export function useVoiceInput(lang, onText) {
     const rec = new SR();
     recorder.current = rec;
     rec.lang = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
+    // interimResults: partial transcripts surface live while the user is
+    // still speaking; only final results are committed via onText.
+    rec.interimResults = true;
     rec.onresult = (event) => {
       if (!active()) return;
-      const text = event.results[0][0].transcript;
-      setHeard(text); onText(text);
+      let finalText = '';
+      let interim = '';
+      for (let i = 0; i < event.results.length; i++) {
+        const res = event.results[i];
+        if (res.isFinal) finalText += res[0].transcript;
+        else interim += res[0].transcript;
+      }
+      if (interim.trim()) { setPartial(interim); if (onPartial) onPartial(interim); }
+      if (finalText.trim()) { setHeard(finalText); setPartial(''); onText(finalText); }
     };
     rec.onerror = () => { clearInterval(tick.current); if (active()) setNote(t(lang, 'voiceFailed')); };
     rec.onend = () => { clearInterval(tick.current); if (active()) setState('idle'); };
@@ -69,6 +84,7 @@ export function useVoiceInput(lang, onText) {
     const id = ++session.current;
     const active = () => id === session.current;
     setNote('');
+    setPartial('');
     setState('permission');
     if (unavailable) { setState('idle'); setNote(t(lang, 'voiceOffline')); return; }
     if (!online || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -92,6 +108,9 @@ export function useVoiceInput(lang, onText) {
         try {
           const result = await api.transcribe(new Blob(chunks, { type: rec.mimeType || chunks[0]?.type || 'audio/webm' }), lang);
           if (!active()) return;
+          // Server transcribe returns final transcripts only today; clear any
+          // partial shown while recording and commit the final text.
+          setPartial('');
           if (result.text?.trim()) { setHeard(result.text); onText(result.text); }
           else if (result.using_browser_speech) {
             // Server has no STT provider configured — hand the already-captured
@@ -109,5 +128,5 @@ export function useVoiceInput(lang, onText) {
       if (active()) { setState('idle'); setNote(t(lang, 'homeNoMic')); }
     }
   }
-  return { listen, state, heard, note, listening: state === 'recording', busy: state === 'processing' || state === 'permission', unavailable, elapsed };
+  return { listen, state, heard, partial, note, listening: state === 'recording', busy: state === 'processing' || state === 'permission', unavailable, elapsed };
 }

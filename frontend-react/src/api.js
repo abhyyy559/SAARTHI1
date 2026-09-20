@@ -65,6 +65,54 @@ async function j(url, opts, timeoutMs) {
 const post = (url, body) =>
   j(full(url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
+// Streaming TTS: POSTs to /api/voice/synthesize-stream and yields parsed NDJSON
+// lines as they arrive, so playback can start on the first chunk while the
+// rest is still generating. If the backend has no TTS provider it answers with
+// the plain browser-fallback JSON instead of a stream — that is yielded as a
+// single { done: true, client_speech: true } line.
+async function* synthesizeStream(text, language, { signal } = {}) {
+  if (offlineSim) throw new Error('OFFLINE (simulated) — showing cached data only');
+  const ctrl = new AbortController();
+  const onAbort = () => ctrl.abort();
+  signal?.addEventListener('abort', onAbort);
+  let r;
+  try {
+    r = await fetch(full('/api/voice/synthesize-stream'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, language }),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    signal?.removeEventListener('abort', onAbort);
+    throw e.name === 'AbortError' ? e : new Error(`TTS stream unreachable (${e.message || e})`);
+  }
+  signal?.removeEventListener('abort', onAbort);
+  if (!r.ok) throw new Error(`HTTP ${r.status} on /api/voice/synthesize-stream`);
+  const ct = r.headers.get('content-type') || '';
+  if (!ct.includes('ndjson')) {
+    // Honest browser-fallback JSON (no provider on the server).
+    yield { ...(await r.json()), done: true };
+    return;
+  }
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (line) yield JSON.parse(line);
+    }
+  }
+  const tail = buf.trim();
+  if (tail) yield JSON.parse(tail);
+}
+
 const V = '/api/v1';
 
 export const api = {
@@ -148,6 +196,9 @@ export const api = {
   synthesize: (text, language) =>
     post('/api/voice/synthesize', { text, language }),
   speak: (text, language) => post('/api/voice/synthesize', { text, language }),
+  // Progressive TTS: yields NDJSON chunk lines as they arrive (play the first
+  // chunk while the rest generates). See synthesizeStream above.
+  speakStream: (text, language, opts) => synthesizeStream(text, language, opts),
 };
 
 export const HYD = { lat: 17.385, lon: 78.4867, district: 'Hyderabad' };
