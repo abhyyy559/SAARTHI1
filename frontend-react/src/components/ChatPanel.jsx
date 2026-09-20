@@ -140,7 +140,7 @@ const offlineVerdict = (lang) => ({
 });
 
 export default function ChatPanel() {
-  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc, locReady, netState, showToast, setView } = useApp();
+  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc, locReady, netState, showToast, setView, setListenState } = useApp();
   const [log, setLog] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -155,6 +155,11 @@ export default function ChatPanel() {
   // replaces them. This is the ONLY mic affordance in this component;
   // everything else here is speaker output (replay, mute), not input.
   const dictation = useVoiceInput(lang, (text) => setInput(text), (partial) => setInput(partial));
+  // Mirror the mic phase to the shell for the global Listening popup.
+  useEffect(() => {
+    setListenState(dictation.state);
+    return () => setListenState('idle');
+  }, [dictation.state, setListenState]);
   // Demo-safe example prompts shown on an empty chat; tapping one sends it.
   const EXAMPLE_CHIPS = ['chipHyd', 'chipCyclone', 'chipMumbai'];
 

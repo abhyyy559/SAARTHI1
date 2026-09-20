@@ -35,6 +35,9 @@ export default function HomeChat({
   netState = 'live',
   api = null,
   onOpenAdvisory = () => {},
+  // Optional: reports the mic phase ('idle' | 'permission' | 'recording' |
+  // 'processing') so the app shell can show the global Listening popup.
+  onVoiceState = () => {},
 }) {
   const [log, setLog] = useState([]);
   const [input, setInput] = useState('');
@@ -54,6 +57,13 @@ export default function HomeChat({
     []
   );
   const dictation = useVoiceInput(lang, (text) => setInput(text));
+
+  // Mirror the mic phase to the shell for the global Listening popup.
+  // Cleanup resets to idle so an unmount can never strand the popup.
+  useEffect(() => {
+    onVoiceState(dictation.state);
+    return () => onVoiceState('idle');
+  }, [dictation.state, onVoiceState]);
 
   // The injected ask, or the default backend call. The answer object follows
   // the /chat contract: { answer, evidence, risk, warning, verdict,

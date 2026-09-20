@@ -16,7 +16,9 @@ const AppCtx = createContext(null);
 // browser-fallback (offline ⇒ server TTS is unreachable) and cached the
 // same way, so an offline device doesn't pay a 5s timeout on every tap.
 const voiceStatusCache = { value: null, at: 0, inflight: null };
-function getVoiceStatus() {
+// Exported so useVoiceInput can take the STT fast-path without a doomed
+// record→upload round trip when the server has no STT provider.
+export function getVoiceStatus() {
   const now = Date.now();
   if (voiceStatusCache.value && now - voiceStatusCache.at < 60000) {
     return Promise.resolve(voiceStatusCache.value);
@@ -178,6 +180,13 @@ export function AppProvider({ children }) {
     api.mode().then(applyMode).catch(() => {});
   }, [applyMode]);
 
+  // Warm the voice-status cache on launch: the first tap on any mic/speaker
+  // then skips even the tiny /api/voice/status round trip, so TTS starts
+  // instantly and STT can take its browser fast-path immediately.
+  useEffect(() => {
+    getVoiceStatus();
+  }, []);
+
   // Self-heal: a 403 on any /api/demo/* route means the backend's demo flag
   // flipped under us (restart, another tab, .env default). Re-sync once per
   // burst — the throttled hook in api.js keeps this from becoming a storm.
@@ -249,6 +258,9 @@ export function AppProvider({ children }) {
   const speechId = useRef(0);
   const [speechState, setSpeechState] = useState('idle');
   const [speechNote, setSpeechNote] = useState('');
+  // Global STT phase mirror: HomeChat/ChatPanel report their useVoiceInput
+  // state here so Shell can render one unmissable Listening popup.
+  const [listenState, setListenState] = useState('idle');
   const cancelAudio = useCallback(() => {
     speechId.current++;
     ttsAbort.current?.abort();
@@ -263,19 +275,24 @@ export function AppProvider({ children }) {
   }, [cancelAudio]);
   useEffect(() => {
     document.documentElement.lang = lang;
-    return cancelAudio;
+    // A language/profile/place switch must never strand the Speaking popup:
+    // stop audio AND reset the indicator state together.
+    return () => { cancelAudio(); setSpeechState('idle'); };
   }, [lang, persona, loc.district, cancelAudio]);
   // Browser-native speech, started instantly when the server has no TTS
   // provider (or when server TTS fails). The voiceFallback note stays honest.
+  // getVoices() can return [] on first call (voices load asynchronously) —
+  // never hard-fail for a missing language match; set the utterance language
+  // and let the engine fall back to its default voice instead of flashing
+  // "voice unavailable" on a first tap.
   const speakWithBrowser = useCallback((text, id, noteKey = 'voiceFallback') => {
     const synth = window.speechSynthesis;
+    if (!synth) { setSpeechNote('voiceFailed'); setSpeechState('idle'); return; }
     const code = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
-    const voice = synth?.getVoices().find((v) => v.lang.startsWith(lang));
-    if (!synth || !voice) {
-      setSpeechNote('voiceFailed'); setSpeechState('idle'); return;
-    }
+    const voice = (synth.getVoices() || []).find((v) => v.lang && v.lang.startsWith(lang)) || null;
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = code; utterance.voice = voice;
+    utterance.lang = code;
+    if (voice) utterance.voice = voice;
     utterance.onend = () => { if (id === speechId.current) setSpeechState('idle'); };
     utterance.onerror = () => { if (id === speechId.current) { setSpeechState('idle'); setSpeechNote('voiceBlocked'); } };
     setSpeechNote(noteKey); setSpeechState('playing'); synth.speak(utterance);
@@ -660,6 +677,7 @@ export function AppProvider({ children }) {
     selectedAlert, setSelectedAlert,
     disaster, setDisaster,
     ask, registerAsk, speak, stopSpeaking, speechState, speechNote,
+    listenState, setListenState,
     pendingAskRef, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,
     locReady: locStatus === 'ready',
@@ -669,7 +687,7 @@ export function AppProvider({ children }) {
     notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush,
   }), [view, lang, persona, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
     simOffline, pipe, result, handleResult, selectedAlert,
-    disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, setPendingAsk,
+    disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, listenState, setListenState, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,
     netState, lastSync, syncTick, toast, showToast,
     publishVerdict, notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush, device]);

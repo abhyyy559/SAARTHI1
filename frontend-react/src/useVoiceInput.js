@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { t } from './i18n';
 import { useOnline } from './offline';
+import { getVoiceStatus } from './store';
+import { shouldUseBrowserStt } from './voiceUi';
 
 // Recording is shared by Home and Ask; never silently re-record after a failure.
 // onPartial (optional): called with interim (non-final) transcripts as the
@@ -87,6 +89,15 @@ export function useVoiceInput(lang, onText, onPartial) {
     setPartial('');
     setState('permission');
     if (unavailable) { setState('idle'); setNote(t(lang, 'voiceOffline')); return; }
+    // Latency fast-path: when the server reports no STT provider
+    // (browser-fallback), recording with MediaRecorder and uploading the audio
+    // first is pure waste — the server would just answer "use the browser
+    // instead" and the user would have to speak a second time. The cached
+    // voice status makes this check ~free after app launch. The server-STT
+    // path below is kept for when a real provider is configured.
+    const status = await getVoiceStatus();
+    if (!active()) return;
+    if (shouldUseBrowserStt(status)) { browserListen(active, !online); return; }
     if (!online || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       browserListen(active, !online);
       return;

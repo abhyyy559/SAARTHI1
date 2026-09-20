@@ -92,7 +92,7 @@ function WarningTeasers() {
 }
 
 export default function Home() {
-  const { lang, persona, loc, locReady, speak, stopSpeaking, speechState, netState, setView } = useApp();
+  const { lang, persona, loc, locReady, speak, stopSpeaking, speechState, netState, setView, setListenState } = useApp();
   return (
     <div className="home-stack">
       {!locReady && <LocationPrompt />}
@@ -117,6 +117,7 @@ export default function Home() {
           speechState={speechState}
           netState={netState}
           onOpenAdvisory={() => setView('advisory')}
+          onVoiceState={setListenState}
         />
       </section>
       <WarningTeasers />

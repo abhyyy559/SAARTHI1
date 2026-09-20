@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { HIDDEN_VIEWS, NAV, PRIMARY_VIEWS, t } from '../i18n';
 import { useApp, SOURCE_MODES } from '../store';
+import { resolveVoicePopup } from '../voiceUi';
 import Icon from './icons';
 import InstallPrompt from './InstallPrompt';
 import OnboardingTour from './OnboardingTour';
@@ -33,20 +34,33 @@ const MORE_ROWS = [
 // stays a HIDDEN_VIEW (i18n.js) and is never a public nav row. The
 // HIDDEN_VIEWS filter above remains as a guard for any future rows.
 
-// Global "speaking…" indicator. speak() sets speechState='loading'
-// synchronously on tap, so this renders on the next frame — within 100ms of
-// tapping any Listen/speaker button, with a stop control. aria-live so
-// screen readers announce it.
-function SpeakingIndicator() {
-  const { lang, speechState, stopSpeaking } = useApp();
-  if (speechState !== 'loading' && speechState !== 'playing') return null;
+// Global voice popup — unmissable, Harbour Signal dressed. speak() flips
+// speechState synchronously on tap so the Speaking card renders on the next
+// frame; HomeChat/ChatPanel mirror their mic phase into listenState for the
+// Listening card. Fixed near the top so it never covers the mic toggle or
+// the chat composer at mobile widths. aria-live announces it to screen
+// readers. Dismissal is automatic: state returns to idle on audio end,
+// final transcript, error, timeout, or permission denial.
+function VoicePopups() {
+  const { lang, speechState, stopSpeaking, listenState } = useApp();
+  const model = resolveVoicePopup({ speechState, listenState });
+  if (!model) return null;
   return (
-    <div className="speaking-chip" role="status" aria-live="polite">
-      <span className="speaking-dot" aria-hidden="true" />
-      {t(lang, 'speaking')}
-      <button type="button" className="btn btn-ghost sm" onClick={stopSpeaking} aria-label={t(lang, 'stop')}>
-        {t(lang, 'stop')}
-      </button>
+    <div className="voice-popup" role="status" aria-live="polite">
+      {model.visual === 'bars' ? (
+        <span className="voice-bars" aria-hidden="true"><i /><i /><i /><i /></span>
+      ) : (
+        <span className="voice-dot" aria-hidden="true" />
+      )}
+      <span className="voice-popup-text">
+        <strong>{t(lang, model.labelKey)}</strong>
+        {model.subKey && <small>{t(lang, model.subKey)}</small>}
+      </span>
+      {model.kind === 'tts' && (
+        <button type="button" className="btn btn-ghost sm" onClick={stopSpeaking} aria-label={t(lang, 'stop')}>
+          {t(lang, 'stop')}
+        </button>
+      )}
     </div>
   );
 }
@@ -330,7 +344,7 @@ export default function Shell({ children }) {
           {toast.text}
         </div>
       )}
-      <SpeakingIndicator />
+      <VoicePopups />
     </div>
   );
 }
