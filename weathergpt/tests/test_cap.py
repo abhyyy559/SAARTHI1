@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from backend.adapters.cap_adapter import parse_cap  # noqa: E402
+from backend.adapters.cap_adapter import parse_cap, _rss_item_links  # noqa: E402
 
 MINIMAL_CAP = """<?xml version="1.0" encoding="UTF-8"?>
 <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
@@ -62,8 +62,52 @@ def test_json_shape():
     print("PASS: test_json_shape")
 
 
+SACHET_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+<title>Telangana: CAP Disaster Alert Feeds</title>
+<item><title>Thundering with Lightning likely over ADL</title>
+<link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1789629665262030</link></item>
+<item><title>Moderate Rain likely over Warangal</title>
+<link>https://sachet.ndma.gov.in/cap_public_website/FetchXMLFile?identifier=1789480863065030</link></item>
+</channel></rss>"""
+
+
+def test_rss_envelope_yields_item_links():
+    assert parse_cap(SACHET_RSS) == []  # no inline alerts — links must be followed
+    links = _rss_item_links(SACHET_RSS)
+    assert len(links) == 2
+    assert all("FetchXMLFile?identifier=" in u for u in links)
+    assert _rss_item_links("") == []
+    print("PASS: test_rss_envelope_yields_item_links")
+
+
+# TGiCCC bulletins use district acronyms; people cannot act on 'HYD'.
+def test_acronyms_expanded_in_parsed_alert():
+    from backend.adapters.cap_adapter import _normalize
+    alert = _normalize({
+        "event": "Thunderstorm",
+        "severity": "Moderate",
+        "headline": "Gusty winds over ADL, BDDK, HNM, HYD, NZD in next 24 hours",
+        "description": "Likely at many places over RR,SGD,SDP,VKD.",
+        "areaDesc": "23 districts of Telangana",
+    })
+    for name in ("Adilabad", "Bhadradri Kothagudem", "Hanumakonda", "Hyderabad", "Nizamabad"):
+        assert name in alert["headline"], name
+    assert "ADL" not in alert["headline"]
+    assert "Rangareddy" in alert["description"]
+    print("PASS: test_acronyms_expanded_in_parsed_alert")
+
+
+def test_unknown_acronym_left_alone():
+    from backend.adapters.cap_adapter import _normalize
+    alert = _normalize({"event": "Rain", "headline": "Rain over XYZQ district", "severity": "Minor"})
+    assert "XYZQ" in alert["headline"]  # never guessed
+    print("PASS: test_unknown_acronym_left_alone")
+
+
 if __name__ == "__main__":
     test_full_field_set()
     test_malformed_and_empty()
     test_json_shape()
+    test_rss_envelope_yields_item_links()
     print("\nAll CAP tests passed.")

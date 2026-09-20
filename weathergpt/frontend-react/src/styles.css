@@ -26,6 +26,7 @@
   --live: #22664a;
   --cached: #8a5d00;
   --demo: #8a5d00;
+  --community: #6d28d9;
   --unconf: #526176;
   --off: #a52a1a;
 
@@ -78,6 +79,7 @@
   --live: #6cc9a1;
   --cached: #d9a53f;
   --demo: #d9a53f;
+  --community: #c4b5fd;
   --unconf: #a8b7ca;
   --off: #d8563f;
 
@@ -113,6 +115,7 @@
     --live: #6cc9a1;
     --cached: #d9a53f;
     --demo: #d9a53f;
+    --community: #c4b5fd;
     --unconf: #a8b7ca;
     --off: #d8563f;
     --sev-green: #6cc9a1;  --sev-green-bg: #1e2e26; --sev-green-bd: #2f5443;
@@ -340,6 +343,7 @@ input[type='checkbox'] { width: 17px; height: 17px; accent-color: var(--accent);
 .prov.LIVE { color: var(--live); border-color: var(--live); background: transparent; }
 .prov.CACHED { color: var(--cached); border-color: var(--cached); background: transparent; }
 .prov.DEMO { color: var(--demo); border-color: var(--demo); background: transparent; }
+.prov.COMMUNITY { color: var(--community); border-color: var(--community); background: transparent; }
 .prov.UNCONFIGURED, .prov.UNAVAILABLE { color: var(--ink-3); }
 
 .chip {
@@ -353,6 +357,7 @@ input[type='checkbox'] { width: 17px; height: 17px; accent-color: var(--accent);
 .dot.LIVE { background: var(--live); animation: pulse 2.4s var(--ease) infinite; }
 .dot.CACHED { background: var(--cached); }
 .dot.DEMO { background: var(--demo); }
+.dot.COMMUNITY { background: var(--community); }
 .dot.UNCONFIGURED { background: var(--unconf); }
 .dot.OFFLINE, .dot.ERROR { background: var(--off); }
 @keyframes pulse { 50% { opacity: .45; } }
@@ -453,6 +458,70 @@ table.grid tbody tr:last-child td { border-bottom: none; }
 .alert-item .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .warnbox { border: 1px solid var(--sev-orange-bd); background: var(--sev-orange-bg); border-radius: var(--r-sm); padding: 12px 14px; }
 
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+}
+.mode-switch { display: inline-flex; border: 1px solid currentColor; border-radius: 999px; overflow: hidden; }
+.mode-btn {
+  border: 0; background: transparent; color: inherit; font: inherit; font-size: 11.5px;
+  font-weight: 700; padding: 3px 12px; cursor: pointer; letter-spacing: .04em;
+}
+.mode-btn.on { background: var(--ink); color: var(--bg); }
+
+/* Three-mode switch (docs/SOURCE-MODES.md). The label names which sources are
+   carrying the answer, so the mode is legible without a manual. */
+.banner-mode { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.banner-mode b { font-weight: 700; }
+.banner-note { color: var(--ink-2); font-size: 12.5px; }
+.banner.mode-sources {
+  color: var(--ink-2); font-size: 12px; gap: 4px 20px;
+  border-bottom-style: dotted;
+}
+.banner.mode-sources b { color: var(--ink-3); font-weight: 700; margin-right: 6px; }
+
+/* ----------------------------------------------------- 19b. alert cards */
+/* Cards readable without literacy: colour edge + icon + ONE severity word. */
+.alert-stack { display: grid; gap: 12px; }
+.alert-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 16px; border-radius: var(--r-md);
+  background: var(--bg-inset); border: 1px solid var(--line); border-left: 6px solid var(--line);
+}
+.alert-card[data-sev='RED'] { border-left-color: var(--sev-red); }
+.alert-card[data-sev='ORANGE'] { border-left-color: var(--sev-orange); }
+.alert-card[data-sev='YELLOW'] { border-left-color: var(--sev-yellow); }
+.alert-card[data-sev='GREEN'] { border-left-color: var(--sev-green); }
+.alert-card.is-expired { opacity: .55; }
+.alert-icon {
+  flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-3); color: var(--ink-2);
+}
+.alert-icon[data-sev='RED'] { background: var(--sev-red); color: #fff; }
+.alert-icon[data-sev='ORANGE'] { background: var(--sev-orange); color: #fff; }
+.alert-icon[data-sev='YELLOW'] { background: var(--sev-yellow); color: #1a1a10; }
+.alert-icon[data-sev='GREEN'] { background: var(--sev-green); color: #06180c; }
+.alert-sevword { font-weight: 800; font-size: 15px; letter-spacing: .02em; }
+.alert-card[data-sev='RED'] .alert-sevword { color: var(--sev-red); }
+.alert-card[data-sev='ORANGE'] .alert-sevword { color: var(--sev-orange); }
+.alert-card[data-sev='YELLOW'] .alert-sevword { color: var(--sev-yellow); }
+.alert-card[data-sev='GREEN'] .alert-sevword { color: var(--sev-green); }
+.alert-headline { font-size: 15.5px; line-height: 1.5; margin-top: 2px; overflow-wrap: anywhere; }
+.alert-area {
+  display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+  margin-top: 6px; font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+}
+.alert-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.alert-none {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  text-align: center; padding: 30px 16px; border-radius: var(--r-md);
+  background: var(--bg-inset); border: 1px solid var(--line);
+}
+.alert-none .big { width: 52px; height: 52px; color: var(--sev-green); }
+.alert-none .alert-headline { font-weight: 800; font-size: 17px; }
+.wx-action-more { margin-top: 6px; }
+.wx-action-more summary { cursor: pointer; color: var(--ink-3); }
+
 /* --------------------------------------------------------------- 19. chat */
 .chatlog {
   display: flex; flex-direction: column; gap: 20px;
@@ -463,6 +532,14 @@ table.grid tbody tr:last-child td { border-bottom: none; }
 .msg {
   padding: 16px 18px; border-radius: var(--r-md); max-width: min(92%, 68ch);
   line-height: 1.75; font-size: 1rem; white-space: pre-wrap; overflow-wrap: anywhere;
+  animation: msg-in .28s ease-out;
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg { animation: none; }
 }
 .msg.user {
   align-self: flex-end; background: var(--accent-soft); color: var(--ink);
@@ -600,6 +677,7 @@ table.grid tbody tr:last-child td { border-bottom: none; }
 /* --- home: fisherman-first front page (safety -> speak -> tap -> sources) --- */
 .home-stack { display: grid; gap: 14px; max-width: 760px; }
 .home-voice { display: flex; align-items: center; gap: 18px; }
+.home-voice-title { font-weight: 800; font-size: 16px; margin: 0 0 4px; color: var(--ink); }
 .nav-item .icon { display: block; width: 18px; height: 18px; flex: 0 0 auto; }
 .mic-big {
   flex: 0 0 auto; width: 96px; height: 96px; border-radius: var(--r-full);
@@ -615,8 +693,10 @@ table.grid tbody tr:last-child td { border-bottom: none; }
 }
 @keyframes micpulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(165, 42, 26, 0.35); }
-  50% { box-shadow: 0 0 0 14px rgba(165, 42, 26, 0); }
+  50% { box-shadow: 0 0 0 10px rgba(165, 42, 26, 0); }
 }
+/* Keep the pulse ring from touching sibling content on tight rows. */
+.mic-big { margin: 5px; }
 .quick-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .quick-row .btn, .home-voice .btn { min-height: var(--tap); }
 @media (max-width: 560px) {

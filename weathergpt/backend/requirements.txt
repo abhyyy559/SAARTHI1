@@ -10,3 +10,11 @@ httpx==0.27.2
 python-multipart==0.0.12
 cryptography==44.0.0
 python-dotenv==1.0.1
+# Web Push (background notifications when the app is CLOSED).
+# Pulls in py-vapid + http-ece for the VAPID JWT and aes128gcm payload
+# encryption; hand-rolling those is how you ship a push nobody receives.
+pywebpush==2.0.3
+# PostgreSQL persistence (DATABASE_URL). Optional at runtime — the stores fall
+# back to JSON files when this import fails — but listed here so a deployment
+# with a database URL never discovers the missing driver on stage.
+asyncpg>=0.29,<1

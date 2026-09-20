@@ -1,0 +1,695 @@
+[
+ {
+  "district": "Adilabad",
+  "state": "Telangana",
+  "latitude": 19.2544,
+  "longitude": 78.9667,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Adilabad"
+  ]
+ },
+ {
+  "district": "Bhadradri Kothagudem",
+  "state": "Telangana",
+  "latitude": 17.55,
+  "longitude": 80.62,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Bhadradri",
+   "Bhadradri Kothagudem",
+   "Kothagudem"
+  ]
+ },
+ {
+  "district": "Hanumakonda",
+  "state": "Telangana",
+  "latitude": 18.01,
+  "longitude": 79.56,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Hanumakonda"
+  ]
+ },
+ {
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "latitude": 17.3856,
+  "longitude": 78.4641,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Hyderabad"
+  ]
+ },
+ {
+  "district": "Jagtial",
+  "state": "Telangana",
+  "latitude": 18.79,
+  "longitude": 78.91,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Jagtial"
+  ]
+ },
+ {
+  "district": "Jangaon",
+  "state": "Telangana",
+  "latitude": 17.72,
+  "longitude": 79.15,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Janagaon",
+   "Jangaon",
+   "Jangoan"
+  ]
+ },
+ {
+  "district": "Jayashankar Bhupalpally",
+  "state": "Telangana",
+  "latitude": 18.43,
+  "longitude": 79.86,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Bhupalpalli",
+   "Bhupalpally",
+   "Jayashankar",
+   "Jayashankar Bhupalpally"
+  ]
+ },
+ {
+  "district": "Jogulamba Gadwal",
+  "state": "Telangana",
+  "latitude": 16.23,
+  "longitude": 77.8,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Gadwal",
+   "Jogulamba",
+   "Jogulamba Gadwal"
+  ]
+ },
+ {
+  "district": "Kamareddy",
+  "state": "Telangana",
+  "latitude": 18.32,
+  "longitude": 78.34,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Kamareddy"
+  ]
+ },
+ {
+  "district": "Karimnagar",
+  "state": "Telangana",
+  "latitude": 18.5462,
+  "longitude": 79.2347,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Karimnagar"
+  ]
+ },
+ {
+  "district": "Khammam",
+  "state": "Telangana",
+  "latitude": 17.59,
+  "longitude": 80.6791,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Khammam"
+  ]
+ },
+ {
+  "district": "Komaram Bheem Asifabad",
+  "state": "Telangana",
+  "latitude": 19.36,
+  "longitude": 79.28,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Asifabad",
+   "Komaram Bheem",
+   "Komaram Bheem Asifabad",
+   "Kumuram Bheem"
+  ]
+ },
+ {
+  "district": "Mahabubabad",
+  "state": "Telangana",
+  "latitude": 17.6,
+  "longitude": 80.0,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Mahabubabad"
+  ]
+ },
+ {
+  "district": "Mahabubnagar",
+  "state": "Telangana",
+  "latitude": 16.74,
+  "longitude": 77.98,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Mahabubnagar",
+   "Mahbubnagar"
+  ]
+ },
+ {
+  "district": "Mancherial",
+  "state": "Telangana",
+  "latitude": 18.87,
+  "longitude": 79.44,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Mancherial"
+  ]
+ },
+ {
+  "district": "Medak",
+  "state": "Telangana",
+  "latitude": 17.8849,
+  "longitude": 78.2108,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Medak"
+  ]
+ },
+ {
+  "district": "Medchal Malkajgiri",
+  "state": "Telangana",
+  "latitude": 17.63,
+  "longitude": 78.48,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Malkajgiri",
+   "Medchal",
+   "Medchal Malkajgiri"
+  ]
+ },
+ {
+  "district": "Mulugu",
+  "state": "Telangana",
+  "latitude": 18.19,
+  "longitude": 79.94,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Mulugu"
+  ]
+ },
+ {
+  "district": "Nagarkurnool",
+  "state": "Telangana",
+  "latitude": 16.48,
+  "longitude": 78.32,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Nagarkurnool"
+  ]
+ },
+ {
+  "district": "Nalgonda",
+  "state": "Telangana",
+  "latitude": 17.0619,
+  "longitude": 79.2815,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Nalgonda"
+  ]
+ },
+ {
+  "district": "Narayanpet",
+  "state": "Telangana",
+  "latitude": 16.74,
+  "longitude": 77.5,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Narayanpet"
+  ]
+ },
+ {
+  "district": "Nirmal",
+  "state": "Telangana",
+  "latitude": 19.1,
+  "longitude": 78.34,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Nirmal"
+  ]
+ },
+ {
+  "district": "Nizamabad",
+  "state": "Telangana",
+  "latitude": 18.524,
+  "longitude": 78.1394,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Nizamabad"
+  ]
+ },
+ {
+  "district": "Peddapalli",
+  "state": "Telangana",
+  "latitude": 18.62,
+  "longitude": 79.38,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Peddapalli"
+  ]
+ },
+ {
+  "district": "Rajanna Sircilla",
+  "state": "Telangana",
+  "latitude": 18.4,
+  "longitude": 78.81,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Rajanna",
+   "Rajanna Sircilla",
+   "Sircilla"
+  ]
+ },
+ {
+  "district": "Rangareddy",
+  "state": "Telangana",
+  "latitude": 17.32,
+  "longitude": 78.34,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Ranga Reddy",
+   "RangaReddy",
+   "Rangareddi",
+   "Rangareddy"
+  ]
+ },
+ {
+  "district": "Sangareddy",
+  "state": "Telangana",
+  "latitude": 17.62,
+  "longitude": 78.08,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Sangareddy"
+  ]
+ },
+ {
+  "district": "Siddipet",
+  "state": "Telangana",
+  "latitude": 18.1,
+  "longitude": 78.85,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Siddipet",
+   "Siddipeta"
+  ]
+ },
+ {
+  "district": "Suryapet",
+  "state": "Telangana",
+  "latitude": 17.14,
+  "longitude": 79.62,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Suryapet"
+  ]
+ },
+ {
+  "district": "Vikarabad",
+  "state": "Telangana",
+  "latitude": 17.34,
+  "longitude": 77.9,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Vikarabad"
+  ]
+ },
+ {
+  "district": "Wanaparthy",
+  "state": "Telangana",
+  "latitude": 16.36,
+  "longitude": 78.06,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Wanaparthy"
+  ]
+ },
+ {
+  "district": "Warangal",
+  "state": "Telangana",
+  "latitude": 17.95,
+  "longitude": 79.7917,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Warangal"
+  ]
+ },
+ {
+  "district": "Yadadri Bhuvanagiri",
+  "state": "Telangana",
+  "latitude": 17.59,
+  "longitude": 78.95,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Bhuvanagiri",
+   "Yadadri",
+   "Yadadri Bhongir",
+   "Yadadri Bhuvanagiri"
+  ]
+ },
+ {
+  "district": "Alluri Sitharama Raju",
+  "state": "Andhra Pradesh",
+  "latitude": 17.8,
+  "longitude": 82.0,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Alluri",
+   "Alluri Sitharama Raju",
+   "Paderu",
+   "Sitharama Raju"
+  ]
+ },
+ {
+  "district": "Anakapalli",
+  "state": "Andhra Pradesh",
+  "latitude": 17.69,
+  "longitude": 82.99,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "Anakapalli"
+  ]
+ },
+ {
+  "district": "Anantapur",
+  "state": "Andhra Pradesh",
+  "latitude": 14.4751,
+  "longitude": 77.5708,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Anantapur"
+  ]
+ },
+ {
+  "district": "Annamayya",
+  "state": "Andhra Pradesh",
+  "latitude": 13.8,
+  "longitude": 78.5,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Annamayya",
+   "Rayachoti"
+  ]
+ },
+ {
+  "district": "Bapatla",
+  "state": "Andhra Pradesh",
+  "latitude": 15.9,
+  "longitude": 80.47,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "Bapatla"
+  ]
+ },
+ {
+  "district": "Chittoor",
+  "state": "Andhra Pradesh",
+  "latitude": 13.4566,
+  "longitude": 79.0039,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Chittoor"
+  ]
+ },
+ {
+  "district": "Dr. B.R. Ambedkar Konaseema",
+  "state": "Andhra Pradesh",
+  "latitude": 16.6,
+  "longitude": 82.0,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "Amalapuram",
+   "Dr. B.R. Ambedkar Konaseema",
+   "Konaseema"
+  ]
+ },
+ {
+  "district": "East Godavari",
+  "state": "Andhra Pradesh",
+  "latitude": 17.1869,
+  "longitude": 81.9993,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "East Godavari"
+  ]
+ },
+ {
+  "district": "Eluru",
+  "state": "Andhra Pradesh",
+  "latitude": 16.71,
+  "longitude": 81.1,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Eluru"
+  ]
+ },
+ {
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "latitude": 16.2915,
+  "longitude": 80.0812,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Guntur"
+  ]
+ },
+ {
+  "district": "Kakinada",
+  "state": "Andhra Pradesh",
+  "latitude": 16.96,
+  "longitude": 82.24,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "Kakinada",
+   "Kakinada Rural",
+   "Samalkota"
+  ]
+ },
+ {
+  "district": "Krishna",
+  "state": "Andhra Pradesh",
+  "latitude": 16.5505,
+  "longitude": 80.7927,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Krishna"
+  ]
+ },
+ {
+  "district": "Kurnool",
+  "state": "Andhra Pradesh",
+  "latitude": 15.528,
+  "longitude": 78.0,
+  "coastal": false,
+  "coord_source": "gadm",
+  "aliases": [
+   "Kurnool"
+  ]
+ },
+ {
+  "district": "NTR",
+  "state": "Andhra Pradesh",
+  "latitude": 16.51,
+  "longitude": 80.63,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "NTR",
+   "Vijayawada"
+  ]
+ },
+ {
+  "district": "Nandyal",
+  "state": "Andhra Pradesh",
+  "latitude": 15.48,
+  "longitude": 78.48,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Nandyal",
+   "Nandyalum"
+  ]
+ },
+ {
+  "district": "Nellore",
+  "state": "Andhra Pradesh",
+  "latitude": 14.4313,
+  "longitude": 79.7223,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Nellore",
+   "SPSR Nellore"
+  ]
+ },
+ {
+  "district": "Palnadu",
+  "state": "Andhra Pradesh",
+  "latitude": 16.24,
+  "longitude": 79.98,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Narasaraopet",
+   "Palnadu"
+  ]
+ },
+ {
+  "district": "Parvathipuram Manyam",
+  "state": "Andhra Pradesh",
+  "latitude": 18.78,
+  "longitude": 83.42,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Manyam",
+   "Parvathipuram",
+   "Parvathipuram Manyam"
+  ]
+ },
+ {
+  "district": "Prakasam",
+  "state": "Andhra Pradesh",
+  "latitude": 15.6114,
+  "longitude": 79.5095,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Prakasam"
+  ]
+ },
+ {
+  "district": "Sri Sathya Sai",
+  "state": "Andhra Pradesh",
+  "latitude": 14.17,
+  "longitude": 77.8,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Puttaparthi",
+   "Sathya Sai",
+   "Sri Sathya Sai"
+  ]
+ },
+ {
+  "district": "Srikakulam",
+  "state": "Andhra Pradesh",
+  "latitude": 18.5712,
+  "longitude": 83.9793,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Srikakulam"
+  ]
+ },
+ {
+  "district": "Tirupati",
+  "state": "Andhra Pradesh",
+  "latitude": 13.63,
+  "longitude": 79.42,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "Tirupati"
+  ]
+ },
+ {
+  "district": "Visakhapatnam",
+  "state": "Andhra Pradesh",
+  "latitude": 17.69,
+  "longitude": 83.22,
+  "coastal": true,
+  "coord_source": "hq",
+  "aliases": [
+   "Visakhapatnam"
+  ]
+ },
+ {
+  "district": "Vizianagaram",
+  "state": "Andhra Pradesh",
+  "latitude": 18.4653,
+  "longitude": 83.3638,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Vizianagaram"
+  ]
+ },
+ {
+  "district": "West Godavari",
+  "state": "Andhra Pradesh",
+  "latitude": 16.8869,
+  "longitude": 81.3922,
+  "coastal": true,
+  "coord_source": "gadm",
+  "aliases": [
+   "Bhimavaram",
+   "Godavari West",
+   "West Godavari"
+  ]
+ },
+ {
+  "district": "YSR Kadapa",
+  "state": "Andhra Pradesh",
+  "latitude": 14.47,
+  "longitude": 78.82,
+  "coastal": false,
+  "coord_source": "hq",
+  "aliases": [
+   "Cuddapah",
+   "Kadapa",
+   "YSR Kadapa"
+  ]
+ }
+]

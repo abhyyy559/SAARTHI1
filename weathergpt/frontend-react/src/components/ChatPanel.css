@@ -1,0 +1,78 @@
+/* Ask / chat-board provenance surfaces.
+   Component-scoped only: every colour, radius and font comes from the tokens in
+   styles.css. The `.prov` / `.dot` / `.sev` classes there remain the single
+   source of truth for provenance and official-severity colour; this file adds
+   no new colour of its own except the honesty red already in `--off`. */
+
+/* Verdict banner: the ONE server verdict for this turn, above the answer. */
+.ask-verdict {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 12px; margin-bottom: 10px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-2);
+}
+/* Unconfirmed is not calm: it gets the caution rule, never a green one. */
+.ask-verdict[data-unconfirmed='true'] { border-color: var(--off); }
+.ask-verdict-ico { color: var(--ink-3); }
+.ask-verdict[data-unconfirmed='true'] .ask-verdict-ico { color: var(--off); }
+.ask-verdict-haz { font-size: .875rem; font-weight: 650; color: var(--ink); }
+.ask-verdict-basis { font-family: var(--mono); font-size: .8rem; color: var(--ink-3); }
+.ask-verdict-say { flex: 1 1 100%; font-size: .875rem; color: var(--ink-2); }
+.ask-verdict[data-unconfirmed='true'] .ask-verdict-say { color: var(--off); font-weight: 650; }
+
+/* WeatherGPT's own level. Deliberately neutral: official severity keeps the
+   colour (`.sev.*`), so the console can never look like it re-graded IMD. */
+.ask-lvl {
+  display: inline-flex; align-items: center;
+  font-family: var(--mono); font-size: .8rem; font-weight: 650;
+  padding: 2px 8px; border-radius: var(--r-sm);
+  border: 1px solid var(--line-2); color: var(--ink); background: var(--bg-3);
+}
+.ask-lvl[data-level='UNKNOWN'] { border-color: var(--off); color: var(--off); }
+
+/* Per-answer meta line: freshness, latency, fallback, replay. */
+.ask-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-top: 10px; font-family: var(--mono); font-size: .8rem; color: var(--ink-3);
+}
+
+/* Provenance per fact - visible without expanding anything. */
+.ask-facts { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); }
+.ask-facts-head { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: .8rem; color: var(--ink-3); }
+.ask-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.ask-fact {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 4px 10px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-2); font-size: .8rem; color: var(--ink-2);
+}
+.ask-fact-ico { color: var(--ink-3); }
+.ask-fact-label { font-weight: 650; color: var(--ink); }
+.ask-fact-src { color: var(--ink-3); }
+.ask-facts > .btn { margin-top: 8px; }
+
+/* Expanded evidence package. */
+.ask-ev { margin-top: 8px; }
+.ask-ev .k { text-transform: none; }
+.ask-ev-say { margin-top: 6px; font-size: .8rem; color: var(--ink-3); }
+
+/* One mic, one label. On narrow phones the label drops, the icon stays. */
+.ask-mic-label { white-space: nowrap; }
+@media (max-width: 430px) { .ask-mic-label { display: none; } }
+
+/* Source strip: one row per adapter, status rendered verbatim. */
+.src-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.src-item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: var(--r-sm); background: var(--bg-3);
+}
+.src-item-name { font-family: var(--mono); font-size: .875rem; font-weight: 650; color: var(--ink); }
+.src-item-detail { flex: 1 1 100%; font-size: .8rem; color: var(--ink-3); }
+.src-item-stamp { font-family: var(--mono); font-size: .8rem; color: var(--ink-3); }
+.src-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+
+/* Source statuses that the provenance set does not name. READY is honest grey
+   (configured, not yet exercised); OFFLINE/ERROR are the caution red. */
+.prov.READY { color: var(--ink-3); }
+.prov.OFFLINE, .prov.ERROR { color: var(--off); border-color: var(--off); background: transparent; }

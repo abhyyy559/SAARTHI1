@@ -2,8 +2,27 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import pytest  # noqa: E402
+
 from backend.services import emergency_service as es  # noqa: E402
+from backend.services import report_service  # noqa: E402
 from backend.models.emergency import EmergencyMessage  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolated_report_store(tmp_path, monkeypatch):
+    """Never write community reports into the developer's real store.
+
+    These tests submit reports to exercise the abuse controls. They used to land
+    in `weathergpt/community_reports.json`, so every pytest run left junk behind
+    and the Alerts page slowly filled with it — 253 stray reports had collected
+    before this was noticed. The rate limiter is in-memory, so it is cleared too,
+    otherwise a previous test's submissions leak into this one.
+    """
+    import backend.config as config
+    monkeypatch.setattr(config, "CACHE_FILE", str(tmp_path / "weathergpt_cache.json"))
+    report_service._RATE.clear()
+    yield
 
 
 def _pkt(**kw):
@@ -65,9 +84,30 @@ def test_hop_limit_and_sync():
     print("PASS: test_hop_limit_and_sync")
 
 
+def test_report_rejects_empty_and_spam():
+    import pytest
+    with pytest.raises(ValueError):
+        report_service.submit("flooding", 17.0, 78.0, "Hyderabad", "   ", reporter_id="abuse-test-1")
+    with pytest.raises(ValueError):
+        report_service.submit("aliens", 17.0, 78.0, "Hyderabad", "ships!", reporter_id="abuse-test-1")
+    for _ in range(5):
+        report_service.submit("flooding", 17.0, 78.0, "Hyderabad", "water rising", reporter_id="abuse-test-2")
+    with pytest.raises(ValueError, match="rate limit"):
+        report_service.submit("flooding", 17.0, 78.0, "Hyderabad", "one more", reporter_id="abuse-test-2")
+    print("PASS: test_report_rejects_empty_and_spam")
+
+
+def test_report_stays_community():
+    r = report_service.submit("damage", 17.0, 78.0, "Hyderabad", "wall cracked", reporter_id="abuse-test-3")
+    assert r.status == "COMMUNITY" and r.provenance == "USER-REPORT"
+    print("PASS: test_report_stays_community")
+
+
 if __name__ == "__main__":
     test_seal_open_roundtrip()
     test_tamper_fails_integrity()
     test_dedup_and_replay_window()
     test_hop_limit_and_sync()
+    test_report_rejects_empty_and_spam()
+    test_report_stays_community()
     print("\nAll emergency tests passed.")

@@ -1,5 +1,11 @@
 # WeatherGPT — things that NEED A HUMAN (keys / access that I cannot obtain)
 
+> Round2 rule (2026-09-19): **No human-authorization layer exists in SAARTHI.**
+> Consumed alerts are already authorized upstream (IMD / NDMA-SACHET). Once a
+> feed below is connected, its alerts ingest and notify automatically — nothing
+> here is a per-alert approval step, and the demo panel covers every feed we do
+> not yet have.
+
 > Last updated: 2026-09-16. Everything not listed here works without any action.
 > After completing any item below, restart the server and check `GET /api/sources`.
 

@@ -7,11 +7,15 @@ and the frontend speaks via speechSynthesis.
 from __future__ import annotations
 
 import base64
+import logging
 
 import httpx
 
 from .. import config
+from ..utils.speak_sanitize import sanitize_for_tts
 from .registry import LIVE, UNCONFIGURED, AdapterUnavailable, report
+
+logger = logging.getLogger(__name__)
 
 NAME = "tts"
 BROWSER_FALLBACK = "browser-fallback"
@@ -23,6 +27,12 @@ def provider_name() -> str:
 
 async def synthesize(text: str, language: str = "en-IN") -> tuple[str, str]:
     """Returns (audio_base64_wav, provider). Raises AdapterUnavailable when unconfigured."""
+    # Sanitize text for TTS
+    original_text = text
+    text = sanitize_for_tts(text)
+    if len(original_text) > len(text) * 1.1:  # >10% reduction
+        logger.info(f"TTS sanitized: {len(original_text)} -> {len(text)} chars ({int((1 - len(text)/len(original_text))*100)}% reduction)")
+    
     key = config.SARVAM_API_KEY
     if not key:
         report(NAME, UNCONFIGURED, "SARVAM_API_KEY not set — browser fallback")

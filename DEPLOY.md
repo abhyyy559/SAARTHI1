@@ -1,5 +1,31 @@
 # WeatherGPT — Production & API-Key Guide
 
+## 0. Persistent storage (DATABASE_URL) — Round 2
+
+Every store that must survive a deploy or restart now goes through one layer
+(`weathergpt/backend/services/db.py`):
+
+| Store | Survives a redeploy? |
+|---|---|
+| Demo alerts (Admin panel) | with DATABASE_URL: yes |
+| Notification log (Notification Center) | yes |
+| Delivery ledger + coverage | yes |
+| Push subscriptions | yes |
+| Watcher state (notify-exactly-once) | yes |
+| VAPID keys | file/env — pin `VAPID_PRIVATE_KEY`/`VAPID_PUBLIC_KEY` for multi-instance |
+
+- **`DATABASE_URL` unset** (today's default) -> JSON files beside the cache.
+  Fine for a laptop demo; **wiped on Render/Vercel redeploy**.
+- **`DATABASE_URL` set** -> PostgreSQL via `asyncpg`. Tables (`saarthi_kv`,
+  `saarthi_docs`, `saarthi_log`) auto-create on first use — no migration step.
+  If Postgres is unreachable at runtime, stores degrade to JSON with a one-time
+  warning; the API never 500s because of the database.
+- **Render free tier:** create a PostgreSQL instance, copy the *Internal
+  Database URL* into the service env as `DATABASE_URL`, redeploy. Verify via
+  `GET /api/v1/system/status` -> `"database": {"backend": "postgres", ...}`.
+- The P2P relay store (`emergency_store.json`) stays file-based on purpose: it
+  models device-local storage.
+
 ## 1. API keys: where they live, where to get them
 
 All keys live in **`weathergpt/.env`** (server-side only — never commit, never ship

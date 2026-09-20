@@ -17,6 +17,10 @@ class RiskService:
 
         if base == 0:
             level = "LOW"
+        elif severity == "RED":
+            level = "CRITICAL"  # RED is take-action for everyone, any persona
+        elif base == 2:
+            level = "HIGH" if score <= 4 else "CRITICAL"  # ORANGE minimum HIGH
         elif score <= 2:
             level = "MODERATE"
         elif score <= 4:

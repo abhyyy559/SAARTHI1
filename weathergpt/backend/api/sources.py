@@ -11,6 +11,7 @@ router = APIRouter(prefix="/api")
 @router.get("/sources")
 async def sources() -> dict:
     return {
+        "source_mode": config.current_source_mode(),
         "demo_mode": config.DEMO_MODE,
         "sources": snapshot(),
         "needs_keys": {

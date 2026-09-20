@@ -30,6 +30,18 @@ def test_red_fisherman():
     print("PASS: test_red_fisherman")
 
 
+def test_orange_general_minimum_high():
+    r = svc.risk({"severity": "ORANGE", "hazard": "Heavy Rain"}, "general")
+    assert r["level"] == "HIGH", f"FAIL: {r}"
+    print("PASS: test_orange_general_minimum_high")
+
+
+def test_red_any_persona_is_critical():
+    r = svc.risk({"severity": "RED", "hazard": "Cyclone"}, "general")
+    assert r["level"] == "CRITICAL", f"FAIL: {r}"
+    print("PASS: test_red_any_persona_is_critical")
+
+
 def test_official_severity_never_mutated():
     r = svc.risk({"severity": "YELLOW", "hazard": "Rain"}, "driver")
     assert r["official_severity"] == "YELLOW"
@@ -42,6 +54,8 @@ def main():
     test_yellow_general()
     test_orange_farmer()
     test_red_fisherman()
+    test_orange_general_minimum_high()
+    test_red_any_persona_is_critical()
     test_official_severity_never_mutated()
     print("\nAll risk tests passed.")
 

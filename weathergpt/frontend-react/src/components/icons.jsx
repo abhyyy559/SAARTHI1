@@ -32,6 +32,40 @@ const P = {
   eye: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zm9.5 2.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
   lock: 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9.5H5V11z',
   offline: 'M2.5 2.5l19 19M8.5 16a5 5 0 0 1 7 0M5.2 12.2a10 10 0 0 1 3.4-2m6.8.3a10 10 0 0 1 3.4 1.7M12 20h.01',
+
+  // --- hazards. One glyph per threat a farmer, driver or fisherman actually
+  // --- faces, so the threat is readable before any word is.
+  cloud: 'M7 18h10a4 4 0 0 0 .3-8A6 6 0 0 0 6 11.2 3.5 3.5 0 0 0 7 18z',
+  rain: 'M7 15h10a4 4 0 0 0 .3-8A6 6 0 0 0 6 8.2 3.5 3.5 0 0 0 7 15zM8.5 18l-1 3M12 18l-1 3M15.5 18l-1 3',
+  storm: 'M7 14h10a4 4 0 0 0 .3-8A6 6 0 0 0 6 7.2 3.5 3.5 0 0 0 7 14zM13 16l-3 4h3l-1.5 3',
+  wind: 'M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h9',
+  wave: 'M2 11c2-3 4-3 6 0s4 3 6 0 4-3 6 0M2 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0',
+  snow: 'M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9',
+  fog: 'M4 9h16M6 13h13M4 17h11',
+  heat: 'M12 4.5v-2m6.4 3.6 1.4-1.4M4.2 19.8l1.4-1.4M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM6 20c1.5 1.2 3 1.2 4.5 0S13.5 18.8 15 20',
+  flood: 'M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 20c2-2 4-2 6 0s4 2 6 0 4-2 6 0M6 10l6-6 6 6',
+  mountain: 'M3 20l6-11 4 7 2.5-4L21 20H3z',
+  flame: 'M12 3s5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 1-3s1 2 2 2c0-3 2-6 2-8z',
+  thermometer: 'M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z',
+
+  // --- livelihoods. The app speaks to a farmer, a driver and a fisherman, so
+  // --- they can pick their own world by picture rather than by reading.
+  boat: 'M3 15h18l-3 5H6l-3-5zM12 3v12M12 3l6 9h-6',
+  fish: 'M2.5 12c3-4.5 6.5-6 9.5-6s6.5 1.5 9.5 6c-3 4.5-6.5 6-9.5 6s-6.5-1.5-9.5-6zM16 12h.01',
+  truck: 'M3 6h11v10H3V6zm11 4h4l3 3v3h-7v-6zM7 19.5a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6zm10 0a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6z',
+  crop: 'M12 21V9M12 9c0-3 2-5 5-5 0 3-2 5-5 5zM12 13c0-3-2-5-5-5 0 3 2 5 5 5z',
+
+  // --- actions and status the low-literacy pass leans on.
+  sos: 'M6 3h3l2 5-2.5 1.5a12 12 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8 8a8 8 0 0 0-16 0',
+  translate: 'M4 6h9M8.5 6V4M6 6c0 5-1.5 8-4 10M10 6c0 5 1.5 8 4 10M13 20l4-9 4 9M14.5 17h5',
+  database: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  wifi: 'M2.5 9a15 15 0 0 1 19 0M6 12.5a10 10 0 0 1 12 0M9.5 16a5 5 0 0 1 5 0M12 19.5h.01',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 8h.01',
+  help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01',
+  chevron: 'm9 6 6 6-6 6',
+  download: 'M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 19h16',
+  stop: 'M8 12V6a1.5 1.5 0 0 1 3 0v5M11 11V5a1.5 1.5 0 0 1 3 0v6M14 11V7a1.5 1.5 0 0 1 3 0v8a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5v-2l-1.5-2a1.5 1.5 0 0 1 2.5-1.6L8 13',
 };
 
 export default function Icon({ name, size = 18, className = 'icon' }) {

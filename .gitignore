@@ -22,3 +22,10 @@ weathergpt/docker-build.log
 weathergpt/docker-build.err.log
 
 .vercel
+
+# Scratch, not source.
+# _tmp_districts.json is a 34MB GADM download used once by _gen_districts.py to
+# build weathergpt/backend/data/districts_telangana_andhra.json. The generated
+# file is committed; the raw download is not, and must never be.
+_tmp_districts.json
+_qa/

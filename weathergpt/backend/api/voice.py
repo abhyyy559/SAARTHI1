@@ -7,6 +7,7 @@ from fastapi import APIRouter, File, UploadFile
 
 from ..adapters import stt_provider, tts_provider
 from ..adapters.registry import AdapterUnavailable
+from ..utils.speak_sanitize import sanitize_for_tts
 
 router = APIRouter()
 
@@ -25,6 +26,8 @@ async def transcribe(audio: UploadFile = File(..., alias="file"), language: str 
 async def synthesize(payload: dict) -> dict:
     text = payload.get("text", "")
     language = payload.get("language", "en")
+    # Sanitize for both Sarvam and browser fallback
+    text = sanitize_for_tts(text)
     try:
         audio_b64, provider = await tts_provider.synthesize(text, language)
         return {"audio_base64": audio_b64, "mime": "audio/wav",

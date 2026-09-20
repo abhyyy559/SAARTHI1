@@ -2,8 +2,24 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import pytest  # noqa: E402
+
 from backend.services import response_validator as rv  # noqa: E402
 from backend.services import report_service, rag_service  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolated_report_store(tmp_path, monkeypatch):
+    """Never write community reports into the developer's real store.
+
+    `test_reports_never_official` submits a real report to check the labelling.
+    Without this it landed in `weathergpt/community_reports.json`, so every
+    pytest run left junk behind and the Alerts page filled up with it.
+    """
+    import backend.config as config
+    monkeypatch.setattr(config, "CACHE_FILE", str(tmp_path / "weathergpt_cache.json"))
+    report_service._RATE.clear()
+    yield
 
 YELLOW = {"verified": True, "severity": "YELLOW", "hazard": "Thunderstorm", "valid_until": "2030-01-01"}
 

@@ -18,12 +18,43 @@ SYSTEM_RULES = (
     "Do not create emergency warnings.\n"
     "Do not modify official warning severity.\n"
     "Do not claim that a warning exists unless the verified backend contains an active warning.\n"
+    "Equally: never say, write or imply that there is NO warning, that conditions are\n"
+    "safe, or that no alert is in force, unless the verified backend actually reports\n"
+    "that the warning service was reached and returned nothing. When the warning\n"
+    "service is unreachable or its status is 'unavailable', you must say that warnings\n"
+    "could not be checked and that the user should confirm with IMD or local\n"
+    "authorities. Silence from a broken service is not an all-clear.\n"
     "Always distinguish between official meteorological information and WeatherGPT interpretation.\n"
     "If information is unavailable, stale or incomplete, say so plainly.\n"
+    "Lead with the safety picture: the warning status and any hazard. Never open the\n"
+    "answer with temperature, and never let temperature be the most prominent number.\n"
+    "The reader is deciding whether it is safe to go out, farm or put to sea.\n"
     "When discussing an emergency warning include: hazard, affected location, validity, source.\n"
-    "Give practical actions suited to the user's occupation.\n"
     "Never present AI-generated advice as an official government instruction.\n"
     "Keep it short and simple - the listener may be a fisherman or farmer with a basic phone.\n"
+    # --- BREVITY. The answer is READ ALOUD to someone deciding whether to go out. ---
+    # Without these rules the model padded every answer with a restatement of the
+    # question, a summary of its own summary, and a second copy of the practical
+    # advice (which the server already appends as the authoritative advisory
+    # block) - roughly 1000 characters where ~350 carries the same facts.
+    "LENGTH: at most 120 words total. This is a hard limit, not a target.\n"
+    "Open with the safety answer itself - the hazard or the yes/no - in one short\n"
+    "sentence of at most 20 words. Never open with 'Great question', 'Certainly',\n"
+    "a restatement of what was asked, or a heading.\n"
+    "DO NOT give practical actions, precautions, or 'what you can do' advice: that\n"
+    "is delivered separately as the advisory and would be duplicated. State facts\n"
+    "and the safety picture only.\n"
+    "DO NOT repeat yourself. Say each fact once. No closing summary.\n"
+    "Use at most 2 short sections, and at most 3 list items in total.\n"
+    "If the user's occupation needs the sea or coast but VERIFIED BACKEND DATA shows\n"
+    "their district is not coastal, say so plainly before any other advice.\n"
+    "Format the answer for a simple screen reader: short paragraphs separated by blank\n"
+    "lines. You may use '## ' at the start of a line for a section heading, '**' around\n"
+    "a few key words, and lines starting with '- ' for a short list (max 4 items).\n"
+    "No other markdown, no tables, no code blocks.\n"
+    "When asked 'will it rain tomorrow' or similar rain query, answer Yes/No first with mm amount from tomorrow_rainfall_mm. If data missing, say 'rainfall forecast unavailable'.\n"
+    "Answer the rain yes/no ONCE, in that opening sentence. Do not add a second\n"
+    "'yes it will rain' later in the answer."
 )
 
 # Language is a hard requirement, not a hint.
@@ -38,9 +69,18 @@ _LT = chr(60)  # "<"
 _THINK = re.compile(_LT + "think" + chr(62) + ".*?" + _LT + "/think" + chr(62), re.S)
 
 
-def build_evidence_package(*, location: dict, current: dict, forecast: dict, verified: dict, risk: dict, user_type: str) -> dict:
+def build_evidence_package(*, location: dict, current: dict, forecast: dict, verified: dict, risk: dict, user_type: str,
+                           source_name: str = "IMD") -> dict:
+    # source_name is the source that actually supplied the forecast facts
+    # (Open-Meteo in live mode, IMD in demo). Warnings always carry their own
+    # source inside `verified`. Never default this to IMD blindly.
+    days = forecast.get("days") or []
+    tomorrow = days[1] if len(days) > 1 else (days[0] if days else {})
+    tomorrow_rainfall_mm = tomorrow.get("rainfall")
+    tomorrow_rainfall_prob = tomorrow.get("precipitation_probability")
     return {
-        "source": "IMD",
+        "source": source_name,
+        "source_name": source_name,
         "source_type": ["current_observation", "city_forecast", "district_warning"],
         "location": location,
         "current_weather": current,
@@ -48,6 +88,8 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
         "verified_warning": verified,
         "weathergpt_risk": risk.get("level"),
         "user_type": user_type,
+        "tomorrow_rainfall_mm": tomorrow_rainfall_mm,
+        "tomorrow_rainfall_prob": tomorrow_rainfall_prob,
     }
 
 
@@ -69,6 +111,10 @@ def _template_answer(evidence: dict) -> str:
 
     lines = []
     warn = verified.get("verified", False)
+    # Honesty: "we could not check" is a different statement from "there is no
+    # warning". Saying "no warning was found" while the warning service is down
+    # is a false all-clear — the one thing this product must never emit.
+    service_unreachable = verified.get("warning_service") == "unavailable"
 
     if warn:
         lines.append(
@@ -76,6 +122,11 @@ def _template_answer(evidence: dict) -> str:
         )
         if verified.get("valid_until"):
             lines.append(f"It is valid until {verified.get('valid_until')}.")
+    elif service_unreachable:
+        lines.append(
+            f"The official warning service for {loc} could not be reached, so we cannot "
+            "confirm whether a warning is active. Please check IMD or local authorities directly."
+        )
     else:
         lines.append(f"No active severe weather warning was found for {loc}.")
 
@@ -140,7 +191,9 @@ class LLMService:
                             {"role": "user", "content": user},
                         ],
                         "temperature": 0.2,
-                        "max_tokens": 700,
+                        # ~240 tokens is a comfortable ceiling for a 120-word
+                        # answer plus headings; 400 invited padding.
+                        "max_tokens": 240,
                     },
                 )
                 resp.raise_for_status()

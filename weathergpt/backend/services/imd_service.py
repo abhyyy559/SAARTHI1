@@ -7,11 +7,28 @@ from typing import Optional
 import httpx
 
 from .. import config
-from ..adapters.registry import OFFLINE, AdapterUnavailable, report
+from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, report
 from ..models.weather import WeatherObservation, WeatherForecast, WeatherWarning
 from ..utils.time import IST
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures"
+
+
+def _report_failure(what: str, exc: Exception) -> None:
+    """Report an IMD call failure with its true cause.
+
+    Without IMD_API_KEY the IMD platform is credential-gated: it answers 401/400
+    however healthy the network is. Reporting OFFLINE there told the sources
+    panel "IMD is down" when the truth is "IMD was never keyed" — and because
+    runtime reports take precedence over the registry's baseline, it also
+    overwrote the registry's own correct UNCONFIGURED entry. A missing credential
+    is not an outage, and the two need different fixes.
+    """
+    if not config.IMD_API_KEY:
+        report("imd", UNCONFIGURED,
+               "no IMD_API_KEY — IMD is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
+    else:
+        report("imd", OFFLINE, f"live {what} failed: {type(exc).__name__}")
 
 
 def _load_fixture(name: str) -> dict:
@@ -57,9 +74,9 @@ class IMDService:
             raw = _load_fixture("current_hyderabad.json")["raw"]
         else:
             try:
-                raw = await self._get("current_wx", {"lat": latitude, "lng": longitude, "station": "Hyderabad"})
+                raw = await self._get(config.IMD_PATH_CURRENT, {"lat": latitude, "lng": longitude, "station": "Hyderabad"})
             except Exception as exc:
-                report("imd", OFFLINE, f"live current_wx failed: {type(exc).__name__}")
+                _report_failure("current_wx", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
         return WeatherObservation(
             source="IMD",
@@ -76,9 +93,9 @@ class IMDService:
             raw = _load_fixture("forecast_hyderabad.json")["raw"]
         else:
             try:
-                raw = await self._get("cityforecastloc", {"lat": latitude, "lng": longitude, "city": "Hyderabad"})
+                raw = await self._get(config.IMD_PATH_FORECAST, {"lat": latitude, "lng": longitude, "city": "Hyderabad"})
             except Exception as exc:
-                report("imd", OFFLINE, f"live cityforecast failed: {type(exc).__name__}")
+                _report_failure("cityforecast", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
         days = [
             {
@@ -95,11 +112,15 @@ class IMDService:
     async def get_district_warning(self, district: str) -> WeatherWarning | None:
         if self.adapter == "demo":
             raw = _load_fixture("warning_hyderabad.json")["raw"]
+            # Demo fixtures are single-district samples: retarget the fixture to
+            # the requested district so prototype testing works anywhere.
+            # Provenance stays DEMO — never presented as a live IMD warning.
+            raw = {**raw, "district": district}
         else:
             try:
-                raw = await self._get("districtwarning", {"district": district})
+                raw = await self._get(config.IMD_PATH_WARNING, {"district": district})
             except Exception as exc:
-                report("imd", OFFLINE, f"live districtwarning failed: {type(exc).__name__}")
+                _report_failure("districtwarning", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
         warnings = raw.get("warnings") or []
         if not warnings:
@@ -128,8 +149,8 @@ class IMDService:
             raw = _load_fixture("nowcast_hyderabad.json")["raw"]
         else:
             try:
-                raw = await self._get("districtnowcast", {"district": district})
+                raw = await self._get(config.IMD_PATH_NOWCAST, {"district": district})
             except Exception as exc:
-                report("imd", OFFLINE, f"live districtnowcast failed: {type(exc).__name__}")
+                _report_failure("districtnowcast", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
         return raw.get("nowcast", {}).get("phenomenon", "")

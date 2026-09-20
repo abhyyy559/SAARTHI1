@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { t } from './i18n';
+import { useOnline } from './offline';
 
 // Recording is shared by Home and Ask; never silently re-record after a failure.
 export function useVoiceInput(lang, onText) {
@@ -11,9 +12,18 @@ export function useVoiceInput(lang, onText) {
   const recorder = useRef(null);
   const tracks = useRef(null);
   const timer = useRef(null);
+  // Elapsed recording seconds — a mic with no timer reads as dead.
+  const [elapsed, setElapsed] = useState(0);
+  const tick = useRef(null);
+  // Offline voice chain (§7): recorder needs the backend, browser speech
+  // recognition does not. Mic is impossible only when both are gone.
+  const online = useOnline();
+  const srOK = typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const unavailable = !online && !srOK;
   useEffect(() => () => {
     session.current++;
     clearTimeout(timer.current);
+    clearInterval(tick.current);
     const rec = recorder.current;
     if (rec) { rec.onstop = null; rec.onresult = null; rec.onend = null; try { rec.stop(); } catch { /* idle */ } }
     tracks.current?.getTracks().forEach((track) => track.stop());
@@ -21,7 +31,15 @@ export function useVoiceInput(lang, onText) {
 
   function stop() {
     clearTimeout(timer.current);
+    clearInterval(tick.current);
     try { recorder.current?.stop(); } catch { /* already stopped */ }
+  }
+
+  function startClock() {
+    clearInterval(tick.current);
+    setElapsed(0);
+    const t0 = Date.now();
+    tick.current = setInterval(() => setElapsed(Math.floor((Date.now() - t0) / 1000)), 500);
   }
 
   async function listen() {
@@ -31,9 +49,10 @@ export function useVoiceInput(lang, onText) {
     const active = () => id === session.current;
     setNote('');
     setState('permission');
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    if (unavailable) { setState('idle'); setNote(t(lang, 'voiceOffline')); return; }
+    if (!online || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { setState('idle'); setNote(t(lang, 'homeNoMic')); return; }
+      if (!SR) { setState('idle'); setNote(t(lang, online ? 'homeNoMic' : 'voiceOffline')); return; }
       const rec = new SR();
       recorder.current = rec;
       rec.lang = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
@@ -42,10 +61,10 @@ export function useVoiceInput(lang, onText) {
         const text = event.results[0][0].transcript;
         setHeard(text); onText(text);
       };
-      rec.onerror = () => { if (active()) setNote(t(lang, 'voiceFailed')); };
-      rec.onend = () => { if (active()) setState('idle'); };
-      try { rec.start(); setState('recording'); setNote(t(lang, 'voiceFallback')); }
-      catch { setState('idle'); setNote(t(lang, 'homeNoMic')); }
+      rec.onerror = () => { clearInterval(tick.current); if (active()) setNote(t(lang, 'voiceFailed')); };
+      rec.onend = () => { clearInterval(tick.current); if (active()) setState('idle'); };
+      try { rec.start(); setState('recording'); startClock(); setNote(t(lang, 'voiceFallback')); }
+      catch { clearInterval(tick.current); setState('idle'); setNote(t(lang, 'homeNoMic')); }
       return;
     }
     try {
@@ -59,6 +78,7 @@ export function useVoiceInput(lang, onText) {
       rec.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop());
         clearTimeout(timer.current);
+        clearInterval(tick.current);
         if (!active()) return;
         setState('processing');
         try {
@@ -69,12 +89,12 @@ export function useVoiceInput(lang, onText) {
         } catch { if (active()) setNote(t(lang, 'voiceFailed')); }
         finally { if (active()) setState('idle'); }
       };
-      rec.start(); setState('recording');
+      rec.start(); setState('recording'); startClock();
       timer.current = setTimeout(stop, 60000);
     } catch {
       tracks.current?.getTracks().forEach((track) => track.stop());
       if (active()) { setState('idle'); setNote(t(lang, 'homeNoMic')); }
     }
   }
-  return { listen, state, heard, note, listening: state === 'recording', busy: state === 'processing' || state === 'permission' };
+  return { listen, state, heard, note, listening: state === 'recording', busy: state === 'processing' || state === 'permission', unavailable, elapsed };
 }

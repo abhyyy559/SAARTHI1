@@ -25,6 +25,11 @@ from ..utils.time import IST, iso_now, now_ist
 
 # Store location: CACHE_FILE's folder by default; overridable via env so the
 # test suite can isolate itself from the real runtime store (never pollute prod).
+# NOTE: this store stays JSON-file-based even when DATABASE_URL is set — the P2P
+# relay store is deliberately self-contained (it models device-local storage,
+# which is exactly what a phone would hold). The SERVER-side stores (demo
+# alerts, notifications, delivery ledger, push subscriptions, watcher state)
+# use services/db.py and follow DATABASE_URL.
 _STORE = Path(
     os.environ.get(
         "EMERGENCY_STORE_FILE",

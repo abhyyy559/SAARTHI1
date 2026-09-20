@@ -1,5 +1,13 @@
 # HUMAN INTERVENTION REQUIRED — what only you can do
 
+> Round2 rule (2026-09-19): **Official alerts are pre-authorized (NDMA-SACHET CAP /
+> IMD auto-ingest, no human gate).** This file tracks only credentials/access
+> humans must supply, never alert approval.
+> Every alert this system consumes is already authorized — it was issued by
+> IMD / NDMA-SACHET / an official state cell before we saw it. Alerts ingest and
+> notify automatically. The items below are one-time connection provisioning
+> (URLs / keys), not approval gates, and none of them block the demo.
+
 Verified: 2026-09-16. Everything below is checked against the live code and live API tests.
 Nothing here can be faked by the app — by design it reports UNCONFIGURED instead of inventing data.
 
