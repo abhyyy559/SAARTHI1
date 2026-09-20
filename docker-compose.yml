@@ -3,7 +3,7 @@ services:
     build: .
     image: weathergpt:1.0
     env_file:
-      - weathergpt/.env
+      - .env
     environment:
       DEMO_MODE: ${DEMO_MODE:-false}
       PORT: 8000

@@ -1,0 +1,151 @@
+// Harbour Signal redesign regression tests (source-level).
+//
+// These assert executable-source contracts for the redesign: the exact
+// simulated-P2P wording, the 5s notification timeout, banner scoping, the
+// unset-persona honesty, the source-status cards, and that severity is only
+// ever translated (never derived) on the client.
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+
+const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+
+// --- P2P honesty -----------------------------------------------------------
+test('every P2P occurrence carries the exact simulated label', () => {
+  // Emergency + AlertDetails render the label through the p2pSimulated key;
+  // assert the key exists in the components AND resolves to the exact label
+  // in all three languages (checked in alerts.js), plus the verbatim usage
+  // in NotificationCenter / P2PDemo.
+  for (const f of ['../src/components/Emergency.jsx', '../src/components/AlertDetails.jsx']) {
+    const code = read(f);
+    assert.match(code, /p2pSimulated/, `${f} must render the translated simulated label`);
+    assert.match(code, /p2p-simulated/, `${f} must stamp the simulated panel`);
+  }
+  const alerts = read('../src/strings/areas/alerts.js');
+  const hits = alerts.match(/p2pSimulated: 'SIMULATED — FOR DEMO ONLY',/g) || [];
+  assert.equal(hits.length, 3, 'p2pSimulated must be the exact label in EN/HI/TE');
+  const ntf = read('../src/components/NotificationCenter.jsx');
+  assert.match(ntf, /ntfSimulatedTag/, 'notification rows must stamp simulated P2P');
+  const hs = read('../src/strings/areas/harboursignal.js');
+  assert.match(hs, /ntfSimulatedTag: 'SIMULATED — FOR DEMO ONLY'/);
+});
+
+test('emergency inbox filters to the per-session sender id', () => {
+  const code = read('../src/components/Emergency.jsx');
+  assert.match(code, /sessionStorage/);
+  assert.match(code, /\.sender_id === sid/, 'inbox must filter to the current browser session');
+});
+
+test('SOS armed copy is a translated "Tap again to send", and sending is separate', () => {
+  const code = read('../src/components/Emergency.jsx');
+  assert.match(code, /sosArmedFire/, 'armed button must use the translated sosArmedFire key');
+  assert.match(code, /sosSending/, 'actual request must use the translated sosSending key');
+  assert.doesNotMatch(code, /"Tap again to send"/, 'no hardcoded English UI copy');
+  const strs = read('../src/strings/areas/harboursignal.js');
+  for (const key of ['sosArmedFire', 'sosSending'])
+    assert.match(strs, new RegExp(key), `${key} must be translated for EN/HI/TE`);
+});
+
+// --- notifications ----------------------------------------------------------
+test('notification fetch has a 5-second timeout and caches the list', () => {
+  const api = read('../src/api.js');
+  assert.match(api, /FETCH_TIMEOUT_MS\s*=\s*5000/);
+  assert.match(api, /AbortSignal\.timeout|AbortController/, 'j() must actually enforce the timeout');
+  const ntf = read('../src/components/NotificationCenter.jsx');
+  assert.match(ntf, /saveNotificationSnapshot/);
+  assert.match(ntf, /readNotificationSnapshot/);
+  assert.match(ntf, /ntfRetry/, 'failed fetch must offer a translated Retry');
+  assert.match(ntf, /ntfSavedTag/, 'cached items must be labelled "Saved on this phone"');
+});
+
+// --- persona honesty ---------------------------------------------------------
+test('persona starts null — no silent Fisherman default', () => {
+  const store = read('../src/store.jsx');
+  assert.match(store, /useState\(null\)/, 'persona state must start null');
+  assert.match(store, /wgpt\.persona\.v2/, 'one-time migration marker');
+  assert.doesNotMatch(store, /useState\('fisherman'\)/);
+});
+
+test('requests fall back explicitly to general when no role is set', () => {
+  for (const f of ['../src/components/ChatPanel.jsx', '../src/components/ProfileAdvice.jsx',
+                   '../src/components/HeroCard.jsx']) {
+    const code = read(f);
+    assert.match(code, /persona \|\| 'general'/, `${f} must pass persona || 'general'`);
+  }
+});
+
+// --- severity: translate only, never derive ----------------------------------
+test('SevStamp translates backend severity codes to citizen words, never derives them', () => {
+  const ui = read('../src/components/ui.jsx');
+  assert.match(ui, /SevStamp/);
+  assert.match(ui, /t\(lang, /, 'severity words must go through the translator');
+  // The map is translation only: backend canonical codes -> i18n keys. The
+  // level always arrives as a prop (backend-provided) and is never computed
+  // from warning payload fields inside the component.
+  assert.match(ui, /sevWord\(lang, level\)/);
+  assert.match(ui, /level,\s*stamp/, 'SevStamp destructures the backend level from props');
+  assert.doesNotMatch(ui, /w\.severity|warning\.severity|verdict\.hazard/, 'must not read severity off a payload');
+});
+
+// --- sources / trust citizen copy --------------------------------------------
+test('SourceStatus gives each source one citizen line and a Why? disclosure', () => {
+  const code = read('../src/components/SourceStatus.jsx');
+  for (const id of ['cap', 'open-meteo', 'wis2', 'imd']) assert.match(code, new RegExp(`id: '${id}'`));
+  for (const icon of ['bell', 'globe', 'radio', 'thermometer']) assert.match(code, new RegExp(`icon: '${icon}'`));
+  assert.match(code, /srcWhy/, 'machine vocabulary must live behind "Why?"');
+  assert.match(code, /srcLineLive/, 'citizen line for LIVE');
+  assert.match(code, /srcLineUnconfigured/, 'citizen line for UNCONFIGURED');
+});
+
+test('SourceStrip uses one meaningful icon per source', () => {
+  const code = read('../src/components/SourceStrip.jsx');
+  assert.match(code, /SRC_ICON/);
+  assert.match(code, /thermometer/);
+});
+
+// --- banner scoping ------------------------------------------------------------
+test('demo-data banner only shows on demo-content views', () => {
+  const code = read('../src/components/Shell.jsx');
+  for (const v of ['home', 'ask', 'alerts', 'advisory', 'notifications', 'details'])
+    assert.match(code, new RegExp(`'${v}'`), `banner set must include ${v}`);
+  assert.match(code, /showDemoBanner/, 'banner must be gated, not always-on in demo mode');
+});
+
+// --- view heading ----------------------------------------------------------------
+test('ViewHead renders the nav kicker only when it differs from the H1', () => {
+  const code = read('../src/components/ViewHead.jsx');
+  assert.match(code, /showKicker/, 'kicker must be conditional');
+  assert.match(code, /!== h1/, 'kicker must be suppressed when it duplicates the h1');
+});
+
+// --- offline answers: translated, never a fake all-clear -----------------------
+test('answerOffline is fully translated and carries the cannot-check wording', () => {
+  const code = read('../src/offline.js');
+  assert.match(code, /offlineNewWarning/, 'new-warning offline path must be translated');
+  assert.match(code, /offlineCachedTag/, 'cached guidance must be labelled translated');
+  assert.match(code, /offlineNoAnswer/, 'fallback must be translated');
+  assert.doesNotMatch(code, /'I cannot verify new information/, 'no hardcoded English');
+  const hs = read('../src/strings/areas/harboursignal.js');
+  for (const key of ['offlineNewWarning', 'offlineCachedTag', 'offlineNoAnswer']) {
+    const hits = hs.match(new RegExp(`${key}: '`, 'g')) || [];
+    assert.equal(hits.length, 3, `${key} must exist in EN/HI/TE`);
+  }
+});
+
+test('sev word keys exist for EN/HI/TE', () => {
+  // sevRed/sevOrange/... live in i18n.js's core dictionary (overridable by areas).
+  const dict = read('../src/i18n.js');
+  for (const key of ['sevRed', 'sevOrange', 'sevYellow', 'sevGreen', 'sevUnknown']) {
+    const hits = dict.match(new RegExp(`${key}: '`, 'g')) || [];
+    assert.equal(hits.length, 3, `${key} must exist in EN/HI/TE`);
+  }
+});
+
+test('offline verdict detail is translated with the cannot-check wording', () => {
+  const code = read('../src/components/ChatPanel.jsx');
+  assert.match(code, /offlineVerdictDetail/, 'offline verdict detail must go through t()');
+  assert.doesNotMatch(code, /backend unreachable - warning status cannot be confirmed/);
+  const hs = read('../src/strings/areas/harboursignal.js');
+  const hits = hs.match(/offlineVerdictDetail: '/g) || [];
+  assert.equal(hits.length, 3, 'offlineVerdictDetail must exist in EN/HI/TE');
+});

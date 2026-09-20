@@ -16,4 +16,4 @@ Verified: authenticated MCP initialize, tool discovery, and get_screen for this 
 ## Implementation boundary
 No application files were changed for this export. No commit or deployment was made. User design approval is required before integration.
 
-Likely integration targets within `weathergpt/frontend-react/src`: `components/Home.jsx`, `components/ChatPanel.jsx`, `components/VoicePanel.jsx`, `components/ProfileAdvice.jsx`, `components/Shell.jsx`, and `styles.css`. Adapt the reference into existing React and CSS rather than shipping the standalone prototype or adding its CDN dependencies. Preserve profile/language wiring, real microphone state, source timestamps and unavailable-warning states.
+Likely integration targets within `frontend-react/src`: `components/Home.jsx`, `components/ChatPanel.jsx`, `components/VoicePanel.jsx`, `components/ProfileAdvice.jsx`, `components/Shell.jsx`, and `styles.css`. Adapt the reference into existing React and CSS rather than shipping the standalone prototype or adding its CDN dependencies. Preserve profile/language wiring, real microphone state, source timestamps and unavailable-warning states.
