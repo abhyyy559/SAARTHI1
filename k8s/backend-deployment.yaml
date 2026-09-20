@@ -1,0 +1,170 @@
+# Persistent volume claim for the backend's writable runtime stores.
+#
+# The root Dockerfile declares VOLUME /app/data and sets
+# CACHE_FILE=/app/data/weathergpt_cache.json; emergency_store.json,
+# community_reports.json, delivery_ledger.json and friends live next to it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: saarthi-data
+  namespace: saarthi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  # storageClassName: <your-class>   # set if the cluster has no default
+---
+# SAARTHI backend: FastAPI (backend/main.py) served by uvicorn.
+# Image: root ./Dockerfile (python:3.11-slim), binds $PORT (default 8003).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saarthi-backend
+  namespace: saarthi
+  labels:
+    app.kubernetes.io/name: saarthi-backend
+    app.kubernetes.io/part-of: saarthi
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: saarthi-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: saarthi-backend
+        app.kubernetes.io/part-of: saarthi
+    spec:
+      containers:
+        - name: backend
+          # Build from the repo root Dockerfile and push to your registry first.
+          image: saarthi-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8003   # matches Dockerfile EXPOSE 8003 / PORT=8003
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: PORT }
+            - name: CACHE_FILE
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: CACHE_FILE }
+            # --- non-secret config (names from backend/config.py) -----------
+            - name: SOURCE_MODE
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: SOURCE_MODE }
+            - name: DEMO_MODE
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: DEMO_MODE }
+            - name: IMD_ADAPTER
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_ADAPTER }
+            - name: FRONTEND_ORIGINS
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: FRONTEND_ORIGINS }
+            - name: IMD_BASE_URL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_BASE_URL }
+            - name: IMD_PATH_CURRENT
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_PATH_CURRENT }
+            - name: IMD_PATH_FORECAST
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_PATH_FORECAST }
+            - name: IMD_PATH_WARNING
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_PATH_WARNING }
+            - name: IMD_PATH_NOWCAST
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_PATH_NOWCAST }
+            - name: SARVAM_STT_URL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: SARVAM_STT_URL }
+            - name: SARVAM_STT_MODEL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: SARVAM_STT_MODEL }
+            - name: SARVAM_TTS_URL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: SARVAM_TTS_URL }
+            - name: SARVAM_TTS_MODEL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: SARVAM_TTS_MODEL }
+            - name: ALERT_WATCH_INTERVAL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: ALERT_WATCH_INTERVAL }
+            - name: DEMO_TICK
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: DEMO_TICK }
+            - name: WIS2_BROKER
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: WIS2_BROKER }
+            # --- secrets (names from backend/config.py) ----------------------
+            - name: IMD_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: IMD_API_KEY, optional: true } }
+            - name: LLM_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: LLM_API_KEY, optional: true } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: DATABASE_URL, optional: true } }
+            - name: REDIS_URL
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: REDIS_URL, optional: true } }
+            - name: STT_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: STT_API_KEY, optional: true } }
+            - name: TTS_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: TTS_API_KEY, optional: true } }
+            - name: SARVAM_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: SARVAM_API_KEY, optional: true } }
+            - name: OWM_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: OWM_API_KEY, optional: true } }
+            - name: DATAGOV_API_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: DATAGOV_API_KEY, optional: true } }
+            - name: DATAGOV_RESOURCE_ID
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: DATAGOV_RESOURCE_ID, optional: true } }
+            - name: CAP_FEED_URL
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: CAP_FEED_URL, optional: true } }
+            - name: CAP_FEED_URLS
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: CAP_FEED_URLS, optional: true } }
+            - name: WEATHERAPI_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: WEATHERAPI_KEY, optional: true } }
+            - name: WEATHERUNION_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: WEATHERUNION_KEY, optional: true } }
+            - name: VAPID_PRIVATE_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: VAPID_PRIVATE_KEY, optional: true } }
+            - name: VAPID_PUBLIC_KEY
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: VAPID_PUBLIC_KEY, optional: true } }
+            - name: VAPID_SUBJECT
+              valueFrom: { secretKeyRef: { name: saarthi-backend-secrets, key: VAPID_SUBJECT, optional: true } }
+          # Health endpoints mirror the Dockerfile HEALTHCHECK and
+          # render.yaml healthCheckPath: /api/health.
+          readinessProbe:
+            httpGet: { path: /api/health, port: 8003 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: { path: /api/health, port: 8003 }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: saarthi-data

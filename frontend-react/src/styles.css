@@ -494,6 +494,23 @@ button.chip:active { transform: translateY(1px); }
 .dispatch-text { margin: 0; }
 .disclaimer { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--ink-soft); }
 
+/* ---------- Situation-aware advisory cards ---------- */
+.advice-cards { display: grid; gap: 12px; }
+.advice-card {
+  background: var(--card); border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 14px; display: grid; gap: 8px;
+}
+.advice-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+}
+.advice-kind { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.advice-title { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.advice-body { margin: 0; }
+.advice-meta { display: grid; gap: 4px; font-size: 13px; color: var(--ink-soft); }
+.advice-meta-label { font-weight: 700; color: var(--ink); }
+.advice-meta ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+
 /* ---------- Sources / trust ---------- */
 .grid-3, .src-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .src-card { background: var(--card); border: 2px solid var(--ink); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; }
@@ -637,6 +654,35 @@ button.chip:active { transform: translateY(1px); }
   .ops-grid { grid-template-columns: 1fr; }
 }
 
+/* ---------- City operations panel (Trust route) ---------- */
+/* Harbour Signal: paper background, ink text, one icon family, severity only
+   as icon+word+color (the SevStamp component). Metric blocks collapse to one
+   column under 560px so nothing overflows at 320px. */
+.co-grid { align-items: stretch; }
+.co-block {
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 12px;
+  padding: 12px; display: grid; gap: 10px; align-content: start;
+}
+.co-block-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 600; color: var(--ink);
+}
+.co-metric { display: grid; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); }
+.co-metric:first-of-type { border-top: 0; padding-top: 0; }
+.co-metric-top {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--ink-soft);
+}
+.co-value { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.co-unit { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+.co-na { font-size: 14px; font-weight: 600; color: var(--sev-unknown); }
+.co-alerts-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.co-alert-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.co-alert-list li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.co-alert-head { font-size: 14px; color: var(--ink); }
+.co-sev-note { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+@media (max-width: 560px) { .co-grid { grid-template-columns: 1fr; } }
+
 /* ---------- Reduced motion: honour the user's preference everywhere ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -646,3 +692,40 @@ button.chip:active { transform: translateY(1px); }
   }
   .verdict-bulletin.is-sweep { animation: none; }
 }
+
+/* ---------- Aviation briefing (Details route section) ---------- */
+/* Harbour Signal: paper page, white card with 2px ink border comes from
+   .card; these rules only lay out the briefing's own content. Severity is
+   icon + word + colour through SevStamp, never colour alone. */
+.av-sections { display: grid; gap: 12px; margin-top: 12px; }
+.av-section {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.av-section-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.av-section-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.av-section-head .prov { margin-left: auto; }
+.av-disclaimer {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #FFF4D6;
+  border: 2px solid var(--ink); border-radius: 12px;
+  padding: 10px 12px; font-size: 14px; line-height: 1.5;
+}
+.av-sample { margin-top: 8px; }
+.av-unavail { display: grid; gap: 8px; padding: 4px 0; }
+.av-unavail-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--sev-unknown); }
+.av-winds { display: grid; gap: 6px; margin-top: 8px; }
+.av-wind-head, .av-wind-row {
+  display: grid; grid-template-columns: 76px 1fr 1fr; gap: 8px; align-items: baseline;
+}
+.av-wind-head { font-weight: 700; font-size: 13px; color: var(--ink-soft); }
+.av-wind-row { padding: 6px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.av-level { font-weight: 700; }
+.av-wind-val { font-size: 14px; }
+.av-kvs { display: grid; gap: 2px; }
+.av-verdict-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.av-alert-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); }
+.av-alert-headline { font-weight: 600; font-size: 15px; }
+@media (max-width: 380px) { .av-wind-head, .av-wind-row { grid-template-columns: 64px 1fr 1fr; } }

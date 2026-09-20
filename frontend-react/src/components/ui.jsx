@@ -34,12 +34,16 @@ const SEV_WORD_KEY = {
   HIGH: 'sevOrange', ORANGE: 'sevOrange',
   MODERATE: 'sevYellow', YELLOW: 'sevYellow',
   LOW: 'sevGreen', GREEN: 'sevGreen',
+  // "info" is not an official grade — it marks rule-derived advice cards.
+  // Quiet by design (styled with the unknown tint, never alarming).
+  INFO: 'sevInfo',
 };
 const SEV_ICON = {
   CRITICAL: 'alert', RED: 'alert',
   HIGH: 'alert', ORANGE: 'alert',
   MODERATE: 'clock', YELLOW: 'clock',
   LOW: 'check', GREEN: 'check',
+  INFO: 'bell',
 };
 /** Translated severity word for a backend severity code. Never re-grades. */
 export function sevWord(lang, level) {

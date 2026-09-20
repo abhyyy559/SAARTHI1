@@ -110,3 +110,70 @@ async def get_nowcast(latitude: float, longitude: float) -> tuple[dict, str]:
     }
     report("open-meteo", LIVE, "nowcast inputs fetched")
     return now, LIVE
+
+
+# Aviation briefing inputs. Pressure-level variables are only available on
+# specific models, so this pins models=gfs_seamless — the same GFS the NWP
+# comparison path uses. Wind speeds come in knots (aviation standard). Raises
+# AdapterUnavailable via _fetch on any failure: a dead feed is a state to
+# report, never numbers to invent.
+AVIATION_LEVELS = (1000, 850, 700, 500)
+
+
+async def get_aviation_inputs(latitude: float, longitude: float) -> tuple[dict, str]:
+    """GFS pressure-level winds + temperature/humidity aloft, cloud layers,
+    visibility, and sunrise/sunset — the raw material for an aviation briefing.
+
+    Cloud cover and visibility are OBSERVED/FORECAST PROXIES: Open-Meteo gives
+    no measured ceiling or RVR. Turbulence and icing are derived proxies at
+    best (see aviation_service). The payload carries those caveats in
+    `proxy_notes` so any consumer can render them honestly."""
+    levels = ",".join(
+        f"wind_speed_{p}hPa,wind_direction_{p}hPa,temperature_{p}hPa,"
+        f"relative_humidity_{p}hPa"
+        for p in AVIATION_LEVELS
+    )
+    data = await _fetch({
+        "latitude": latitude, "longitude": longitude,
+        "hourly": f"{levels},visibility,cloud_cover_low,cloud_cover_mid,cloud_cover_high",
+        "daily": "sunrise,sunset",
+        "models": "gfs_seamless",
+        "wind_speed_unit": "kn",
+        "forecast_days": 2,
+        "timezone": "Asia/Kolkata",
+    })
+    report("open-meteo", LIVE, "aviation inputs (GFS pressure levels) fetched")
+    hourly = data.get("hourly") or {}
+    daily = data.get("daily") or {}
+
+    def _col(key: str, idx: int):
+        vals = hourly.get(key) or []
+        return vals[idx] if 0 <= idx < len(vals) else None
+
+    def _level(p: int, idx: int) -> dict:
+        return {
+            "level_hpa": p,
+            "wind_speed_kt": _col(f"wind_speed_{p}hPa", idx),
+            "wind_direction_deg": _col(f"wind_direction_{p}hPa", idx),
+            "temperature_c": _col(f"temperature_{p}hPa", idx),
+            "relative_humidity_pct": _col(f"relative_humidity_{p}hPa", idx),
+        }
+
+    return {
+        "source": SOURCE,
+        "model": "GFS (gfs_seamless)",
+        "times_utc8_ist": (hourly.get("time") or [])[:13],
+        "levels_now": [_level(p, 0) for p in AVIATION_LEVELS],
+        "levels_plus6h": [_level(p, 6) for p in AVIATION_LEVELS],
+        "visibility_m": _col("visibility", 0),
+        "cloud_cover_low_pct": _col("cloud_cover_low", 0),
+        "cloud_cover_mid_pct": _col("cloud_cover_mid", 0),
+        "cloud_cover_high_pct": _col("cloud_cover_high", 0),
+        "sunrise": (daily.get("sunrise") or [None])[0],
+        "sunset": (daily.get("sunset") or [None])[0],
+        "proxy_notes": [
+            "Cloud-cover percentages are a proxy for ceiling, not a measured ceiling.",
+            "Visibility is a forecast value, not a measured RVR.",
+            "GFS model output is not an IMD aviation bulletin.",
+        ],
+    }, LIVE

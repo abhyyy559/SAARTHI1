@@ -1,0 +1,15 @@
+# SAARTHI (WeatherGPT) — Kubernetes manifests
+#
+# Split-service deployment: the FastAPI backend and the nginx-served React
+# frontend run as separate Deployments so each scales independently.
+# Apply order and prerequisites are in ./README.md.
+
+# ----------------------------------------------------------------------------
+# Namespace shared by all SAARTHI objects.
+# ----------------------------------------------------------------------------
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: saarthi
+  labels:
+    app.kubernetes.io/part-of: saarthi

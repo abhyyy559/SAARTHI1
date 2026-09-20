@@ -8,6 +8,7 @@ import AlertCenter from './components/AlertCenter';
 import AlertDetails from './components/AlertDetails';
 import Emergency from './components/Emergency';
 import ProfileAdvice from './components/ProfileAdvice';
+import AdviceCards from './components/AdviceCards';
 import ViewHead from './components/ViewHead';
 import NotificationCenter from './components/NotificationCenter';
 import Advisor from './components/Advisor';
@@ -15,7 +16,9 @@ import AdminPanel from './components/AdminPanel';
 import AuthorityDashboard from './components/AuthorityDashboard';
 import CoverageDashboard from './components/CoverageDashboard';
 import SourceStatus from './components/SourceStatus';
+import CityOpsPanel from './components/CityOpsPanel';
 import HowItWorks from './components/HowItWorks';
+import AviationBriefing from './components/AviationBriefing';
 import { useApp } from './store';
 import { t } from './i18n';
 import { useState } from 'react';
@@ -133,12 +136,13 @@ export function AdvisorView() {
   );
 }
 
-// Advisory — the persona guidance (ProfileAdvice) lives here alone; the
-// Home/chat surface never shows advice.
+// Advisory — the situation-aware cards and the persona guidance live here
+// alone; the Home/chat surface never shows advice.
 export function AdvisoryView() {
   return (
     <>
       <ViewHead titleKey="viewAdvisory" subKey="viewAdvisorySub" />
+      <AdviceCards />
       <ProfileAdvice />
     </>
   );
@@ -169,6 +173,10 @@ export function TrustView() {
           <SourceStrip refreshKey={0} />
         </details>
       </Card>
+      {/* §4 smart-city gap: district heat / rain / official-alert facts for the
+          selected location. Lives on Trust (the source-guarantees route) so the
+          Details route another agent is editing stays untouched. */}
+      <CityOpsPanel />
       <HowItWorks />
     </>
   );
@@ -177,12 +185,16 @@ export function TrustView() {
 // Alert details as a view: shows the citizen-selected alert (tapped from a
 // bulletin or alert card). If nothing was ever selected the board says so
 // honestly instead of inventing a "latest" alert.
+//
+// The aviation briefing sits BELOW as its own clearly-labelled section: it is
+// location-based (the user's district), independent of any selected alert,
+// and is never presented as alert content.
 export function DetailsView() {
   const { lang, setView, selectedAlert } = useApp();
-  if (!selectedAlert) {
-    return (
-      <>
-        <ViewHead titleKey="navDetails" subKey="viewDetailsSub" />
+  return (
+    <>
+      <ViewHead titleKey="navDetails" subKey="viewDetailsSub" />
+      {!selectedAlert ? (
         <div className="empty-state" data-state="details-none">
           <div className="display">{t(lang, 'detailsNoneTitle')}</div>
           <p className="sub">{t(lang, 'detailsNoneBody')}</p>
@@ -193,13 +205,10 @@ export function DetailsView() {
             </button>
           </div>
         </div>
-      </>
-    );
-  }
-  return (
-    <>
-      <ViewHead titleKey="navDetails" subKey="viewDetailsSub" />
-      <AlertDetails alert={selectedAlert} onBack={() => setView('alerts')} />
+      ) : (
+        <AlertDetails alert={selectedAlert} onBack={() => setView('alerts')} />
+      )}
+      <AviationBriefing />
     </>
   );
 }

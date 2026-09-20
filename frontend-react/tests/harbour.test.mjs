@@ -149,3 +149,55 @@ test('offline verdict detail is translated with the cannot-check wording', () =>
   const hits = hs.match(/offlineVerdictDetail: '/g) || [];
   assert.equal(hits.length, 3, 'offlineVerdictDetail must exist in EN/HI/TE');
 });
+
+// --- City operations panel (§4 smart-city gap) ----------------------------------
+test('CityOpsPanel renders facts only: no advice language, no client-side severity', () => {
+  const code = read('../src/components/CityOpsPanel.jsx');
+  assert.match(code, /api\.current\(/, 'must read the real current endpoint');
+  assert.match(code, /api\.forecast\(/, 'must read the real forecast endpoint');
+  assert.match(code, /api\.warnings\(/, 'must read the official warnings endpoint');
+  assert.match(code, /SevStamp/, 'alert severity must render through the canonical stamp');
+  assert.match(code, /a\.severity \|\| 'UNKNOWN'/, 'UNKNOWN must survive as UNKNOWN, never recoloured');
+  assert.doesNotMatch(code, /air_pollution|aqi_endpoint|aqi_value|pm2/i,
+    'no invented AQI data plumbing — it must stay omitted');
+  assert.match(code, /no backend adapter provides an air-quality feed/,
+    'the AQI omission must be documented in the component');
+  // Facts only: imperative advisory verbs must not appear in user-facing copy.
+  assert.doesNotMatch(code, /wear a |drink water|carry an umbrella|stay indoors|should stay|should wear/i,
+    'panel must not carry advisory language — advice lives in Advisory');
+});
+
+test('CityOpsPanel concurrency: the three fetches run in parallel', () => {
+  const code = read('../src/components/CityOpsPanel.jsx');
+  assert.match(code, /Promise\.allSettled/, 'independent fetches must not serialize');
+});
+
+test('cityops strings: EN/HI/TE parity and no Tamil script', () => {
+  const strs = read('../src/strings/areas/cityops.js');
+  const keys = ['cityOpsTitle', 'cityOpsSub', 'cityHeat', 'cityHeatNow', 'cityHeatMax',
+    'cityRain', 'cityRainObs', 'cityRainFcst', 'cityAlerts', 'cityAlertsNone',
+    'cityAlertsActive', 'cityAlertsSevNote', 'cityUnavailable', 'cityLoading',
+    'cityFailed', 'cityRetry'];
+  for (const key of keys) {
+    const hits = strs.match(new RegExp(`${key}: ['"]`, 'g')) || [];
+    assert.equal(hits.length, 3, `${key} must exist in EN/HI/TE`);
+  }
+  // Tamil block U+0B80–U+0BFF must never appear in any UI string.
+  assert.doesNotMatch(strs, /[\u0B80-\u0BFF]/, 'no Tamil script anywhere');
+});
+
+test('TrustView renders CityOpsPanel (Trust route owns the city-ops snapshot)', () => {
+  const views = read('../src/views.jsx');
+  assert.match(views, /import CityOpsPanel/, 'TrustView must import the panel');
+  assert.match(views, /<CityOpsPanel \/>/, 'TrustView must render the panel');
+  assert.match(views, /CityOpsPanel \/>[\s\S]{0,200}<HowItWorks/, 'panel sits on Trust before HowItWorks');
+});
+
+test('CityOpsPanel honest states: UNAVAILABLE per metric, translated retry', () => {
+  const code = read('../src/components/CityOpsPanel.jsx');
+  assert.match(code, /cityUnavailable/, 'missing values must render an honest unavailable state');
+  assert.match(code, /UNAVAILABLE/, 'provenance fallback must be honest UNAVAILABLE, never a guess');
+  assert.match(code, /cityRetry/, 'failed fetch must offer a translated retry');
+  assert.match(code, /aria-live="polite"/, 'async state must be announced politely');
+  assert.doesNotMatch(code, /\"No active official alerts/, 'no hardcoded English alert copy');
+});

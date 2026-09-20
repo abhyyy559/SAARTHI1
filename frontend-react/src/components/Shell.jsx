@@ -30,8 +30,10 @@ const MORE_ROWS = [
   { view: 'trust', labelKey: 'navTrust', icon: 'shield' },
   { view: 'details', labelKey: 'navDetails', icon: 'file' },
   { view: 'sources', labelKey: 'navSources', icon: 'database' },
-  { view: 'admin', labelKey: 'navAdmin', icon: 'layers' },
 ];
+// NOTE: the old admin row was removed from MORE_ROWS on purpose — admin
+// stays a HIDDEN_VIEW (i18n.js) and is never a public nav row. The
+// HIDDEN_VIEWS filter above remains as a guard for any future rows.
 
 function StatusBanner({ kind, children }) {
   return (

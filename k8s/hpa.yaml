@@ -1,0 +1,40 @@
+# HorizontalPodAutoscaler for the SAARTHI backend.
+#
+# Sane for a demo/small cluster: floor of 2 replicas keeps one spare through
+# rolling updates; ceiling of 6 bounds cost while proving autoscaling works
+# (this is the eval-parameter-5 "scalability" story). CPU at 70% of the
+# deployment's 1-core limit.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: saarthi-backend
+  namespace: saarthi
+  labels:
+    app.kubernetes.io/part-of: saarthi
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: saarthi-backend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120

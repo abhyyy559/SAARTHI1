@@ -1,0 +1,58 @@
+# SAARTHI frontend: the Vite production build (frontend-react/dist) served by nginx.
+#
+# ASSUMPTION (repo has no frontend Dockerfile): the image `saarthi-frontend`
+# is built from frontend-react's production build and served with nginx on
+# port 80. See README.md for a sample frontend Dockerfile and the VITE_API_URL
+# build-time caveat.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saarthi-frontend
+  namespace: saarthi
+  labels:
+    app.kubernetes.io/name: saarthi-frontend
+    app.kubernetes.io/part-of: saarthi
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: saarthi-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: saarthi-frontend
+        app.kubernetes.io/part-of: saarthi
+    spec:
+      containers:
+        - name: frontend
+          image: saarthi-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          # Build-time only: vite bakes VITE_API_URL into the JS bundle, so
+          # this does not reconfigure an already-built image (see README).
+          env:
+            - name: VITE_API_URL
+              valueFrom:
+                configMapKeyRef: { name: saarthi-frontend-config, key: VITE_API_URL, optional: true }
+          readinessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

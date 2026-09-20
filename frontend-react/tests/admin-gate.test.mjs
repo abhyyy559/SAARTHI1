@@ -73,3 +73,59 @@ test('admin gate strings exist in EN/HI/TE', () => {
     assert.equal(hits.length, 3, `${key} must exist in EN/HI/TE`);
   }
 });
+
+// --- leak sweep: admin must be invisible to normal users ---------------------
+test('no admin entry in the public More sheet rows', () => {
+  const code = read('../src/components/Shell.jsx');
+  const rows = code.match(/const MORE_ROWS = \[([\s\S]*?)\];/);
+  assert.ok(rows, 'MORE_ROWS must be defined in Shell.jsx');
+  assert.ok(!rows[1].includes('admin'), 'the dead admin MORE_ROWS row was removed — admin is HIDDEN_VIEW only');
+  // The HIDDEN_VIEWS filter stays as a guard for any future rows.
+  assert.match(
+    code,
+    /MORE_ROWS\.filter\(\(r\) => !HIDDEN_VIEWS\.includes\(r\.view\)\)\.map/,
+    'More sheet filter must remain even after the row removal',
+  );
+});
+
+test('demo banner never names or shows on the admin route', () => {
+  const code = read('../src/components/Shell.jsx');
+  const bannerViews = code.match(/const demoBannerViews = new Set\(\[([\s\S]*?)\]\)/);
+  assert.ok(bannerViews, 'demoBannerViews set must exist');
+  assert.ok(!bannerViews[1].includes('admin'), 'demo banner must not show on admin');
+});
+
+test('onboarding tour never steps toward admin', () => {
+  const code = read('../src/components/OnboardingTour.jsx');
+  assert.ok(!code.match(/view:\s*['"]admin['"]/), 'tour steps must not navigate to admin');
+  assert.ok(!/admin/i.test(code), 'tour code must not mention admin at all');
+});
+
+test('tour copy never mentions the admin path', () => {
+  const code = read('../src/i18n.js');
+  for (const key of ['obt1t', 'obt1b', 'obt2t', 'obt2b', 'obt3t', 'obt3b', 'obt4t', 'obt4b', 'obt5t', 'obt5b', 'obt6t', 'obt6b']) {
+    const hits = code.match(new RegExp(`${key}: '([^']*)'`, 'g')) || [];
+    assert.ok(hits.length >= 3, `tour string ${key} should exist across languages`);
+    for (const h of hits) {
+      assert.ok(!/admin|PIN|team-only/i.test(h), `tour string ${key} must not mention admin: ${h.slice(0, 60)}`);
+    }
+  }
+});
+
+test('admin URL hints appear only in comments, never in user-visible strings', () => {
+  const shell = read('../src/components/Shell.jsx');
+  const store = read('../src/store.jsx');
+  const app = read('../src/App.jsx');
+  const views = read('../src/views.jsx');
+  for (const [name, code] of [['Shell.jsx', shell], ['store.jsx', store], ['App.jsx', app], ['views.jsx', views]]) {
+    const stripped = code.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.ok(!stripped.includes('view=admin'), `${name}: ?view=admin must not appear outside comments`);
+  }
+});
+
+test('public web assets expose no admin route', () => {
+  const manifest = read('../public/manifest.webmanifest');
+  assert.ok(!/admin/i.test(manifest), 'manifest must not reference admin');
+  // manifest shortcut entries would leak the route to the OS launcher
+  assert.ok(!/shortcut/i.test(manifest), 'manifest must not ship shortcuts pointing at admin');
+});

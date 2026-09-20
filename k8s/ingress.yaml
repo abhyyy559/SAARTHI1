@@ -1,0 +1,42 @@
+# Single-host ingress: /api/* -> backend, everything else -> frontend.
+#
+# Path ordering matters: the /api prefix rule is listed first so it wins.
+# Replace saarthi.example.com with the real host and add your TLS issuer
+# (cert-manager annotations are stubbed below).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: saarthi
+  namespace: saarthi
+  annotations:
+    # Example for cert-manager (uncomment + configure when ready):
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    #
+    # NOTE: no rewrite-target here — the backend expects the full /api/*
+    # paths (e.g. /api/health), so the prefix must be forwarded unchanged.
+  labels:
+    app.kubernetes.io/part-of: saarthi
+spec:
+  ingressClassName: nginx
+  # tls:
+  #   - hosts: [saarthi.example.com]
+  #     secretName: saarthi-tls
+  rules:
+    - host: saarthi.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: saarthi-backend
+                port:
+                  number: 8003
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: saarthi-frontend
+                port:
+                  number: 80

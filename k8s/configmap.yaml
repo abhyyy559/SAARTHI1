@@ -1,0 +1,68 @@
+# Non-secret configuration for the SAARTHI backend.
+#
+# Env names mirror backend/config.py exactly. Secrets live in
+# secret-template.yaml; anything that must never be committed goes there.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: saarthi-backend-config
+  namespace: saarthi
+data:
+  # Port the FastAPI server binds (matches Dockerfile ENV PORT=8003 / CMD).
+  PORT: "8003"
+  # backend/run.py equivalent: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8003
+
+  # --- Source modes (docs/SOURCE-MODES.md) --------------------------------
+  # demo | imd | hybrid. SOURCE_MODE wins; DEMO_MODE is re-derived from it.
+  SOURCE_MODE: "hybrid"
+  DEMO_MODE: "false"
+  IMD_ADAPTER: "live"
+
+  # --- CORS -----------------------------------------------------------------
+  # backend/main.py reads config.FRONTEND_ORIGINS for CORSMiddleware
+  # allow_origins. Must include the Ingress host (with scheme).
+  FRONTEND_ORIGINS: "https://saarthi.example.com"
+
+  # --- IMD (India Meteorological Department) --------------------------------
+  # Auth header is Authorization: Bearer <IMD_API_KEY> (secret, see template).
+  IMD_BASE_URL: "https://mausam.imd.gov.in/api/v1"
+  IMD_PATH_CURRENT: "current_wx"
+  IMD_PATH_FORECAST: "cityforecastloc"
+  IMD_PATH_WARNING: "districtwarning"
+  IMD_PATH_NOWCAST: "districtnowcast"
+
+  # --- Sarvam STT/TTS (production stack: Sarvam for STT *and* TTS) ------------
+  SARVAM_STT_URL: "https://api.sarvam.ai/speech-to-text"
+  SARVAM_STT_MODEL: "saarika:v2.5"
+  SARVAM_TTS_URL: "https://api.sarvam.ai/text-to-speech"
+  SARVAM_TTS_MODEL: "bulbul:v3"
+
+  # --- Alert watch cadence ---------------------------------------------------
+  ALERT_WATCH_INTERVAL: "300"   # seconds between network source re-checks
+  DEMO_TICK: "10"               # seconds between local demo lifecycle ticks
+
+  # --- Writable runtime stores ----------------------------------------------
+  # Dockerfile declares VOLUME /app/data and sets CACHE_FILE there; the
+  # deployment mounts the saarthi-data PVC at the same path.
+  CACHE_FILE: "/app/data/weathergpt_cache.json"
+
+  # --- WIS2/MQTT (optional; adapter reports UNCONFIGURED when empty) --------
+  # backend/adapters/wis2_adapter.py reads config.WIS2_BROKER.
+  WIS2_BROKER: ""
+---
+# Non-secret configuration for the frontend image.
+#
+# VITE_API_URL is a Vite *build-time* variable (frontend-react/src/api.js:
+# `const BASE = import.meta.env.VITE_API_URL || ...`). Setting it here does
+# NOT rewire an already-built image — see README.md for the honest options:
+# rebuild the image with the value, or use a runtime-injection script.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: saarthi-frontend-config
+  namespace: saarthi
+data:
+  # API base the built frontend calls. '' = same origin (works when the
+  # frontend and backend share the Ingress host and /api/* routes to the
+  # backend service).
+  VITE_API_URL: ""

@@ -83,8 +83,15 @@ export const api = {
   nowcast: (district, lat, lon) =>
     j(`/api/weather/nowcast?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
   models: (lat, lon) => j(`/api/weather/models?lat=${lat}&lon=${lon}`),
+  // Aviation briefing (deterministic, no LLM): winds aloft, cloud/visibility
+  // proxies, turbulence-icing proxies, sunrise/sunset, official alerts.
+  aviationBriefing: (lat, lon, lang) =>
+    j(`/api/aviation/briefing?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(lang || 'en')}`),
   climate: (lat, lon) => j(`${V}/climate/trends?lat=${lat}&lon=${lon}&years=20`),
   profileAdvisory: (loc, persona, language) => j(`${V}/advisories?district=${encodeURIComponent(loc.district)}&lat=${loc.lat}&lon=${loc.lon}&user_type=${encodeURIComponent(persona)}&language=${encodeURIComponent(language)}`),
+  // Situation-aware advisory cards (current + 3-day forecast + official alert
+  // verdict), rendered inside the Advisory view only.
+  advisoryCards: (loc, persona, language) => j(`/api/advisory/cards?lat=${loc.lat}&lon=${loc.lon}&lang=${encodeURIComponent(language)}&persona=${encodeURIComponent(persona)}`),
   advisory: (severity, userType) => j(`${V}/advisories?severity=${severity}&user_type=${userType}`),
   impact: (a, b, userType = 'driver') =>
     j(`${V}/impact/analyze?lat1=${a.lat}&lon1=${a.lon}&lat2=${b.lat}&lon2=${b.lon}&user_type=${userType}`),
