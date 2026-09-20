@@ -3,7 +3,7 @@
 ## 0. Persistent storage (DATABASE_URL) — Round 2
 
 Every store that must survive a deploy or restart now goes through one layer
-(`weathergpt/backend/services/db.py`):
+(`backend/services/db.py`):
 
 | Store | Survives a redeploy? |
 |---|---|
@@ -28,7 +28,7 @@ Every store that must survive a deploy or restart now goes through one layer
 
 ## 1. API keys: where they live, where to get them
 
-All keys live in **`weathergpt/.env`** (server-side only — never commit, never ship
+All keys live in **`.env`** (server-side only — never commit, never ship
 to the frontend). After adding a key, restart the server and check
 `GET /api/sources`: the adapter flips from `UNCONFIGURED` to `LIVE`.
 
@@ -69,7 +69,7 @@ require secure contexts).
 ## 4. Production checklist
 
 - [ ] `.env` filled, `DEMO_MODE=false`, file permissions `600`, never in git
-      (`git check-ignore weathergpt/.env` must print the path)
+      (`git check-ignore .env` must print the path)
 - [ ] `/api/health` → 200, `/api/sources` honest, `/api/v1/system/status` → LIVE/LIMITED
 - [ ] Logs show request IDs; errors return honest UNAVAILABLE, never stack traces
 - [ ] `wgpt-data` volume backed up (cache JSON, emergency inbox, community reports)

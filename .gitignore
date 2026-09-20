@@ -1,5 +1,4 @@
 .env
-weathergpt/.env
 *.key
 __pycache__/
 *.pyc
@@ -10,16 +9,16 @@ emergency_store.json
 community_reports.json
 emergency.key
 .vercel/
-weathergpt/compose-up.log
-weathergpt/deploy-build.log
-weathergpt/run-deploy-build.ps1
-weathergpt/_tts_check.wav
-weathergpt/uvicorn.err.log
-weathergpt/uvicorn.out.log
-weathergpt/vercel-deploy.log
-weathergpt/vercel-deploy.err.log
-weathergpt/docker-build.log
-weathergpt/docker-build.err.log
+compose-up.log
+deploy-build.log
+run-deploy-build.ps1
+_tts_check.wav
+uvicorn.err.log
+uvicorn.out.log
+vercel-deploy.log
+vercel-deploy.err.log
+docker-build.log
+docker-build.err.log
 
 .vercel
 
@@ -29,3 +28,4 @@ weathergpt/docker-build.err.log
 # file is committed; the raw download is not, and must never be.
 _tmp_districts.json
 _qa/
+vapid_keys.json

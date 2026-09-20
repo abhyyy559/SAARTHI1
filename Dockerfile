@@ -1,18 +1,18 @@
 # ---- WeatherGPT production image: React build + FastAPI in one container ----
 FROM node:22-alpine AS web
 WORKDIR /web
-COPY weathergpt/frontend-react/package.json weathergpt/frontend-react/package-lock.json* ./
+COPY frontend-react/package.json frontend-react/package-lock.json* ./
 RUN npm ci 2>/dev/null || npm install
-COPY weathergpt/frontend-react ./
+COPY frontend-react ./
 RUN npm run build
 
 FROM python:3.11-slim AS api
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
-COPY weathergpt/backend/requirements.txt ./requirements.txt
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-COPY weathergpt/backend ./backend
-COPY weathergpt/demo ./demo
+COPY backend ./backend
+COPY demo ./demo
 COPY --from=web /web/dist ./frontend-react/dist
 # Writable runtime stores (JSON cache, emergency inbox, reports)
 VOLUME ["/app/data"]

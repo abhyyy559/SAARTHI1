@@ -10,7 +10,7 @@ venv/
 node_modules/
 **/node_modules/
 # frontend bundle is produced inside the image (stage "web"), never copied from host
-weathergpt/frontend-react/dist/
+frontend-react/dist/
 # git / tooling
 .git/
 .opencode/
@@ -23,7 +23,7 @@ community_reports.json
 .env
 
 # scratch files
-weathergpt/compose-up.log
-weathergpt/deploy-build.log
-weathergpt/run-deploy-build.ps1
+compose-up.log
+deploy-build.log
+run-deploy-build.ps1
 

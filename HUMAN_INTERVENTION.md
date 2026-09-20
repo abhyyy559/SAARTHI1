@@ -18,7 +18,7 @@ Nothing here can be faked by the app — by design it reports UNCONFIGURED inste
 | Status | `UNCONFIGURED` — Alerts page shows the resilient network + community reports, but **no official CAP warnings** |
 | Who to contact | NDMA (Sachet portal ops), your State Disaster Management Authority (e.g. APSDMA / TGSPDCL cell), or IMD WIS2 contact |
 | What to ask for | A URL that returns **CAP 1.x XML or JSON** (Common Alerting Protocol feed) |
-| What to give me | Just the URL. Put it in `weathergpt/.env` as `CAP_FEED_URL=https://...` and restart — the adapter, GIS intersection and Alert page are already built and waiting |
+| What to give me | Just the URL. Put it in `.env` as `CAP_FEED_URL=https://...` and restart — the adapter, GIS intersection and Alert page are already built and waiting |
 | Fallback if nobody grants access | The app stays honest: official section says "no official feed connected". Community reports + SOS still work |
 
 ## 2. Government rainfall records — `DATAGOV_API_KEY` + `DATAGOV_RESOURCE_ID` ❗ 5 minutes, self-serve (you were mid-way)
@@ -27,7 +27,7 @@ Nothing here can be faked by the app — by design it reports UNCONFIGURED inste
 |---|---|
 | Status | `UNCONFIGURED` |
 | Steps | 1. https://data.gov.in → Register/Login. 2. **My Account → API** → generate key. 3. Open the dataset **"Daily District-wise Rainfall Data"** (Dept. of Water Resources, Jal Shakti — the one with 51,000+ API hits, updated 31/12/2025). 4. On its **API tab**, copy the `resource_id` from the sample URL (`…/resource/<THIS-PART>`) |
-| Where it goes | `weathergpt/.env`: `DATAGOV_API_KEY=...` and `DATAGOV_RESOURCE_ID=...` |
+| Where it goes | `.env`: `DATAGOV_API_KEY=...` and `DATAGOV_RESOURCE_ID=...` |
 | Verify | Restart → `GET /api/sources` → govdata flips `UNCONFIGURED → READY → LIVE` |
 
 ## 3. IMD official district warnings — no open machine-readable feed exists ❗ needs a decision
@@ -45,7 +45,7 @@ Nothing here can be faked by the app — by design it reports UNCONFIGURED inste
 |---|---|
 | Status | `READY` (adapter configured) but no key → disagree panel idle |
 | Steps | https://openweathermap.org → Sign up → confirm email → **API keys** tab → copy default key (free: 60 calls/min) |
-| Where it goes | `weathergpt/.env`: `OWM_API_KEY=...` |
+| Where it goes | `.env`: `OWM_API_KEY=...` |
 
 ## 5. Mic permission on user phones 📱 operational, not code
 

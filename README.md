@@ -21,13 +21,15 @@ Then open **http://127.0.0.1:5173/**. If the app ever shows "unreachable"
 everywhere, the servers died — re-run the bat file, wait 15 seconds,
 refresh. Details: [docs/project-qa.md](docs/project-qa.md).
 
-Manual start:
+Manual start (from repo root):
 
 ```powershell
-cd weathergpt
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8003
 cd frontend-react; npm install; npm run dev
 ```
+
+Backend on :8003 (matches the Vite proxy in `frontend-react/vite.config.js`),
+frontend on :5173.
 
 ## How it works (one question)
 
@@ -75,10 +77,13 @@ the true source.
 ## Repo layout
 
 ```
-weathergpt/
 ├── backend/            # FastAPI: api/, services/, adapters/, models/
-├── frontend-react/     # Vite + React 19 PWA (no component library)
+├── frontend-react/     # Vite + React PWA (no component library)
 ├── demo/fixtures/      # Labelled DEMO fixtures (DEMO_MODE=true)
-└── tests/              # pytest suite (57 tests)
-start-saarthi.bat       # local boot: backend :8003 + frontend :5173
+├── tests/              # pytest suite
+├── migrations/         # Postgres schema
+├── .env.example        # copy to .env (gitignored) for keys
+├── pytest.ini          # pytest config
+├── start-saarthi.bat   # local boot: backend :8003 + frontend :5173
+└── DEPLOY.md           # Render + Vercel deployment
 ```
