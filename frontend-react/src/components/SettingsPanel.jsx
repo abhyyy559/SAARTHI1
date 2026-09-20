@@ -11,6 +11,7 @@ const ROLES = [
   { id: 'farmer', icon: 'crop', key: 'utFarmer' },
   { id: 'driver', icon: 'truck', key: 'utDriver' },
   { id: 'fisherman', icon: 'fish', key: 'utFisherman' },
+  { id: 'aviation', icon: 'send', key: 'utAviation' },
   { id: 'commuter', icon: 'route', key: 'utCommuter' },
   { id: 'employee', icon: 'monitor', key: 'utEmployee' },
   { id: 'outdoor-worker', icon: 'sun', key: 'utOutdoor' },

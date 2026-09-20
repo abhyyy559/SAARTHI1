@@ -892,6 +892,11 @@ button.chip:active { transform: translateY(1px); }
 .hh-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .hh-actions .btn { flex: 1 1 140px; min-height: var(--tap); }
 .hh-prov { margin: 0; font-size: 12px; color: var(--ink-soft); }
+/* Profile-first metrics: the dashboard re-prioritizes per role. */
+.hh-focus { display: flex; gap: 8px; flex-wrap: wrap; margin: 2px 0 0; }
+.hh-focus-item { display: inline-flex; align-items: center; gap: 7px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 7px 13px; font-size: 14px; color: var(--ink); }
+.hh-focus-item b { font-variant-numeric: tabular-nums; font-size: 15px; }
+.hh-focus-unit { color: var(--ink-soft); font-size: 12px; }
 /* One orchestrated attention pulse when the verdict turns severe. */
 .home-hero.is-pulse .hh-icon { animation: hh-pulse 1.2s ease-out 1; }
 @keyframes hh-pulse {

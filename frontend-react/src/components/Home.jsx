@@ -16,6 +16,7 @@ import Icon from './icons';
 import LocationPrompt from './LocationPrompt';
 import HomeHero from './HomeHero';
 import HomeChat from './HomeChat';
+import AviationBriefing from './AviationBriefing';
 
 import { sevWord } from './ui';
 
@@ -96,6 +97,13 @@ export default function Home() {
     <div className="home-stack">
       {!locReady && <LocationPrompt />}
       <HomeHero />
+      {/* Aviation is a profile, not a menu: the briefing lives on the
+          dashboard itself when the aviation profile is active. */}
+      {persona === 'aviation' && (
+        <section aria-label={t(lang, 'utAviation')} className="home-aviation">
+          <AviationBriefing />
+        </section>
+      )}
       <section aria-label={t(lang, 'heroAskAnything')} className="home-chat">
         {/* Agent 3's conversation: identity resets with lang/role/district so a
             new context never inherits the old one's answers. */}

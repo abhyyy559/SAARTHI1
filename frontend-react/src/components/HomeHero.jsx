@@ -8,7 +8,7 @@
 // all-clear; UNKNOWN stays grey.
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
-import { t, DISTRICTS } from '../i18n';
+import { t, DISTRICTS, PERSONA_LABELS } from '../i18n';
 import { useApp } from '../store';
 import { formatCountdown, minutesSince, isExpired } from '../format';
 import { saveWarningSnapshot, readWarningSnapshot, saveObservationSnapshot } from '../offline';
@@ -32,6 +32,30 @@ function conditionIcon(cond) {
 
 // Severity → dial needle angle (degrees, 180 = calm left, 0 = severe right).
 const DIAL_ANGLE = { LOW: 180, MODERATE: 135, HIGH: 90, CRITICAL: 45 };
+
+// Profile-first metrics: the dashboard re-prioritizes WHAT it surfaces per
+// role, from the same current-weather object. A farmer sees rain first; a
+// fisherman sees wind + rain; aviation gets the full briefing on Home
+// (Home.jsx) and surface wind here. The severity verdict above stays
+// universal — safety is never personalized away.
+const PROFILE_FOCUS = {
+  farmer: ['rain', 'humidity'],
+  fisherman: ['wind', 'rain'],
+  aviation: ['wind', 'rain'],
+  driver: ['rain', 'wind'],
+};
+const DEFAULT_FOCUS = ['humidity', 'wind'];
+
+const FOCUS_DEF = {
+  rain: { icon: 'rain', unitKey: 'rainMm', get: (c) => c.rainfall },
+  wind: { icon: 'wind', unitKey: 'windKmh', get: (c) => c.wind_speed },
+  humidity: { icon: 'drop', unitKey: 'humidity', get: (c) => c.humidity },
+};
+
+const fmt1 = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? String(Math.round(n * 10) / 10) : null;
+};
 
 function SeverityDial({ level, word }) {
   const known = DIAL_ANGLE[level] !== undefined;
@@ -68,7 +92,7 @@ function SeverityDial({ level, word }) {
 }
 
 export default function HomeHero() {
-  const { lang, loc, locReady, speak, setDistrict, setPendingAsk, syncTick, publishVerdict, offline } = useApp();
+  const { lang, loc, locReady, speak, setDistrict, setPendingAsk, syncTick, publishVerdict, offline, persona } = useApp();
   const [warn, setWarn] = useState(null);
   const [current, setCurrent] = useState(null);
   const [stale, setStale] = useState(false);
@@ -158,6 +182,18 @@ export default function HomeHero() {
   const ageText = ageMin == null ? '' : ageMin < 1 ? t(lang, 'justNow') : t(lang, 'agoPattern').replace('{m}', ageMin);
   const evProv = pending ? '—' : aged ? 'CACHED' : basis === 'unavailable' ? 'UNAVAILABLE' : ((warn && (warn.provenance || warn.warning_provenance || warn.cap_provenance)) || 'LIVE');
 
+  // Profile-first metrics, computed from the same current-weather object the
+  // hero already fetched — no second request. Missing values drop the chip
+  // instead of rendering a dash.
+  const focusKeys = PROFILE_FOCUS[persona] || DEFAULT_FOCUS;
+  const focusItems = !current ? [] : focusKeys.map((k) => {
+    const def = FOCUS_DEF[k];
+    const val = fmt1(def.get(current));
+    if (val == null) return null;
+    return { key: k, icon: def.icon, value: val, unit: k === 'humidity' ? '%' : t(lang, def.unitKey) };
+  }).filter(Boolean);
+  const focusLabel = `${t(lang, 'heroFocus')}: ${PERSONA_LABELS[lang]?.[persona] || PERSONA_LABELS.en[persona] || PERSONA_LABELS.en.general}`;
+
   const askAbout = () => {
     setPendingAsk(w ? `${t(lang, 'homeAskAbout')}: ${hazard} in ${loc.district}` : `${loc.district}`);
     const el = document.querySelector('[data-tour="home-chat"]');
@@ -221,6 +257,18 @@ export default function HomeHero() {
           {t(lang, 'heroAskAnything')}
         </button>
       </div>
+
+      {focusItems.length > 0 && (
+        <div className="hh-focus" role="list" aria-label={focusLabel}>
+          {focusItems.map((f) => (
+            <span key={f.key} className="hh-focus-item" role="listitem">
+              <Icon name={f.icon} size={17} aria-hidden="true" />
+              <b>{f.value}</b>
+              <span className="hh-focus-unit">{f.unit}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       <p className="hh-prov mono">
         {evProv}{ageText ? ` · ${ageText}` : ''}{aged ? ` · ${t(lang, 'staleMay')}` : ''}

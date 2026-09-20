@@ -30,6 +30,11 @@ _NO_WARN = {
         "hi": "आपके मार्ग क्षेत्र के लिए कोई सक्रिय चेतावनी नहीं है। सड़कें स्थानीय रूप से भर सकती हैं - लंबी यात्रा से पहले जाँचें।",
         "te": "మీ మార్గం ప్రాంతానికి సక్రియ హెచ్చరిక లేదు. రోడ్లు నీటిలో మునిగే అవకాశం ఉంది - దూర ప్రయాణానికి ముందు తనిఖీ చేయండి.",
     },
+    "aviation": {
+        "en": "No active severe-weather warning for your flight area. Check winds and visibility before flying - conditions can change quickly.",
+        "hi": "आपके उड़ान क्षेत्र के लिए कोई सक्रिय गंभीर मौसम चेतावनी नहीं है। उड़ान से पहले हवा और दृश्यता जाँचें - हालात जल्दी बदल सकते हैं।",
+        "te": "మీ విమాన ప్రాంతానికి సక్రియ తీవ్ర వాతావరణ హెచ్చరిక లేదు. ఎగిరే ముందు గాలి, దృశ్యమానతను తనిఖీ చేయండి - పరిస్థితులు వేగంగా మారవచ్చు.",
+    },
     "researcher": {
         "en": "No active warning in the verified feed. Observed series, model spread and provenance are in the evidence panel.",
         "hi": "सत्यापित फ़ीड में कोई सक्रिय चेतावनी नहीं। अवलोकन श्रृंखला, मॉडल विस्तार और स्रोत साक्ष्य पैनल में हैं।",
@@ -84,6 +89,11 @@ _UNREACHABLE = {
         "en": "The official warning service is unreachable - we cannot confirm route warnings. Roads can still flood locally - drive carefully.",
         "hi": "चेतावनी सेवा उपलब्ध नहीं - मार्ग की चेतावनियों की पुष्टि नहीं हो सकती। सड़कें स्थानीय रूप से भर सकती हैं - सावधानी से चलें।",
         "te": "హెచ్చరిక సేవ అందుబాటులో లేదు - మార్గ హెచ్చరికలను ఖరారీ చేయలేము. రోడ్లు నీటిలో మునిగే అవకాశం ఉంది - జాగ్రత్తగా నడపండి.",
+    },
+    "aviation": {
+        "en": "The official warning service is unreachable - we cannot confirm flight-area warnings. Check winds and visibility with your operator before flying.",
+        "hi": "चेतावनी सेवा उपलब्ध नहीं - उड़ान क्षेत्र की चेतावनियों की पुष्टि नहीं हो सकती। उड़ान से पहले अपने ऑपरेटर से हवा और दृश्यता जाँचें।",
+        "te": "హెచ్చరిక సేవ అందుబాటులో లేదు - విమాన ప్రాంత హెచ్చరికలను ఖరారీ చేయలేము. ఎగిరే ముందు మీ ఆపరేటర్‌తో గాలి, దృశ్యమానతను తనిఖీ చేయండి.",
     },
     "researcher": {
         "en": "Warning service unreachable - no verified warning status available. See the provenance panel for live source status.",
@@ -158,6 +168,11 @@ _ACTION = {
         "hi": "जलभराव और खुले रास्तों से बचें। पानी में गाड़ी कभी न चलाएँ।",
         "te": "నీటిలో మునిగిన రోడ్లకు దూరంగా ఉండండి. నీటిలో వాహనం నడపవద్దు.",
     },
+    "aviation": {
+        "en": "Check winds aloft and visibility before any flight. This is planning guidance only - not an official METAR/TAF briefing.",
+        "hi": "किसी भी उड़ान से पहले ऊपरी हवा और दृश्यता जाँचें। यह केवल योजना सहायता है - आधिकारिक METAR/TAF ब्रीफिंग नहीं।",
+        "te": "ఏ విమానానికైనా ముందు పై గాలి, దృశ్యమానతను తనిఖీ చేయండి. ఇది ప్రణాళిక సహాయం మాత్రమే - అధికారిక METAR/TAF బ్రీఫింగ్ కాదు.",
+    },
     "researcher": {
         "en": "Warning, model spread and provenance details are in the evidence panel for your analysis.",
         "hi": "चेतावनी, मॉडल विस्तार और स्रोत विवरण विश्लेषण हेतु साक्ष्य पैनल में हैं।",
@@ -193,6 +208,11 @@ _CAVEAT = {
         "en": "This is general guidance, not a route-specific recommendation.",
         "hi": "यह सामान्य सलाह है, मार्ग-विशिष्ट सिफारिश नहीं।",
         "te": "ఇది సాధారణ సూచన మాత్రమే, మార్గ-నిర్దిష్ట సిఫార్సు కాదు.",
+    },
+    "aviation": {
+        "en": "This is general guidance, not a flight-specific briefing. Always use official METAR/TAF and ATC instructions.",
+        "hi": "यह सामान्य सलाह है, उड़ान-विशिष्ट ब्रीफिंग नहीं। हमेशा आधिकारिक METAR/TAF और ATC निर्देशों का पालन करें।",
+        "te": "ఇది సాధారణ సూచన మాత్రమే, విమాన-నిర్దిష్ట బ్రీఫింగ్ కాదు. ఎల్లప్పుడూ అధికారిక METAR/TAF, ATC సూచనలు పాటించండి.",
     },
 }
 

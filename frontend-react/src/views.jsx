@@ -16,7 +16,6 @@ import SourceStatus from './components/SourceStatus';
 import SourceStrip from './components/SourceStrip';
 import CityOpsPanel from './components/CityOpsPanel';
 import HowItWorks from './components/HowItWorks';
-import AviationBriefing from './components/AviationBriefing';
 import SettingsPanel from './components/SettingsPanel';
 import { useApp } from './store';
 import { t } from './i18n';
@@ -29,7 +28,7 @@ import Icon from './components/icons';
 // path (?view=admin is in no nav). The real protection is server-side —
 // demo/management endpoints are DEMO_MODE-gated in the API.
 // PIN override: VITE_ADMIN_PIN. Session-scoped: closing the tab re-locks.
-const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '26068';
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || 'SAARTHI';
 const ADMIN_OK_KEY = 'wgpt-admin-ok';
 
 function AdminGate({ children }) {
@@ -141,14 +140,8 @@ export function AdvisoryView() {
 // agent2-integration contract); OfflineView.jsx is the thin route shell.
 export { default as OfflineView } from './components/OfflineView';
 
-export function AviationView() {
-  return (
-    <>
-      <ViewHead titleKey="navAviation" subKey="viewAviationSub" />
-      <AviationBriefing />
-    </>
-  );
-}
+// Aviation is a PROFILE, not a route: the briefing renders on Home for the
+// aviation persona (see Home.jsx). There is no public aviation view.
 
 // Trust & sources: ONE route. Every fact already carries its provenance chip;
 // the machine statuses stay one tap away. City ops lives here (source

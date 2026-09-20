@@ -107,10 +107,11 @@ test('SourceStrip uses one meaningful icon per source', () => {
 test('demo-data banner only shows on demo-content views', () => {
   const code = read('../src/components/Shell.jsx');
   // IA dedup (2026-09-20): ask/advisor/details/sources routes are gone; the
-  // banner follows the demo-content routes (offline/aviation added under More).
-  for (const v of ['home', 'alerts', 'advisory', 'notifications', 'offline', 'aviation', 'trust'])
+  // banner follows the demo-content routes. Aviation is a profile now — its
+  // briefing renders on Home, which is already in the banner set.
+  for (const v of ['home', 'alerts', 'advisory', 'notifications', 'offline', 'trust'])
     assert.match(code, new RegExp(`'${v}'`), `banner set must include ${v}`);
-  for (const v of ['ask', 'details', 'sources', 'advisor'])
+  for (const v of ['ask', 'details', 'sources', 'advisor', 'aviation'])
     assert.doesNotMatch(code, new RegExp(`'${v}'`), `banner set must not include removed view ${v}`);
   assert.match(code, /showDemoBanner/, 'banner must be gated, not always-on in demo mode');
 });

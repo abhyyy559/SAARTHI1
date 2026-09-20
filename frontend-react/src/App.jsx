@@ -2,20 +2,21 @@ import { Component, Suspense } from 'react';
 import { AppProvider, useApp } from './store';
 import { t } from './i18n';
 import Shell from './components/Shell';
-import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, OfflineView, AviationView, SettingsView } from './views';
+import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, OfflineView, SettingsView } from './views';
 import { Loading } from './components/ui';
 
 // Every id the store's `?view=` whitelist accepts must be registered here.
 // IA dedup (2026-09-20): ask/advisor/details/sources are gone — their content
-// was folded into Home (chat), Advisory, and Alerts (inline detail). A stale
-// deep link to one of them falls back to Home; there is no public route.
+// was folded into Home (chat), Advisory, and Alerts (inline detail). Aviation
+// is a profile, not a route — its briefing renders on Home for the aviation
+// persona. A stale deep link to one of them falls back to Home; there is no
+// public route.
 const VIEWS = {
   home: HomeView,
   alerts: AlertsView,
   notifications: NotificationsView,
   advisory: AdvisoryView,
   offline: OfflineView,
-  aviation: AviationView,
   trust: TrustSourcesView,
   settings: SettingsView,
   admin: AdminView,

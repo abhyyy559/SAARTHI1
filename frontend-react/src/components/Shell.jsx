@@ -26,7 +26,6 @@ const NAV_ICONS = {
 const MORE_ROWS = [
   { view: 'notifications', labelKey: 'navNotifications', icon: 'bell' },
   { view: 'offline', labelKey: 'navOffline', icon: 'offline' },
-  { view: 'aviation', labelKey: 'navAviation', icon: 'send' },
   { view: 'trust', labelKey: 'navTrustSources', icon: 'shield' },
   { view: 'settings', labelKey: 'navSettings', icon: 'list' },
 ];
@@ -174,7 +173,7 @@ export default function Shell({ children }) {
   // The demo-data banner only belongs where demo/sample content can appear:
   // never on Admin or Trust chrome. SOS carries its own
   // "SIMULATED — FOR DEMO ONLY" stamp and lives inside the alerts view.
-  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'offline', 'aviation', 'trust']);
+  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'offline', 'trust']);
   const showDemoBanner = demoLive && demoBannerViews.has(view);
 
   return (

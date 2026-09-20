@@ -65,16 +65,18 @@ test('AviationBriefing: alert severity goes through SevStamp (never re-graded)',
   assert.ok(!/data-sev/.test(code) || /SevStamp/.test(code), 'no ad-hoc severity derivation');
 });
 
-// --- placement: its own route under More -------------------------------------
-// IA dedup (2026-09-20): aviation left the old Details route entirely — it is
-// a first-class route (view 'aviation') reachable from the More sheet.
-test('AviationView renders the aviation briefing as its own route', () => {
+// --- placement: a profile, not a route ---------------------------------------
+// 2026-09-20: aviation is a PROFILE, not a menu item. The briefing renders on
+// Home when the aviation persona is active; there is no aviation route.
+test('aviation briefing renders on Home for the aviation profile, never as a route', () => {
   const views = read('../src/views.jsx');
-  assert.ok(/AviationBriefing/.test(views), 'views.jsx must reference AviationBriefing');
-  const av = views.match(/export function AviationView\(\) \{([\s\S]*?)\n\}/);
-  assert.ok(av, 'AviationView must exist');
-  assert.ok(/<AviationBriefing \/>/.test(av[1]), 'AviationView must render <AviationBriefing />');
+  assert.doesNotMatch(views, /export function AviationView/, 'AviationView route must be gone');
   assert.doesNotMatch(views, /DetailsView/, 'the old Details route is gone');
+  const home = read('../src/components/Home.jsx');
+  assert.ok(/<AviationBriefing \/>/.test(home), 'Home must render <AviationBriefing />');
+  assert.ok(/persona === 'aviation'/.test(home), 'briefing must be gated on the aviation profile');
+  const app = read('../src/App.jsx');
+  assert.doesNotMatch(app, /^\s*aviation: \w+View,$/m, 'aviation must not be a registered view');
 });
 
 test('api client calls the aviation briefing endpoint exactly once', () => {

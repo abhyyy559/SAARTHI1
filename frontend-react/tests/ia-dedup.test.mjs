@@ -1,9 +1,10 @@
 // IA dedup + 360px regression tests (2026-09-20).
 //
 // The public IA is Home · Alerts · Advisory · More (Notifications, Offline &
-// P2P, Aviation, Trust & sources, Settings, tour replay). Ask / Advisor /
-// Details / Sources routes are gone; their content was folded in. Everything
-// must render without horizontal overflow at 320–360px.
+// P2P, Trust & sources, Settings, tour replay). Ask / Advisor / Details /
+// Sources routes are gone; their content was folded in. Aviation is a
+// PROFILE, not a menu row — its briefing renders on Home for the aviation
+// persona. Everything must render without horizontal overflow at 320–360px.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -26,11 +27,19 @@ test('public IA is exactly Home · Alerts · Advisory · More', () => {
   assert.match(shell, /menuMore/);
 });
 
-test('More sheet lists the six deduped destinations', () => {
-  for (const v of ['notifications', 'offline', 'aviation', 'trust', 'settings'])
+test('More sheet lists the five deduped destinations; aviation is a profile, not a row', () => {
+  for (const v of ['notifications', 'offline', 'trust', 'settings'])
     assert.match(shell, new RegExp(`\\{ view: '${v}'`), `More sheet must list ${v}`);
-  // Tour replay is the sixth row.
+  // Tour replay is the fifth row.
   assert.match(shell, /sbTakeTour/);
+  // Aviation left the menu: it is a profile now, never a More-sheet row.
+  assert.doesNotMatch(shell, /\{ view: 'aviation'/, 'aviation must not be a More-sheet row');
+});
+
+test('aviation is a persona: briefing renders on Home for the aviation profile', () => {
+  assert.match(read('../src/i18n.js'), /'aviation'/, 'aviation must be a registered persona');
+  assert.match(home, /persona === 'aviation'/, 'Home gates the briefing on the aviation profile');
+  assert.match(home, /<AviationBriefing \/>/, 'the briefing lives on the dashboard, not a route');
 });
 
 test('removed routes have no registration, no public entry', () => {
