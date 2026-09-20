@@ -18,6 +18,7 @@ import { minutesSince, isExpired } from '../format';
 import Icon from './icons';
 import LocationPrompt from './LocationPrompt';
 import HeroCard from './HeroCard';
+import { sevWord } from './ui';
 
 // Demo/CAP lifecycle state -> translated word key. Order = the story.
 const STATE_WORD_KEY = {
@@ -38,18 +39,18 @@ function DispatchStrip() {
   const syncText = !lastSync ? t(lang, 'hSyncNever')
     : ageMin < 1 ? t(lang, 'hSyncNow')
     : t(lang, 'hSyncAgo').replace('{m}', ageMin);
+  // M3: before a confirmed location there is no district and no live claim —
+  // the placeholder must never pretend to be a checked place.
+  const hasDistrict = locReady && loc.district;
   return (
     <div className="dispatch-strip" aria-label={t(lang, 'sbDistrictKicker')}>
       <span className="d-flag"><Icon name="pin" size={24} /></span>
       <div>
-        <span className="kicker on-ink">{t(lang, 'sbDistrictKicker')}</span>
-        <div className="dd-title">{loc.district}</div>
+        <span className="kicker">{t(lang, 'sbDistrictKicker')}</span>
+        <div className="dd-title">{hasDistrict ? loc.district : t(lang, 'noDistrict')}</div>
         <div className="dd-sub mono">
-          {t(lang, connKey)} · {syncText}
+          {hasDistrict ? <>{t(lang, connKey)} · {syncText}</> : t(lang, 'noDistrictHint')}
         </div>
-      </div>
-      <div className="dd-act">
-        {!locReady && <LocationPrompt inline />}
       </div>
     </div>
   );
@@ -151,6 +152,7 @@ function Bulletins() {
         {items.slice(0, 6).map((a, i) => {
           const sev = a.severity || 'UNKNOWN';
           const head = (a.headline || a.message || a.hazard || a.event || '').trim();
+          const area = (a.area || '').trim();
           const stateKey = a.state ? STATE_WORD_KEY[a.state] : null;
           return (
             <article
@@ -166,13 +168,13 @@ function Bulletins() {
                 onClick={() => open(a)}
               >
                 <span className="bc-head">
-                  <span className="sev-stamp">{sev}</span>
+                  <span className="sev-stamp">{sevWord(lang, sev)}</span>
                   {a.kind === 'demo' && <span className="prov DEMO">DEMO</span>}
                   {stateKey && <span className="chip mono">{t(lang, stateKey)}</span>}
                 </span>
                 <span className="bc-title">{head}</span>
                 <span className="bc-meta">
-                  {a.area && <>{a.area}</>}
+                  {area && <>{area}</>}
                   {a.issued_at && <> · {minutesSince(a.issued_at, nowMs) != null ? t(lang, 'agoPattern').replace('{m}', minutesSince(a.issued_at, nowMs)) : ''}</>}
                 </span>
               </button>

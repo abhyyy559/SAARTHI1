@@ -21,6 +21,17 @@ const LABELS = {
   tts: 'Text-to-speech',
 };
 
+// One meaningful icon per source — never a repeated generic glyph.
+const SRC_ICON = {
+  imd: 'thermometer',
+  'open-meteo': 'globe',
+  govdata: 'file',
+  cap: 'bell',
+  owm: 'cloud',
+  stt: 'mic',
+  tts: 'speaker',
+};
+
 // "2026-09-17T22:20:18.426805+05:30" -> "22:20". Empty -> "".
 function clock(iso) {
   const m = String(iso || '').match(/T(\d{2}):(\d{2})/);
@@ -48,7 +59,7 @@ export default function SourceStrip({ refreshKey }) {
   return (
     <div>
       <div className="src-head">
-        <span className="tile-icon" aria-hidden="true"><Icon name="database" size={20} /></span>
+        <span className="tile-icon" aria-hidden="true"><Icon name="layers" size={20} /></span>
         <span className="kicker">{t(lang, 'sourcesTitle')}</span>
         {data.demo_mode ? <span className="prov DEMO">DEMO</span> : null}
       </div>
@@ -58,7 +69,7 @@ export default function SourceStrip({ refreshKey }) {
         <div className="src-list">
           {sources.map((s) => (
             <div className="src-item" key={s.name} title={s.detail || s.status}>
-              <Icon name="radio" size={14} className="icon ask-fact-ico" />
+              <Icon name={SRC_ICON[s.name] || 'radio'} size={14} className="icon ask-fact-ico" />
               <span className="src-item-name">{LABELS[s.name] || s.name}</span>
               <span className={`prov ${s.status}`}>{s.status}</span>
               {s.updated_at && (

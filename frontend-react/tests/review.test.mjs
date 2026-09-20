@@ -45,7 +45,7 @@ test('a persona change is in the fetch dependency list of the advice card', () =
 test('HeroCard drops the previous profile advice instead of showing it under the new name', () => {
   assert.doesNotMatch(hero, /const \[advisory, setAdvisory\] = useState\(''\)/);
   assert.match(hero, /advisoryAt\.key === advKey/, 'advice must be stamped with persona:lang:district');
-  assert.match(hero, /const advKey = `\$\{persona\}:\$\{lang\}:\$\{loc\.district\}`/);
+  assert.match(hero, /const advKey = `\$\{(persona \|\| 'general')\}:?\$\{lang\}:\$\{loc\.district\}`/);
 });
 
 test('HeroCard clears the stale flag on ANY answered request', () => {

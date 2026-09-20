@@ -99,12 +99,14 @@ export function TrustView() {
   return (
     <>
       <ViewHead titleKey="viewTrust" subKey="viewTrustSub" />
-      <Card
-        title={t(lang, 'tag')}
-        sub={t(lang, 'srcStatusSub')}
-      >
-        <SourceStrip refreshKey={0} />
-        <SourceStatus />
+      {/* Citizen first: the plain-English state of every line. The raw
+          machine statuses stay one tap away behind a disclosure. */}
+      <SourceStatus />
+      <Card>
+        <details className="src-why">
+          <summary>{t(lang, 'trustTechWhy')}</summary>
+          <SourceStrip refreshKey={0} />
+        </details>
       </Card>
       <HowItWorks />
     </>
@@ -128,9 +130,6 @@ export function DetailsView() {
               <Icon name="alert" size={18} />
               {t(lang, 'navAlerts')}
             </button>
-            <button type="button" className="btn ghost sm" onClick={() => setView('admin')}>
-              {t(lang, 'demoTitle')}
-            </button>
           </div>
         </div>
       </>
@@ -148,7 +147,7 @@ export function DetailsView() {
 export function SourcesView() {
   return (
     <>
-      <ViewHead titleKey="navSources" subKey="viewTrustSub" />
+      <ViewHead titleKey="navSources" subKey="viewSourcesSub" />
       <SourceStatus />
     </>
   );

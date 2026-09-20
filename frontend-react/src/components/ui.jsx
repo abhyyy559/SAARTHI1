@@ -21,17 +21,48 @@ export function Card({ title, sub, eyebrow, actions, children, className = '', a
   );
 }
 
-/** Backend-provided severity: a signal-bar host + uppercase stamp. */
-export function Sev({ level, stamp = true }) {
+import { t } from '../i18n';
+import Icon from './icons';
+
+/**
+ * Harbour signal pennant: a translated word, an icon, and colour — never
+ * colour-only, never a raw machine code. `level` always comes from the
+ * backend; this component only translates and never re-grades.
+ */
+const SEV_WORD_KEY = {
+  CRITICAL: 'sevRed', RED: 'sevRed',
+  HIGH: 'sevOrange', ORANGE: 'sevOrange',
+  MODERATE: 'sevYellow', YELLOW: 'sevYellow',
+  LOW: 'sevGreen', GREEN: 'sevGreen',
+};
+const SEV_ICON = {
+  CRITICAL: 'alert', RED: 'alert',
+  HIGH: 'alert', ORANGE: 'alert',
+  MODERATE: 'clock', YELLOW: 'clock',
+  LOW: 'check', GREEN: 'check',
+};
+/** Translated severity word for a backend severity code. Never re-grades. */
+export function sevWord(lang, level) {
+  return t(lang, SEV_WORD_KEY[level] || 'sevUnknown');
+}
+export function SevStamp({ lang, level, stamp = true }) {
   if (!level) return null;
+  const word = t(lang, SEV_WORD_KEY[level] || 'sevUnknown');
   return (
-    <span data-sev={level} title={`Official severity: ${level}`}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+    <span data-sev={level} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+      role="img" aria-label={`${word} (${level})`} title={`Official severity: ${level}`}>
       <span className="sev-bar" style={{ height: '1.4em' }} aria-hidden="true" />
-      {stamp && <span className="sev-stamp">{level}</span>}
+      {stamp && (
+        <span className="sev-stamp">
+          <Icon name={SEV_ICON[level] || 'help'} size={14} aria-hidden="true" />
+          {word}
+        </span>
+      )}
     </span>
   );
 }
+// Backwards-compatible alias.
+export const Sev = SevStamp;
 
 /** Provenance of a single fact. Never colour-only, never claimant without a label. */
 export function Prov({ value }) {

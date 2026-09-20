@@ -5,12 +5,16 @@
 // stamps, pending rows hatched until the server confirms, and tap-to-acknowledge
 // for the delivery ledger. Backed ONLY by what the server actually pushed
 // (notification_service.log); nothing is invented here to make the list look busy.
+//
+// HARBOUR SIGNAL: the fetch has a hard 5s timeout, a saved-on-this-phone
+// fallback, and an explicit Retry. Simulated P2P relays are stamped as such.
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
+import { saveNotificationSnapshot, readNotificationSnapshot } from '../offline';
 import Icon from './icons';
-import { Card } from './ui';
+import { Card, SevStamp } from './ui';
 
 const KIND_META = {
   'pre-alert': { icon: 'clock' },
@@ -24,6 +28,7 @@ const KIND_META = {
   clear: { icon: 'check' },
   test: { icon: 'bell' },
   info: { icon: 'info' },
+  'p2p-relay': { icon: 'radio' },
 };
 
 function when(iso) {
@@ -38,10 +43,11 @@ function when(iso) {
   } catch { return ''; }
 }
 
-function NotificationRow({ n, onRead, onAck, acked, saving }) {
-  const { lang, speak, setView } = useApp();
+function NotificationRow({ n, onRead, onAck, acked, saving, savedTag }) {
+  const { lang, speak } = useApp();
   const meta = KIND_META[n.kind] || KIND_META.info;
   const sev = n.severity || 'INFO';
+  const isSimulated = n.kind === 'p2p-relay' || n.channel === 'p2p-simulated';
   return (
     <article className={`ntf-row${saving ? ' is-pending' : ''}`} data-sev={sev}>
       <span className={`ntf-stamp ${n.read ? 'is-read' : 'is-new'}`}>
@@ -55,11 +61,9 @@ function NotificationRow({ n, onRead, onAck, acked, saving }) {
         <div className="ntf-meta mono">
           {n.district && <span>{n.district}</span>}
           {' · '}{when(n.at)}
-          {n.severity && <> · <span className="sev-stamp" data-sev={sev}>{sev}</span></>}
-          {n.push && typeof n.push.delivered === 'number' && (
-            <span> · push {n.push.delivered}/{n.push.targeted}</span>
-          )}
+          {n.severity && <> · <SevStamp lang={lang} level={sev} /></>}
         </div>
+        {isSimulated && <p className="ntf-sim">{t(lang, 'ntfSimulatedTag')}</p>}
         <p className="sub">{n.body}</p>
         <div className="row">
           <button type="button" className="btn btn-ghost sm" onClick={() => speak(`${n.title}. ${n.body}`)}>
@@ -79,6 +83,7 @@ function NotificationRow({ n, onRead, onAck, acked, saving }) {
             </button>
           )}
         </div>
+        {savedTag && <span className="warn-chip">{savedTag}</span>}
       </div>
     </article>
   );
@@ -87,7 +92,8 @@ function NotificationRow({ n, onRead, onAck, acked, saving }) {
 export default function NotificationCenter() {
   const { lang, loc, syncTick, device, showToast } = useApp();
   const [items, setItems] = useState(null);
-  const [err, setErr] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [savedAt, setSavedAt] = useState(null);
   const [tick, setTick] = useState(0);
   const [saving, setSaving] = useState({}); // id -> true while a write is in flight
   const [acked, setAcked] = useState(() => {
@@ -97,12 +103,27 @@ export default function NotificationCenter() {
   useEffect(() => {
     let alive = true;
     api.notifications(loc.district, device)
-      .then((d) => { if (alive) { setItems(d.notifications || []); setErr(false); } })
-      .catch(() => { if (alive) setErr(true); });
+      .then((d) => {
+        if (!alive) return;
+        const list = d.notifications || [];
+        setItems(list);
+        setOffline(false);
+        setSavedAt(null);
+        saveNotificationSnapshot(list);
+      })
+      .catch(() => {
+        if (!alive) return;
+        // Server unreachable within the timeout: say so in plain words and
+        // fall back to what this phone saved — never an infinite spinner.
+        const snap = readNotificationSnapshot();
+        setItems(snap ? snap.items : []);
+        setSavedAt(snap ? snap.at : null);
+        setOffline(true);
+      });
     return () => { alive = false; };
   }, [loc.district, device, syncTick, tick]);
 
-  const reload = () => setTick((n) => n + 1);
+  const reload = () => { setOffline(false); setTick((n) => n + 1); };
 
   // The read state is a server claim — it only flips after the POST
   // succeeds. While the write is in flight the row is hatched as pending; a
@@ -152,6 +173,8 @@ export default function NotificationCenter() {
       : d.toLocaleDateString([], { day: 'numeric', month: 'short' });
   };
 
+  const savedTag = offline ? `${t(lang, 'ntfSavedTag')}${savedAt ? ` · ${when(savedAt)}` : ''}` : '';
+
   return (
     // The view head (ViewHead in views.jsx) already carries the title and
     // subtitle, so the card must not repeat them.
@@ -168,7 +191,26 @@ export default function NotificationCenter() {
       )}
     >
       {!items ? <p className="mono" role="status">{t(lang, 'checking')}</p>
-        : err ? <p className="sub">{t(lang, 'ntfLoadFailed')}</p>
+        : offline ? (
+          <div className="offline-panel" role="status">
+            <div className="display">{t(lang, 'ntfOfflineTitle')}</div>
+            <p className="sub">{t(lang, 'ntfOfflineBody')}</p>
+            <div className="row">
+              <button type="button" className="btn sm" onClick={reload}>
+                <Icon name="refresh" size={14} /> {t(lang, 'ntfRetry')}
+              </button>
+            </div>
+            {items.length > 0 && (
+              <div className="ntf-list">
+                {items.map((n) => (
+                  <NotificationRow key={n.id} n={n} onRead={markRead} onAck={ack}
+                    acked={!!acked[n.alert_id]} saving={!!saving[n.id] || !!saving[n.alert_id]}
+                    savedTag={savedTag} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
           : items.length === 0 ? <p className="sub">{t(lang, 'ntfEmpty')}</p>
             : <div className="ntf-list">
               {groups.map(([day, list]) => (

@@ -21,6 +21,7 @@ import { minutesSince } from '../format';
 import { useVoiceInput } from '../useVoiceInput';
 import Icon from './icons';
 import RichText from './RichText';
+import { SevStamp } from './ui';
 
 // Provenance is a fixed, machine-readable vocabulary. Never translate it, never
 // map one value onto another — styles.css colours each class.
@@ -117,8 +118,7 @@ function VerdictBanner({ lang, view }) {
       <span className="sev-bar" aria-hidden="true" />
       <div className="vm-body">
         <div className="bc-head">
-          <span className="sev-stamp">{view.level}</span>
-          {view.severity && <span className="sev-stamp" data-sev={view.severity}>{view.severity}</span>}
+          <SevStamp lang={lang} level={view.level} />
           {!view.confirmed && <span className="warn-chip">{t(lang, 'warnUnconfirmed')}</span>}
         </div>
         {view.hazard && <div className="vm-haz">{view.hazard}</div>}
@@ -131,13 +131,16 @@ function VerdictBanner({ lang, view }) {
 // Backend unreachable: the same UNKNOWN/unavailable shape the server returns
 // when it cannot reach the warning service, so the banner says "cannot confirm"
 // instead of letting an empty answer read as an all-clear.
-const OFFLINE_VERDICT = {
+const OFFLINE_VERDICT_BASE = {
   level: 'UNKNOWN', basis: 'unavailable', confirmed: false,
-  detail: 'backend unreachable - warning status cannot be confirmed',
 };
+const offlineVerdict = (lang) => ({
+  ...OFFLINE_VERDICT_BASE,
+  detail: t(lang, 'offlineVerdictDetail'),
+});
 
 export default function ChatPanel() {
-  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc, netState, showToast, setView } = useApp();
+  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc, locReady, netState, showToast, setView } = useApp();
   const [log, setLog] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -163,7 +166,7 @@ export default function ChatPanel() {
     try {
       const t0 = Date.now();
       const r = await api.chat({
-        message: q, latitude: loc.lat, longitude: loc.lon, language: lang, user_type: persona,
+        message: q, latitude: loc.lat, longitude: loc.lon, language: lang, user_type: persona || 'general',
       });
       const ms = Date.now() - t0;
       setLog((l) => [...l, {
@@ -189,15 +192,15 @@ export default function ChatPanel() {
       const n = queueQuery({ text: q, lang, persona, lat: loc.lat, lon: loc.lon, district: loc.district });
       if (snap && snap.obs) {
         setLog((l) => [...l, {
-          role: 'bot', structured: snap.obs, verdict: OFFLINE_VERDICT,
+          role: 'bot', structured: snap.obs, verdict: offlineVerdict(lang),
           cachedAge: ageMin, stale: ageMin != null && ageMin > 30,
           queued: n, id: Date.now(),
         }]);
       } else {
         const off = answerOffline(q, lang);
         setLog((l) => [...l, {
-          role: 'bot', text: `${off}\n(backend unreachable - nothing invented.)`,
-          evidence: [], verdict: OFFLINE_VERDICT, queued: n, id: Date.now(),
+          role: 'bot', text: off,
+          evidence: [], verdict: offlineVerdict(lang), queued: n, id: Date.now(),
         }]);
       }
     }
@@ -252,7 +255,7 @@ export default function ChatPanel() {
         <span className="facts-icon"><Icon name="file" size={20} /></span>
         <div>
           <p>{t(lang, 'sbFactsOnly')}</p>
-          <p className="sub">{t(lang, 'askAs')} <b>{(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona}</b> · {loc.district}</p>
+          <p className="sub">{t(lang, 'askAs')} <b>{persona ? ((PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona) : t(lang, 'roleNotSet')}</b> · {locReady && loc.district ? loc.district : t(lang, 'noDistrict')}</p>
         </div>
         <button type="button" className="facts-escape" onClick={() => setView('advisory')}>
           <Icon name="sun" size={16} />
@@ -322,7 +325,10 @@ export default function ChatPanel() {
                 <div className="msg-meta">
                   {fresh && (<><span>{t(lang, 'freshness')}</span><ProvBadge value={fresh} /></>)}
                   {m.ms != null && <span className="mono">{(m.ms / 1000).toFixed(1)}s</span>}
-                  {m.queued ? <span>{t(lang, 'queuedChip')}</span> : null}
+                  {/* B4: the queued state in plain words — never a bare machine
+                      chip. The query is already in localStorage via
+                      queueQuery and replays on reconnect. */}
+                  {m.queued ? <span className="warn-chip">{t(lang, 'queuedWaiting')}</span> : null}
                   {m.text && (
                     <button
                       type="button" className="speak-btn" aria-label={t(lang, 'replay')}

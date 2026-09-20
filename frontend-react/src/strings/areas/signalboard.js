@@ -5,7 +5,7 @@ export default {
   en: {
     // --- rail / mobile chrome ------------------------------------------------
     close: 'Close',
-    navAdvisor: 'Who is asking',
+    navAdvisor: 'Your role',
     navAdmin: 'Demo control panel',
     navLabel: 'Sections',
     langLabel: 'Language',
@@ -43,7 +43,7 @@ export default {
     // --- alerts / P2P -----------------------------------------------------------
     sbMaydayKicker: 'Emergency messages',
     sbSimStamp: 'Simulated — for demo only',
-    sbP2pRelayIdle: 'P2P relay console (idle)',
+    sbP2pRelayIdle: 'Nothing relayed yet',
     sbSosLabel: 'Emergency',
     emgSosArmed: 'Armed — tap again to send',
     emgArmHint: 'First tap arms, second tap fires. Nothing sends by accident.',
@@ -56,7 +56,7 @@ export default {
   },
   hi: {
     close: 'बंद करें',
-    navAdvisor: 'कौन पूछ रहा है',
+    navAdvisor: 'आपकी भूमिका',
     navAdmin: 'डेमो कंट्रोल पैनल',
     navLabel: 'अनुभाग',
     langLabel: 'भाषा',
@@ -88,7 +88,7 @@ export default {
     sbDisclaimer: 'यह सलाह आपकी भूमिका के लिए सामान्य मार्गदर्शन है। हमेशा आधिकारिक IMD और सरकारी चेतावनियों का पालन करें — वे इस सलाह से ऊपर हैं।',
     sbMaydayKicker: 'आपातकालीन संदेश',
     sbSimStamp: 'सिम्युलेटेड — केवल डेमो के लिए',
-    sbP2pRelayIdle: 'P2P रिले कंसोल (निष्क्रिय)',
+    sbP2pRelayIdle: 'अभी कुछ रिले नहीं हुआ',
     sbSosLabel: 'आपातकाल',
     emgSosArmed: 'तैयार — भेजने के लिए फिर दबाएँ',
     emgArmHint: 'पहली बार दबाने से तैयार, दूसरी बार से भेजा जाता है। गलती से कुछ नहीं भेजा जाता।',
@@ -99,7 +99,7 @@ export default {
   },
   te: {
     close: 'మూసివేయండి',
-    navAdvisor: 'అడుగుతున్నది ఎవరు',
+    navAdvisor: 'మీ పాత్ర',
     navAdmin: 'డెమో నియంత్రణ ప్యానెల్',
     navLabel: 'విభాగాలు',
     langLabel: 'భాష',
@@ -131,7 +131,7 @@ export default {
     sbDisclaimer: 'ఈ సలహా మీ పాత్ర కోసం సాధారణ మార్గదర్శనం. ఎల్లప్పుడూ అధికారిక IMD మరియు ప్రభుత్వ హెచ్చరికలను పాటించండి — అవి ఈ సలహా కంటే ముఖ్యమైనవి.',
     sbMaydayKicker: 'అత్యవసర సందేశాలు',
     sbSimStamp: 'సిమ్యులేటెడ్ — డెమో కోసం మాత్రమే',
-    sbP2pRelayIdle: 'P2P రిలే కన్సోల్ (నిష్క్రియ)',
+    sbP2pRelayIdle: 'ఇంకా ఏదీ రిలే కాలేదు',
     sbSosLabel: 'అత్యవసర',
     emgSosArmed: 'సిద్ధం — పంపడానికి మళ్లీ నొక్కండి',
     emgArmHint: 'మొదటి నొక్కుడుతో సిద్ధం, రెండో నొక్కుడుతో పంపుతుంది. పొరపాటున ఏదీ పంపబడదు.',

@@ -100,6 +100,13 @@ export default function Advisor() {
       {/* The consequence, stated once: a card tap sets the role for the whole
           app — Home, Ask and My advice all follow it. */}
       <p className="consequence"><Icon name="user" size={14} /> {t(lang, 'advSwitchNote')}</p>
+      {/* M1: the role starts unset — say so in plain words, never pick one
+          silently. */}
+      {!persona && (
+        <div className="honesty-note" role="note" style={{ marginBottom: 10 }}>
+          {t(lang, 'roleNotSet')}
+        </div>
+      )}
       <div className="role-grid" data-tour="persona-grid">
         {USER_TYPES.map((ut) => (
           <AdviceCard key={ut.id} ut={ut} active={persona === ut.id} onPick={setPersona} />

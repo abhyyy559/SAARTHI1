@@ -36,10 +36,10 @@ const MORE_ROWS = [
 function StatusBanner({ kind, children }) {
   return (
     <div className={`banner ${kind === 'offline' ? 'banner-offline' : 'banner-hazard'}`} role="status">
-      {kind === 'demo' && <span className="hz-stripes" aria-hidden="true" />}
+      {(kind === 'demo' || kind === 'offline') && <span className="hz-stripes" aria-hidden="true" />}
       <Icon name={kind === 'offline' ? 'offline' : 'alert'} size={18} />
       <span>{children}</span>
-      {kind === 'demo' && <span className="hz-stripes" aria-hidden="true" />}
+      {(kind === 'demo' || kind === 'offline') && <span className="hz-stripes" aria-hidden="true" />}
     </div>
   );
 }
@@ -122,7 +122,7 @@ function MoreSheet({ open, onClose }) {
 }
 
 export default function Shell({ children }) {
-  const { view, setView, lang, setLang, loc, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState } = useApp();
+  const { view, setView, lang, setLang, loc, locReady, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState } = useApp();
   const online = netState !== 'offline';
   const [moreOpen, setMoreOpen] = useState(false);
   const [toast, setToast] = useState(null);
@@ -151,6 +151,11 @@ export default function Shell({ children }) {
   const connLabel = t(lang, conn === 'online' ? 'connOnline' : 'connOffline');
 
   const demoLive = sourceMode === 'demo';
+  // The demo-data banner only belongs where demo/sample content can appear:
+  // never on Admin, Sources, or Trust. SOS carries its own
+  // "SIMULATED — FOR DEMO ONLY" stamp and lives inside the alerts view.
+  const demoBannerViews = new Set(['home', 'ask', 'alerts', 'advisory', 'notifications', 'details']);
+  const showDemoBanner = demoLive && demoBannerViews.has(view);
 
   return (
     <div className="app">
@@ -201,7 +206,7 @@ export default function Shell({ children }) {
             <span className="pin"><Icon name="pin" size={16} /></span>
             <span>
               <span className="sub-label">{t(lang, 'sbDistrictKicker')}</span>
-              {loc.district}
+              {locReady && loc.district ? loc.district : t(lang, 'noDistrict')}
             </span>
           </div>
           <div className="topbar-spacer" />
@@ -256,7 +261,7 @@ export default function Shell({ children }) {
           </div>
         </header>
 
-        {demoLive && (
+        {showDemoBanner && (
           <StatusBanner kind="demo">
             {t(lang, 'sbBannerDemo')}
           </StatusBanner>

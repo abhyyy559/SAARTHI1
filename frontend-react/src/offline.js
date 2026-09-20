@@ -1,5 +1,6 @@
 // Offline resilience: snapshot last-good data, serve stale-labelled when cut off.
 import { useEffect, useState } from 'react';
+import { t } from './i18n';
 
 const KEY = 'wgpt-cache-v1';
 
@@ -17,6 +18,16 @@ export function readCache() {
   } catch {
     return {};
   }
+}
+
+// Notifications cache: saved on every successful list fetch, served with a
+// Notifications cache: saved on every successful list fetch, served with a
+// plain "Saved on this phone" label when the server is unreachable (B3).
+export function saveNotificationSnapshot(items) {
+  saveCache('notifications', { items: items || [], at: new Date().toISOString() });
+}
+export function readNotificationSnapshot() {
+  return (readCache().notifications || {}).data || null;
 }
 
 // Last verified warning snapshot: saved on every successful fetch, served
@@ -135,22 +146,26 @@ export async function cacheGuidance(api, lang = 'en') {
   } catch { /* ignore */ }
 }
 
-// Offline answer: cached guidance only; new warnings explicitly unverifiable (§26).
+// Offline answer: cached guidance only, in the user's language; new warnings
+// explicitly unverifiable (§26). Every path carries the mandatory
+// "cannot check now" wording — an offline answer must never read as an
+// all-clear.
 export function answerOffline(query, lang = 'en') {
   const q = (query || '').toLowerCase();
   if (/new warning|red alert|right now|last \d+ minutes|currently.*warning/.test(q)) {
-    return 'I cannot verify new information because the device is offline. Last verified data is shown above.';
+    return t(lang, 'offlineNewWarning');
   }
   const g = (readCache().guidance || {}).data || {};
+  const tag = t(lang, 'offlineCachedTag');
   for (const h of HAZARDS) {
     if (q.includes(h.slice(0, 5)) || q.includes({ flood: 'flood', thunderstorm: 'thunder', heatwave: 'heat', cyclone: 'cyclone' }[h])) {
       const hits = g[`${h}:${lang}`] || g[`${h}:en`] || [];
-      if (hits.length) return `[CACHED guidance] ${hits[0].title}: ${hits[0].body}`;
+      if (hits.length) return `[${tag}] ${hits[0].title}: ${hits[0].body}`;
     }
   }
   if (/flood|baarish|varada/.test(q)) {
     const hits = g['flood:en'] || [];
-    if (hits.length) return `[CACHED guidance] ${hits[0].title}: ${hits[0].body}`;
+    if (hits.length) return `[${tag}] ${hits[0].title}: ${hits[0].body}`;
   }
-  return 'Offline: I can answer from cached emergency guidance (flood, thunderstorm, heatwave, cyclone) or show last verified data. I cannot check newly issued warnings while offline.';
+  return t(lang, 'offlineNoAnswer');
 }

@@ -20,11 +20,11 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import { isExpired, formatValidUntil, formatCountdown, minutesSince } from '../format';
 import Icon from './icons';
-
-// Official severity code -> the one word a non-reader sees. Codes are never
+// Official severity code -> the one word a non-reader sees. The canonical
+// translation lives in components/ui.jsx (sevWord / SevStamp) — one map for
+// the whole app so the board can never disagree with itself. Codes are never
 // translated, and no code is ever invented here.
-const SEV_WORD = { RED: 'sevRed', ORANGE: 'sevOrange', YELLOW: 'sevYellow', GREEN: 'sevGreen' };
-const sevKey = (s) => SEV_WORD[s] || 'sevUnknown';
+import { sevWord } from './ui';
 
 // Map backend lifecycle states to i18n keys
 const STATE_I18N_KEY = {
@@ -90,7 +90,7 @@ function AlertCard({ a, nowMs, nearby = false, onOpen }) {
       <span className="sev-bar" aria-hidden="true" />
       <div className="ac-body">
         <div className="bc-head">
-          <span className="sev-stamp">{t(lang, sevKey(sev))}</span>
+          <span className="sev-stamp">{sevWord(lang, sev)}</span>
           <span className="chip mono">{stateLabel}</span>
           {nearby && <span className="chip"><Icon name="map" size={12} />{t(lang, 'alertsNearbyBadge')}</span>}
           {a.unconfirmed && <span className="chip"><Icon name="help" size={12} />{t(lang, 'basisUnverified')}</span>}

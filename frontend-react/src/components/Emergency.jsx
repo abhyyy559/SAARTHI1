@@ -1,10 +1,14 @@
-// Emergency panel — the mayday console. A black control room: one huge SOS
-// slab with an ARM → FIRE sequence (stage drama, and no accidental sends),
-// a picture grid for every other message, and a delivery stepper that never
-// calls anything "delivered" that was not.
+// Emergency panel — the mayday console. One huge SOS slab with an
+// ARM → SEND sequence (no accidental sends), a picture grid for every other
+// message, and a delivery stepper that never calls anything "delivered" that
+// was not.
 //
 // Three delivery facts are never blurred: "queued" (accepted here), "local"
 // (still on this device) and "synced" (reached the relay). A failed send says so.
+//
+// HARBOUR SIGNAL: the inbox is scoped to THIS phone's session (B2) — no
+// shared historical pile. Rows show relative times. The armed slab reads
+// "TAP AGAIN TO SEND"; only an actual network send shows "Sending…".
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, EMERGENCY_TYPES } from '../api';
 import { t } from '../i18n';
@@ -40,18 +44,52 @@ const iconOf = (type) => EMG_ICON[type] || 'info';
 const wordOf = (lang, type) =>
   (EMG_WORD[type] ? t(lang, EMG_WORD[type]) : String(type).replaceAll('_', ' '));
 
+// Per-browser-session sender id: the inbox shows messages sent from THIS
+// phone in THIS demo, never the backend's shared historical pile (B2).
+function sessionSenderId() {
+  try {
+    let sid = sessionStorage.getItem('wgpt.sid');
+    if (!sid) {
+      sid = `you-${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem('wgpt.sid', sid);
+    }
+    return sid;
+  } catch {
+    return 'you';
+  }
+}
+function readHiddenIds() {
+  try { return JSON.parse(sessionStorage.getItem('wgpt.hidden-msgs') || '[]'); } catch { return []; }
+}
+
+function relTime(ts, lang) {
+  try {
+    const ms = typeof ts === 'number' ? ts * 1000 : Date.parse(ts);
+    if (!ms || Number.isNaN(ms)) return '';
+    const locale = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
+    const mins = Math.round((Date.now() - ms) / 60000);
+    if (Math.abs(mins) < 1) return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(0, 'minute');
+    if (Math.abs(mins) < 60) return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-mins, 'minute');
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-Math.round(mins / 60), 'hour');
+  } catch { return ''; }
+}
+
 export default function Emergency() {
   const { loc, lang } = useApp();
+  const [sid] = useState(sessionSenderId);
   const [form, setForm] = useState({
     message_type: 'NEED_HELP', people_count: 1, medical_required: false, text: '',
   });
   const [inbox, setInbox] = useState([]);
   const [note, setNote] = useState('');
   const [p2p, setP2p] = useState(null);
-  // ARM → FIRE: the SOS slab arms on first tap and sends on the second, so a
+  // ARM → SEND: the SOS slab arms on first tap and sends on the second, so a
   // shaking hand or a curious jury finger cannot fire a mayday by accident.
   // It auto-disarms after a few seconds.
   const [armed, setArmed] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [p2pState, setP2pState] = useState('idle'); // idle | sending | done | failed
+  const [hiddenIds, setHiddenIds] = useState(readHiddenIds);
   const armTimer = useRef(null);
 
   const refresh = useCallback(async () => {
@@ -70,13 +108,16 @@ export default function Emergency() {
     return () => { alive = false; clearTimeout(armTimer.current); };
   }, []);
 
-  // Derived during render instead of held in state.
-  const peers = [...new Set(inbox.map((m) => m.sender_id))];
+  // Session-scoped inbox: only my messages, minus anything I cleared (B2).
+  const hidden = new Set(hiddenIds);
+  const mine = inbox.filter((m) => m.sender_id === sid && !hidden.has(m.message_id));
 
   async function send(messageType) {
+    if (sending) return;
+    setSending(true);
     try {
       const r = await api.sos({
-        sender_id: 'you',
+        sender_id: sid,
         ...form,
         message_type: messageType || form.message_type,
         people_count: Number(form.people_count) || 1,
@@ -86,6 +127,8 @@ export default function Emergency() {
       refresh();
     } catch {
       setNote(t(lang, 'emgNotSent'));
+    } finally {
+      setSending(false);
     }
   }
 
@@ -113,26 +156,36 @@ export default function Emergency() {
 
   // Stage demo: A->B->C store-and-forward with SIMULATED provenance throughout.
   async function simulate() {
+    if (p2pState === 'sending') return;
+    setP2pState('sending');
     try {
       const r = await api.simulateRelay({
         sender_id: 'demo-A',
         ...form,
         people_count: Number(form.people_count) || 1,
       });
+      setP2pState('done');
       setNote(t(lang, 'emgSimNote').replace('{id}', r.message_id));
       if (r.trace) setP2p({ trace: r.trace, properties: r.properties || {} });
       refresh();
     } catch {
+      setP2pState('failed');
       setNote(t(lang, 'emgSimFailed'));
     }
+  }
+
+  function clearSession() {
+    const ids = [...hidden, ...mine.map((m) => m.message_id)];
+    setHiddenIds(ids);
+    try { sessionStorage.setItem('wgpt.hidden-msgs', JSON.stringify(ids)); } catch { /* ignore */ }
   }
 
   const step = (d) => setForm((f) => ({ ...f, people_count: Math.max(1, Number(f.people_count) + d) }));
 
   return (
-    <section className="mayday" aria-label={t(lang, 'emgTitle')}>
+    <section className="mayday" aria-label={t(lang, 'sendSosTitle')}>
       <div className="may-title">
-        <h2 className="display">{t(lang, 'emgTitle')}</h2>
+        <h2 className="display">{t(lang, 'sendSosTitle')}</h2>
       </div>
 
       <div className="sos-wrap">
@@ -140,17 +193,18 @@ export default function Emergency() {
           type="button"
           className={`sos-btn${armed ? ' is-armed' : ''}`}
           aria-pressed={armed}
+          disabled={sending}
           onClick={onSos}
         >
-          {armed ? t(lang, 'sbFiring') : t(lang, 'emgSos')}
+          {sending ? t(lang, 'sosSending') : armed ? t(lang, 'sosArmedFire') : t(lang, 'emgSos')}
         </button>
         <div className="sos-side">
-          <p>{armed ? t(lang, 'emgSosArmed') : t(lang, 'emgSub')}</p>
+          <p>{sending ? t(lang, 'sosSending') : armed ? t(lang, 'emgSosArmed') : t(lang, 'emgSub')}</p>
           <p className="mono">{t(lang, 'emgArmHint')}</p>
         </div>
       </div>
 
-      <div className="kicker on-ink" style={{ marginBottom: 8 }}>{t(lang, 'emgPick')}</div>
+      <div className="kicker" style={{ marginBottom: 8 }}>{t(lang, 'emgPick')}</div>
       <div className="needs-grid" role="group" aria-label={t(lang, 'emgPick')}>
         {EMERGENCY_TYPES.filter((type) => type !== 'NEED_HELP').map((type) => (
           <button
@@ -167,8 +221,8 @@ export default function Emergency() {
       </div>
 
       <div className="row" style={{ marginBottom: 10 }}>
-        <span className="kicker on-ink">{t(lang, 'emgPeople')}</span>
-        <span className="emg-step" role="group" aria-label={t(lang, 'emgPeople')}>
+        <span className="emg-step" role="group" aria-label={t(lang, 'emgPeopleWithYou')}>
+          <span className="kicker">{t(lang, 'emgPeopleWithYou')}</span>
           <button type="button" className="btn-icon" onClick={() => step(-1)} aria-label={t(lang, 'emgLess')}>−</button>
           <span className="mono" style={{ minWidth: 32, textAlign: 'center', fontWeight: 800 }}>{form.people_count}</span>
           <button type="button" className="btn-icon" onClick={() => step(1)} aria-label={t(lang, 'emgMore')}>+</button>
@@ -181,7 +235,7 @@ export default function Emergency() {
           onClick={() => setForm((f) => ({ ...f, medical_required: !f.medical_required }))}
         >
           <Icon name="activity" size={20} />
-          <span>{t(lang, 'emgMedical')}</span>
+          <span>{t(lang, 'emgMedicalNeed')}</span>
         </button>
       </div>
 
@@ -195,7 +249,7 @@ export default function Emergency() {
           onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
           style={{ flex: 1 }}
         />
-        <button className="btn btn-signal" type="submit">
+        <button className="btn btn-signal" type="submit" disabled={sending}>
           <Icon name="send" size={16} /> {t(lang, 'emgSend')} · {wordOf(lang, form.message_type)}
         </button>
       </form>
@@ -204,11 +258,13 @@ export default function Emergency() {
         <button className="btn btn-secondary sm" type="button" onClick={sync}>
           <Icon name="refresh" size={14} /> {t(lang, 'emgSync')}
         </button>
-        <button className="btn btn-secondary sm" type="button" onClick={simulate}>
-          <Icon name="radio" size={14} /> {t(lang, 'emgSimulate')}
+        <button className="btn btn-secondary sm" type="button" onClick={simulate} disabled={p2pState === 'sending'}>
+          <Icon name="radio" size={14} /> {p2pState === 'sending' ? t(lang, 'p2pSending') : t(lang, 'emgSimulate')}
         </button>
       </div>
-      {note ? <p className="mono" role="status" style={{ color: 'var(--signal)' }}>{note}</p> : null}
+      {p2pState === 'done' ? <p role="status" className="mono">{t(lang, 'p2pRelayed')}</p> : null}
+      {p2pState === 'failed' ? <p role="alert">{t(lang, 'p2pFailed')}</p> : null}
+      {note ? <p className="mono" role="status">{note}</p> : null}
 
       {/* P2P is always on the board — stamped SIMULATED, never pretending to be
           the real mesh. */}
@@ -217,26 +273,35 @@ export default function Emergency() {
           <h3 className="display">{t(lang, 'p2pTitle')}</h3>
           <span className="rubber-stamp" data-testid="p2p-simulated">{t(lang, 'p2pSimulated')}</span>
         </div>
-        <P2PDemo trace={p2p?.trace} properties={p2p?.properties} lang={lang} />
+        {p2p ? <P2PDemo trace={p2p.trace} properties={p2p.properties} lang={lang} />
+          : <p className="sub">{t(lang, 'p2pIdleHint')}</p>}
       </div>
 
-      <h3 className="display" style={{ marginTop: 16, fontSize: 22 }}>{t(lang, 'emgInboxTitle')}</h3>
-      <p className="sub">{t(lang, 'emgNearby')}: {peers.join(', ') || t(lang, 'emgNoPeers')}</p>
+      <div className="emg-inbox-meta">
+        <h3 className="display" style={{ fontSize: 22, margin: 0 }}>{t(lang, 'emgInboxTitle')}</h3>
+        {mine.length > 0 && (
+          <button type="button" className="btn btn-ghost sm" onClick={clearSession}>
+            {t(lang, 'emgClearSession')}
+          </button>
+        )}
+      </div>
+      <p className="sub">{t(lang, 'emgSessionScope')}</p>
       <div className="stepper" style={{ marginTop: 8 }}>
-        {inbox.map((m) => (
+        {mine.map((m) => (
           <div className="step is-done" key={m.message_id}>
             <div>
               <div className="step-t"><Icon name={iconOf(m.message_type)} size={16} /> {wordOf(lang, m.message_type)}</div>
               <div className="step-s">
-                {m.sender_id} · {t(lang, 'emgPeople')} {m.people_count}
-                {m.medical_required ? ` · ${t(lang, 'emgMedical')}` : ''}
+                {relTime(m.timestamp, lang)}
+                {' · '}{t(lang, 'emgPeople')} {m.people_count}
+                {m.medical_required ? ` · ${t(lang, 'emgMedicalNeed')}` : ''}
                 {' · '}{t(lang, 'emgHops').replace('{n}', m.hops)}
                 {' · '}{m.synced ? t(lang, 'emgChipSynced') : t(lang, 'emgChipLocal')}
               </div>
             </div>
           </div>
         ))}
-        {inbox.length === 0 ? <p className="sub">{t(lang, 'emgInboxEmpty')}</p> : null}
+        {mine.length === 0 ? <p className="sub">{t(lang, 'emgInboxEmpty')}</p> : null}
       </div>
     </section>
   );

@@ -238,6 +238,22 @@ async def simulate_relay(payload: dict) -> dict:
         delivery_service.record_relay(alert_id, to_device, from_device)
     except Exception:  # noqa: BLE001
         pass
+    # P2P test #2: a relay writes a durable server notification so the
+    # Notifications list shows it — honest SIMULATED labelling, the alert's
+    # own authoritative severity, zero client invention.
+    try:
+        notification_service.log(
+            "p2p-relay",
+            f"SIMULATED relay: {alert.get('title') or alert.get('hazard') or alert_id}",
+            f"This is a demo. Device {from_device} relayed the alert to {to_device} "
+            "over the simulated phone-to-phone mesh — no real delivery happened.",
+            district=str(alert.get("district") or ""),
+            alert_id=alert_id,
+            severity=str(alert.get("severity") or ""),
+            channel="p2p-simulated",
+        )
+    except Exception:  # noqa: BLE001
+        pass
     trace = [
         {"node": "you", "state": "has-alert", "at": now, "detail": f"{from_device} holds the alert (cached)"},
         {"node": "relay-a", "state": "p2p", "at": now, "detail": "device-to-device transfer, no internet"},

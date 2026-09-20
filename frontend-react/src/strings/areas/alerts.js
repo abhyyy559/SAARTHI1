@@ -68,7 +68,7 @@ export default {
     rtWaterlogging: 'Waterlogging',
 
     // --- emergency panel -----------------------------------------------
-    emgTitle: 'Emergency messages',
+    emgTitle: 'Send SOS',
     emgSub: 'Works without network. Sent when it returns.',
     emgPick: 'What do you need?',
     emgSos: 'Send SOS',
@@ -76,7 +76,7 @@ export default {
     emgSync: 'Sync',
     emgSimulate: 'Demo relay',
     emgSimHint: 'Demo only. Simulated.',
-    emgMedical: 'Medical',
+    emgMedical: 'Medical help needed',
     emgPeople: 'People',
     emgLess: 'Less',
     emgMore: 'More',
@@ -108,7 +108,7 @@ export default {
 
     // --- P2P hop diagram -----------------------------------------------
     p2pTitle: 'How your message travels',
-    p2pSimulated: 'SIMULATED — for demo only',
+    p2pSimulated: 'SIMULATED — FOR DEMO ONLY',
     p2pYou: 'You',
     p2pRelayA: 'Relay A',
     p2pRelayB: 'Relay B',
@@ -174,7 +174,7 @@ export default {
     rtDamage: 'नुकसान',
     rtWaterlogging: 'पानी भरना',
 
-    emgTitle: 'आपात संदेश',
+    emgTitle: 'SOS भेजें',
     emgSub: 'बिना नेटवर्क भी चलता है। नेटवर्क आने पर भेज दिया जाएगा।',
     emgPick: 'आपको क्या चाहिए?',
     emgSos: 'मदद भेजें',
@@ -182,7 +182,7 @@ export default {
     emgSync: 'सिंक',
     emgSimulate: 'डेमो रिले',
     emgSimHint: 'सिर्फ़ डेमो। नकली।',
-    emgMedical: 'इलाज',
+    emgMedical: 'चिकित्सा सहायता चाहिए',
     emgPeople: 'लोग',
     emgLess: 'कम',
     emgMore: 'ज़्यादा',
@@ -213,7 +213,7 @@ export default {
 
     // --- P2P hop diagram -----------------------------------------------
     p2pTitle: 'आपका संदेश कैसे जाता है',
-    p2pSimulated: 'नकली — सिर्फ़ डेमो',
+    p2pSimulated: 'SIMULATED — FOR DEMO ONLY',
     p2pYou: 'आप',
     p2pRelayA: 'रिले A',
     p2pRelayB: 'रिले B',
@@ -279,7 +279,7 @@ export default {
     rtDamage: 'నష్టం',
     rtWaterlogging: 'నీరు నిలవడం',
 
-    emgTitle: 'అత్యవసర సందేశాలు',
+    emgTitle: 'SOS పంపండి',
     emgSub: 'నెట్‌వర్క్ లేకున్నా పనిచేస్తుంది. నెట్‌వర్క్ వచ్చాక పంపుతాం.',
     emgPick: 'మీకు ఏమి కావాలి?',
     emgSos: 'సహాయం పంపండి',
@@ -287,7 +287,7 @@ export default {
     emgSync: 'సింక్',
     emgSimulate: 'డెమో రిలే',
     emgSimHint: 'డెమో మాత్రమే. నకిలీది.',
-    emgMedical: 'వైద్యం',
+    emgMedical: 'వైద్య సహాయం కావాలి',
     emgPeople: 'మంది',
     emgLess: 'తక్కువ',
     emgMore: 'ఎక్కువ',
@@ -318,7 +318,7 @@ export default {
 
     // --- P2P hop diagram -----------------------------------------------
     p2pTitle: 'మీ సందేశం ఎలా వెళ్తుంది',
-    p2pSimulated: 'నకిలీ — డెమో మాత్రమే',
+    p2pSimulated: 'SIMULATED — FOR DEMO ONLY',
     p2pYou: 'మీరు',
     p2pRelayA: 'రిలే A',
     p2pRelayB: 'రిలే B',

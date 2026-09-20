@@ -13,27 +13,38 @@ import Icon from './icons';
 export default function ProfileAdvice() {
   const { loc, persona, lang, speak, syncTick, setView, setPendingAsk } = useApp();
   const [response, setResponse] = useState(null);
+  const [tick, setTick] = useState(0);
   const key = `${loc.lat}:${loc.lon}:${persona}:${lang}`;
   useEffect(() => {
     let active = true;
-    api.profileAdvisory(loc, persona, lang)
+    api.profileAdvisory(loc, persona || 'general', lang)
       .then((data) => { if (active) setResponse({ key, data }); })
       .catch(() => { if (active) setResponse({ key, error: true }); });
     return () => { active = false; };
-  }, [loc, persona, lang, key, syncTick]);
+  }, [loc, persona, lang, key, syncTick, tick]);
   const current = response?.key === key ? response : null;
 
   // Dispatch cards: one sentence per numbered card, in server order. The
   // numbering is the card's identity — it says "do this, then this".
   const text = current && !current.error ? String(current.data.advisory || '').trim() : '';
   const steps = text ? text.split(/(?<=[.!?।])\s+/).map((s) => s.trim()).filter(Boolean) : [];
-  const personaLabel = (PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona;
+  const personaLabel = persona ? ((PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona) : t(lang, 'roleNotSet');
 
   return (
     <Card title={`${t(lang, 'adviceFor')} · ${personaLabel}`} sub={t(lang, 'adviceNote')}>
       <div role="status" aria-live="polite">
         {!current ? <p className="mono">{t(lang, 'checking')}</p>
-          : current.error ? <p className="sub">{t(lang, 'adviceFailed')}</p>
+          : current.error ? (
+            <div className="offline-panel" role="status">
+              <div className="display">{t(lang, 'adviceOfflineTitle')}</div>
+              <p className="sub">{t(lang, 'adviceOfflineBody')}</p>
+              <div className="row">
+                <button type="button" className="btn sm" onClick={() => { setResponse(null); setTick((n) => n + 1); }}>
+                  <Icon name="refresh" size={14} /> {t(lang, 'adviceRetry')}
+                </button>
+              </div>
+            </div>
+          )
             : steps.length === 0 ? <p className="sub">{t(lang, 'adviceFailed')}</p>
               : <div className="dispatch-list">
                 {steps.map((step, i) => (

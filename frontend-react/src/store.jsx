@@ -66,7 +66,19 @@ export function AppProvider({ children }) {
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));
-  const [persona, setPersona] = useState(() => readPref('wgpt.persona', 'fisherman'));
+  // The role is UNSET on first run — never silently defaulted to a safety-
+  // relevant persona (M1). Migration: the old build defaulted to 'fisherman'
+  // without asking, so a stored fisherman from before this build reads as
+  // unset exactly once. An active re-pick is one tap away.
+  const [persona, setPersona] = useState(() => {
+    try {
+      if (!localStorage.getItem('wgpt.persona.v2')) {
+        localStorage.setItem('wgpt.persona.v2', '1');
+        return null;
+      }
+      return localStorage.getItem('wgpt.persona') || null;
+    } catch { return null; }
+  });
   const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
   // Single light theme: no theme state, no switcher, no data-theme attribute.
   // Truthful until /api/mode answers: the backend decides the mode, not a guess.
@@ -263,7 +275,11 @@ export function AppProvider({ children }) {
   }, [lang]);
 
   useEffect(() => {
-    writePref('wgpt.persona', persona);
+    // null = unset: remove the key so "not set" survives a reload honestly.
+    try {
+      if (persona) localStorage.setItem('wgpt.persona', persona);
+      else localStorage.removeItem('wgpt.persona');
+    } catch { /* storage unavailable */ }
   }, [persona]);
 
   // One-shot question hand-off: ChatPanel consumes it once on mount, then clears.
@@ -447,7 +463,7 @@ export function AppProvider({ children }) {
     // Permission alone only buys in-app notifications. Registering with the push
     // service is what reaches the device when the app is CLOSED — which is the
     // entire point — so it is part of turning this on, not a separate step.
-    const res = await subscribeToPush({ api, district: loc.district, language: lang, persona });
+    const res = await subscribeToPush({ api, district: loc.district, language: lang, persona: persona || 'general' });
     setPushReady(!!res.ok);
     setNotifyOn(true);
     writePref('wgpt.notify', '1');

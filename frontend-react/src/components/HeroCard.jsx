@@ -1,4 +1,4 @@
-// Home hero — the verdict bulletin. An inverted ink panel: the backend's ONE
+// Home hero — the verdict bulletin. A pinned paper notice: the backend's ONE
 // verdict (backend/services/verdict_service.py) as a 56px banner word, a
 // signal-bar + stamped severity, a one-line reason, and two chunky buttons.
 // Advice never appears here — it lives in Advisory only.
@@ -13,6 +13,7 @@ import { useApp } from '../store';
 import { formatValidUntil, formatCountdown, minutesSince, isExpired } from '../format';
 import { saveWarningSnapshot, readWarningSnapshot, saveObservationSnapshot } from '../offline';
 import Icon from './icons';
+import { sevWord } from './ui';
 
 export default function HeroCard() {
   const { lang, persona, loc, locReady, speak, result, setView, setPendingAsk, syncTick, publishVerdict, offline } = useApp();
@@ -48,7 +49,7 @@ export default function HeroCard() {
   // Identity of the advisory this card should be showing. Compared at render
   // time (below) so a profile/language/district change drops the old advice
   // immediately, without a setState-in-effect.
-  const advKey = `${persona}:${lang}:${loc.district}`;
+  const advKey = `${persona || 'general'}:${lang}:${loc.district}`;
 
   useEffect(() => {
     if (!locReady) return undefined;
@@ -89,7 +90,7 @@ export default function HeroCard() {
     // Kept stamped (contract): the Advisory view reuses the same endpoint and
     // the same key, so the bulletin and the dispatch cards can never disagree
     // about which profile the words were fetched for.
-    api.profileAdvisory(loc, persona, lang)
+    api.profileAdvisory(loc, persona || 'general', lang)
       .then((d) => { if (alive) setAdvisoryAt({ key: advKey, text: d.advisory || '' }); })
       .catch(() => { if (alive) setAdvisoryAt({ key: advKey, text: '' }); });
     return () => { alive = false; };
@@ -177,7 +178,7 @@ export default function HeroCard() {
       : nearbyCount > 0 ? t(lang, 'nearbyNote').replace('{n}', nearbyCount)
       : t(lang, 'homeNoWarning');
 
-  const personaName = (PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona;
+  const personaName = persona ? ((PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona) : t(lang, 'roleNotSet');
 
   const speakHero = () => {
     speak(`${verdictWord}. ${hazardText}. ${advisory}`);
@@ -202,8 +203,8 @@ export default function HeroCard() {
       aria-label={t(lang, 'homeSafety')}
     >
       <div className="vb-meta">
-        <span className="kicker on-ink">{personaName} · {loc.district} · {lang.toUpperCase()}</span>
-        <span className="sev-stamp">{displayState}</span>
+        <span className="kicker on-ink">{personaName} · {locReady && loc.district ? loc.district : t(lang, 'noDistrict')} · {lang.toUpperCase()}</span>
+        <span className="sev-stamp"><Icon name={displayState === 'CRITICAL' || displayState === 'HIGH' ? 'alert' : displayState === 'UNKNOWN' ? 'help' : displayState === 'MODERATE' ? 'clock' : 'check'} size={14} aria-hidden="true" />{sevWord(lang, displayState)}</span>
       </div>
       <h2 className="vb-word">{verdictWord}</h2>
       <p className="vb-wordline">{hazardText}</p>
@@ -212,7 +213,7 @@ export default function HeroCard() {
         {ageText ? ` · ${ageText}${stale ? ` · ${t(lang, 'staleMay')}` : ''}` : ''}
         {countdown && countdown !== 'expired' ? ` · ${t(lang, 'expiresIn').replace('{t}', countdown)}` : ''}
         {countdown === 'expired' ? ` · ${t(lang, 'verdictExpired')}` : ''}
-        {` · SRC ${evSource} · ${evProv}`}
+        {evSource !== '—' ? ` · ${evSource}` : ''}{` · ${evProv}`}
       </p>
       <div className="vb-act">
         <button type="button" className="btn btn-signal" onClick={speakHero}

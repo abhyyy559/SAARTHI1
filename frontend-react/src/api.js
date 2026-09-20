@@ -18,6 +18,9 @@ let demoForbiddenHandler = null;
 let lastDemo403 = 0;
 export const onDemoForbidden = (fn) => { demoForbiddenHandler = fn; };
 
+/** Max time for any server round-trip: 5 seconds, never infinite (B3). */
+export const FETCH_TIMEOUT_MS = 5000;
+
 // Offline queue for mutations when offline-sim is on
 const offlineQueue = [];
 export function queueMutation(fn) {
@@ -34,9 +37,19 @@ export function flushQueue() {
   return Promise.all(queue.map(fn => fn().catch(() => {})));
 }
 
-async function j(url, opts) {
+async function j(url, opts, timeoutMs) {
   if (offlineSim) throw new Error('OFFLINE (simulated) — showing cached data only');
-  const r = await fetch(full(url), opts);
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs || FETCH_TIMEOUT_MS);
+  let r;
+  try {
+    r = await fetch(full(url), { ...opts, signal: ctrl.signal });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(`Timeout — server took too long (${url})`);
+    throw e;
+  } finally {
+    clearTimeout(id);
+  }
   if (!r.ok) {
     if (r.status === 403 && /\/api\/demo\//.test(url) && demoForbiddenHandler) {
       const now = Date.now();
