@@ -48,7 +48,7 @@ export default function CoverageDashboard({ district: initialDistrict }) {
   const ackRate = counts.delivered > 0 ? Math.round((counts.acknowledged / counts.delivered) * 100) : 0;
 
   return (
-    <Card title={t(lang, 'covTitle')} sub={t(lang, 'covNote')}>
+    <Card title={t(lang, 'covTitle')} sub={t(lang, 'covNote')} className="ops-panel">
       <div className="cov-filter" style={{ marginBottom: 12 }}>
         <label className="mono" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {t(lang, 'district')}

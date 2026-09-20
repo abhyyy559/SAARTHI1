@@ -20,10 +20,12 @@ import SourceStatus from './components/SourceStatus';
 import HowItWorks from './components/HowItWorks';
 import './components/Round2.css';
 import './components/Home2.css';
+import './components/CalmCommand.css'; // "Calm Command" redesign — loads last
 import { useApp } from './store';
 import { t } from './i18n';
 import { Card } from './components/ui';
 import SourceStrip from './components/SourceStrip';
+import Icon from './components/icons';
 
 export function HomeView() {
   return (
@@ -120,7 +122,7 @@ export function TrustView() {
 // Reached via ?view=details — e.g. from a future AlertCenter/AdminPanel
 // selection — without touching the citizen nav.
 export function DetailsView() {
-  const { setView } = useApp();
+  const { lang, setView } = useApp();
   const [alert, setAlert] = useState(undefined);
   useEffect(() => {
     let dead = false;
@@ -135,7 +137,18 @@ export function DetailsView() {
   return (
     <>
       <ViewHead titleKey="viewAlerts" subKey="viewAlertsSub" />
-      <AlertDetails alert={alert} onBack={() => setView('alerts')} />
+      {alert === null ? (
+        <div className="alert-none is-clear" data-state="details-none">
+          <Icon name="alert" size={52} className="big" />
+          <div className="alert-headline">{t(lang, 'detailsNoneTitle')}</div>
+          <p className="sub">{t(lang, 'detailsNoneBody')}</p>
+          <button type="button" className="btn ghost sm" onClick={() => setView('admin')}>
+            {t(lang, 'demoTitle')}
+          </button>
+        </div>
+      ) : (
+        <AlertDetails alert={alert} onBack={() => setView('alerts')} />
+      )}
     </>
   );
 }

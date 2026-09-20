@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from backend.adapters.cap_adapter import parse_cap, _rss_item_links  # noqa: E402
+from backend.adapters.cap_adapter import parse_cap, _rss_item_links, _feed_has_cap_shape  # noqa: E402
 
 MINIMAL_CAP = """<?xml version="1.0" encoding="UTF-8"?>
 <alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
@@ -79,6 +79,32 @@ def test_rss_envelope_yields_item_links():
     assert all("FetchXMLFile?identifier=" in u for u in links)
     assert _rss_item_links("") == []
     print("PASS: test_rss_envelope_yields_item_links")
+
+
+# _feed_has_cap_shape: a 200 OK carrying garbage must count as a FAILED feed,
+# never as "LIVE with 0 alerts". Regression guard for the SACHET CAP ERROR
+# behaviour: parse errors become [], which is indistinguishable from "no alerts"
+# without this shape check.
+def test_feed_shape_guard():
+    # Genuine shapes.
+    assert _feed_has_cap_shape(MINIMAL_CAP)
+    assert _feed_has_cap_shape(SACHET_RSS)
+    assert _feed_has_cap_shape('{"alerts": [{"event": "Rain"}]}')
+    # parse_cap only honours JSON objects with an "alerts" list, so the guard
+    # matches: a bare JSON array is not a feed shape.
+    assert not _feed_has_cap_shape('[{"event": "Rain", "severity": "Moderate"}]')
+    # Garbage that parse_cap would silently turn into [].
+    assert not _feed_has_cap_shape("")
+    assert not _feed_has_cap_shape("   ")
+    assert not _feed_has_cap_shape("<html><head><title>403 Forbidden</title></head></html>")
+    assert not _feed_has_cap_shape("<!doctype html><html><body>Access Denied</body></html>")
+    assert not _feed_has_cap_shape("random garbage text with no tags")
+    assert not _feed_has_cap_shape('{"nope": true}')  # valid JSON, wrong shape
+    assert not _feed_has_cap_shape("<not-xml")
+    assert not _feed_has_cap_shape('{"alerts": [broken json')
+    # Edge: CAP root tag with attributes still counts.
+    assert _feed_has_cap_shape('<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">x</alert>')
+    print("PASS: test_feed_shape_guard")
 
 
 # TGiCCC bulletins use district acronyms; people cannot act on 'HYD'.

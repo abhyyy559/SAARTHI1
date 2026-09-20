@@ -1,0 +1,1653 @@
+
+/* ============ Calm Command: shell (from /tmp/redesign-shell.css) ============ */
+/* =====================================================================
+   SAARTHI — "Calm Command" app-shell redesign (PROPOSAL, not applied)
+   Scope: Shell.jsx only — .sidebar, .topbar, .banner/.mode-switch,
+   .mobile-nav, .conn. Append AFTER existing rules in src/styles.css, or use
+   to replace the marked blocks.
+   Tokens used: --accent, --accent-soft, --on-accent, --bg-2/3, --ink/2/3,
+   --line, --r-sm/--r-lg/--r-full, --shadow-sm/--shadow-md, --dur/--dur-lg,
+   --ease, --eyebrow-size, --tap. --sev-* is NEVER touched or used
+   decoratively. All colors resolve per-theme via [data-theme] /
+   prefers-color-scheme overrides, so light + dark both stay intentional.
+   ===================================================================== */
+
+/* ------------------------------------------------------------------
+   1. SIDEBAR — replaces existing .brand / .brand-mark / .brand-text /
+      .nav / .nav-item blocks.
+------------------------------------------------------------------ */
+.sidebar {
+  gap: 18px;
+  padding: 20px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Brand block: calm authority — accent mark, tightened type, tagline as
+   an uppercase 12px eyebrow. */
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.brand-mark {
+  width: 44px; height: 44px; border-radius: var(--r-md); flex: none;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: var(--shadow-sm);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.brand-text b {
+  font-family: var(--display); font-size: 1.2rem; font-weight: 650;
+  letter-spacing: -.01em;
+}
+.brand-text span {
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  margin-top: 4px;
+}
+
+/* Nav: rounded pills with a clear active state — accent-soft fill, accent
+   text, 3px left indicator. aria-current='page' hook unchanged. */
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: var(--tap); padding: 10px 16px;
+  border: 0; border-radius: var(--r-full);
+  background: transparent; color: var(--ink-2);
+  font-family: var(--sans); font-size: .95rem; font-weight: 550;
+  text-align: left; cursor: pointer;
+  transition: background var(--dur) var(--ease),
+              color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+.nav-item:hover { color: var(--ink); background: var(--bg-3); }
+.nav-item .icon { display: block; width: 20px; height: 20px; flex: none; }
+.nav-item[aria-current='page'] {
+  background: var(--accent-soft); color: var(--accent); font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.nav-item[aria-current='page']:hover { color: var(--accent); }
+
+.side-foot { gap: 8px; }
+.side-foot .btn { width: 100%; justify-content: flex-start; }
+
+/* ------------------------------------------------------------------
+   2. TOPBAR — grouped controls (fieldset-like cards with eyebrow
+      labels), styled selects, connection pill.
+------------------------------------------------------------------ */
+.topbar-inner { gap: 8px 10px; padding: 10px 22px; }
+.topbar-title { margin-right: 4px; }
+
+/* Connection pill: bordered status chip with live dot. The inline
+   style={color} on .conn still drives the severity-neutral tone. */
+.conn {
+  border: 1px solid var(--line); border-radius: var(--r-full);
+  background: var(--bg-3); box-shadow: var(--shadow-sm);
+  padding: 8px 14px; min-height: var(--tap);
+  font-weight: 700; letter-spacing: .04em;
+}
+.conn .dot { width: 10px; height: 10px; }
+
+/* Each <label class="mono"> becomes a fieldset-like group: the existing
+   label text renders as the eyebrow, the select below it as the value. */
+.topbar label.mono {
+  display: inline-flex; flex-direction: column; align-items: stretch; gap: 2px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--bg-3); padding: 5px 8px 6px 10px;
+  font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.topbar label.mono select {
+  border: 0; background: transparent; border-radius: var(--r-xs);
+  padding: 0 22px 0 0; margin: 0;
+  min-height: var(--tap);
+  font-size: .9rem; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--ink);
+  cursor: pointer;
+  /* Keep the native chevron readable on the grouped background. */
+  appearance: auto;
+}
+
+/* Fieldset groups for the icon toggles and theme switch. Legends carry
+   the eyebrow; new en-only i18n keys: 'alertsGroup', 'themeGroup'
+   (hi/te fall back to English via t()). */
+.top-group {
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--bg-3);
+  padding: 4px 10px 8px; margin: 0; min-width: 0;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.top-group > legend {
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  padding: 0 6px; margin: 0;
+}
+
+/* Theme switch becomes a compact pill segmented group inside its fieldset. */
+.top-group .seg {
+  border: 1px solid var(--line); border-radius: var(--r-full);
+  background: var(--bg-2); padding: 3px; gap: 2px; overflow: hidden;
+}
+.top-group .seg button {
+  border: 0; border-radius: var(--r-full);
+  min-width: var(--tap); min-height: var(--tap);
+  padding: 0 8px; display: grid; place-items: center;
+  background: transparent; color: var(--ink-2); cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.top-group .seg button:hover { background: var(--bg-3); color: var(--ink); }
+.top-group .seg button[aria-pressed='true'] {
+  background: var(--accent); color: var(--on-accent);
+}
+
+/* ------------------------------------------------------------------
+   3. STATUS BANNER — true segmented control. Replaces existing
+      .mode-switch / .mode-btn rules.
+------------------------------------------------------------------ */
+.banner { padding: 8px 22px; }
+.mode-switch {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: var(--r-full);
+  background: var(--bg-3); padding: 4px;
+  box-shadow: var(--shadow-sm);
+}
+.mode-btn {
+  border: 0; border-radius: var(--r-full);
+  background: transparent; color: var(--ink-2);
+  font: inherit; font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase;
+  min-height: var(--tap); padding: 8px 18px; cursor: pointer;
+  transition: background-color var(--dur-lg) var(--ease),
+              color var(--dur-lg) var(--ease),
+              box-shadow var(--dur-lg) var(--ease);
+}
+.mode-btn:hover { color: var(--ink); background: var(--bg-2); }
+.mode-btn.on {
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: var(--shadow-sm);
+}
+.mode-btn.on:hover { background: var(--accent); color: var(--on-accent); }
+
+/* ------------------------------------------------------------------
+   4. MOBILE NAV — floating rounded bar (replaces the full-bleed
+      bottom bar inside the 900px media query).
+------------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .mobile-nav {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px;
+    position: fixed; z-index: 45;
+    left: 12px; right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 8px;
+    border: 1px solid var(--line); border-radius: var(--r-lg); /* 20px */
+    background: var(--bg-2); /* fallback if color-mix is unsupported */
+    background: color-mix(in srgb, var(--bg-2) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-md);
+  }
+  .mobile-tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; min-height: 56px; padding: 6px 4px;
+    border: 0; border-radius: var(--r-full);
+    background: transparent; color: var(--ink-3);
+    font-family: var(--sans); font-size: .72rem; font-weight: 650;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .mobile-tab:hover { background: var(--bg-3); }
+  .mobile-tab .icon { width: 20px; height: 20px; }
+  .mobile-tab[aria-current='page'] {
+    background: var(--accent-soft); color: var(--accent);
+  }
+}
+
+/* Reduced-motion + print already handled by the base stylesheet. */
+
+/* ============ Calm Command: home (from /tmp/redesign-home.css) ============ */
+/* ============================================================
+   SAARTHI Home — "Calm Command" redesign (Round 2)
+   CSS-only pass over Home.jsx + HeroCard.jsx.
+   IMPORT ORDER: load this file AFTER HeroCard.css and Home2.css
+   (all rules here intentionally match or exceed those files'
+   specificity, so later import wins on ties).
+
+   Tokens used (from src/styles.css — never redefined here):
+     --title-size, --eyebrow-size (.75rem uppercase, ls .08em)
+     --r-xs/sm/md/lg/xl/full, --shadow-sm/--shadow-md/--shadow
+     --dur .15s / --dur-lg .2s, --ease (ease-out)
+     --line, --tap 48px, --sev-*-bg/bd (severity-tinted washes)
+   Hard rules kept:
+     - severity still read ONLY from backend verdict (data-sev);
+       this file maps data-sev -> --wx-sev-* the same way, no new logic
+     - 48px tap targets, all aria labels untouched
+     - light + dark themes: tokens only, no hard-coded colors
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. HERO — full-width situation banner
+   Existing JSX classes restyled; new optional classes:
+   .wx-count-strip (expiry countdown strip — see JSX snippet)
+   ------------------------------------------------------------ */
+
+.wx-hero {
+  border-radius: var(--r-xl);
+  padding: 0; /* sections below carry their own padding */
+  background: var(--wx-sev-bg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Top status band: severity wash + thin rule, eyebrow type */
+.wx-strip {
+  padding: 12px 24px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--wx-sev-bd);
+  background: color-mix(in srgb, var(--wx-sev-bg) 55%, transparent);
+}
+.wx-strip-loc {
+  font-size: var(--eyebrow-size);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.wx-strip-loc .wx-loc-name { color: var(--ink); font-weight: 800; }
+
+/* Situation body */
+.wx-verdict {
+  margin-bottom: 0;
+  padding: 22px 24px 4px;
+  gap: 20px;
+}
+
+/* Display-scale verdict headline, tabular for the countdown row */
+.wx-hero-word {
+  font-size: clamp(2.6rem, 7.5vw, 4.25rem);
+  line-height: .95;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.035em;
+}
+.wx-official-tag {
+  font-size: var(--eyebrow-size);
+  letter-spacing: .08em;
+  color: var(--wx-sev);
+  border-color: var(--wx-sev-bd);
+  background: transparent;
+}
+
+/* Hazard line stays calm: body ink, eyebrow-sep spacing */
+.wx-hero-hazard {
+  font-size: 1rem;
+  color: var(--ink-2);
+  margin-top: 12px;
+}
+
+/* Severity ladder: quieter, keeps its color-blind-safe bar cue */
+.wx-ladder { height: 30px; margin-top: 14px; }
+
+/* Actions: 48px tap, 150-200ms ease-out */
+.wx-speak-btn {
+  min-height: var(--tap);
+  padding: 10px 16px;
+  border-radius: var(--r-full);
+  transition: color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              background-color var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+.wx-speak-btn:hover { transform: translateY(-1px); }
+.wx-speak-btn:active { transform: translateY(0); }
+
+.wx-action {
+  margin: 18px 24px 0;
+  border-radius: var(--r-md);
+}
+
+/* NEW: expiry countdown strip — full-width, severity-tinted band.
+   JSX: replace the two inline wx-count-chip conditionals with the
+   .wx-count-strip block (snippet below). Shows only when a
+   countdown string exists. */
+.wx-count-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 24px 0;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--wx-sev-bd);
+  background: var(--wx-sev-bg);
+  color: var(--wx-sev);
+  font-size: var(--eyebrow-size);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.wx-count-strip svg { width: 14px; height: 14px; flex: none; }
+.wx-count-strip.is-expired {
+  color: var(--ink-3);
+  border-color: var(--line);
+  background: transparent;
+}
+.wx-count-chip { display: none; } /* superseded by the strip */
+
+/* Provenance strip: source chips, mono, no decoration */
+.wx-evidence {
+  margin: 14px 24px 0;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--line);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.wx-evidence > span:nth-child(even) { display: none; } /* the "·" separators */
+.wx-evidence > span {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--bg-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.wx-evidence > span svg { width: 12px; height: 12px; }
+
+/* Footnote observations: quieter, still one tap */
+.wx-obs { margin: 10px 24px 20px; }
+.wx-obs summary {
+  min-height: var(--tap);
+  display: inline-flex;
+  padding: 6px 4px;
+  transition: color var(--dur) var(--ease);
+}
+.wx-obs summary:hover { color: var(--ink); }
+
+/* ------------------------------------------------------------
+   2. STATUS STRIP — slim pill bar
+   ------------------------------------------------------------ */
+.h-status {
+  padding: 7px 16px;
+  border-radius: var(--r-full);
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+.h-status-item svg { width: 13px; height: 13px; }
+.h-status-loc {
+  max-width: 38vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   3. ACTIVE ALERTS — cards with lifecycle state chips
+   .demo-state chips are shared with the Alerts page: untouched
+   except sizing here, so both pages stay consistent.
+   ------------------------------------------------------------ */
+.h-alerts {
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.h-alert-row {
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+.h-alert-row:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.h-alert-row .demo-state {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: var(--r-full);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   4. WEATHER NOW — horizontal stat strip
+   Scrolls horizontally under 720px; numbers tabular.
+   ------------------------------------------------------------ */
+.h-now {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.h-now > * {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 16px;
+  flex: none;
+}
+.h-now > * + * { border-left: 1px solid var(--line); }
+.h-now-temp { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+.h-now-cond {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.h-now-meta { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.h-now .h-status-sep { display: none; }
+@media (max-width: 720px) {
+  .h-now { overflow-x: auto; scrollbar-width: none; }
+  .h-now::-webkit-scrollbar { display: none; }
+}
+
+/* ------------------------------------------------------------
+   5. ACTION TILES — 2x2 card grid with unread badge
+   ------------------------------------------------------------ */
+.h-tiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.h-tile {
+  min-height: 132px;
+  padding: 20px 12px;
+  border-radius: var(--r-lg);
+  gap: 10px;
+  font-size: 14px;
+  transition: transform var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease),
+              background-color var(--dur-lg) var(--ease);
+}
+.h-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.h-tile:active { transform: translateY(0); }
+.h-tile-icon svg { width: 30px; height: 30px; }
+.h-tile-badge {
+  top: -8px;
+  right: -10px;
+  min-width: 21px;
+  height: 21px;
+  font-size: 11px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ------------------------------------------------------------
+   6. QUICK QUESTIONS — chips
+   JSX unchanged (.btn.ghost + icon); restyled as pill chips.
+   48px tap targets preserved.
+   ------------------------------------------------------------ */
+.h-quick .quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.h-quick .quick-row .btn.ghost {
+  min-height: var(--tap);
+  padding: 10px 16px;
+  border-radius: var(--r-full);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              background-color var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+.h-quick .quick-row .btn.ghost svg { width: 16px; height: 16px; flex: none; }
+.h-quick .quick-row .btn.ghost:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.h-quick .quick-row .btn.ghost:active { transform: translateY(0); }
+
+/* ------------------------------------------------------------
+   Notifications preview: polish to match the card language
+   ------------------------------------------------------------ */
+.h-notif-row {
+  border-radius: var(--r-md);
+  transition: border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+.h-notif-row:hover { box-shadow: var(--shadow-sm); }
+.h-notif-speak {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  transition: color var(--dur) var(--ease),
+              background-color var(--dur) var(--ease);
+}
+
+/* ------------------------------------------------------------
+   Mobile (<720px): keep every section usable, one-handed
+   ------------------------------------------------------------ */
+@media (max-width: 720px) {
+  .wx-strip { padding: 10px 16px; }
+  .wx-verdict { padding: 18px 16px 2px; gap: 14px; }
+  .wx-action { margin: 14px 16px 0; }
+  .wx-count-strip { margin: 12px 16px 0; }
+  .wx-evidence { margin: 12px 16px 0; }
+  .wx-obs { margin: 8px 16px 16px; }
+  .wx-hero-word { font-size: clamp(2.2rem, 11vw, 2.9rem); }
+  .h-status { border-radius: var(--r-md); }
+  .h-tile { min-height: 118px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-speak-btn, .h-tile, .h-alert-row, .h-quick .quick-row .btn.ghost,
+  .h-notif-row, .wx-obs summary {
+    transition: none;
+  }
+  .wx-speak-btn:hover, .h-tile:hover, .h-alert-row:hover,
+  .h-quick .quick-row .btn.ghost:hover { transform: none; }
+}
+
+/* ============ Calm Command: chat (from /tmp/redesign-chat.css) ============ */
+/* ==========================================================================
+   SAARTHI — Ask page redesign ("Calm Command")
+   Component overrides for src/components/ChatPanel.jsx. Load AFTER
+   styles.css. Every colour / radius / shadow / duration comes from the
+   global tokens; nothing here redefines --sev-* and nothing here derives
+   severity. Both light and dark themes are intentional (all tokens are
+   theme-aware).
+   ========================================================================== */
+
+/* ---- 1. Real chat thread: distinct bubbles --------------------------------
+   Refine msg-in from 280ms to 200ms ease-out (keyframes stay in styles.css;
+   the reduced-motion override there still applies). */
+.msg { animation: msg-in var(--dur-lg) ease-out; }
+
+.msg.user {
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+.msg.bot {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- 2. Verdict card: elevated, with the meta line restyled as a ---------
+   provenance chips row. No severity is derived here; .sev.* and .prov
+   colours remain owned by styles.css. */
+.ask-verdict {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.ask-meta > span {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 4px 12px;
+  border: 1px solid var(--line); border-radius: var(--r-full);
+  background: var(--bg-3);
+}
+/* The .prov chip keeps its own colour/border vocabulary from styles.css. */
+.ask-meta > span.prov { background: transparent; }
+
+/* ---- 3. Sticky composer ---------------------------------------------------
+   Sticks to the viewport bottom on page scroll; translucent surface with
+   blur so the thread stays legible underneath. Tap targets stay 48px. */
+.chatrow {
+  position: sticky; bottom: 0; z-index: 20;
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 12px;
+  padding: 12px 4px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.chatrow input { min-height: var(--tap); }
+
+/* Round mic button: 48px accent circle. The text label becomes an
+   accessible-only caption, revealed while listening (driven by
+   aria-pressed, no extra JSX state). */
+.chatrow .btn.ask-mic {
+  width: var(--tap); height: var(--tap); flex: none;
+  padding: 0; border-radius: 50%;
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+  position: relative;
+}
+.chatrow .btn.ask-mic:hover { background: var(--accent-2); border-color: var(--accent-2); color: var(--on-accent); }
+.chatrow .btn.ask-mic:disabled { opacity: .45; cursor: not-allowed; }
+.chatrow .btn.ask-mic .icon { width: 20px; height: 20px; }
+
+.chatrow .ask-mic-label {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.chatrow .ask-mic[aria-pressed="true"] {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.chatrow .ask-mic[aria-pressed="true"] .ask-mic-label {
+  position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  width: auto; height: auto; margin: 0; clip-path: none; overflow: visible;
+  font-family: var(--mono); font-size: .75rem; color: var(--ink-2);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-xs);
+  padding: 2px 8px; white-space: nowrap;
+}
+
+/* ---- 4. Evidence accordion -----------------------------------------------
+   Native <details>/<summary>: keyboard-operable, no JS state, aria comes
+   for free. Chevron rotates 180deg with a 200ms ease-out. */
+.ask-ev { margin-top: 12px; }
+
+.ask-ev-sum { list-style: none; }
+.ask-ev-sum::-webkit-details-marker { display: none; }
+.ask-ev-sum::marker { content: none; }
+
+.ask-ev-sum {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: var(--tap); padding: 8px 14px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-3); color: var(--ink-2);
+  font-family: var(--mono); font-size: .875rem; font-weight: 650;
+  cursor: pointer; user-select: none;
+  transition: border-color var(--dur) ease-out, background var(--dur) ease-out;
+}
+.ask-ev-sum:hover { border-color: var(--accent); color: var(--ink); }
+.ask-ev-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.ask-ev-chev {
+  margin-inline-start: 4px; color: var(--ink-3);
+  transition: transform var(--dur-lg) ease-out;
+}
+.ask-ev[open] .ask-ev-chev { transform: rotate(180deg); }
+
+.ask-ev-body { margin-top: 8px; }
+
+/* ---- 5. Narrow screens --------------------------------------------------- */
+@media (max-width: 900px) {
+  /* The fixed mobile nav occupies the bottom edge; park the sticky
+     composer above it. */
+  .chatrow { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (max-width: 720px) {
+  .msg { padding: 12px 14px; max-width: 100%; font-size: .95rem; line-height: 1.7; }
+  .ask-verdict { padding: 10px 12px; }
+  .ask-ev-sum { width: 100%; justify-content: flex-start; }
+  .evrow { flex-wrap: wrap; gap: 4px; }
+  .evrow > span:last-child { text-align: left; }
+  .chatrow { gap: 6px; padding: 10px 2px calc(10px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ============ Calm Command: alerts (from /tmp/redesign-alerts.css) ============ */
+/* ==========================================================================
+   SAARTHI · Alerts page · "Calm Command" redesign (proposed)
+   --------------------------------------------------------------------------
+   Companion to src/components/AlertCenter.css. Nothing here redefines an
+   existing token or class — every token added below is component-scoped
+   (--lc-*, --emg-*), and --sev-* is only *consumed* (never redefined), and
+   only for its semantic purpose: official severity and the SOS action.
+
+   Companions in JSX (exact snippets in the handoff report):
+     AlertCenter.jsx  · lifecycle stepper <ol class="lc-steps"> per AlertCard,
+                        driven by the existing data-state / stateKey (no new logic)
+     Emergency.jsx    · section gets class "emg-cmd"; one eyebrow line added
+   ========================================================================== */
+
+:root {
+  /* Lifecycle stepper — neutral command tones; only the *current* dot takes
+     the card's official severity colour (via data-sev, never invented). */
+  --lc-line: var(--line-2);
+  /* Emergency command panel — deliberately dark in BOTH themes: it is the
+     page's command action and must read the same at 2am as at noon. */
+  --emg-panel: #0c1320;
+  --emg-panel-2: #131c2e;
+  --emg-text: #f4f7fb;
+  --emg-sub: #aeb9c8;
+  --emg-line: #223047;
+  --emg-tile-2: #162032;
+}
+
+/* ==========================================================================
+   1. Alert cards — console tiles
+   ========================================================================== */
+
+/* Keep the data-sev severity edge from styles.css; make the tile a command
+   console: larger radius, deeper shadow, the stepper rail across the top. */
+.alert-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
+  padding: 16px 18px 14px;
+  transition: box-shadow var(--dur-lg) var(--ease), border-color var(--dur) var(--ease);
+}
+.alert-card[data-unconf='true'] { border-left-style: dashed; } /* preserved: unconfirmed ≠ confirmed */
+.alert-card .alert-icon { grid-row: 2; }
+.alert-card .alert-body { grid-row: 2; min-width: 0; flex: 1; }
+
+/* ------------------------------------------------- 1a. lifecycle stepper --
+   One row, four stations: detected → issued → live → resolved.
+   Driven by the card's existing backend state (via .is-done / .is-now in JSX);
+   the rail is aria-hidden because the state chip already announces it. */
+.lc-steps {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.lc-step {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.lc-step + .lc-step::before {
+  content: '';
+  flex: 0 0 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--lc-line);
+  opacity: .55;
+}
+.lc-dot {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--lc-line);
+  background: transparent;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+.lc-name {
+  font-family: var(--sans);
+  font-size: var(--eyebrow-size);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* completed stations: quiet filled dot */
+.lc-step.is-done .lc-dot { background: var(--ink-3); border-color: var(--ink-3); }
+.lc-step.is-done .lc-name { color: var(--ink-2); }
+.lc-step.is-done + .lc-step::before,
+.lc-step + .lc-step.is-done::before { opacity: 1; }
+/* current station: label turns ink; dot takes the card's OFFICIAL severity
+   colour — same source as the edge bar, extended from styles.css's pattern. */
+.lc-step.is-now .lc-name { color: var(--ink); font-weight: 800; }
+.alert-card[data-sev='RED'] .lc-step.is-now .lc-dot {
+  background: var(--sev-red); border-color: var(--sev-red); box-shadow: 0 0 0 4px var(--sev-red-bg);
+}
+.alert-card[data-sev='ORANGE'] .lc-step.is-now .lc-dot {
+  background: var(--sev-orange); border-color: var(--sev-orange); box-shadow: 0 0 0 4px var(--sev-orange-bg);
+}
+.alert-card[data-sev='YELLOW'] .lc-step.is-now .lc-dot {
+  background: var(--sev-yellow); border-color: var(--sev-yellow); box-shadow: 0 0 0 4px var(--sev-yellow-bg);
+}
+.alert-card[data-sev='GREEN'] .lc-step.is-now .lc-dot {
+  background: var(--sev-green); border-color: var(--sev-green); box-shadow: 0 0 0 4px var(--sev-green-bg);
+}
+/* Unconfirmed severity: the rail stays honest — grey, never an IMD colour. */
+.alert-card[data-sev='UNKNOWN'] .lc-step.is-now .lc-dot {
+  background: var(--unconf); border-color: var(--unconf); box-shadow: 0 0 0 4px var(--bg-3);
+}
+
+/* --------------------------------------------- 1b. lifecycle state chip --
+   The existing .demo-state colours (Round2.css) are kept; the chip becomes an
+   eyebrow label so it reads as console status, not decoration. */
+.alert-card .demo-state {
+  font-size: var(--eyebrow-size);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+
+/* ==========================================================================
+   2. Emergency — high-contrast command card
+   --------------------------------------------------------------------------
+   .emg-cmd is added alongside .panel on the Emergency section. It is always
+   dark: the SOS action must be unmistakable in any theme. Everything inside
+   is re-toned for the dark surface; tap targets stay at --tap or above. */
+.emg-cmd {
+  background: var(--emg-panel);
+  color: var(--emg-text);
+  border: 1px solid #000;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow);
+}
+.emg-cmd h2, .emg-cmd .emg-h3 { color: var(--emg-text); }
+.emg-cmd .sub { color: var(--emg-sub); }
+.emg-cmd .emg-head { color: var(--emg-text); }
+
+/* Eyebrow above the command action — console voice, not a slogan. */
+.emg-eyebrow {
+  margin: 16px 0 0;
+  font-family: var(--sans);
+  font-size: var(--eyebrow-size);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--emg-sub);
+}
+
+/* ------------------------------------------------------------- SOS button --
+   The one action on this page. Stays on .btn.danger-solid (severity-semantic
+   red) — this file only scales it up and keeps it unmistakable. */
+.emg-cmd .emg-sos {
+  min-height: 96px;              /* ≥ 48px tap target, arm's-length size */
+  font-family: var(--sans);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+  border-radius: var(--r-lg);
+  border: 2px solid #fff;        /* white ring: unmistakable on the dark panel */
+  box-shadow: var(--shadow-md);
+  transition: filter var(--dur) var(--ease), transform var(--dur) var(--ease),
+              box-shadow var(--dur-lg) var(--ease);
+}
+.emg-cmd .emg-sos:hover { filter: brightness(1.1); }
+.emg-cmd .emg-sos:active { transform: translateY(1px); }
+.emg-cmd .emg-sos:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.emg-cmd .emg-sos svg { width: 48px; height: 48px; }
+
+/* ------------------------------------------- dark-surface control tones -- */
+.emg-cmd .pick-tile {
+  background: var(--emg-tile-2);
+  border-color: var(--emg-line);
+  color: var(--emg-text);
+}
+.emg-cmd .pick-tile:hover { border-color: var(--emg-sub); color: var(--emg-text); }
+.emg-cmd .pick-tile[aria-pressed='true'] {
+  background: #1e2c46; border-color: var(--emg-sub); color: #fff;
+}
+/* Danger/safe tiles only colour while selected — same rule as light mode,
+   just re-toned so severity semantics survive on the dark surface. */
+.emg-cmd .pick-tile[aria-pressed='true'].pick-danger {
+  background: var(--sev-red-bg); border-color: var(--sev-red); color: var(--sev-red);
+}
+.emg-cmd .pick-tile[aria-pressed='true'].pick-safe {
+  background: var(--sev-green-bg); border-color: var(--sev-green); color: var(--sev-green);
+}
+.emg-cmd input[type='text'] {
+  background: var(--emg-tile-2);
+  border-color: var(--emg-line);
+  color: var(--emg-text);
+}
+.emg-cmd input[type='text']::placeholder { color: var(--emg-sub); opacity: 1; }
+/* Ghost buttons on dark: light-theme .btn.ghost would go ink-on-ink here. */
+.emg-cmd .btn.ghost {
+  color: var(--emg-text);
+  border-color: var(--emg-line);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.emg-cmd .btn.ghost:hover { background: rgba(255, 255, 255, .07); border-color: var(--emg-sub); color: var(--emg-text); }
+
+.emg-cmd .emg-step { background: var(--emg-tile-2); border-color: var(--emg-line); }
+.emg-cmd .emg-step button { color: var(--emg-text); transition: color var(--dur) var(--ease); }
+.emg-cmd .emg-step button:hover { color: #fff; }
+.emg-cmd .emg-step .n { color: var(--emg-text); }
+.emg-cmd .emg-step-label { color: var(--emg-sub); }
+
+/* Mono details — note, hint tag, inbox — all re-toned white/muted. */
+.emg-cmd .emg-note { color: var(--emg-text); }
+.emg-cmd .tag {
+  background: var(--emg-tile-2);
+  border-color: var(--emg-line);
+  color: var(--emg-sub);
+}
+.emg-cmd .emg-msg { background: var(--emg-tile-2); border-color: var(--emg-line); }
+.emg-cmd .emg-msg .word { color: var(--emg-text); }
+.emg-cmd .emg-msg .who, .emg-cmd .emg-msg .meta { color: var(--emg-sub); }
+.emg-cmd .emg-msg .chip {
+  background: transparent; border-color: var(--emg-line); color: var(--emg-text);
+}
+.emg-cmd .p2p-demo { background: var(--emg-panel-2); border-color: var(--emg-line); }
+.emg-cmd .p2p-badge, .emg-cmd .p2p-state, .emg-cmd .p2p-arrow { color: var(--emg-sub); }
+.emg-cmd .p2p-name { color: var(--emg-text); }
+.emg-cmd .p2p-icon { background: var(--emg-tile-2); border-color: var(--emg-line); color: var(--emg-text); }
+.emg-cmd .p2p-chips .chip { color: var(--emg-text); border-color: var(--emg-line); }
+
+/* ==========================================================================
+   3. Mobile <720px — stepper stays legible, SOS stays huge
+   ========================================================================== */
+@media (max-width: 719px) {
+  .alert-card { padding: 14px 14px 12px; }
+  .lc-steps { gap: 2px; margin-bottom: 10px; padding-bottom: 10px; }
+  .lc-step { gap: 5px; }
+  .lc-step + .lc-step::before { flex-basis: 6px; }
+  .lc-name { font-size: .62rem; letter-spacing: .05em; }
+  .emg-cmd .emg-sos { min-height: 88px; font-size: 1.35rem; }
+  .emg-cmd .emg-sos svg { width: 44px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alert-card, .lc-dot, .emg-cmd .emg-sos, .emg-cmd .btn.ghost, .emg-cmd .emg-step button {
+    transition: none;
+  }
+}
+
+/* ============ Calm Command: notif-advisory (from /tmp/redesign-notif-advisory.css) ============ */
+/* SAARTHI "Calm Command" redesign — Notification Center + Advisory pages.
+   Proposed styles for: src/components/NotificationCenter.jsx,
+   src/components/ProfileAdvice.jsx, src/components/Advisor.jsx.
+   LOAD AFTER components/Round2.css so these rules win on conflicts.
+   Uses only existing design tokens (styles.css). No --sev-* redefinition;
+   severity colors appear nowhere decorative here — severity chips keep the
+   global .sev styling. Works light + dark via var(); mobile <720px at end. */
+
+/* ============================================================
+   1. Notification Center — timeline
+   ============================================================ */
+
+/* A flat list becomes a quiet ops log: groups separated by eyebrows,
+   one hairline rail, one dot per item. */
+.ntf-list.ntf-timeline { display: grid; gap: 0; }
+
+.ntf-group { position: relative; padding: 0 0 0 40px; margin: 0; }
+.ntf-group + .ntf-group { margin-top: 4px; }
+
+/* the rail — 1px, --line, runs the full height of each day's group */
+.ntf-group::before {
+  content: ""; position: absolute; left: 20px; top: 34px; bottom: 14px;
+  width: 1px; background: var(--line);
+}
+
+/* group header: a true eyebrow (global .eyebrow), sits on the rail line */
+.ntf-group-head { margin: 18px 0 10px; }
+.ntf-group:first-child .ntf-group-head { margin-top: 6px; }
+
+/* items: neutral surface; the rail dot replaces the floating icon chip */
+.ntf-timeline .ntf-row {
+  position: relative; display: block;
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--bg-2); padding: 12px 14px; margin: 0 0 10px;
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+.ntf-timeline .ntf-row:hover {
+  box-shadow: var(--shadow-sm); transform: translateY(-1px);
+}
+/* no opacity dimming for read items — calm, not faded-out */
+.ntf-timeline .ntf-row.is-read { background: var(--bg); }
+
+/* the dot: kind icon sitting ON the rail (group padding 40px, rail at 20px) */
+.ntf-timeline .ntf-dot {
+  position: absolute; left: -37px; top: 13px;  /* rail x(20) - group pad(40) - half-dot(17) */
+  width: 34px; height: 34px; border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid var(--line);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+/* severity-tinted dots only where the data carries a real verdict */
+.ntf-timeline .ntf-row.sev-warning .ntf-dot,
+.ntf-timeline .ntf-row.sev-orange .ntf-dot,
+.ntf-timeline .ntf-row.sev-red .ntf-dot { background: var(--sev-orange-bg); color: var(--sev-orange); }
+.ntf-timeline .ntf-row.sev-green .ntf-dot { background: var(--sev-green-bg); color: var(--sev-green); }
+
+/* unread: accent-filled rail dot + slightly elevated surface */
+.ntf-timeline .ntf-row.is-unread {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.ntf-timeline .ntf-row.is-unread .ntf-dot {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+}
+
+/* body layout inside the row (dot is now out of flow) */
+.ntf-timeline .ntf-body { min-width: 0; }
+.ntf-timeline .ntf-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ntf-timeline .ntf-head b { font-weight: 650; letter-spacing: normal; }
+.ntf-timeline .ntf-unread {
+  width: 8px; height: 8px; border-radius: var(--r-full);
+  background: var(--accent); flex: 0 0 auto;
+}
+/* timestamps: tabular numerals, mono, quiet */
+.ntf-timeline .ntf-when {
+  margin-left: auto; font-variant-numeric: tabular-nums;
+  white-space: nowrap; color: var(--ink-3); font-size: .8rem;
+}
+.ntf-timeline .ntf-text { margin-top: 4px; line-height: 1.5; color: var(--ink); }
+.ntf-timeline .ntf-meta {
+  display: flex; gap: 10px; margin-top: 6px; align-items: center; flex-wrap: wrap;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  color: var(--ink-3); font-size: .8rem;
+}
+.ntf-timeline .ntf-actions {
+  display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+}
+.ntf-timeline .ntf-actions .btn {
+  min-height: var(--tap); /* tap targets stay 48px */
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease);
+}
+
+/* ============================================================
+   2. Advisory — icon-led cards (ProfileAdvice + Advisor)
+   Shared atoms: .adv-tile, .adv-eyebrow use
+   ============================================================ */
+
+/* 48px icon tile: accent-soft wash, accent glyph, calm and consistent */
+.adv-tile {
+  flex: 0 0 auto; width: 48px; height: 48px; border-radius: var(--r-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+
+/* ---- ProfileAdvice: the lead advisory as one icon-led card ---- */
+.adv-lede { display: flex; gap: 14px; align-items: flex-start; }
+.adv-lede-text { min-width: 0; flex: 1 1 auto; }
+.adv-lede .eyebrow { margin-bottom: 4px; }
+.adv-lede-title { font-weight: 700; font-size: 1.05rem; line-height: 1.55; color: var(--ink); }
+.adv-lede-detail { margin-top: 6px; }
+
+/* ---- Advisor: persona cards ---- */
+.adv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+.adv-card {
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  background: var(--bg-2); overflow: hidden;
+  transition: box-shadow var(--dur-lg) var(--ease), border-color var(--dur-lg) var(--ease),
+              transform var(--dur-lg) var(--ease);
+}
+.adv-card:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+
+/* the active (own) profile: elevated, accent keyline, calm */
+.adv-card.is-mine {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+}
+
+.adv-head {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  min-height: var(--tap); padding: 12px 14px;
+  background: none; border: 0; cursor: pointer; color: var(--ink);
+  font: inherit; text-align: left; border-radius: var(--r-lg) var(--r-lg) 0 0;
+  transition: background var(--dur) var(--ease);
+}
+.adv-head:hover { background: var(--bg-3); }
+.adv-head:active .adv-tile { transform: scale(.96); }
+
+.adv-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.adv-head-text .eyebrow { margin: 0; }
+.adv-head-title { font-weight: 650; font-size: 1rem; letter-spacing: normal; color: var(--ink); }
+.adv-head .chip { flex: 0 0 auto; }
+
+.adv-body {
+  padding: 0 14px 14px 76px; /* align body under text, clear of the 48px tile */
+  animation: adv-in var(--dur-lg) var(--ease);
+}
+@keyframes adv-in { from { opacity: 0; transform: translateY(-2px); } }
+.adv-lead { font-weight: 700; line-height: 1.55; color: var(--ink); }
+.adv-body .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.adv-body .btn {
+  min-height: var(--tap);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease);
+}
+
+/* ============================================================
+   3. Mobile <720px
+   ============================================================ */
+@media (max-width: 719px) {
+  .ntf-group { padding-left: 34px; }
+  .ntf-group::before { left: 17px; }
+  .ntf-timeline .ntf-dot { left: -34px; top: 12px; } /* 17 - 34 - 17 */
+  .ntf-timeline .ntf-row { padding: 12px; }
+  .ntf-timeline .ntf-when { margin-left: 0; }
+  .adv-grid { grid-template-columns: 1fr; }
+  .adv-body { padding-left: 14px; } /* stack under tile on narrow screens */
+  .adv-lede { gap: 12px; }
+}
+
+/* ============ Calm Command: admin (from /tmp/redesign-admin.css) ============ */
+/* =====================================================================
+   SAARTHI — Admin pages "Calm Command" ops-console restyle
+   Scope: AdminPanel.jsx, AuthorityDashboard.jsx, CoverageDashboard.jsx
+   only. Load AFTER styles.css and components/Round2.css.
+   Hooks: add className="ops-panel" to the Card components in those three
+   files (see report for the exact snippets). No logic/data changes.
+   ===================================================================== */
+
+/* ---------- 1. Ops panel shell (theme-aware dark ink console) ---------- */
+.card.ops-panel {
+  --ops-bg: var(--ink);            /* light theme: dark ink console */
+  --ops-fg: var(--bg-2);           /* ink text reversed */
+  --ops-mute: #cbd5e1;             /* secondary text on dark */
+  --ops-line: rgba(148, 163, 184, .38);
+  --ops-field: rgba(255, 255, 255, .04);
+  --ops-chip: rgba(255, 255, 255, .07);
+  --ops-hi: rgba(255, 255, 255, .10);
+  background: var(--ops-bg);
+  color: var(--ops-fg);
+  border: 1px solid var(--ops-line);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+/* Dark theme (explicit choice): deep surface + border instead of ink,
+   since --ink is a light colour there. */
+:root[data-theme='dark'] .card.ops-panel {
+  --ops-bg: var(--bg-inset);
+  --ops-fg: var(--ink);
+  --ops-mute: var(--ink-3);
+  --ops-line: var(--line-2);
+  --ops-field: var(--bg-2);
+  --ops-chip: var(--bg-3);
+  --ops-hi: var(--bg-3);
+}
+/* Dark theme (OS auto): same deep-surface treatment. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) .card.ops-panel {
+    --ops-bg: var(--bg-inset);
+    --ops-fg: var(--ink);
+    --ops-mute: var(--ink-3);
+    --ops-line: var(--line-2);
+    --ops-field: var(--bg-2);
+    --ops-chip: var(--bg-3);
+    --ops-hi: var(--bg-3);
+  }
+}
+
+/* Console typography: titles and body in panel ink, secondary in mute. */
+.ops-panel .card-title { color: var(--ops-fg); }
+.ops-panel .sub { color: var(--ops-mute); }
+.ops-panel .eyebrow { color: var(--ops-mute); }
+.ops-panel .mono {
+  color: var(--ops-mute);
+  font-variant-numeric: tabular-nums;
+}
+.ops-panel p.mono { color: var(--ops-mute); }
+.ops-panel .spin { border-color: var(--ops-line); border-top-color: var(--accent); }
+
+/* Console eyebrow used on scenario keys and log labels. */
+.ops-panel .ops-eyebrow {
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ops-mute);
+}
+
+/* ---------- 2. Buttons on the console ---------- */
+/* Primary buttons invert against the dark panel. */
+.ops-panel .btn:not(.ghost) {
+  background: var(--ops-fg); border-color: var(--ops-fg); color: var(--ops-bg);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease), transform .12s var(--ease);
+}
+.ops-panel .btn:not(.ghost):hover {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+}
+.ops-panel .btn:not(.ghost):active { transform: translateY(1px); }
+/* Ghost buttons stay readable on dark, highlight on hover. */
+.ops-panel .btn.ghost {
+  background: transparent; color: var(--ops-fg); border-color: var(--ops-line);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.ops-panel .btn.ghost:hover { background: var(--ops-hi); border-color: var(--ops-mute); color: var(--ops-fg); }
+.ops-panel .btn.ghost:active { transform: translateY(1px); }
+.ops-panel .btn:disabled { opacity: .45; }
+
+/* ---------- 3. Scenario buttons → console keys ---------- */
+.ops-panel .demo-scenarios { display: grid; gap: 10px; }
+.ops-panel .pick-grid {
+  display: grid; gap: 8px; margin-top: 10px;
+  /* Uniform cells: keys, not tiles. */
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+}
+.ops-panel .pick-tile {
+  display: grid; gap: 6px; justify-items: start; align-content: center;
+  min-height: var(--tap); padding: 12px 14px; text-align: left;
+  background: var(--ops-field); color: var(--ops-fg);
+  border: 1px solid var(--ops-line); border-radius: var(--r-sm);
+  font-family: var(--mono); font-size: .875rem; font-weight: 400; line-height: 1.4;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    transform .12s var(--ease);
+}
+.ops-panel .pick-tile span:first-child { font-weight: 700; font-size: .95rem; }
+/* The district · severity hint becomes the key's mono detail line. */
+.ops-panel .pick-tile .mono {
+  color: var(--ops-mute); font-size: 11px; opacity: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ops-panel .pick-tile:hover { background: var(--ops-chip); border-color: var(--accent); color: var(--ops-fg); }
+.ops-panel .pick-tile:active { transform: translateY(1px); }
+.ops-panel .pick-tile:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.ops-panel .pick-tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.ops-panel .demo-scenarios .sub { color: var(--ops-mute); }
+
+/* ---------- 4. Alert rows → console rows ---------- */
+.ops-panel .demo-list { display: grid; gap: 8px; }
+.ops-panel .demo-alert-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px; align-items: center;
+  border: 1px solid var(--ops-line);
+  border-left: 4px solid var(--ops-line);   /* neutral until data-sev arrives */
+  border-radius: var(--r-sm); background: var(--ops-field);
+  padding: 10px 12px;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.ops-panel .demo-alert-row:hover { background: var(--ops-hi); }
+/* Severity edge — official --sev-* colours, never decorative. */
+.ops-panel .demo-alert-row[data-sev='GREEN']  { border-left-color: var(--sev-green); }
+.ops-panel .demo-alert-row[data-sev='YELLOW'] { border-left-color: var(--sev-yellow); }
+.ops-panel .demo-alert-row[data-sev='ORANGE'] { border-left-color: var(--sev-orange); }
+.ops-panel .demo-alert-row[data-sev='RED']    { border-left-color: var(--sev-red); }
+.ops-panel .demo-alert-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ops-panel .demo-alert-main b { font-weight: 650; color: var(--ops-fg); }
+.ops-panel .demo-alert-main .mono {
+  color: var(--ops-mute); font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ops-panel .demo-alert-actions {
+  grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap;
+}
+/* State chips keep the Round2 tint system; just tighten the mono rhythm. */
+.ops-panel .demo-state {
+  font-family: var(--mono); font-size: 11px; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* State-machine history log (previously unstyled): console trace lines. */
+.ops-panel .demo-history {
+  grid-column: 1 / -1;
+  border-top: 1px dashed var(--ops-line);
+  padding-top: 8px; margin-top: 2px;
+}
+.ops-panel .demo-history-label {
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ops-mute);
+  margin-bottom: 6px;
+}
+.ops-panel .demo-history-chain { display: grid; gap: 4px; }
+.ops-panel .demo-history-step {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: .78rem; color: var(--ops-mute);
+  font-variant-numeric: tabular-nums;
+}
+.ops-panel .demo-history-arrow { display: inline-flex; color: var(--ops-mute); opacity: .6; }
+.ops-panel .demo-history-action { color: var(--ops-mute); }
+
+/* ---------- 5. Create-alert form on the console ---------- */
+.ops-panel .demo-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ops-panel .demo-form label {
+  display: grid; gap: 4px;
+  font-family: var(--mono); font-size: .78rem; letter-spacing: .02em;
+  color: var(--ops-mute);
+}
+.ops-panel .demo-form .span2 { grid-column: span 2; }
+.ops-panel .demo-form input,
+.ops-panel .demo-form select,
+.ops-panel .demo-form textarea {
+  background: var(--ops-field); border: 1px solid var(--ops-line);
+  border-radius: var(--r-sm); padding: 9px 12px;
+  color: var(--ops-fg); font: inherit; min-height: var(--tap);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.ops-panel .demo-form input:hover,
+.ops-panel .demo-form select:hover,
+.ops-panel .demo-form textarea:hover { border-color: var(--ops-mute); }
+.ops-panel .demo-form input:focus-visible,
+.ops-panel .demo-form select:focus-visible,
+.ops-panel .demo-form textarea:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
+}
+.ops-panel .demo-form select option { color: initial; }
+.ops-panel .demo-form button { justify-self: start; align-self: end; }
+
+/* ---------- 6. Mode gate ---------- */
+.ops-panel .demo-mode-gate { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 8px 0; }
+.ops-panel .demo-mode-gate p { color: var(--ops-mute); max-width: 60ch; }
+.ops-panel .demo-mode-gate svg { color: var(--demo); }
+
+/* ---------- 7. Coverage ledgers (Authority + Coverage dashboards) ---------- */
+.ops-panel .cov-filter { margin-bottom: 12px; }
+.ops-panel .cov-filter label.mono,
+.ops-panel label.mono { color: var(--ops-mute); }
+.ops-panel .cov-filter select {
+  background: var(--ops-field); border: 1px solid var(--ops-line);
+  border-radius: var(--r-sm); color: var(--ops-fg); min-height: var(--tap);
+  font-variant-numeric: tabular-nums;
+}
+.ops-panel .cov-block {
+  border: 1px solid var(--ops-line); border-radius: var(--r-sm);
+  background: var(--ops-field); padding: 14px; margin-top: 10px;
+  transition: border-color var(--dur) var(--ease);
+}
+.ops-panel .cov-block.is-sim { border-style: dashed; }
+.ops-panel .cov-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ops-panel .cov-head b {
+  font-family: var(--mono); font-size: .85rem; font-weight: 700;
+  letter-spacing: .04em; color: var(--ops-fg);
+}
+.ops-panel .cov-bar {
+  display: flex; height: 14px; border-radius: var(--r-full); overflow: hidden;
+  background: var(--ops-chip); border: 1px solid var(--ops-line);
+}
+.ops-panel .cov-bar span { display: block; height: 100%; }
+/* Ledger stat cells: transparent cells, panel-ink numerals. */
+.ops-panel .cov-stats {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.ops-panel .cov-stats .stat {
+  background: transparent; border: 1px solid var(--ops-line);
+  border-radius: var(--r-sm); padding: 10px 12px;
+  transition: border-color var(--dur) var(--ease);
+}
+.ops-panel .cov-stats .stat:hover { border-color: var(--ops-mute); }
+.ops-panel .cov-stats .stat .k { font-size: 11px; color: var(--ops-mute); }
+.ops-panel .cov-stats .stat .v {
+  font-size: 20px; font-weight: 800; color: var(--ops-fg);
+  font-variant-numeric: tabular-nums;
+}
+/* Zone grid: dense cells, coverage tone via top edge (not severity decoration). */
+.ops-panel .zone-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.ops-panel .zone-cell {
+  border: 1px solid var(--ops-line); border-top: 3px solid var(--ops-line);
+  border-radius: var(--r-sm); background: var(--ops-field);
+  padding: 8px 4px; display: grid; gap: 1px; justify-items: center;
+  font-size: 11px; color: var(--ops-fg);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.ops-panel .zone-cell:hover { background: var(--ops-hi); }
+.ops-panel .zone-cell b {
+  font-family: var(--mono); font-size: .72rem; font-weight: 700;
+  color: var(--ops-mute); overflow-wrap: anywhere; text-align: center;
+}
+.ops-panel .zone-cell span:nth-child(2) {
+  font-family: var(--mono); font-weight: 700; font-size: .95rem;
+  font-variant-numeric: tabular-nums; color: var(--ops-fg);
+}
+.ops-panel .zone-cell .mono { font-size: 10px; color: var(--ops-mute); font-variant-numeric: tabular-nums; }
+.ops-panel .zone-cell.good { border-top-color: var(--sev-green); }
+.ops-panel .zone-cell.mid  { border-top-color: var(--sev-yellow); }
+.ops-panel .zone-cell.bad  { border-top-color: var(--sev-red); }
+/* Selected-alert evidence row on the console. */
+.ops-panel .evrow {
+  border-bottom: 1px solid var(--ops-line); padding: 9px 0; font-size: .85rem;
+}
+.ops-panel .evrow + .evrow { border-top: 0; }
+.ops-panel .evrow .k { color: var(--ops-mute); }
+/* The SIM label badge ships inline styles; re-tone them for the console. */
+.ops-panel .cov-sim-badge {
+  background: transparent !important; border: 1px dashed var(--ops-line) !important;
+  color: var(--ops-mute) !important;
+}
+
+/* ---------- 8. Narrow screens ---------- */
+@media (max-width: 720px) {
+  .ops-panel .pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ops-panel .demo-alert-row { grid-template-columns: minmax(0, 1fr); }
+  .ops-panel .demo-form { grid-template-columns: 1fr; }
+  .ops-panel .demo-form .span2 { grid-column: span 1; }
+  .ops-panel .demo-form button { justify-self: stretch; }
+  .ops-panel .cov-stats { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .ops-panel .demo-alert-actions .btn { flex: 1 1 auto; }
+}
+
+/* ---------- 9. Motion / print ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ops-panel .pick-tile, .ops-panel .demo-alert-row,
+  .ops-panel .cov-stats .stat, .ops-panel .zone-cell { transition: none; }
+}
+@media print {
+  .card.ops-panel { background: #fff; color: #000; box-shadow: none; }
+}
+
+/* ============ Calm Command: trust (from /tmp/redesign-trust.css) ============ */
+/* ==========================================================================
+   SAARTHI Trust pages — "Calm Command" redesign
+   Scopes: SourceStatus.jsx, SourceStrip.jsx, HowItWorks.jsx
+   --------------------------------------------------------------------------
+   INTEGRATION NOTE: load this file AFTER styles.css, ChatPanel.css and
+   Round2.css so these rules win ties at equal specificity. No repo CSS is
+   redefined here; only new selectors and additive status variants.
+   All colours come from base tokens — works in light + dark automatically.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. SourceStatus — status cards grid (.grid-3 + .src-cards in JSX)
+   -------------------------------------------------------------------------- */
+.src-cards { margin-top: 14px; align-items: stretch; }
+.src-cards > .ask-ev-say { grid-column: 1 / -1; }
+
+.src-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+  min-width: 0;
+  overflow: hidden;
+  transition: box-shadow var(--dur-lg) var(--ease), border-color var(--dur-lg) var(--ease);
+}
+.src-card:hover { box-shadow: var(--shadow-md); border-color: var(--line-2); }
+
+/* Status rail along the card's top edge — coloured only by the card's own
+   honest status string, never decorative. */
+.src-card::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: var(--line-2); opacity: .6;
+}
+.src-card:has(.prov.LIVE)::before { background: var(--live); opacity: 1; }
+.src-card:has(.prov.CACHED)::before,
+.src-card:has(.prov.DEMO)::before { background: var(--cached); opacity: 1; }
+.src-card:has(.prov.COMMUNITY)::before { background: var(--community); opacity: 1; }
+.src-card:has(.prov.OFFLINE)::before,
+.src-card:has(.prov.ERROR)::before { background: var(--off); opacity: 1; }
+
+.src-card-top { display: flex; align-items: center; gap: 10px; }
+.src-card-top > svg { color: var(--ink-3); flex: none; }
+.src-card-top .eyebrow { margin: 0; } /* source name as eyebrow; reuses .eyebrow */
+
+.src-card-state { display: flex; align-items: center; gap: 10px; }
+
+.src-card .sub { margin-top: 0; font-size: .85rem; line-height: 1.5; }
+
+.src-card-meta {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  margin-top: auto; padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.src-card-stamp {
+  font-family: var(--mono); font-size: .78rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; letter-spacing: normal;
+}
+
+/* Additive status variants (base .prov / .dot untouched).
+   READY = "configured but not yet exercised" → honest neutral grey.
+   IDLE / STUB → neutral dashed. OFFLINE / ERROR → signal red. */
+.prov.READY { color: var(--ink-2); }
+.prov.idle, .prov.stub { color: var(--ink-3); border-style: dashed; }
+.prov.OFFLINE, .prov.ERROR, .prov.offline, .prov.error {
+  color: var(--off); border-color: var(--off); background: transparent;
+}
+.dot.READY, .dot.idle, .dot.stub { background: var(--unconf); }
+
+/* --------------------------------------------------------------------------
+   2. SourceStrip — CSS-only restyle (NO JSX changes; exact class names).
+   .src-item* / .src-keys are strip-only. The header selectors are scoped with
+   :has() so ChatPanel's own .ask-facts-head instances are untouched.
+   -------------------------------------------------------------------------- */
+.ask-facts-head:has(+ .src-list),
+.ask-facts-head:has(+ .ask-ev-say + .src-list),
+.ask-facts-head:has(+ .ask-ev-say + .src-keys) {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.ask-facts-head:has(+ .src-list) .icon,
+.ask-facts-head:has(+ .ask-ev-say + .src-list) .icon,
+.ask-facts-head:has(+ .ask-ev-say + .src-keys) .icon { color: var(--ink-3); }
+
+.src-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+.src-item {
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  min-height: var(--tap);
+  padding: 12px 14px 12px 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-sm);
+}
+/* Honesty rail: status colour on the row edge, keyed to the row's own
+   verbatim status chip. */
+.src-item::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+  background: var(--ink-3); opacity: .55;
+}
+.src-item:has(> .prov.LIVE)::before { background: var(--live); opacity: 1; }
+.src-item:has(> .prov.CACHED)::before,
+.src-item:has(> .prov.DEMO)::before { background: var(--cached); opacity: 1; }
+.src-item:has(> .prov.COMMUNITY)::before { background: var(--community); opacity: 1; }
+.src-item:has(> .prov.OFFLINE)::before,
+.src-item:has(> .prov.ERROR)::before { background: var(--off); opacity: 1; }
+.src-item:has(> .prov.ERROR) { border-color: var(--sev-red-bd); background: var(--sev-red-bg); }
+
+.src-item .icon.ask-fact-ico { color: var(--ink-3); }
+.src-item-name {
+  font-family: var(--mono); font-size: .875rem; font-weight: 650;
+  color: var(--ink); letter-spacing: normal;
+}
+.src-item .prov { margin-left: auto; } /* chip + stamp hug the right edge */
+.src-item-stamp {
+  font-family: var(--mono); font-size: .78rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.src-item-detail {
+  flex: 1 1 100%;
+  font-size: .8rem; line-height: 1.45; color: var(--ink-3);
+}
+.src-item-hint { color: var(--off); font-weight: 600; }
+
+/* Key-gated sources */
+.src-keys { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.src-keys .ask-fact {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: var(--tap); padding: 6px 12px;
+  border: 1px dashed var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-3);
+  font-family: var(--mono); font-size: .8rem; color: var(--ink-2);
+}
+.src-keys .ask-fact-label { font-weight: 650; color: var(--ink); }
+.src-keys .ask-fact-src { color: var(--ink-3); }
+
+/* --------------------------------------------------------------------------
+   3. HowItWorks — numbered steps with connecting rail
+   JSX adds one decorative <span class="how-num" aria-hidden="true">01</span>
+   per row; everything else is CSS. Overrides Round2.css (load this later).
+   -------------------------------------------------------------------------- */
+.how-list {
+  position: relative;
+  display: grid; gap: 12px;
+  padding-left: 34px; margin-top: 12px;
+}
+/* Connecting rail */
+.how-list::before {
+  content: ""; position: absolute;
+  left: 11px; top: 20px; bottom: 20px; width: 2px;
+  background: var(--line); border-radius: 2px;
+}
+
+.how-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  column-gap: 14px; row-gap: 6px;
+  align-items: start;
+  padding: 18px 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur-lg) var(--ease), border-color var(--dur-lg) var(--ease);
+}
+.how-row:hover { box-shadow: var(--shadow-md); border-color: var(--line-2); }
+
+/* Rail node per step — status-coloured only when the row carries its own
+   honest LIVE/ERROR provenance; neutral otherwise. */
+.how-row::before {
+  content: ""; position: absolute;
+  left: -28px; top: 24px; width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--bg-2); border: 2px solid var(--line-2);
+  transition: border-color var(--dur-lg) var(--ease);
+}
+.how-row:has(> .prov.live)::before,
+.how-row:has(> .prov.LIVE)::before { border-color: var(--live); }
+.how-row:has(> .prov.error)::before,
+.how-row:has(> .prov.ERROR)::before { border-color: var(--off); }
+
+.how-num {
+  grid-row: 1 / span 2; align-self: start;
+  font-family: var(--mono); font-size: 2rem; line-height: 1; font-weight: 700;
+  letter-spacing: -.02em; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.how-row > svg { grid-row: 1 / span 2; align-self: start; margin-top: 8px; color: var(--ink-3); }
+
+.how-text { grid-column: 3; display: grid; gap: 4px; min-width: 0; }
+/* Eyebrow title; the plain-language description carries the visual weight. */
+.how-text > b {
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.how-text .sub { font-size: .88rem; line-height: 1.55; color: var(--ink-2); }
+
+/* Both badges stack in the right-hand column, under the text row. */
+.how-row > .prov { grid-column: 4; grid-row: 2; justify-self: start; }
+.how-row > .prov + .prov { grid-row: 3; }
+
+/* --------------------------------------------------------------------------
+   4. Small screens (<720px) and reduced motion
+   -------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  .how-list { padding-left: 26px; }
+  .how-list::before { left: 8px; }
+  .how-row { grid-template-columns: auto minmax(0, 1fr); padding: 16px; }
+  .how-row::before { left: -23px; }
+  .how-row > svg { display: none; } /* numeral + text carry the step */
+  .how-num { grid-row: auto; font-size: 1.6rem; }
+  .how-text { grid-column: 2; }
+  .how-row > .prov { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .src-card, .how-row, .how-row::before { transition: none; }
+}
+
+/* Alert details timeline: space the time / action / state columns. */
+.alert-timeline { display: flex; flex-direction: column; gap: 8px; padding-left: 0; list-style: none; }
+.alert-timeline-row { display: flex; align-items: center; gap: 10px; }
+.alert-timeline-row .mono { color: var(--ink-2); }

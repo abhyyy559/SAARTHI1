@@ -58,8 +58,9 @@ export default function HowItWorks() {
   return (
     <Card title="How it works" sub="Architecture jobs with honest status. No mock is ever labelled LIVE.">
       <div className="how-list">
-        {EXPLAINERS.map((e) => (
+        {EXPLAINERS.map((e, i) => (
           <div className="how-row" key={e.id}>
+            <span className="how-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
             <Icon name={e.icon} size={20} />
             <div className="how-text">
               <b>{e.title}</b>

@@ -67,7 +67,14 @@ export default function SourceStrip({ refreshKey }) {
                   {t(lang, 'srcUpdated')} {clock(s.updated_at)}
                 </span>
               )}
-              {s.detail && <span className="src-item-detail">{s.detail}</span>}
+              {s.detail && (
+                <span className="src-item-detail">
+                  {s.detail}
+                  {s.status === 'ERROR' && (
+                    <span className="src-item-hint"> — {t(lang, 'srcErrorHint')}</span>
+                  )}
+                </span>
+              )}
             </div>
           ))}
         </div>

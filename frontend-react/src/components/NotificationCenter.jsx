@@ -126,10 +126,26 @@ export default function NotificationCenter() {
 
   const unread = (items || []).filter((n) => !n.read).length;
 
+  // Timeline grouping: pure presentational derivation over the fetched items;
+  // no data-flow or ordering change.
+  const groups = [];
+  for (const n of items || []) {
+    const day = new Date(n.at).toDateString();
+    const last = groups[groups.length - 1];
+    if (last && last[0] === day) last[1].push(n);
+    else groups.push([day, [n]]);
+  }
+  const dayLabel = (iso) => {
+    const d = new Date(iso);
+    return d.toDateString() === new Date().toDateString()
+      ? t(lang, 'ntfToday')
+      : d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  };
+
   return (
+    // The view head (ViewHead in views.jsx) already carries the title and
+    // subtitle, so the card must not repeat them.
     <Card
-      title={t(lang, 'ntfTitle')}
-      sub={t(lang, 'ntfSub')}
       actions={unread > 0 && (
         <button
           type="button" className="btn ghost sm"
@@ -143,11 +159,16 @@ export default function NotificationCenter() {
       {!items ? <p className="mono">{t(lang, 'checking')}</p>
         : err ? <p className="sub">{t(lang, 'ntfLoadFailed')}</p>
           : items.length === 0 ? <p className="sub">{t(lang, 'ntfEmpty')}</p>
-            : <div className="ntf-list">
-              {items.map((n) => (
-                <NotificationRow
-                  key={n.id} n={n} onRead={markRead} onAck={ack} acked={!!acked[n.alert_id]}
-                />
+            : <div className="ntf-list ntf-timeline">
+              {groups.map(([day, list]) => (
+                <section className="ntf-group" key={day} aria-label={dayLabel(list[0].at)}>
+                  <h3 className="eyebrow ntf-group-head">{dayLabel(list[0].at)}</h3>
+                  {list.map((n) => (
+                    <NotificationRow
+                      key={n.id} n={n} onRead={markRead} onAck={ack} acked={!!acked[n.alert_id]}
+                    />
+                  ))}
+                </section>
               ))}
             </div>}
     </Card>

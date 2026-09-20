@@ -109,14 +109,14 @@ export default function AuthorityDashboard() {
 
   if (!demoLive) {
     return (
-      <Card title={t(lang, 'covTitle')} sub={note}>
+      <Card title={t(lang, 'covTitle')} sub={note} className="ops-panel">
         <p className="sub">{t(lang, 'covNeedsDemo')}</p>
       </Card>
   );
   }
 
   return (
-    <Card title={t(lang, 'covTitle')} sub={note}>
+    <Card title={t(lang, 'covTitle')} sub={note} className="ops-panel">
       <div className="row" style={{ gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <label className="mono">
           {t(lang, 'covPick')}

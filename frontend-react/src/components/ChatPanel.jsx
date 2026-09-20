@@ -153,7 +153,6 @@ export default function ChatPanel() {
   // Auto-speak is OFF by default - answers stay silent until the user enables
   // spoken answers with the toggle below.
   const [muted, setMuted] = useState(true);
-  const [showEv, setShowEv] = useState({});
   const logRef = useRef(null);
   const SUGGESTIONS = PERSONA_QUESTIONS[persona] || PERSONA_QUESTIONS.general;
   // Dictate-then-send mic: speech fills the input as editable text, nothing
@@ -333,18 +332,13 @@ export default function ChatPanel() {
                       );
                     })}
                   </div>
-                  <button
-                    type="button"
-                    className="btn ghost sm"
-                    onClick={() => setShowEv((s) => ({ ...s, [m.id]: !s[m.id] }))}
-                    aria-expanded={!!showEv[m.id]}
-                  >
-                    <Icon name="eye" size={14} />{t(lang, 'why')}
-                  </button>
-                </div>
-              )}
-              {showEv[m.id] && (
-                <div className="evbox ask-ev">
+                  <details className="ask-ev">
+                    <summary className="ask-ev-sum">
+                      <Icon name="eye" size={14} />
+                      <span>{t(lang, 'why')}</span>
+                      <Icon name="chevron" size={14} className="icon ask-ev-chev" />
+                    </summary>
+                    <div className="evbox ask-ev-body">
                   {m.evidence.map((e, k) => (
                     <div className="evrow" key={k}>
                       <span className="k">{t(lang, typeMeta(e.type).key)} · {e.source} · {e.type}</span>
@@ -393,6 +387,8 @@ export default function ChatPanel() {
                     <span>{t(lang, 'aiRoleValue')}</span>
                   </div>
                   {view && view.detail && <p className="ask-ev-say">{view.detail}</p>}
+                    </div>
+                  </details>
                 </div>
               )}
             </div>
@@ -409,7 +405,7 @@ export default function ChatPanel() {
       </div>
       <form className="chatrow" data-tour="chatbox" onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <button
-          className="btn ghost" type="button" onClick={dictation.listen}
+          className="btn ghost ask-mic" type="button" onClick={dictation.listen}
           disabled={dictation.busy || dictation.unavailable}
           aria-pressed={dictation.listening} aria-label={t(lang, 'listen')}
           title={dictation.unavailable ? t(lang, 'voiceOffline') : t(lang, 'micHint')}

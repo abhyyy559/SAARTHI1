@@ -182,23 +182,26 @@ export function TopBar() {
             {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
           </select>
         </label>
-        {/* Two toggles that change what the app can DO, not how it looks:
-            alerts reach you when you are not looking, and offline mode can be
-            demonstrated instead of only described. */}
-        <IconToggle
-          on={notifyOn}
-          onClick={toggleNotify}
-          icon="bell"
-          label={notifyOn ? t(lang, 'notifyOn') : t(lang, 'notifyOff')}
-        />
-        <IconToggle
-          on={simOffline}
-          onClick={() => setSimOffline((v) => !v)}
-          icon={simOffline ? 'offline' : 'cloud'}
-          label={t(lang, simOffline ? 'offlineOn' : 'offlineOff')}
-          tone="var(--off)"
-        />
-        <ThemeSwitch />
+        <fieldset className="top-group">
+          <legend>{t(lang, 'alertsGroup')}</legend>
+          <IconToggle
+            on={notifyOn}
+            onClick={toggleNotify}
+            icon="bell"
+            label={notifyOn ? t(lang, 'notifyOn') : t(lang, 'notifyOff')}
+          />
+          <IconToggle
+            on={simOffline}
+            onClick={() => setSimOffline((v) => !v)}
+            icon={simOffline ? 'offline' : 'cloud'}
+            label={t(lang, simOffline ? 'offlineOn' : 'offlineOff')}
+            tone="var(--off)"
+          />
+        </fieldset>
+        <fieldset className="top-group">
+          <legend>{t(lang, 'themeGroup')}</legend>
+          <ThemeSwitch />
+        </fieldset>
       </div>
     </header>
   );
@@ -253,7 +256,7 @@ export function StatusBanner() {
       )}
       {toast && (
         <div role="status" aria-live="polite" style={{
-          position: 'fixed', bottom: 76, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
           background: 'var(--bg-2)', color: 'var(--ink)', border: '1px solid var(--line)',
           borderRadius: 12, padding: '10px 16px', zIndex: 200, boxShadow: 'var(--shadow)',
           maxWidth: 'calc(100vw - 32px)', textAlign: 'center',

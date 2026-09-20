@@ -50,9 +50,12 @@ function AdviceCard({ ut, active, onPick }) {
   const isMine = persona === ut.id;
   return (
     <div className={`adv-card${isMine ? ' is-mine' : ''}`} data-user={ut.id}>
-      <button type="button" className="adv-head" onClick={() => onPick(ut.id)}>
-        <Icon name={ut.icon} size={18} />
-        <b>{t(lang, ut.key)}</b>
+      <button type="button" className="adv-head" onClick={() => onPick(ut.id)} aria-expanded={active}>
+        <span className="adv-tile" aria-hidden="true"><Icon name={ut.icon} size={22} /></span>
+        <span className="adv-head-text">
+          <span className="eyebrow">{t(lang, 'advEyebrow')}</span>
+          <b className="adv-head-title">{t(lang, ut.key)}</b>
+        </span>
         {isMine && <span className="chip">{t(lang, 'utYou')}</span>}
       </button>
       {active && (

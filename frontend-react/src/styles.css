@@ -38,9 +38,13 @@
 
   --shadow-sm: 0 1px 3px rgb(15 23 42 / 4%);
   --shadow: 0 4px 20px rgb(15 23 42 / 6%);
+  --shadow-md: 0 2px 6px rgb(15 23 42 / 6%), 0 10px 30px -8px rgb(15 23 42 / 12%);
   --shadow-press: none;
 
-  --r-xs: 6px; --r-sm: 8px; --r-md: 16px; --r-lg: 20px; --r-full: 999px;
+  --r-xs: 6px; --r-sm: 8px; --r-md: 16px; --r-lg: 20px; --r-xl: 24px; --r-full: 999px;
+
+  --title-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  --eyebrow-size: .75rem;
 
   --sans: system-ui, -apple-system, 'Segoe UI', 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Telugu', sans-serif;
   --display: var(--sans);
@@ -48,8 +52,9 @@
 
   --ease: ease-out;
   --dur: .15s;
+  --dur-lg: .2s;
   --tap: 48px;
-  --sidebar: 240px;
+  --sidebar: 220px;
   --maxw: 1120px;
   --map-bg: #e2e8f0;
 }
@@ -90,6 +95,7 @@
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
   --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 16px 34px -14px rgba(0, 0, 0, .7);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, .5), 0 18px 44px -12px rgba(0, 0, 0, .8);
   --shadow-press: 0 1px 1px rgba(0, 0, 0, .4);
   --map-bg: #1e293b;
 }
@@ -124,6 +130,7 @@
     --sev-red: #d8563f;    --sev-red-bg: #331b15;   --sev-red-bd: #5e2c21;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
     --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 16px 34px -14px rgba(0, 0, 0, .7);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, .5), 0 18px 44px -12px rgba(0, 0, 0, .8);
     --shadow-press: 0 1px 1px rgba(0, 0, 0, .4);
     --map-bg: #1e293b;
   }
@@ -249,24 +256,31 @@ button:disabled { cursor: not-allowed; }
   padding: 32px clamp(20px, 4vw, 48px) 64px;
   width: 100%; max-width: var(--maxw); margin-inline: auto;
   display: flex; flex-direction: column; gap: 24px;
+  animation: view-enter var(--dur-lg) var(--ease);
+}
+@keyframes view-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .view-head { display: flex; flex-direction: column; gap: 4px; }
-.view-title { font-size: clamp(1.5rem, 2.6vw, 2.05rem); font-weight: 600; letter-spacing: normal; }
+.view-title { font-size: var(--title-size); font-weight: 650; letter-spacing: -.015em; line-height: 1.08; }
 .view-sub { color: var(--ink-2); max-width: 72ch; }
 
 /* ---------------------------------------------------------- 8. cards */
 .card, .panel {
   background: var(--bg-2);
-  border: 1px solid var(--line-2);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-sm);
   padding: 18px 20px;
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 8px; }
 .card-head-text { min-width: 0; }
 .eyebrow {
-  font-family: var(--mono); font-size: .8rem; letter-spacing: normal;
-  text-transform: none; color: var(--accent); margin-bottom: 5px;
+  font-family: var(--mono); font-size: var(--eyebrow-size); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  margin-bottom: 6px;
 }
 .card-title { font-size: 1.32rem; font-weight: 600; letter-spacing: normal; }
 .sub { color: var(--ink-2); font-size: .9rem; max-width: 72ch; margin-top: 3px; }

@@ -194,10 +194,40 @@ async def _fetch_linked(client: "httpx.AsyncClient", link: str) -> list[dict[str
         return []
 
 
+# A feed that answers HTTP 200 with a login page / WAF block / proxy error body
+# is *failing*, not a quiet sky. The payload must be well-formed AND carry
+# CAP/RSS structure — otherwise it counts as a failed feed (never LIVE).
+_CAP_SHAPE_RE = re.compile(r"<\s*(alert|info|rss|feed|channel|item)\b|\"alerts\"\s*:", re.I)
+
+
+def _feed_has_cap_shape(payload: str) -> bool:
+    """True if the payload is at least plausibly a CAP/RSS/JSON feed document."""
+    text = (payload or "").strip()
+    if not text:
+        return False  # an empty 200 body is a misbehaving server, not a
+                      # valid empty CAP document — failing it keeps the feed
+                      # from being reported LIVE with "0 active alerts"
+    if text.startswith("{"):
+        try:
+            data = json.loads(text)
+        except Exception:
+            return False
+        return isinstance(data, dict) and isinstance(data.get("alerts"), list)
+    try:
+        ET.fromstring(text)
+    except ET.ParseError:
+        return False
+    return bool(_CAP_SHAPE_RE.search(text))
+
+
 async def _fetch_feed(client: "httpx.AsyncClient", url: str) -> list[dict[str, Any]]:
     """One feed: inline CAP first, then linked FetchXMLFile documents."""
     resp = await client.get(url)
     resp.raise_for_status()
+    if not _feed_has_cap_shape(resp.text):
+        # fetch_alerts counts this as a failed feed: garbage must never be
+        # reported LIVE ("0 active alerts").
+        raise ValueError(f"feed {url} answered with an unparseable payload (not CAP XML/JSON/RSS)")
     alerts = parse_cap(resp.text)
     if not alerts:
         links = _rss_item_links(resp.text)
@@ -260,7 +290,7 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
                 return cached, CACHED
         except Exception:
             pass
-        report("cap", ERROR, "all CAP feeds failing, no cache")
+        report("cap", ERROR, "all CAP feeds failing, no cache — check CAP_FEED_URL / network")
         raise AdapterUnavailable("CAP feeds unreachable and no cached alerts")
     report("cap", LIVE, "0 active alerts")
     return [], LIVE

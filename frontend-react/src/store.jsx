@@ -62,7 +62,7 @@ export function AppProvider({ children }) {
   const [view, setView] = useState(() => {
     try {
       const v = new URLSearchParams(window.location.search).get('view');
-      return ['home', 'ask', 'advisory', 'alerts', 'notifications', 'advisor', 'admin', 'trust'].includes(v) ? v : 'home';
+      return ['home', 'ask', 'advisory', 'alerts', 'notifications', 'advisor', 'admin', 'trust', 'details', 'sources'].includes(v) ? v : 'home';
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));

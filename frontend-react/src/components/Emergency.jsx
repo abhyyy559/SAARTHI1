@@ -120,13 +120,14 @@ export default function Emergency() {
   const step = (d) => setForm((f) => ({ ...f, people_count: Math.max(1, Number(f.people_count) + d) }));
 
   return (
-    <section className="panel">
+    <section className="panel emg-cmd">
       <div className="emg-head">
         <Icon name="shield" size={22} />
         <h2>{t(lang, 'emgTitle')}</h2>
       </div>
       <p className="sub">{t(lang, 'emgSub')}</p>
 
+      <p className="emg-eyebrow">{t(lang, 'emgCmdLabel')}</p>
       <button type="button" className="btn danger-solid emg-sos" onClick={() => send('NEED_HELP')}>
         <Icon name="sos" size={30} /> {t(lang, 'emgSos')}
       </button>

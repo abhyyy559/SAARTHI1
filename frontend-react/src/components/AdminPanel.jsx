@@ -79,7 +79,7 @@ function AlertRow({ alert, onAction, onRelay, onSeed, onNotify }) {
   const actions = NEXT_ACTIONS[alert.state] || [];
   const live = alert.state === 'ACTIVE' || alert.state === 'UPDATED' || alert.state === 'EXTENDED';
   return (
-    <div className="demo-alert-row">
+    <div className="demo-alert-row" data-sev={alert.severity}>
       <div className="demo-alert-main">
         <b>{alert.title}</b>
         <span className="mono">
@@ -202,7 +202,7 @@ export default function AdminPanel() {
 
   if (!demoLive) {
     return (
-      <Card title={t(lang, 'demoTitle')} sub={t(lang, 'demoSub')}>
+      <Card title={t(lang, 'demoTitle')} sub={t(lang, 'demoSub')} className="ops-panel">
         <div className="demo-mode-gate">
           <Icon name="info" size={22} />
           <p>{t(lang, 'demoNeedDemoMode')}</p>
@@ -222,13 +222,14 @@ export default function AdminPanel() {
 
   return (
     <>
-      <Card title={t(lang, 'demoTitle')} sub={t(lang, 'demoSub')}>
+      <Card title={t(lang, 'demoTitle')} sub={t(lang, 'demoSub')} className="ops-panel">
         <div className="demo-scenarios">
           <b className="eyebrow">{t(lang, 'demoScenarios')}</b>
           <div className="pick-grid">
             {SCENARIOS.map((s) => (
               <button key={s.id} type="button" className="pick-tile" disabled={!!busy}
-                onClick={() => scenario(s.id)}>
+                onClick={() => scenario(s.id)} aria-label={`${s.id} scenario: ${s.hint}`}>
+                <span className="ops-eyebrow" aria-hidden="true">{s.id}</span>
                 <span>{s.label}</span>
                 <span className="mono" style={{ fontSize: 11, opacity: 0.7 }}>{s.hint}</span>
               </button>
@@ -238,7 +239,7 @@ export default function AdminPanel() {
         </div>
       </Card>
 
-      <Card title={t(lang, 'demoActiveTitle')} sub={t(lang, 'demoActiveSub')}
+      <Card title={t(lang, 'demoActiveTitle')} sub={t(lang, 'demoActiveSub')} className="ops-panel"
         actions={<button type="button" className="btn ghost sm" onClick={reset}>{t(lang, 'demoReset')}</button>}>
         {!alerts ? <p className="mono">{t(lang, 'checking')}</p>
           : alerts.length === 0 ? <p className="sub">{t(lang, 'demoEmpty')}</p>
@@ -250,7 +251,7 @@ export default function AdminPanel() {
             </div>}
       </Card>
 
-      <Card title={t(lang, 'demoCreateTitle')} sub={t(lang, 'demoCreateSub')}>
+      <Card title={t(lang, 'demoCreateTitle')} sub={t(lang, 'demoCreateSub')} className="ops-panel">
         <form onSubmit={create} className="demo-form">
           <label>{t(lang, 'demoFTitle')}
             <input value={form.title} required

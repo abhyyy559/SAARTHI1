@@ -3,6 +3,7 @@ import { api } from '../api';
 import { t, PERSONA_LABELS } from '../i18n';
 import { useApp } from '../store';
 import { Card } from './ui';
+import Icon from './icons';
 import { splitAdvisory } from '../format';
 
 export default function ProfileAdvice() {
@@ -19,17 +20,21 @@ export default function ProfileAdvice() {
   const current = response?.key === key ? response : null;
   // Lead sentence big; context ('Note: ...') hides behind a disclosure.
   const split = current && !current.error ? splitAdvisory(current.data.advisory) : null;
-  return <Card title={`${t(lang, 'adviceFor')} · ${PERSONA_LABELS[lang]?.[persona] || persona}`} sub={t(lang, 'adviceNote')}>
-    <div role="status">
-      {!current ? t(lang, 'checking')
-        : current.error ? t(lang, 'adviceFailed')
-        : <>
-            <div style={{ fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.55 }}>{split.lead}</div>
-            {/* Visible, not collapsed: this is the sentence that differs per
-                profile. Folding it away made "Guidance for you" identical for
-                every occupation. */}
-            {split.detail && <p className="sub" style={{ marginTop: 6 }}>{split.detail}</p>}
-          </>}
+  return <Card title={`${t(lang, 'adviceFor')} · ${PERSONA_LABELS[lang]?.[persona] || persona}`} sub={t(lang, 'adviceNote')} className="adv-lede-card">
+    <div role="status" className="adv-lede">
+      <span className="adv-tile" aria-hidden="true"><Icon name="shield" size={22} /></span>
+      <div className="adv-lede-text">
+        <div className="eyebrow">{t(lang, 'advEyebrow')}</div>
+        {!current ? t(lang, 'checking')
+          : current.error ? t(lang, 'adviceFailed')
+          : <>
+              <div className="adv-lede-title">{split.lead}</div>
+              {/* Visible, not collapsed: this is the sentence that differs per
+                  profile. Folding it away made "Guidance for you" identical for
+                  every occupation. */}
+              {split.detail && <p className="sub adv-lede-detail">{split.detail}</p>}
+            </>}
+      </div>
     </div>
     {current?.data?.caveat && <div className="sub" style={{ marginTop: 6 }}>{current.data.caveat}</div>}
     {current?.data && <div className="row">

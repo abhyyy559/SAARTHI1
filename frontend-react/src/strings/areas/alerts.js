@@ -20,6 +20,12 @@ export default {
     alertsRetry: 'Check again',
     alertsListen: 'Listen',
     alertsAsk: 'Ask',
+    // --- alert lifecycle rail (Calm Command redesign)
+    lcDetected: 'Detected',
+    lcIssued: 'Issued',
+    lcLive: 'Live',
+    lcResolved: 'Resolved',
+    emgCmdLabel: 'Emergency broadcast',
 
     // --- severity: ONE word per official code --------------------------
     sevRed: 'Danger',
@@ -32,6 +38,10 @@ export default {
     // --- empty state 1: service reached us, nothing is active ----------
     alertsNoneTitle: 'All clear here',
     alertsNoneBody: 'We checked. No warning for your district now.',
+
+    // --- details view: no demo alert in play ---------------------------
+    detailsNoneTitle: 'No alert selected',
+    detailsNoneBody: 'No demo alert is in play. Launch a scenario in the Demo control panel to see its full details here.',
 
     // --- empty state 2: service did NOT reach us. Never a green tick ---
     alertsCannotTitle: 'Cannot check now',
@@ -124,6 +134,11 @@ export default {
     alertsRetry: 'फिर जाँचें',
     alertsListen: 'सुनें',
     alertsAsk: 'पूछें',
+    lcDetected: 'पता चला',
+    lcIssued: 'जारी',
+    lcLive: 'सक्रिय',
+    lcResolved: 'समाप्त',
+    emgCmdLabel: 'आपातकालीन प्रसारण',
 
     sevRed: 'खतरा',
     sevOrange: 'सतर्क रहें',
@@ -134,6 +149,9 @@ export default {
 
     alertsNoneTitle: 'यहाँ सब ठीक है',
     alertsNoneBody: 'हमने जाँच लिया। आपके जिले में अभी कोई चेतावनी नहीं है।',
+
+    detailsNoneTitle: 'कोई चेतावनी चयनित नहीं',
+    detailsNoneBody: 'अभी कोई डेमो चेतावनी सक्रिय नहीं है। डेमो कंट्रोल पैनल में एक सीनारियो चलाएँ।',
 
     alertsCannotTitle: 'अभी जाँच नहीं हो सकी',
     alertsCannotBody: 'चेतावनी सेवा ने जवाब नहीं दिया। हम यह नहीं कह सकते कि सब ठीक है।',
@@ -221,6 +239,11 @@ export default {
     alertsRetry: 'మళ్లీ తనిఖీ చేయండి',
     alertsListen: 'వినండి',
     alertsAsk: 'అడగండి',
+    lcDetected: 'గుర్తించబడింది',
+    lcIssued: 'జారీ చేయబడింది',
+    lcLive: 'ప్రత్యక్షం',
+    lcResolved: 'పరిష్కరించబడింది',
+    emgCmdLabel: 'అత్యవసర ప్రసారం',
 
     sevRed: 'ప్రమాదం',
     sevOrange: 'అప్రమత్తంగా ఉండండి',
@@ -231,6 +254,9 @@ export default {
 
     alertsNoneTitle: 'ఇక్కడ అంతా సురక్షితం',
     alertsNoneBody: 'మేము తనిఖీ చేశాం. మీ జిల్లాకు ఇప్పుడు హెచ్చరిక లేదు.',
+
+    detailsNoneTitle: 'ఎలాంటి హెచ్చరిక ఎంపిక కాలేదు',
+    detailsNoneBody: 'ప్రస్తుతం డెమో హెచ్చరిక ఏదీ లేదు. డెమో కంట్రోల్ ప్యానెల్‌లో ఒక దృశ్యాన్ని ప్రారంభించండి.',
 
     alertsCannotTitle: 'ఇప్పుడు తనిఖీ చేయలేము',
     alertsCannotBody: 'హెచ్చరిక సేవ సమాధానం ఇవ్వలేదు. ఇది సురక్షితం అని చెప్పలేము.',

@@ -2,7 +2,7 @@ import { Component, Suspense } from 'react';
 import { AppProvider, useApp } from './store';
 import { t } from './i18n';
 import { Sidebar, TopBar, MobileNav, StatusBanner } from './components/Shell';
-import { HomeView, AskView, AlertsView, NotificationsView, AdvisorView, AdvisoryView, AdminView, TrustView } from './views';
+import { HomeView, AskView, AlertsView, NotificationsView, AdvisorView, AdvisoryView, AdminView, TrustView, DetailsView, SourcesView } from './views';
 import { Loading } from './components/ui';
 import InstallPrompt from './components/InstallPrompt';
 import OnboardingTour from './components/OnboardingTour';
@@ -19,6 +19,8 @@ const VIEWS = {
   advisory: AdvisoryView,
   admin: AdminView,
   trust: TrustView,
+  details: DetailsView,
+  sources: SourcesView,
 };
 
 /** One broken view must never take the console down - and never fake data. */

@@ -11,6 +11,12 @@ import { useApp } from '../store';
 import { Card } from './ui';
 import Icon from './icons';
 
+// "2026-09-17T22:20:18.426805+05:30" -> "22:20". Empty -> "".
+function clock(iso) {
+  const m = String(iso || '').match(/T(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : '';
+}
+
 const WANT = [
   { id: 'cap', label: 'SACHET CAP' },
   { id: 'open-meteo', label: 'Open-Meteo' },
@@ -38,28 +44,50 @@ export default function SourceStatus() {
     <Card title={t(lang, 'srcStatusTitle')} sub={t(lang, 'srcStatusSub')}>
       {!data && <div className="mono">{t(lang, 'srcProbing')}</div>}
       {data && (
-        <div className="src-list">
+        <div className="grid-3 src-cards">
           {WANT.map((w) => {
             const s = byId[w.id] || null;
             const status = s ? String(s.status || s.state || 'UNCONFIGURED') : 'UNCONFIGURED';
             return (
-              <div className="src-row" key={w.id} title={w.id}>
-                <Icon name="database" size={14} />
-                <b>{w.label}</b>
-                <span className={`prov ${status}`}>{status}</span>
-                {s && s.detail && <span className="sub">{String(s.detail)}</span>}
+              <div className="src-card" key={w.id} title={w.id}>
+                <div className="src-card-top">
+                  <Icon name="database" size={14} />
+                  <span className="eyebrow">{w.label}</span>
+                </div>
+                <div className="src-card-state">
+                  <span className={`dot ${status}`} aria-hidden="true" />
+                  <span className={`prov ${status}`}>{status}</span>
+                </div>
+                {s && s.detail && <span className="sub src-card-detail">{String(s.detail)}</span>}
+                <div className="src-card-meta">
+                  {s && s.updated_at && (
+                    <span className="src-card-stamp">{t(lang, 'srcUpdated')} {clock(s.updated_at)}</span>
+                  )}
+                  <span className="src-card-stamp">{w.id}</span>
+                </div>
               </div>
             );
           })}
           {sources
             .filter((s) => !WANT.some((w) => w.id === String(s.id || s.name || '').toLowerCase()))
             .map((s, i) => (
-              <div className="src-row" key={`extra-${i}`} title={String(s.id || s.name || '')}>
-                <Icon name="database" size={14} />
-                <b>{String(s.label || s.id || s.name || 'source')}</b>
-                <span className={`prov ${String(s.status || s.state || 'UNCONFIGURED')}`}>
-                  {String(s.status || s.state || 'UNCONFIGURED')}
-                </span>
+              <div className="src-card" key={`extra-${i}`} title={String(s.id || s.name || '')}>
+                <div className="src-card-top">
+                  <Icon name="database" size={14} />
+                  <span className="eyebrow">{String(s.label || s.id || s.name || 'source')}</span>
+                </div>
+                <div className="src-card-state">
+                  <span className={`dot ${String(s.status || s.state || 'UNCONFIGURED')}`} aria-hidden="true" />
+                  <span className={`prov ${String(s.status || s.state || 'UNCONFIGURED')}`}>
+                    {String(s.status || s.state || 'UNCONFIGURED')}
+                  </span>
+                </div>
+                <div className="src-card-meta">
+                  {s.updated_at && (
+                    <span className="src-card-stamp">{t(lang, 'srcUpdated')} {clock(s.updated_at)}</span>
+                  )}
+                  <span className="src-card-stamp">{String(s.id || s.name || '')}</span>
+                </div>
               </div>
             ))}
           {failed && <p className="ask-ev-say">{t(lang, 'srcFailed')}</p>}

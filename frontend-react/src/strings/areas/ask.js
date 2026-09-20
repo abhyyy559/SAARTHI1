@@ -32,6 +32,7 @@ export default {
     srcNone: 'No sources reported.',
     srcFailed: 'Source check failed - cannot confirm which are live.',
     srcUpdated: 'Updated',
+    srcErrorHint: 'check the feed URL / network connection, or switch the app to demo mode',
     micHint: 'Speak your question',
   },
   hi: {
@@ -61,6 +62,7 @@ export default {
     srcNone: 'कोई स्रोत नहीं मिला।',
     srcFailed: 'स्रोत जाँच विफल - कौन सक्रिय है, पुष्ट नहीं।',
     srcUpdated: 'अपडेट',
+    srcErrorHint: 'फ़ीड URL / नेटवर्क कनेक्शन जांचें, या ऐप को डेमो मोड में बदलें',
     micHint: 'अपना सवाल बोलें',
   },
   te: {
@@ -90,6 +92,7 @@ export default {
     srcNone: 'మూలాలు ఏవీ నివేదించబడలేదు.',
     srcFailed: 'మూలాల తనిఖీ విఫలమైంది - ఏవి ప్రత్యక్షమో ధృవీకరించలేము.',
     srcUpdated: 'నవీకరించబడింది',
+    srcErrorHint: 'ఫీడ్ URL / నెట్‌వర్క్ కనెక్షన్‌ను తనిఖీ చేయండి, లేదా యాప్‌ను డెమో మోడ్‌కు మార్చండి',
     micHint: 'మీ ప్రశ్న చెప్పండి',
   },
 };

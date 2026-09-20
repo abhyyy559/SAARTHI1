@@ -91,6 +91,16 @@ function AlertCard({ a, nowMs, nearby = false, onClick, children }) {
   const lifecycleState = String(a.lifecycle_state || a.state || 'UPCOMING').toUpperCase();
   const stateLabel = STATE_I18N_KEY[lifecycleState] ? t(lang, STATE_I18N_KEY[lifecycleState]) : lifecycleState;
   const stateKey = lifecycleState.toLowerCase().replace(/[^a-z]/g, '');
+  // Lifecycle rail: detected → issued → live → resolved. The backend state is
+  // only *presented* on this rail (index lookup into the existing stateKey);
+  // nothing is re-derived.
+  const LC_STEPS = [
+    { key: 'lcDetected', states: ['upcoming'] },
+    { key: 'lcIssued', states: ['prealert'] },
+    { key: 'lcLive', states: ['active', 'updated', 'extended'] },
+    { key: 'lcResolved', states: ['ended', 'cancelled'] },
+  ];
+  const lcIndex = Math.max(0, LC_STEPS.findIndex((s) => s.states.includes(stateKey)));
 
   return (
     <article
@@ -101,6 +111,14 @@ function AlertCard({ a, nowMs, nearby = false, onClick, children }) {
       onClick={onClick}
       style={onClick ? { cursor: 'pointer' } : undefined}
     >
+      <ol className="lc-steps" aria-hidden="true">
+        {LC_STEPS.map((s, i) => (
+          <li key={s.key} className={`lc-step${i === lcIndex ? ' is-now' : ''}${i < lcIndex ? ' is-done' : ''}`}>
+            <span className="lc-dot" />
+            <span className="lc-name">{t(lang, s.key)}</span>
+          </li>
+        ))}
+      </ol>
       <span className="alert-icon" data-sev={sev} aria-hidden><Icon name={icon} size={26} /></span>
       <div className="alert-body">
         <div className="alert-sevrow">

@@ -309,12 +309,6 @@ export default function HeroCard() {
           </div>
           <div className="wx-hero-hazard">
             <span>{hazardText}</span>
-            {countdown && countdown !== 'expired' && (
-              <span className="wx-count-chip"><Icon name="clock" size={13} /> {t(lang, 'expiresIn').replace('{t}', countdown)}</span>
-            )}
-            {countdown === 'expired' && (
-              <span className="wx-count-chip wx-expired"><Icon name="clock" size={13} /> {t(lang, 'verdictExpired')}</span>
-            )}
           </div>
 
           {/* How serious, without a word: a 5-step ladder filled to the official
@@ -360,6 +354,15 @@ export default function HeroCard() {
             farmer/driver/student/... and only the hidden line differed. */}
         {advSplit.detail && <p className="sub wx-action-detail">{advSplit.detail}</p>}
       </div>
+
+      {/* Expiry countdown as a dedicated strip — same value, same keys,
+          still inside the severity-tinted banner. */}
+      {countdown && (
+        <div className={`wx-count-strip${countdown === 'expired' ? ' is-expired' : ''}`} role="status">
+          <Icon name="clock" size={14} />
+          <span>{countdown === 'expired' ? t(lang, 'verdictExpired') : t(lang, 'expiresIn').replace('{t}', countdown)}</span>
+        </div>
+      )}
 
       {/* Provenance stays visible (product constraint). The weather numbers do
           not: they are the footnote, behind a tap, never the headline.
