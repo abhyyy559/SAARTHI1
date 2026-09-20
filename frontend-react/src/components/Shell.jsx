@@ -4,7 +4,7 @@
 // mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet.
 // Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
-import { NAV, t } from '../i18n';
+import { HIDDEN_VIEWS, NAV, t } from '../i18n';
 import { useApp, SOURCE_MODES } from '../store';
 import Icon from './icons';
 import InstallPrompt from './InstallPrompt';
@@ -100,7 +100,8 @@ function MoreSheet({ open, onClose }) {
         <div className="more-title">
           <span className="kicker">{t(lang, 'navSections')}</span>
         </div>
-        {MORE_ROWS.map((r) => (
+        {/* Team-only views (HIDDEN_VIEWS) stay out of the public More sheet. */}
+        {MORE_ROWS.filter((r) => !HIDDEN_VIEWS.includes(r.view)).map((r) => (
           <button key={r.view} type="button" className="more-row" onClick={() => go(r.view)}>
             <span className="rail-icon"><Icon name={r.icon} size={20} /></span>
             <span>{t(lang, r.labelKey)}</span>
@@ -171,7 +172,8 @@ export default function Shell({ children }) {
           </span>
         </div>
         <nav className="rail-nav">
-          {NAV.map((n) => (
+          {/* Team-only views (HIDDEN_VIEWS) never appear in the public nav. */}
+          {NAV.filter((n) => !HIDDEN_VIEWS.includes(n.id)).map((n) => (
             <button
               key={n.id}
               type="button"

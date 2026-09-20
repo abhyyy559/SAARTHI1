@@ -207,6 +207,15 @@ def check_demo_alerts() -> list[dict[str, Any]]:
         try:
             result = push_service.broadcast(payload, district=district)
         except Exception as exc:  # noqa: BLE001 - one bad broadcast must not stop the rest
+            # The push never went out: leave PENDING ledger rows for the known
+            # subscribers (queued, not yet confirmed) and let the next tick
+            # retry — `seen` stays unmarked on purpose. Never raises.
+            try:
+                targets = [s.get("endpoint") for s in push_service.subscriptions(district)
+                           if s.get("endpoint")]
+                delivery_service.record_pending(str(alert.get("id") or ""), targets)
+            except Exception:  # noqa: BLE001 - bookkeeping must not stop alerts
+                pass
             results.append({"district": district, "alert_id": alert.get("id"),
                             "error": f"{type(exc).__name__}: {exc}"})
             continue
@@ -271,24 +280,32 @@ def auto_advance_demo() -> list[dict[str, Any]]:
             ends = _parse(alert.get("ends_at"))
             pre = _parse(alert.get("pre_alert_at"))
             if state in ("UPCOMING", "PRE-ALERT") and ends and now >= ends:
-                alert, _err = demo_alert_store.apply_action(aid, "cancel")
-                if alert:
+                alert, err = demo_alert_store.apply_action(aid, "cancel")
+                if alert and not err:
                     taken.append({"alert_id": aid, "action": "cancel", "state": alert["state"]})
+                elif err:
+                    log.warning("demo auto-advance cancel failed for %s: %s", aid, err)
                 continue
             if state in ("UPCOMING", "PRE-ALERT") and starts and now >= starts:
-                alert, _err = demo_alert_store.apply_action(aid, "activate")
-                if alert:
+                alert, err = demo_alert_store.apply_action(aid, "activate")
+                if alert and not err:
                     taken.append({"alert_id": aid, "action": "activate", "state": alert["state"]})
+                elif err:
+                    log.warning("demo auto-advance activate failed for %s: %s", aid, err)
                 continue
             if pre and state == "UPCOMING" and now >= pre:
-                alert, _err = demo_alert_store.apply_action(aid, "pre-alert")
-                if alert:
+                alert, err = demo_alert_store.apply_action(aid, "pre-alert")
+                if alert and not err:
                     taken.append({"alert_id": aid, "action": "pre-alert", "state": alert["state"]})
+                elif err:
+                    log.warning("demo auto-advance pre-alert failed for %s: %s", aid, err)
                 continue
             if state in ("ACTIVE", "UPDATED", "EXTENDED") and ends and now >= ends:
-                alert, _err = demo_alert_store.apply_action(aid, "end")
-                if alert:
+                alert, err = demo_alert_store.apply_action(aid, "end")
+                if alert and not err:
                     taken.append({"alert_id": aid, "action": "end", "state": alert["state"]})
+                elif err:
+                    log.warning("demo auto-advance end failed for %s: %s", aid, err)
     except Exception as exc:  # noqa: BLE001 - the loop must survive anything
         log.warning("demo auto-advance failed: %s", exc)
     return taken

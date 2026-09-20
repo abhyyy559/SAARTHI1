@@ -109,9 +109,20 @@ def validate(answer: str, verified: dict, evidence_numbers: list[float], languag
             if not _negated(answer, m.start()):
                 mentioned.append(s)
                 break
-    escalated = [s for s in mentioned if _RANK.get(s, 0) > _RANK.get(official, 0)]
-    if escalated and official in SEVERITIES:
-        findings.append(f"severity-escalation: answer mentions {escalated}, official is {official}")
+    official_rank = _RANK.get(official)
+    if official_rank is None:
+        # The official severity is not on the standard scale (e.g. a verified
+        # warning whose feed value was unreadable, normalised to UNKNOWN): the
+        # model cannot know the level, so ANY standard severity it names is
+        # ungrounded — "RED" next to an unknown official severity is invented.
+        if mentioned:
+            findings.append(
+                f"invented-severity: answer mentions {mentioned} but official severity is {official!r}"
+            )
+    else:
+        escalated = [s for s in mentioned if _RANK.get(s, 0) > official_rank]
+        if escalated:
+            findings.append(f"severity-escalation: answer mentions {escalated}, official is {official}")
 
     for m in _PCT.finditer(answer):
         if float(m.group(1)) not in [float(n) for n in evidence_numbers]:

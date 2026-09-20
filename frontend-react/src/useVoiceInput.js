@@ -42,6 +42,27 @@ export function useVoiceInput(lang, onText) {
     tick.current = setInterval(() => setElapsed(Math.floor((Date.now() - t0) / 1000)), 500);
   }
 
+  // On-device browser speech recognition: used offline, when the browser has no
+  // MediaRecorder, and when the server reports no STT provider (browser
+  // fallback). Kept as a shared helper so the server-fallback path gets the
+  // same honest 'voiceFallback' note as the offline path.
+  function browserListen(active, offline) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setState('idle'); setNote(t(lang, offline ? 'voiceOffline' : 'homeNoMic')); return; }
+    const rec = new SR();
+    recorder.current = rec;
+    rec.lang = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
+    rec.onresult = (event) => {
+      if (!active()) return;
+      const text = event.results[0][0].transcript;
+      setHeard(text); onText(text);
+    };
+    rec.onerror = () => { clearInterval(tick.current); if (active()) setNote(t(lang, 'voiceFailed')); };
+    rec.onend = () => { clearInterval(tick.current); if (active()) setState('idle'); };
+    try { rec.start(); setState('recording'); startClock(); setNote(t(lang, 'voiceFallback')); }
+    catch { clearInterval(tick.current); setState('idle'); setNote(t(lang, 'homeNoMic')); }
+  }
+
   async function listen() {
     if (state === 'recording') { stop(); return; }
     if (state === 'processing' || state === 'permission') return;
@@ -51,20 +72,7 @@ export function useVoiceInput(lang, onText) {
     setState('permission');
     if (unavailable) { setState('idle'); setNote(t(lang, 'voiceOffline')); return; }
     if (!online || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { setState('idle'); setNote(t(lang, online ? 'homeNoMic' : 'voiceOffline')); return; }
-      const rec = new SR();
-      recorder.current = rec;
-      rec.lang = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }[lang];
-      rec.onresult = (event) => {
-        if (!active()) return;
-        const text = event.results[0][0].transcript;
-        setHeard(text); onText(text);
-      };
-      rec.onerror = () => { clearInterval(tick.current); if (active()) setNote(t(lang, 'voiceFailed')); };
-      rec.onend = () => { clearInterval(tick.current); if (active()) setState('idle'); };
-      try { rec.start(); setState('recording'); startClock(); setNote(t(lang, 'voiceFallback')); }
-      catch { clearInterval(tick.current); setState('idle'); setNote(t(lang, 'homeNoMic')); }
+      browserListen(active, !online);
       return;
     }
     try {
@@ -85,6 +93,11 @@ export function useVoiceInput(lang, onText) {
           const result = await api.transcribe(new Blob(chunks, { type: rec.mimeType || chunks[0]?.type || 'audio/webm' }), lang);
           if (!active()) return;
           if (result.text?.trim()) { setHeard(result.text); onText(result.text); }
+          else if (result.using_browser_speech) {
+            // Server has no STT provider configured — hand the already-captured
+            // intent to on-device browser recognition rather than dead-ending.
+            browserListen(active, false);
+          }
           else setNote(t(lang, result.using_browser_speech ? 'voiceFailed' : 'homeNoHear'));
         } catch { if (active()) setNote(t(lang, 'voiceFailed')); }
         finally { if (active()) setState('idle'); }

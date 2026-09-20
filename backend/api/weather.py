@@ -111,6 +111,16 @@ async def _live_forecast(lat: float, lon: float) -> tuple[dict, str]:
         cache.set(_key("forecast", lat, lon), data, TTLS["forecast"])
         return data, "LIVE"
     except AdapterUnavailable:
+        pass
+    # Abhiram's fallback rule: if one weather API fails, try another before
+    # giving up — OpenWeatherMap is the forecast backstop, mirroring the
+    # current-weather chain. imd mode never reaches this leg (guard above).
+    try:
+        fc, _ = await owm_adapter.get_forecast(lat, lon)
+        data = fc.model_dump(mode="json")
+        cache.set(_key("forecast", lat, lon), data, TTLS["forecast"])
+        return data, "LIVE"
+    except AdapterUnavailable:
         cached = cache.get(_key("forecast", lat, lon))
         if cached:
             return {**cached, "stale_note": "Showing last retrieved information; may be outdated."}, "CACHED"
@@ -138,13 +148,21 @@ async def current_wx(lat: float = 17.385, lon: float = 78.4867, district: Option
         prov = "DEMO"
     else:
         try:
-            data, prov = await _live_current(loc["latitude"], loc["longitude"])
-            # A second opinion is a non-official source; imd mode omits it
-            # rather than mix it into an official-only answer.
+            # LATENCY: the primary fetch and the OWM cross-check are independent
+            # network calls, so they run together — this saves the cross-check
+            # round trip before the response can render. Provenance semantics
+            # are unchanged: the cross-check still names its own source, and a
+            # failed primary fetch still returns the "unavailable" payload.
             if _official_only():
+                # A second opinion is a non-official source; imd mode omits it
+                # rather than mix it into an official-only answer.
+                data, prov = await _live_current(loc["latitude"], loc["longitude"])
                 cross, cross_prov = None, "UNCONFIGURED"
             else:
-                cross, cross_prov = await _cross_check(loc["latitude"], loc["longitude"])
+                (data, prov), (cross, cross_prov) = await asyncio.gather(
+                    _live_current(loc["latitude"], loc["longitude"]),
+                    _cross_check(loc["latitude"], loc["longitude"]),
+                )
             return {
                 "location": loc, "current": data, "provenance": prov,
                 "cross_check": {"data": cross, "provenance": cross_prov} if cross else None,

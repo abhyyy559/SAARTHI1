@@ -71,12 +71,11 @@ export default function LocationPrompt({ inline = false }) {
   if (inline) {
     return (
       <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap', maxWidth: '100%' }}>
-        {busy && <span role="status" className="mono" style={{ color: 'var(--signal)' }}>{t(lang, locStatus === 'requesting' ? 'locLocating' : 'locResolving')}</span>}
+        {busy && <span role="status" className="mono" style={{ color: 'var(--ink-soft)' }}>{t(lang, locStatus === 'requesting' ? 'locLocating' : 'locResolving')}</span>}
         {cta}
         <button
           type="button"
           className="btn btn-ghost sm"
-          style={{ color: 'var(--ink)', borderColor: 'var(--line-soft)' }}
           onClick={() => setManual((m) => !m)}
           aria-expanded={manual}
         >

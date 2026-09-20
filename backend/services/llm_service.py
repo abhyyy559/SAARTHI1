@@ -100,7 +100,60 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
     }
 
 
-def _template_answer(evidence: dict) -> str:
+# Template phrasing per language. The rule-based answer must respect the user's
+# language even when the LLM is disabled — a Hindi user must never receive an
+# English-only answer. English strings are unchanged from the original template.
+_TEMPLATE_PHRASES = {
+    "en": {
+        "active_warning": "There is an active official warning for {loc}: {severity} — {hazard}.",
+        "valid_until": "It is valid until {valid_until}.",
+        "unreachable": ("The official warning service for {loc} could not be reached, so we cannot "
+                        "confirm whether a warning is active. Please check IMD or local authorities directly."),
+        "no_warning": "No active severe weather warning was found for {loc}.",
+        "rain_yes": "Rain is possible tomorrow in {loc} according to the latest {src} forecast (expected rainfall: {rain} mm).",
+        "rain_no": "The {src} forecast shows no significant rainfall expected tomorrow.",
+        "rain_na": "Tomorrow's forecast rainfall information is not available from the current data.",
+        "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C.",
+        "risk": "WeatherGPT Risk Interpretation for you ({user_type}): {risk}.",
+        "risk_note": "This is our interpretation, not an IMD rating.",
+        "advisory_note": "For safety guidance, check the Advisory tab in the app.",
+    },
+    "hi": {
+        "active_warning": "{loc} के लिए सक्रिय आधिकारिक चेतावनी है: {severity} — {hazard}।",
+        "valid_until": "यह {valid_until} तक वैध है।",
+        "unreachable": ("{loc} की आधिकारिक चेतावनी सेवा से संपर्क नहीं हो सका, इसलिए हम पुष्टि "
+                        "नहीं कर सकते कि कोई चेतावनी सक्रिय है या नहीं। कृपया IMD या स्थानीय प्रशासन से सीधे जाँचें।"),
+        "no_warning": "{loc} के लिए कोई सक्रिय गंभीर मौसम चेतावनी नहीं मिली।",
+        "rain_yes": "ताज़ा {src} पूर्वानुमान के अनुसार कल {loc} में बारिश संभव है (अनुमानित वर्षा: {rain} मिमी)।",
+        "rain_no": "{src} पूर्वानुमान के अनुसार कल कोई खास बारिश की उम्मीद नहीं है।",
+        "rain_na": "कल की वर्षा की जानकारी वर्तमान आंकड़ों में उपलब्ध नहीं है।",
+        "temp": "कल का तापमान: {tmin}–{tmax}°C।",
+        "risk": "आपके लिए WeatherGPT जोखिम व्याख्या ({user_type}): {risk}।",
+        "risk_note": "यह हमारी व्याख्या है, IMD की रेटिंग नहीं।",
+        "advisory_note": "सुरक्षा सलाह के लिए ऐप में Advisory टैब देखें।",
+    },
+    "te": {
+        "active_warning": "{loc} కోసం క్రియాశీల అధికారిక హెచ్చరిక ఉంది: {severity} — {hazard}.",
+        "valid_until": "ఇది {valid_until} వరకు చెల్లుతుంది.",
+        "unreachable": ("{loc} యొక్క అధికారిక హెచ్చరిక సేవను చేరుకోలేకపోయాం, కాబట్టి హెచ్చరిక "
+                        "క్రియాశీలంగా ఉందో లేదో నిర్ధారించలేము. దయచేసి IMD లేదా స్థానిక అధికారులను నేరుగా సంప్రదించండి."),
+        "no_warning": "{loc} కోసం క్రియాశీల తీవ్ర వాతావరణ హెచ్చరిక ఏదీ కనిపించలేదు.",
+        "rain_yes": "తాజా {src} అంచనా ప్రకారం రేపు {loc}లో వర్షం పడే అవకాశం ఉంది (అంచనా వర్షపాతం: {rain} మిమీ).",
+        "rain_no": "{src} అంచనా ప్రకారం రేపు గణనీయమైన వర్షం అంచనా లేదు.",
+        "rain_na": "రేపటి వర్షపాత సమాచారం ప్రస్తుత డేటాలో అందుబాటులో లేదు.",
+        "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C.",
+        "risk": "మీ కోసం WeatherGPT ప్రమాద వివరణ ({user_type}): {risk}.",
+        "risk_note": "ఇది మా వివరణ, IMD రేటింగ్ కాదు.",
+        "advisory_note": "భద్రతా మార్గదర్శనం కోసం యాప్‌లోని Advisory ట్యాబ్ చూడండి.",
+    },
+}
+
+
+def _phrases(language: str) -> dict:
+    return _TEMPLATE_PHRASES.get(language, _TEMPLATE_PHRASES["en"])
+
+
+def _template_answer(evidence: dict, language: str = "en") -> str:
     """Rule-based grounded answer. Used when the LLM is disabled or unreachable."""
     verified = evidence.get("verified_warning", {})
     forecast = evidence.get("forecast", {})
@@ -118,6 +171,7 @@ def _template_answer(evidence: dict) -> str:
 
     lines = []
     warn = verified.get("verified", False)
+    P = _phrases(language)
     # Honesty: "we could not check" is a different statement from "there is no
     # warning". Saying "no warning was found" while the warning service is down
     # is a false all-clear — the one thing this product must never emit.
@@ -125,32 +179,29 @@ def _template_answer(evidence: dict) -> str:
 
     if warn:
         lines.append(
-            f"There is an active official warning for {loc}: {verified.get('severity')} — {verified.get('hazard')}."
+            P["active_warning"].format(loc=loc, severity=verified.get('severity'), hazard=verified.get('hazard'))
         )
         if verified.get("valid_until"):
-            lines.append(f"It is valid until {verified.get('valid_until')}.")
+            lines.append(P["valid_until"].format(valid_until=verified.get('valid_until')))
     elif service_unreachable:
-        lines.append(
-            f"The official warning service for {loc} could not be reached, so we cannot "
-            "confirm whether a warning is active. Please check IMD or local authorities directly."
-        )
+        lines.append(P["unreachable"].format(loc=loc))
     else:
-        lines.append(f"No active severe weather warning was found for {loc}.")
+        lines.append(P["no_warning"].format(loc=loc))
 
     if fc_rain is not None and fc_rain > 0:
-        lines.append(f"Rain is possible tomorrow in {loc} according to the latest {src} forecast (expected rainfall: {fc_rain} mm).")
+        lines.append(P["rain_yes"].format(loc=loc, src=src, rain=fc_rain))
     elif fc_rain == 0:
-        lines.append(f"The {src} forecast shows no significant rainfall expected tomorrow.")
+        lines.append(P["rain_no"].format(src=src))
     else:
-        lines.append("Tomorrow's forecast rainfall information is not available from the current data.")
+        lines.append(P["rain_na"])
 
     if fc_min is not None and fc_max is not None:
-        lines.append(f"Tomorrow's temperature range: {fc_min}–{fc_max}°C.")
+        lines.append(P["temp"].format(tmin=fc_min, tmax=fc_max))
 
-    lines.append(f"WeatherGPT Risk Interpretation for you ({user_type}): {risk}.")
-    lines.append("This is our interpretation, not an IMD rating.")
+    lines.append(P["risk"].format(user_type=user_type, risk=risk))
+    lines.append(P["risk_note"])
     # Facts only on the chat surface: no advice here — guidance lives in the Advisory tab.
-    lines.append("For safety guidance, check the Advisory tab in the app.")
+    lines.append(P["advisory_note"])
     return " ".join(lines)
 
 
@@ -169,7 +220,7 @@ class LLMService:
         rule-based template — the user still gets a grounded answer.
         """
         if not self.enabled:
-            return _template_answer(evidence), True
+            return _template_answer(evidence, language), True
 
         if not config.LLM_MODEL_KNOWN:
             # FAIL LOUD: a misconfigured model name used to degrade silently into the
@@ -212,9 +263,9 @@ class LLMService:
                 resp.raise_for_status()
                 content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
         except Exception:
-            return _template_answer(evidence), True
+            return _template_answer(evidence, language), True
 
         content = _THINK.sub("", content or "").strip()
         if not content:
-            return _template_answer(evidence), True
+            return _template_answer(evidence, language), True
         return content, False

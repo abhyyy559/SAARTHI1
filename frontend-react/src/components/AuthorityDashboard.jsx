@@ -21,11 +21,11 @@ function ZoneGrid({ zones }) {
   const cells = (zones || []).filter((z) => z.total > 0);
   if (cells.length === 0) return null;
   return (
-    <div className="zone-grid" role="table" aria-label="Coverage by zone">
+    <div className="zone-grid" role="list" aria-label="Coverage by zone">
       {cells.map((z) => {
         const tone = z.pct >= 80 ? 'good' : z.pct >= 50 ? 'mid' : 'bad';
         return (
-          <div key={z.zone} className={`zone-cell ${tone}`} role="cell"
+          <div key={z.zone} className={`zone-cell ${tone}`} role="listitem"
             title={`${z.reached}/${z.total} reached`}>
             <b>{z.zone}</b>
             <span>{z.pct}%</span>
@@ -49,10 +49,10 @@ function LedgerBlock({ title, data, simulated }) {
         {simulated && <span className="prov DEMO">{t(lang, 'covSimLabel')}</span>}
       </div>
       <div className="cov-bar" role="img"
-        aria-label={`${pct(data.reached)} reached`}>
+        aria-label={`${pct(data.reached)} reached · ${pct(data.PENDING || 0)} pending · ${pct(data.OFFLINE || 0)} offline · ${pct(data.UNREACHABLE || 0)} unreachable`}>
         <span style={{ width: pct(data.reached), background: 'var(--sev-green)' }} />
-        <span style={{ width: pct(data.PENDING || 0), background: 'var(--sev-yellow)' }} />
-        <span style={{ width: pct(data.OFFLINE || 0), background: '#f59e0b' }} />
+        <span style={{ width: pct(data.PENDING || 0), background: 'var(--sev-amber)' }} />
+        <span style={{ width: pct(data.OFFLINE || 0), background: 'var(--sev-unknown)' }} />
         <span style={{ width: pct(data.UNREACHABLE || 0), background: 'var(--sev-red)' }} />
       </div>
       <div className="cov-stats">

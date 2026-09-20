@@ -149,7 +149,7 @@ class IMDService:
         return WeatherWarning(
             source="IMD",
             hazard=w.get("type") or "Unknown",
-            severity=(w.get("severity") or "GREEN").upper(),
+            severity=(w.get("severity") or "UNKNOWN").upper(),
             district=raw.get("district") or district,
             message=w.get("message") or "",
             issued_at=issued_at,

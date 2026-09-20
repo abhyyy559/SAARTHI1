@@ -40,7 +40,7 @@ class WeatherForecast(BaseModel):
 class WeatherWarning(BaseModel):
     source: str = "IMD"
     hazard: str
-    severity: str  # GREEN|YELLOW|ORANGE|RED — never translated in storage
+    severity: str  # GREEN|YELLOW|ORANGE|RED, or UNKNOWN when the feed gave no readable grade — never translated in storage
     district: str
     message: str = ""
     issued_at: datetime

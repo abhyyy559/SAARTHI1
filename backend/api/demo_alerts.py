@@ -56,6 +56,15 @@ def _notify_alert(alert: dict) -> dict:
     try:
         result = push_service.broadcast(payload, district=district)
     except Exception as exc:  # noqa: BLE001 - a dead push must not kill the demo action
+        # The push never went out: leave PENDING ledger rows for the known
+        # subscribers so coverage stays honest, and let the watcher loop retry
+        # the (alert, state) notification — its `seen` key stays unmarked.
+        try:
+            targets = [s.get("endpoint") for s in push_service.subscriptions(district)
+                       if s.get("endpoint")]
+            delivery_service.record_pending(str(alert.get("id") or ""), targets)
+        except Exception:  # noqa: BLE001 - bookkeeping must not stop alerts
+            pass
         return {"error": f"{type(exc).__name__}: {exc}"}
     try:
         notification_service.log(
@@ -234,10 +243,11 @@ async def simulate_relay(payload: dict) -> dict:
     from_device = str(data.get("from_device") or "device-B")
     to_device = str(data.get("to_device") or "device-A")
     now = iso_now()
+    ledger_error = None
     try:
         delivery_service.record_relay(alert_id, to_device, from_device)
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001 - a ledger failure must not fake a successful relay
+        ledger_error = f"{type(exc).__name__}: {exc}"
     # P2P test #2: a relay writes a durable server notification so the
     # Notifications list shows it — honest SIMULATED labelling, the alert's
     # own authoritative severity, zero client invention.
@@ -259,14 +269,23 @@ async def simulate_relay(payload: dict) -> dict:
         {"node": "relay-a", "state": "p2p", "at": now, "detail": "device-to-device transfer, no internet"},
         {"node": "out", "state": "delivered", "at": now, "detail": f"{to_device} received the alert"},
     ]
-    return {
-        "status": "relayed",
+    # Engagement bookkeeping must never 500 a relay that already happened.
+    ledger = None
+    try:
+        ledger = delivery_service.record_event(alert_id, to_device, "opened")
+    except Exception as exc:  # noqa: BLE001
+        ledger_error = ledger_error or f"{type(exc).__name__}: {exc}"
+    response = {
+        "status": "relayed" if ledger_error is None else "relayed-with-ledger-error",
         "alert_id": alert_id,
         "transport": "P2P (simulated)",
         "trace": trace,
-        "ledger": delivery_service.record_event(alert_id, to_device, "opened"),
+        "ledger": ledger,
         "generated_at": now,
     }
+    if ledger_error:
+        response["ledger_error"] = ledger_error
+    return response
 
 
 @router.post("/coverage/seed")

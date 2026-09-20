@@ -101,6 +101,39 @@ def record_issue(alert_id: str, results: list[dict[str, Any]], *, simulated: boo
     return written
 
 
+def record_pending(alert_id: str, devices: list[str]) -> int:
+    """Mark devices PENDING when a broadcast failed before any per-device
+    result existed (queued, not yet confirmed).
+
+    This is the only path that writes a REAL (non-simulated) PENDING row: the
+    caller retries the broadcast later (the watcher loop leaves the alert
+    unmarked on broadcast failure), and the retry overwrites PENDING via
+    record_issue. A device that already has any reach/engagement record keeps
+    it — PENDING must never regress DELIVERED or P2P_RELAYED. Never raises.
+    """
+    if not alert_id:
+        return 0
+    doc = _load(str(alert_id))
+    written = 0
+    for device in devices or []:
+        device = str(device or "").strip()
+        if not device:
+            continue
+        existing = doc["devices"].get(device)
+        if existing is not None:
+            continue
+        doc["devices"][device] = {
+            "status": "PENDING", "reason": "broadcast failed; queued for retry",
+            "channel": "push", "at": iso_now(),
+            "opened_at": None, "acked_at": None,
+            "simulated": False, "zone": None,
+        }
+        written += 1
+    if written:
+        _save(str(alert_id), doc)
+    return written
+
+
 def record_event(alert_id: str, device: str, event: str) -> dict[str, Any] | None:
     """OPENED / ACKNOWLEDGED from a device. Creates a self-reported record if
     the push ledger has none (the device may have been notified via P2P).

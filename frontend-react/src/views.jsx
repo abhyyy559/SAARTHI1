@@ -18,9 +18,70 @@ import SourceStatus from './components/SourceStatus';
 import HowItWorks from './components/HowItWorks';
 import { useApp } from './store';
 import { t } from './i18n';
+import { useState } from 'react';
 import { Card } from './components/ui';
 import SourceStrip from './components/SourceStrip';
 import Icon from './components/icons';
+
+// Team-only gate for the admin console. This is a DEMO gate, not
+// authentication: it keeps the backstage controls out of the normal user's
+// path (?view=admin is no longer in any nav). The real protection is
+// server-side — demo/management endpoints are DEMO_MODE-gated in the API.
+// PIN override: VITE_ADMIN_PIN. Session-scoped: closing the tab re-locks.
+const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '26068';
+const ADMIN_OK_KEY = 'wgpt-admin-ok';
+
+function AdminGate({ children }) {
+  const { lang } = useApp();
+  const [ok, setOk] = useState(() => {
+    try { return sessionStorage.getItem(ADMIN_OK_KEY) === '1'; } catch { return false; }
+  });
+  const [pin, setPin] = useState('');
+  const [wrong, setWrong] = useState(false);
+  if (ok) return children;
+  const submit = (e) => {
+    e.preventDefault();
+    if (pin === ADMIN_PIN) {
+      try { sessionStorage.setItem(ADMIN_OK_KEY, '1'); } catch { /* private mode: unlock lasts this view only */ }
+      setOk(true);
+    } else {
+      setWrong(true);
+      setPin('');
+    }
+  };
+  return (
+    <Card>
+      <h2 style={{ marginTop: 0 }}>{t(lang, 'adminGateTitle')}</h2>
+      <p>{t(lang, 'adminGateBody')}</p>
+      <form onSubmit={submit}>
+        <label htmlFor="admin-pin" style={{ display: 'block', marginBottom: 8 }}>
+          {t(lang, 'adminGatePinLabel')}
+        </label>
+        <input
+          id="admin-pin"
+          type="password"
+          inputMode="numeric"
+          autoComplete="off"
+          value={pin}
+          onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 12)); setWrong(false); }}
+          style={{ fontSize: 18, padding: '10px 12px', minHeight: 44 }}
+          aria-invalid={wrong}
+          aria-describedby={wrong ? 'admin-pin-err' : undefined}
+        />
+        {wrong && (
+          <p id="admin-pin-err" role="alert" style={{ color: 'var(--sev-red)' }}>
+            {t(lang, 'adminGateWrong')}
+          </p>
+        )}
+        <div style={{ marginTop: 12 }}>
+          <button type="submit" className="btn" disabled={!pin}>
+            {t(lang, 'adminGateUnlock')}
+          </button>
+        </div>
+      </form>
+    </Card>
+  );
+}
 
 export function HomeView() {
   return (
@@ -85,12 +146,12 @@ export function AdvisoryView() {
 
 export function AdminView() {
   return (
-    <>
+    <AdminGate>
       <ViewHead titleKey="demoTitle" subKey="demoSub" />
       <AdminPanel />
       <AuthorityDashboard />
       <CoverageDashboard />
-    </>
+    </AdminGate>
   );
 }
 

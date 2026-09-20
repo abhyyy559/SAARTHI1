@@ -35,7 +35,9 @@ export default function ProfileAdvice() {
       <div role="status" aria-live="polite">
         {!current ? <p className="mono">{t(lang, 'checking')}</p>
           : current.error ? (
-            <div className="offline-panel" role="status">
+            // role="status" already wraps this block above — a second live
+            // region here would announce the offline body twice.
+            <div className="offline-panel">
               <div className="display">{t(lang, 'adviceOfflineTitle')}</div>
               <p className="sub">{t(lang, 'adviceOfflineBody')}</p>
               <div className="row">

@@ -103,6 +103,13 @@ def _llm_warning_view(verified_dict: dict, verdict: dict) -> dict:
 
 
 _RAIN_WORDS = ("rain", "barish", "वर्षा", "వర్షం", "बारिश")
+# Yes/no tokens per supported language — a rain answer is a rain answer whether
+# the reader asked in English, Hindi or Telugu. `\b` is not a safe token
+# boundary after Indic combining marks (हाँ ends in a non-word mark, so `\b`
+# fails before a following space); `(?!\w)` refuses a word-char continuation
+# and behaves like `\b` for the Latin tokens too.
+_YESNO_TOKENS = r"yes|no|हाँ|नहीं|అవును|కాదు|లేదు"
+_YESNO = rf"(?:{_YESNO_TOKENS})(?!\w)"
 # A yes/no that appears this early is the answer, not a mention of one.
 _RAIN_ANSWER_WINDOW = 220
 # ...but only when the yes/no is ABOUT rain, or when it OPENS the answer. A bare
@@ -111,12 +118,12 @@ _RAIN_ANSWER_WINDOW = 220
 # A leading yes/no ("No, it will stay dry tomorrow.") is an answer even when the
 # sentence does not repeat the word "rain".
 _RAIN_ANSWER_RE = re.compile(
-    r"\b(yes|no)\b[\s\S]{0,80}?(?:rain|barish|वर्षा|వర్షం|बारिश)"
-    r"|(?:rain|barish|वर्षा|వర్షం|बारिश)[\s\S]{0,80}?\b(yes|no)\b",
+    rf"\b{_YESNO}[\s\S]{{0,80}}?(?:rain|barish|वर्षा|వర్షం|बारिश)"
+    rf"|(?:rain|barish|वर्षा|వర్షం|बारिश)[\s\S]{{0,80}}?\b{_YESNO}",
     re.I,
 )
 _LEADING_MARKUP_RE = re.compile(r"^[\s#>*_`\-]+")
-_LEADING_YESNO_RE = re.compile(r"(yes|no)\b", re.I)
+_LEADING_YESNO_RE = re.compile(rf"^{_YESNO}", re.I)
 
 
 def _answer_already_given(answer: str) -> bool:
@@ -133,7 +140,16 @@ def _answer_already_given(answer: str) -> bool:
     return bool(_LEADING_YESNO_RE.match(_LEADING_MARKUP_RE.sub("", answer or "")))
 
 
-def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str) -> str:
+# Rain lead lines in the user's language — the guaranteed yes/no must obey the
+# same language contract as the rest of the answer.
+_RAIN_LEAD = {
+    "en": ("Yes — rain likely tomorrow ({rain} mm).", "No rain expected tomorrow."),
+    "hi": ("हाँ — कल बारिश की संभावना है ({rain} मिमी)।", "कल बारिश की उम्मीद नहीं है।"),
+    "te": ("అవును — రేపు వర్షం పడే అవకాశం ఉంది ({rain} మిమీ).", "రేపు వర్షం అంచనా లేదు."),
+}
+
+
+def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str, language: str = "en") -> str:
     """Guarantee a rain question opens with a plain yes/no, exactly once.
 
     The template answer already does this; the LLM may phrase it differently or
@@ -160,7 +176,8 @@ def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str) -> 
     fc_rain = (tomorrow or {}).get("rainfall")
     if fc_rain is None:
         return answer
-    line = f"Yes — rain likely tomorrow ({fc_rain} mm)." if fc_rain > 0 else "No rain expected tomorrow."
+    lead_yes, lead_no = _RAIN_LEAD.get(language, _RAIN_LEAD["en"])
+    line = lead_yes.format(rain=fc_rain) if fc_rain > 0 else lead_no
     if line in answer:
         return answer
     if _answer_already_given(answer):
@@ -224,34 +241,60 @@ async def _retrieve_demo(loc) -> tuple[dict, dict, dict, list, dict]:
     return current_dict, forecast_dict, verified_dict, ev, {"source_name": "IMD"}
 
 
-async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict, list, dict]:
-    prov_notes: dict = {}
+async def _fetch_current_safe(lat: float, lon: float) -> tuple[dict | None, str]:
+    """_live_current with the AdapterUnavailable contract, for gather()."""
     try:
-        current_dict, prov = await _live_current(lat, lon)
-        prov_notes["current"] = prov
+        return await _live_current(lat, lon)
     except AdapterUnavailable:
-        current_dict, prov_notes["current"] = None, "UNAVAILABLE"
-    try:
-        forecast_dict, prov = await _live_forecast(lat, lon)
-        prov_notes["forecast"] = prov
-    except AdapterUnavailable:
-        forecast_dict, prov_notes["forecast"] = None, "UNAVAILABLE"
+        return None, "UNAVAILABLE"
 
-    imd = IMDService(adapter="live")
-    warning, verified_dict = None, {"verified": False, "severity": "GREEN", "hazard": None, "source": "IMD"}
-    warn_call_ok = False
+
+async def _fetch_forecast_safe(lat: float, lon: float) -> tuple[dict | None, str]:
+    """_live_forecast with the AdapterUnavailable contract, for gather()."""
     try:
-        warning = await imd.get_district_warning(loc["district"])
+        return await _live_forecast(lat, lon)
+    except AdapterUnavailable:
+        return None, "UNAVAILABLE"
+
+
+async def _fetch_warning_safe(imd, district: str) -> tuple[object | None, dict, bool]:
+    """District warning fetch + validation. Returns (warning, verified_dict, ok).
+
+    On AdapterUnavailable the warning service is marked unavailable — identical
+    semantics to the old sequential code, just fetchable concurrently.
+    """
+    verified_dict = {"verified": False, "severity": "GREEN", "hazard": None, "source": "IMD"}
+    try:
+        warning = await imd.get_district_warning(district)
         # The service ANSWERED. "Nothing to report" and "we could not check" are
         # different facts and must never be conflated (see verdict_service).
-        warn_call_ok = True
-        v = ValidationService(imd).validate_warning(warning, loc["district"]) if warning else None
+        v = ValidationService(imd).validate_warning(warning, district) if warning else None
         if v:
             verified_dict = v.model_dump(mode="json")
+        return warning, verified_dict, True
     except AdapterUnavailable:
         # Honesty: mark the warning service state so no downstream layer
         # reports "no active warning" while we actually could not check.
         verified_dict["warning_service"] = "unavailable"
+        return None, verified_dict, False
+
+
+async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict, list, dict]:
+    # LATENCY: the four retrievals are independent network calls and run
+    # CONCURRENTLY. Sequentially they cost the sum of their latencies before
+    # the verdict can render — roughly halved on a healthy network, and the
+    # worst-case stall (all timeouts) is also roughly halved. Concurrency is
+    # about when we fetch, not what the caller gets: every tuple below carries
+    # the same provenance/failure contract the sequential code had.
+    imd = IMDService(adapter="live")
+    (current_dict, cur_prov), (forecast_dict, fc_prov), (warning, verified_dict, warn_call_ok), gathered = \
+        await asyncio.gather(
+            _fetch_current_safe(lat, lon),
+            _fetch_forecast_safe(lat, lon),
+            _fetch_warning_safe(imd, loc["district"]),
+            gather_alerts(lat=lat, lon=lon, district=loc["district"], state=loc.get("state") or ""),
+        )
+    prov_notes: dict = {"current": cur_prov, "forecast": fc_prov}
 
     warning_d = warning.model_dump(mode="json") if warning is not None else None
     # A warning for a different district is context, not this district's warning.
@@ -277,8 +320,6 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
     # This used to call cap_adapter directly and so missed the commercial chain
     # that api/weather.py merges in — meaning the Alerts page could show an alert
     # the chat verdict had never seen. Both now share one gatherer.
-    gathered = await gather_alerts(lat=lat, lon=lon, district=loc["district"],
-                                   state=loc.get("state") or "")
     cap_alerts = gathered["relevant"]
     nearby_alerts = gathered["nearby"]
     for a in cap_alerts:
@@ -358,7 +399,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
         # startup already shouted about it on stderr.
         model_error = str(exc)
-        answer, fallback = _template_answer(evidence), True
+        answer, fallback = _template_answer(evidence, req.language), True
 
     # Post-LLM response validation (§10, §43): the gate before delivery.
     from ..services.response_validator import validate as validate_answer
@@ -384,7 +425,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     # yes/no when the answer already gave one — the inline copy that used to live
     # here compared the exact line text instead, so "Yes — rain likely tomorrow
     # (22.0 mm)." was prepended straight above "**Yes**, it will rain tomorrow."
-    answer = _ensure_rain_lead(req.message, forecast_dict, answer)
+    answer = _ensure_rain_lead(req.message, forecast_dict, answer, req.language)
 
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
     # guidance lives in the separate Advisory surface (see ChatResponse.advisory).

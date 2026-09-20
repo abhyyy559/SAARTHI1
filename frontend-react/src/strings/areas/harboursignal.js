@@ -49,6 +49,13 @@ export default {
     adviceOfflineTitle: "Couldn't load guidance",
     adviceOfflineBody: 'The server is unreachable. Your role and district are saved — retry when you are back online, or ask a question (it will queue).',
     adviceRetry: 'Try again',
+    // Admin gate: team-only console. Demo gate, not authentication —
+    // the real protection is server-side (demo endpoints are DEMO_MODE-gated).
+    adminGateTitle: 'Team access only',
+    adminGateBody: 'This console drives the live demo. Enter the team PIN to continue.',
+    adminGatePinLabel: 'Team PIN',
+    adminGateUnlock: 'Unlock',
+    adminGateWrong: 'Wrong PIN — try again.',
   },
   hi: {
     roleNotSet: 'तय नहीं — अपनी भूमिका चुनें',
@@ -90,6 +97,11 @@ export default {
     adviceOfflineTitle: 'सलाह नहीं मिल सकी',
     adviceOfflineBody: 'सर्वर से संपर्क नहीं हुआ। आपकी भूमिका और जिला सहेजे हैं — ऑनलाइन आकर फिर कोशिश करें, या सवाल पूछें (वह कतार में रहेगा)।',
     adviceRetry: 'फिर कोशिश करें',
+    adminGateTitle: 'केवल टीम के लिए',
+    adminGateBody: 'यह कंसोल लाइव डेमो चलाता है। जारी रखने के लिए टीम पिन डालें।',
+    adminGatePinLabel: 'टीम पिन',
+    adminGateUnlock: 'खोलें',
+    adminGateWrong: 'गलत पिन — फिर से कोशिश करें।',
   },
   te: {
     roleNotSet: 'ఎంచుకోలేదు — మీ పాత్రను ఎంచుకోండి',
@@ -131,5 +143,10 @@ export default {
     adviceOfflineTitle: 'సూచనలు రాలేదు',
     adviceOfflineBody: 'సర్వర్‌ను చేరుకోలేకపోయాం. మీ పాత్ర, జిల్లా భద్రంగా ఉన్నాయి — ఆన్‌లైన్‌కు వచ్చాక మళ్లీ ప్రయత్నించండి, లేదా ప్రశ్న అడగండి (అది క్యూలో ఉంటుంది).',
     adviceRetry: 'మళ్లీ ప్రయత్నించండి',
+    adminGateTitle: 'టీమ్‌కు మాత్రమే',
+    adminGateBody: 'ఈ కన్సోల్ లైవ్ డెమోను నడుపుతుంది. కొనసాగడానికి టీమ్ పిన్ నమోదు చేయండి.',
+    adminGatePinLabel: 'టీమ్ పిన్',
+    adminGateUnlock: 'అన్‌లాక్',
+    adminGateWrong: 'తప్పు పిన్ — మళ్లీ ప్రయత్నించండి.',
   },
 };

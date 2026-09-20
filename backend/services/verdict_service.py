@@ -193,6 +193,31 @@ def build_verdict(
             "detail": f"official CAP alert ({cap_sev}) relevant to this location",
         }
 
+    # 2a. Official alerts matched this district and are still in force, but none
+    #     carries a readable severity (unreadable feed values are normalised to
+    #     UNKNOWN, never defaulted to a grade). An alert we can see but cannot
+    #     grade is not a calm: the district's level is unconfirmed. Without this
+    #     branch the code fell through to LOW below — a false all-clear built on
+    #     an alert sitting in the very same payload.
+    if active_cap and not cap_sev:
+        top = active_cap[0]
+        return {
+            "level": "UNKNOWN",
+            "basis": UNAVAILABLE,
+            "confirmed": False,
+            "severity": None,
+            "hazard": top.get("hazard") or top.get("event") or top.get("headline"),
+            "source": top.get("source") or "NDMA-Sachet-CAP",
+            "nearby_count": nearby_count,
+            # Additive flag, like 2b's stale_cap: names why this is UNKNOWN
+            # rather than a graded warning.
+            "unreadable_severity": True,
+            "detail": (
+                f"{len(active_cap)} official alert(s) relevant to this district but none "
+                "carries a readable severity — warning level unconfirmed"
+            ),
+        }
+
     # 2b. Alerts matched this district but every one has lapsed. We DID reach the
     #     feed, so this is not an outage — but a feed whose newest entry has
     #     closed its window cannot tell us whether a warning is in force now.

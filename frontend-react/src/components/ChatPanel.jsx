@@ -21,7 +21,7 @@ import { minutesSince } from '../format';
 import { useVoiceInput } from '../useVoiceInput';
 import Icon from './icons';
 import RichText from './RichText';
-import { SevStamp } from './ui';
+import { SevStamp, sevWord } from './ui';
 
 // Provenance is a fixed, machine-readable vocabulary. Never translate it, never
 // map one value onto another — styles.css colours each class.
@@ -378,7 +378,7 @@ export default function ChatPanel() {
                       <div className="evrow">
                         <span className="k">{t(lang, 'verdictTitle')}</span>
                         <span>
-                          <span className="sev-stamp" data-sev={view.level}>{view.level}</span>
+                          <span className="sev-stamp" data-sev={view.level}>{sevWord(lang, view.level)}</span>
                           {view.basis ? ` · ${view.basis}` : ''}
                         </span>
                       </div>
@@ -386,7 +386,7 @@ export default function ChatPanel() {
                     {view && view.severity && (
                       <div className="evrow">
                         <span className="k">{t(lang, 'verdictOfficial')}</span>
-                        <span className="sev-stamp" data-sev={view.severity}>{view.severity}</span>
+                        <span className="sev-stamp" data-sev={view.severity}>{sevWord(lang, view.severity)}</span>
                       </div>
                     )}
                     {view && view.nearby > 0 && (

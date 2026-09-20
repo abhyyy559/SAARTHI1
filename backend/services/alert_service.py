@@ -202,14 +202,20 @@ def _merge(bucket: dict[str, list[dict]], alert: dict, *, lat: float, lon: float
 
 async def _fetch_cap() -> tuple[list[dict], str]:
     """The official feed, or nothing. Never raises: a dead official feed is a
-    state to report, not an exception to propagate into a verdict."""
+    state to report, not an exception to propagate into a verdict.
+
+    The provenance distinguishes two different facts: UNCONFIGURED (no
+    CAP_FEED_URL — the feed was never set up) vs UNAVAILABLE (configured but
+    every URL failed). Reporting a failing feed as UNCONFIGURED would hide an
+    outage behind a setup label."""
     try:
         alerts, prov = await cap_adapter.fetch_alerts()
         return list(alerts or []), prov or ""
     except AdapterUnavailable:
-        return [], ""
+        configured = bool(getattr(config, "CAP_FEED_URLS", None) or config.CAP_FEED_URL)
+        return [], "UNAVAILABLE" if configured else "UNCONFIGURED"
     except Exception:  # noqa: BLE001 - a malformed feed must not take the verdict down
-        return [], ""
+        return [], "UNAVAILABLE"
 
 
 async def _fetch_chain(lat: float, lon: float, district: str) -> tuple[list[dict], str]:
@@ -298,14 +304,23 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
         )
 
     # Did any feed actually ANSWER? Both fetchers swallow their own failures:
-    # they return an empty list plus an empty provenance when the call raised,
-    # and a positive provenance label when the source answered (CAP: LIVE/CACHED).
+    # they return an empty list plus a negative provenance ("" / UNAVAILABLE /
+    # UNCONFIGURED) when the call raised, and a positive provenance label when
+    # the source answered (CAP: LIVE/CACHED). A negative label is NOT an answer:
+    # "we could not reach it" must never read as "reached it, nothing to report".
     # The commercial chain's only positive label is LIVE — it returns UNAVAILABLE
     # both when every provider failed and when a provider answered with no
     # alerts, so that label cannot support a calm and is not treated as an
     # answer. "It answered and had nothing" and "we could not reach it" are
     # different facts (see verdict_service); only the first may be a calm.
-    feeds_answered = bool(cap_prov) or chain_prov == LIVE
+    _NEGATIVE = ("", "UNAVAILABLE", "UNCONFIGURED")
+    feeds_answered = (cap_prov not in _NEGATIVE) or chain_prov == LIVE
+
+    # The overall provenance names where the shown alerts came from — or, when
+    # nothing is shown, why. A configured feed that failed is UNAVAILABLE, not
+    # UNCONFIGURED: the distinction tells the evidence panel "outage" vs "setup".
+    if cap_prov == "UNAVAILABLE":
+        provenance = "UNAVAILABLE"
 
     # 1. SACHET / CAP — the official feed, first and never suppressed.
     for a in cap_alerts:

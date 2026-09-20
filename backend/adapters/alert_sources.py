@@ -70,6 +70,26 @@ def _mk_alert(*, source: str, identifier: str, hazard: str, severity: str,
     }
 
 
+# An unreadable severity is NOT a moderate one: defaulting to YELLOW
+# manufactured MODERATE verdicts out of alerts the provider never graded.
+# UNKNOWN is ignored by the verdict's severity ranking (verdict_service)
+# instead of being graded for us.
+_INTUCH_SEVERITIES = ("RED", "ORANGE", "YELLOW", "GREEN")
+_WAPI_SEVERITIES = {"Moderate": "YELLOW", "Severe": "ORANGE", "Extreme": "RED",
+                    "Minor": "GREEN"}
+
+
+def _intouch_severity(value: object) -> str:
+    """Weather InTouch severity -> standard scale, UNKNOWN when unreadable."""
+    sev = str(value or "").upper()
+    return sev if sev in _INTUCH_SEVERITIES else "UNKNOWN"
+
+
+def _wapi_severity(value: object) -> str:
+    """WeatherAPI.com severity -> standard scale, UNKNOWN when unreadable."""
+    return _WAPI_SEVERITIES.get(str(value or "").strip().capitalize(), "UNKNOWN")
+
+
 # ------------------------------------------------------------------ InTouch
 async def _from_weatherintouch(lat: float, lon: float, district: str) -> list[dict[str, Any]]:
     """Official IMD CAP alerts via Weather InTouch's public MCP endpoint.
@@ -97,8 +117,7 @@ async def _from_weatherintouch(lat: float, lon: float, district: str) -> list[di
     data = json.loads(text) if text else {}
     alerts = []
     for a in data.get("alerts") or []:
-        sev = str(a.get("severity") or "").upper()
-        sev = sev if sev in ("RED", "ORANGE", "YELLOW", "GREEN") else "YELLOW"
+        sev = _intouch_severity(a.get("severity"))
         alerts.append(_mk_alert(
             source=SOURCE_BY_NAME["weatherintouch"],
             identifier=str(a.get("id") or a.get("identifier") or f"wit-{district}"),
@@ -126,9 +145,7 @@ async def _from_weatherapi(lat: float, lon: float, district: str) -> list[dict[s
         data = r.json()
     alerts = []
     for a in (data.get("alerts") or {}).get("alert") or []:
-        sev = str(a.get("severity") or "").strip().capitalize()
-        sev = {"Moderate": "YELLOW", "Severe": "ORANGE", "Extreme": "RED",
-               "Minor": "GREEN"}.get(sev, "YELLOW")
+        sev = _wapi_severity(a.get("severity"))
         alerts.append(_mk_alert(
             source=SOURCE_BY_NAME["weatherapi"],
             identifier=str(a.get("alertId") or a.get("headline") or "wapi"),
@@ -172,6 +189,8 @@ async def _from_gdacs(lat: float, lon: float, district: str) -> list[dict[str, A
             continue
         if dist_km > 350:
             continue  # major disaster nowhere near the user — not their alert
+        # ORANGE is the floor here, not an invention: the request above filters
+        # `alertlevel=Orange;Red`, so every returned event is at least Orange.
         sev = _GDACS_SEV.get(str(p.get("alertlevel") or ""), "ORANGE")
         name = str(p.get("eventname") or p.get("description") or "Disaster event")
         etype = str(p.get("eventtype") or "").strip().upper()
