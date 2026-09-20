@@ -264,9 +264,11 @@ export default function Home() {
       <StatusStrip />
       {!locReady && <LocationPrompt />}
       <HeroCard />
+      {/* The two-second promise: verdict first, then the primary actions, all
+          above the fold. Active alerts and the weather footnote follow. */}
+      <ActionTiles />
       <ActiveAlerts />
       <WeatherNow />
-      <ActionTiles />
       <RecentNotifications />
       <div className="h-quick card">
         <div className="card-head" style={{ marginBottom: 0 }}>

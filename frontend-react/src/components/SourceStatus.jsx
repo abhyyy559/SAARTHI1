@@ -39,9 +39,23 @@ export default function SourceStatus() {
 
   const sources = (data && data.sources) || [];
   const byId = Object.fromEntries(sources.map((s) => [String(s.id || s.name || '').toLowerCase(), s]));
+  const [tick, setTick] = useState(0);
+  const recheck = () => {
+    setData(null);
+    setFailed(false);
+    api.sourceStatus()
+      .then((d) => { setData(d); setFailed(false); })
+      .catch(() => { setData({ sources: [] }); setFailed(true); });
+    setTick((n) => n + 1);
+  };
 
   return (
-    <Card title={t(lang, 'srcStatusTitle')} sub={t(lang, 'srcStatusSub')}>
+    <Card title={t(lang, 'srcStatusTitle')} sub={t(lang, 'srcStatusSub')}
+      actions={(
+        <button type="button" className="btn ghost sm" onClick={recheck} disabled={!data}>
+          <Icon name="refresh" size={14} /> {t(lang, 'trustRecheck')}
+        </button>
+      )}>
       {!data && <div className="mono">{t(lang, 'srcProbing')}</div>}
       {data && (
         <div className="grid-3 src-cards">

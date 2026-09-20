@@ -720,3 +720,69 @@ table.grid tbody tr:last-child td { border-bottom: none; }
 @media (prefers-reduced-motion: reduce) {
   .mic-big[aria-pressed='true'] { animation: none; }
 }
+/* ------------------------------------------- 25. redesign: two-tier shell
+   The TopBar keeps four citizen controls; everything else lives one tap away
+   behind the More menu. The demo/data-source switch is discreet by design. */
+.top-more { position: relative; }
+.top-more-btn { min-width: 48px; min-height: 48px; justify-content: center; }
+.top-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 60;
+  width: min(320px, calc(100vw - 24px));
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--shadow); padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.top-menu .top-group {
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  padding: 8px 10px 10px; margin: 0;
+  display: flex; align-items: center; gap: 12px;
+}
+.top-menu .top-group legend { font-size: 11px; color: var(--ink-3); padding: 0 6px; }
+.top-menu-row {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 48px; width: 100%; text-align: left;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: inherit;
+  font: inherit; cursor: pointer; padding: 6px 8px;
+}
+button.top-menu-row:hover { background: var(--bg-3); }
+.top-menu-row select { margin-left: auto; max-width: 60%; }
+.top-demo { border-top: 1px dashed var(--line-2); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.top-demo-title { font-size: .85rem; }
+.top-demo .sub { margin: 0; }
+.top-demo .mode-switch { align-self: flex-start; }
+
+/* The banner's mode chip: information, not a switch. Tapping it opens the
+   Admin demo panel where the switch lives. */
+.banner-mode-chip {
+  display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  border: 0; background: transparent; color: inherit; font: inherit;
+  cursor: pointer; padding: 2px 0; text-align: left;
+}
+.banner-mode-chip b { font-weight: 700; }
+.banner-mode-chip:hover b { text-decoration: underline; }
+
+/* ------------------------------------------- 26. redesign: ask foregrounds
+   voice. The Hear-answers switch sits above the conversation — unmissable —
+   and the facts/guidance boundary is one honest link, not a fake classifier. */
+.ask-hear {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 48px; padding: 8px 14px; margin: 4px 0 10px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--bg-2); color: var(--ink-2); font: inherit; font-size: .9rem;
+  cursor: pointer;
+}
+.ask-hear.is-on { border-color: var(--accent); color: var(--accent); background: var(--bg-3); }
+.ask-hear-state { font-size: .75rem; color: var(--ink-3); }
+.ask-hear.is-on .ask-hear-state { color: var(--accent); }
+.linklike {
+  border: 0; background: none; padding: 0; color: var(--accent);
+  font: inherit; text-decoration: underline; cursor: pointer;
+  min-height: 44px;
+}
+
+/* Six mobile tabs (Trust joined the nav): keep every target >= 48px and stop
+   the labels crowding each other on narrow phones. */
+@media (max-width: 900px) {
+  .mobile-tab { min-height: 52px; font-size: .72rem; }
+  .topbar-title em { display: none; }
+}

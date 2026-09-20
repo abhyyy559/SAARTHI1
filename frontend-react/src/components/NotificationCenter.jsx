@@ -85,7 +85,7 @@ function NotificationRow({ n, onRead, onAck, acked }) {
 }
 
 export default function NotificationCenter() {
-  const { lang, loc, syncTick, device } = useApp();
+  const { lang, loc, syncTick, device, showToast } = useApp();
   const [items, setItems] = useState(null);
   const [err, setErr] = useState(false);
   const [tick, setTick] = useState(0);
@@ -103,25 +103,30 @@ export default function NotificationCenter() {
 
   const reload = () => setTick((n) => n + 1);
 
+  // FIX: the read state is a server claim — it only flips after the POST
+  // succeeds. A failed write leaves the row unread and says so, instead of
+  // the old finally() that marked it read on failure too.
   const markRead = (n) => {
     api.notificationsRead({ ids: [n.id], device })
-      .catch(() => {})
-      .finally(() => {
+      .then(() => {
         setItems((old) => (old || []).map((x) => (x.id === n.id ? { ...x, read: true } : x)));
         reload();
-      });
+      })
+      .catch(() => { showToast(t(lang, 'ntfActionFailed')); });
   };
 
+  // FIX: same honesty rule as markRead — the acknowledgement is only
+  // recorded locally after the server confirms it.
   const ack = (n) => {
     api.notificationsAck({ alert_id: n.alert_id, device })
-      .catch(() => {})
-      .finally(() => {
+      .then(() => {
         setAcked((old) => {
           const next = { ...old, [n.alert_id]: true };
           try { localStorage.setItem('wgpt.acked', JSON.stringify(next)); } catch { /* ignore */ }
           return next;
         });
-      });
+      })
+      .catch(() => { showToast(t(lang, 'ntfActionFailed')); });
   };
 
   const unread = (items || []).filter((n) => !n.read).length;
@@ -150,7 +155,8 @@ export default function NotificationCenter() {
         <button
           type="button" className="btn ghost sm"
           onClick={() => api.notificationsRead({ all: true, district: loc.district, device })
-            .catch(() => {}).then(reload)}
+            .then(reload)
+            .catch(() => { showToast(t(lang, 'ntfActionFailed')); })}
         >
           {t(lang, 'ntfReadAll')} ({unread})
         </button>

@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { t } from '../i18n';
-import { useApp } from '../store';
+import { useApp, SOURCE_MODES, modeLabel, modeNote } from '../store';
 import { Card } from './ui';
 import Icon from './icons';
 
@@ -222,6 +222,23 @@ export default function AdminPanel() {
 
   return (
     <>
+      {/* The data-source mode switch lives here (and, discreetly, behind the
+          More menu) — never in the citizen chrome. Rendered from SOURCE_MODES,
+          so no hardcoded pair can drift from the documented three. */}
+      <Card title={t(lang, 'demoModeTitle')} sub={t(lang, 'demoModeSub')} className="ops-panel">
+        <div className="mode-switch" role="group" aria-label={t(lang, 'demoModeTitle')}>
+          {SOURCE_MODES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              className={`mode-btn${sourceMode === m ? ' on' : ''}`}
+              aria-pressed={sourceMode === m}
+              onClick={() => setBackendMode(m)}
+            >{modeLabel(lang, m)}</button>
+          ))}
+        </div>
+        <p className="sub" style={{ marginTop: 8 }}>{modeNote(lang, sourceMode)}</p>
+      </Card>
       <Card title={t(lang, 'demoTitle')} sub={t(lang, 'demoSub')} className="ops-panel">
         <div className="demo-scenarios">
           <b className="eyebrow">{t(lang, 'demoScenarios')}</b>

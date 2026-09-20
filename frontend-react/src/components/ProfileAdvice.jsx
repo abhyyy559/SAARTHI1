@@ -38,7 +38,7 @@ export default function ProfileAdvice() {
     </div>
     {current?.data?.caveat && <div className="sub" style={{ marginTop: 6 }}>{current.data.caveat}</div>}
     {current?.data && <div className="row">
-      <button className="btn ghost" type="button" onClick={() => speak(current.data.advisory)}>{t(lang, 'replay')}</button>
+      <button className="btn ghost" type="button" onClick={() => speak(current.data.advisory)} aria-label={t(lang, 'alertsListen')}><Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}</button>
       <button className="btn ghost" type="button" onClick={() => { setPendingAsk(`Explain this advice for a ${persona} in ${loc.district}: ${current.data.advisory}`); setView('ask'); }}>{t(lang, 'homeAskAbout')}</button>
       <span className="sub">{current.data.provenance}</span>
     </div>}

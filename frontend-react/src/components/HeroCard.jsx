@@ -328,12 +328,23 @@ export default function HeroCard() {
               <Icon name="speaker" size={14} />
               <span>{t(lang, 'homeListen')}</span>
             </button>
-            {w && (
-              <button type="button" className="wx-speak-btn" onClick={() => askFromHome(`${t(lang, 'homeAskAbout')}: ${w.hazard} in ${loc.district}`)}>
-                <Icon name="chat" size={14} />
-                <span>{t(lang, 'homeAskAbout')}</span>
-              </button>
-            )}
+            {/* FIX: always rendered. With no active warning the button still
+                works — it opens Ask prefilled with the district instead of
+                vanishing, so the card never leaves the citizen with no next step. */}
+            <button
+              type="button"
+              className="wx-speak-btn"
+              onClick={() =>
+                askFromHome(
+                  w
+                    ? `${t(lang, 'homeAskAbout')}: ${w.hazard} in ${loc.district}`
+                    : `${t(lang, 'viewAsk')} — ${loc.district}`
+                )
+              }
+            >
+              <Icon name="chat" size={14} />
+              <span>{t(lang, 'homeAskAbout')}</span>
+            </button>
           </div>
         </div>
       </div>

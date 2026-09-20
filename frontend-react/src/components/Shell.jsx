@@ -1,5 +1,23 @@
 // App shell: persistent sidebar (desktop), bottom tab bar (mobile), top status bar.
 // Navigation is a real <nav> with aria-current - no scroll-wall of stacked panels.
+//
+// REDESIGN (Sep 2026)
+// -------------------
+// The old TopBar held EIGHT controls on one row: persona, district, GPS,
+// language, notification toggle, offline-sim toggle, theme switch and the
+// connection pill. On a 360px phone the citizen's chrome was the app. The new
+// shell is two-tier:
+//
+//   Tier 1 (always visible): brand, connection pill, notification toggle,
+//   language, and a "More" overflow menu. Four controls, all thumb-sized.
+//   Tier 2 (inside More): settings (theme + offline-sim), persona + district,
+//   GPS locate, a discreet demo section (the data-source mode switch lives
+//   here AND in the Admin demo panel — never in the open citizen chrome), and
+//   "Take the tour".
+//
+// Mobile nav now carries Trust (six tabs, 48px targets); the mode switch left
+// the StatusBanner for Admin, leaving the banner a compact informational chip.
+import { useEffect, useRef, useState } from 'react';
 import { t, NAV, PERSONAS, PERSONA_LABELS, DISTRICTS } from '../i18n';
 import { useApp, SOURCE_MODES, modeLabel, modeNote } from '../store';
 import Icon from './icons';
@@ -61,7 +79,6 @@ export function Sidebar() {
             className="nav-item"
             aria-current={view === n.id ? 'page' : undefined}
             onClick={() => setView(n.id)}
-            data-tour={n.id === 'alerts' ? 'nav-alerts' : undefined}
           >
             <Icon name={n.icon} size={19} />
             <span>{t(lang, n.label)}</span>
@@ -71,15 +88,6 @@ export function Sidebar() {
       <div className="side-foot">
         <span className="mono">SIH 2026 | Problem 26068</span>
         <span className="mono">MoES / IMD</span>
-        {/* The GIS / WIS 2.0 explanation lives on the trust view, which is
-            deliberately outside the citizen nav. Without this it was reachable
-            only by typing ?view=trust. */}
-        <button
-          type="button" className="btn ghost sm"
-          onClick={() => setView('trust')}
-        >
-          <Icon name="shield" size={14} /> {t(lang, 'viewTrust')}
-        </button>
         <button
           type="button" className="btn ghost sm"
           onClick={() => window.dispatchEvent(new Event('wgpt:tour'))}
@@ -102,6 +110,9 @@ export function MobileNav() {
           className="mobile-tab"
           aria-current={view === n.id ? 'page' : undefined}
           onClick={() => setView(n.id)}
+          // The onboarding step for alerts points at the mobile tab — the
+          // audience is mobile-first, and this is the tab they can see.
+          data-tour={n.id === 'alerts' ? 'nav-alerts' : undefined}
         >
           <Icon name={n.icon} size={20} />
           <span>{t(lang, n.label)}</span>
@@ -131,106 +142,170 @@ function IconToggle({ on, onClick, icon, label, tone }) {
   );
 }
 
+// The discreet demo section: the data-source mode switch for the operator,
+// behind the More menu (and in the Admin panel). Rendered from SOURCE_MODES —
+// a hardcoded pair here is how the old two-way LIVE/DEMO switch crept back.
+function DemoSection({ onDone }) {
+  const { lang, sourceMode, setBackendMode } = useApp();
+  return (
+    <div className="top-demo">
+      <b className="top-demo-title">{t(lang, 'demoModeTitle')}</b>
+      <p className="sub">{t(lang, 'demoModeSub')}</p>
+      <div className="mode-switch" role="group" aria-label={t(lang, 'demoModeTitle')}>
+        {SOURCE_MODES.map((m) => (
+          <button
+            key={m}
+            type="button"
+            className={`mode-btn${sourceMode === m ? ' on' : ''}`}
+            aria-pressed={sourceMode === m}
+            onClick={() => { setBackendMode(m); onDone(); }}
+          >{modeLabel(lang, m)}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TopBar() {
-  const { lang, setLang, persona, setPersona, conn, loc, locStatus, locReady, requestLocation, setDistrict, districts,
-          notifyOn, toggleNotify, simOffline, setSimOffline } = useApp();
+  const { lang, setLang, persona, setPersona, conn, connectionPill, loc, locStatus, locReady, requestLocation, setDistrict, districts,
+          notifyOn, toggleNotify, simOffline, setSimOffline, setView } = useApp();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef(null);
   const color = connColor(conn);
+  const pillLabel = connectionPill === 'Online' ? t(lang, 'connOnline')
+    : connectionPill === 'Cached' ? t(lang, 'connCached') : t(lang, 'connOffline');
+
+  // The overflow menu closes on Escape or an outside tap; it is not modal, so
+  // no focus trap — the trigger keeps a correct aria-expanded.
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMoreOpen(false); };
+    const onDoc = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDoc);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDoc);
+    };
+  }, [moreOpen]);
+  const closeMore = () => setMoreOpen(false);
+
   return (
     <header className="topbar">
       <div className="topbar-inner">
         <span className="topbar-title">WeatherGPT <em>| speak, listen, stay safe</em></span>
-        <span className="conn" style={{ color }}>
+        <span className="conn" role="status" style={{ color }}>
           <span className="dot" style={{ background: color }} />
-          {conn}
+          {pillLabel}
         </span>
-        <div className="topbar-spacer" />
-        <label className="mono" data-tour="persona-top">
-          {t(lang, 'iAm')}
-          <select value={persona} onChange={(e) => setPersona(e.target.value)} aria-label={t(lang, 'iAm')}>
-            {PERSONAS.map((p) => (
-              <option key={p} value={p}>
-                {(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][p]) || p}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="mono">
-          {t(lang, 'district')}
-          <select
-            value={loc.district}
-            onChange={(e) => {
-              const d = DISTRICTS.find((x) => x.district === e.target.value);
-              if (d) setDistrict(d);
-            }}
-            aria-label={t(lang, 'district')}
-          >
-            {districts.map((d) => <option key={d.district} value={d.district}>{d.district}</option>)}
-          </select>
-        </label>
-        {locReady && loc.source === 'gps' ? (
-          <span className="mono" title={t(lang, 'locAuto')}>
-            {t(lang, 'locBadgeReady')}
-          </span>
-        ) : (
-          <button type="button" className="btn ghost sm" onClick={requestLocation} title={t(lang, 'locSub')}>
-            {locStatus === 'requesting' || locStatus === 'resolving' ? '…' : t(lang, 'locCta')}
-          </button>
-        )}
-        <label className="mono">
-          {t(lang, 'lang')}
+        <span className="topbar-spacer" />
+        {/* Tier 1: the four citizen controls. Everything else is one tap away
+            behind More, so the chrome never crowds the verdict. */}
+        <IconToggle
+          on={notifyOn}
+          onClick={toggleNotify}
+          icon="bell"
+          label={notifyOn ? t(lang, 'notifyOn') : t(lang, 'notifyOff')}
+        />
+        <label className="mono top-lang">
+          <span className="sr-only">{t(lang, 'lang')}</span>
           <select value={lang} onChange={(e) => setLang(e.target.value)} aria-label={t(lang, 'lang')}>
             {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
           </select>
         </label>
-        <fieldset className="top-group">
-          <legend>{t(lang, 'alertsGroup')}</legend>
-          <IconToggle
-            on={notifyOn}
-            onClick={toggleNotify}
-            icon="bell"
-            label={notifyOn ? t(lang, 'notifyOn') : t(lang, 'notifyOff')}
-          />
-          <IconToggle
-            on={simOffline}
-            onClick={() => setSimOffline((v) => !v)}
-            icon={simOffline ? 'offline' : 'cloud'}
-            label={t(lang, simOffline ? 'offlineOn' : 'offlineOff')}
-            tone="var(--off)"
-          />
-        </fieldset>
-        <fieldset className="top-group">
-          <legend>{t(lang, 'themeGroup')}</legend>
-          <ThemeSwitch />
-        </fieldset>
+        <div className="top-more" ref={moreRef}>
+          <button
+            type="button" className="btn ghost sm top-more-btn"
+            aria-expanded={moreOpen} aria-haspopup="menu"
+            aria-label={t(lang, 'menuMore')} title={t(lang, 'menuMore')}
+            onClick={() => setMoreOpen((o) => !o)}
+          >
+            <Icon name="menu" size={18} />
+          </button>
+          {moreOpen && (
+            <div className="top-menu" role="menu" aria-label={t(lang, 'menuMore')}>
+              <fieldset className="top-group">
+                <legend>{t(lang, 'menuSettings')}</legend>
+                <ThemeSwitch />
+                <IconToggle
+                  on={simOffline}
+                  onClick={() => setSimOffline((v) => !v)}
+                  icon={simOffline ? 'offline' : 'cloud'}
+                  label={t(lang, simOffline ? 'offlineOn' : 'offlineOff')}
+                  tone="var(--off)"
+                />
+              </fieldset>
+              <label className="mono top-menu-row" data-tour="persona-top">
+                {t(lang, 'iAm')}
+                <select value={persona} onChange={(e) => setPersona(e.target.value)} aria-label={t(lang, 'iAm')}>
+                  {PERSONAS.map((p) => (
+                    <option key={p} value={p}>
+                      {(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][p]) || p}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="mono top-menu-row">
+                {t(lang, 'district')}
+                <select
+                  value={loc.district}
+                  onChange={(e) => {
+                    const d = DISTRICTS.find((x) => x.district === e.target.value);
+                    if (d) setDistrict(d);
+                  }}
+                  aria-label={t(lang, 'district')}
+                >
+                  {districts.map((d) => <option key={d.district} value={d.district}>{d.district}</option>)}
+                </select>
+              </label>
+              {locReady && loc.source === 'gps' ? (
+                <span className="mono top-menu-row" title={t(lang, 'locAuto')}>
+                  {t(lang, 'locBadgeReady')}
+                </span>
+              ) : (
+                <button type="button" className="btn ghost sm top-menu-row" onClick={() => { requestLocation(); }} title={t(lang, 'locSub')}>
+                  {locStatus === 'requesting' || locStatus === 'resolving' ? '…' : t(lang, 'locCta')}
+                </button>
+              )}
+              <DemoSection onDone={closeMore} />
+              <button
+                type="button" className="btn ghost sm top-menu-row"
+                onClick={() => { closeMore(); setView('admin'); }}
+              >
+                <Icon name="layers" size={14} /> {t(lang, 'menuOpenDemo')}
+              </button>
+              <button
+                type="button" className="btn ghost sm top-menu-row"
+                onClick={() => { closeMore(); window.dispatchEvent(new Event('wgpt:tour')); }}
+              >
+                <Icon name="eye" size={14} /> {t(lang, 'obTour')}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
 }
 
 export function StatusBanner() {
-  const { sourceMode, setBackendMode, modeInfo, disaster, netState, toast, lang } = useApp();
-  // Three modes, not two (docs/SOURCE-MODES.md). The banner names the sources
-  // actually carrying the answer - "HYBRID" alone tells a fisherman nothing.
+  const { sourceMode, setView, modeInfo, disaster, netState, toast, lang } = useApp();
+  // The mode SWITCH moved to the More menu and the Admin demo panel. The
+  // banner keeps a compact informational chip — tapping it opens Admin, so the
+  // jury can still reach the switch in one tap.
   const weatherSrc = (modeInfo && modeInfo.weather_source) || '';
   const warnSrc = (modeInfo && modeInfo.warnings_source) || '';
   return (
     <>
       <div className={`banner ${sourceMode === 'demo' ? 'demo' : 'live'}`} role="status">
-        <span className="banner-mode">
-          <b>{t(lang, 'modeLabel')}</b>
+        <button
+          type="button" className="banner-mode-chip"
+          onClick={() => setView('admin')}
+          title={t(lang, 'menuDemoControls')}
+        >
+          <b>{modeLabel(lang, sourceMode)}</b>
           <span className="banner-note">{modeNote(lang, sourceMode)}</span>
-        </span>
-        <span className="mode-switch" role="group" aria-label={t(lang, 'modeLabel')}>
-          {SOURCE_MODES.map((m) => (
-            <button
-              key={m}
-              type="button"
-              className={`mode-btn${sourceMode === m ? ' on' : ''}`}
-              aria-pressed={sourceMode === m}
-              onClick={() => setBackendMode(m)}
-            >{modeLabel(lang, m)}</button>
-          ))}
-        </span>
+        </button>
       </div>
       {/* Which source feeds what. Only shown once the backend has told us. */}
       {sourceMode !== 'demo' && (weatherSrc || warnSrc) && (

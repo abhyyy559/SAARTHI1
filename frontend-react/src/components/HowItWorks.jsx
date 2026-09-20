@@ -8,6 +8,7 @@
 import { Card, Prov } from './ui';
 import Icon from './icons';
 import { useApp } from '../store';
+import { t } from '../i18n';
 
 const EXPLAINERS = [
   {
@@ -56,7 +57,7 @@ export default function HowItWorks() {
   const { lang } = useApp();
   // No server call needed — this is static architecture documentation
   return (
-    <Card title="How it works" sub="Architecture jobs with honest status. No mock is ever labelled LIVE.">
+    <Card title={t(lang, 'howTitle')} sub={t(lang, 'howSub')}>
       <div className="how-list">
         {EXPLAINERS.map((e, i) => (
           <div className="how-row" key={e.id}>

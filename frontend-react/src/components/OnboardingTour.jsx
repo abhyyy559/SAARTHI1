@@ -10,9 +10,15 @@ const SEEN_KEY = 'wgpt-onboarded';
 
 const STEPS = [
   { view: 'home', sel: null, icon: 'check', title: 'obt1t', body: 'obt1b' },
-  { view: 'home', sel: '[data-tour="mic"]', icon: 'mic', title: 'obt2t', body: 'obt2b' },
+  // FIX: the only mic in the app is the Ask dictation button — the old
+  // home view + '[data-tour="mic"]' matched nothing, so the ring drew on
+  // empty space. The tour now navigates to ask and points at the real mic.
+  { view: 'ask', sel: '[data-tour="mic"]', icon: 'mic', title: 'obt2t', body: 'obt2b' },
   { view: 'home', sel: '[data-tour="verdict"]', icon: 'shield', title: 'obt3t', body: 'obt3b' },
-  { view: 'home', sel: '[data-tour="persona-top"]', icon: 'person', title: 'obt4t', body: 'obt4b' },
+  // The "who is asking" step points at the role grid itself — the ten
+  // persona cards are the same control on desktop and mobile, so the ring
+  // always lands somewhere real.
+  { view: 'advisor', sel: '[data-tour="persona-grid"]', icon: 'person', title: 'obt4t', body: 'obt4b' },
   { view: 'ask', sel: '[data-tour="chatbox"]', icon: 'chat', title: 'obt5t', body: 'obt5b' },
   { view: 'ask', sel: '[data-tour="nav-alerts"]', icon: 'bell', title: 'obt6t', body: 'obt6b' },
 ];
@@ -34,45 +40,85 @@ export default function OnboardingTour() {
   const stepRef = useRef(0);
   const dialogRef = useRef(null);
 
-  const measure = useCallback((sel) => {
+  // The tour is closed deliberately (Skip/Escape/finish) or never opened;
+  // defined before measure because a skipped step may need to close the tour.
+  const close = useCallback((done) => {
+    setActive(false);
+    if (done) {
+      try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* ignore */ }
+    }
+  }, []);
+
+  // goStepRef breaks the measure <-> goStep cycle: measure's "skip this step"
+  // path advances the tour, which needs goStep, which calls measure.
+  const goStepRef = useRef(null);
+
+  const measure = useCallback((sel, stepIdx) => {
     if (!sel) {
       setRect(null);
       return;
     }
-    const el = document.querySelector(sel);
-    if (!el) {
-      setRect(null);
-      return;
-    }
-    try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* ignore */ }
-    // Measure after scroll settles so the ring lands on the element.
-    setTimeout(() => {
-      if (stepRef.current !== STEPS.findIndex((s) => s.sel === sel)) return;
-      const r = el.getBoundingClientRect();
-      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-    }, 450);
-  }, []);
+    // The new view renders async (alerts/advice fetch), so the target may not
+    // exist on the first tick. Poll briefly; if it never appears — e.g. a
+    // desktop-only control on mobile — skip the step instead of spotlighting
+    // empty space. A zero-size hit (display:none) counts as missing too.
+    const SKIP_AFTER_MS = 2500;
+    const started = Date.now();
+    const skip = () => {
+      if (stepIdx >= STEPS.length - 1) close(true);
+      else goStepRef.current(stepIdx + 1);
+    };
+    const tick = () => {
+      if (stepRef.current !== stepIdx) return; // user moved on
+      const el = document.querySelector(sel);
+      if (el) {
+        try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* ignore */ }
+        // Measure after scroll settles so the ring lands on the element.
+        setTimeout(() => {
+          if (stepRef.current !== stepIdx) return;
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 && r.height === 0) { skip(); return; }
+          setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+        }, 450);
+        return;
+      }
+      if (Date.now() - started > SKIP_AFTER_MS) { skip(); return; }
+      setTimeout(tick, 200);
+    };
+    tick();
+  }, [close]);
 
   const goStep = useCallback((i) => {
     const s = STEPS[Math.max(0, Math.min(STEPS.length - 1, i))];
-    stepRef.current = STEPS.indexOf(s);
-    setStep(STEPS.indexOf(s));
+    const idx = STEPS.indexOf(s);
+    stepRef.current = idx;
+    setStep(idx);
     setView(s.view);
     setRect(null);
     setActive(true);
-    measure(s.sel);
+    measure(s.sel, idx);
   }, [setView, measure]);
+  goStepRef.current = goStep;
 
   useEffect(() => {
     let seen = false;
     try { seen = localStorage.getItem(SEEN_KEY) === '1'; } catch { seen = true; }
-    const replay = () => goStep(0);
+    const replay = () => goStepRef.current(0);
     window.addEventListener('wgpt:tour', replay);
     let tId = null;
-    if (!seen) tId = setTimeout(() => goStep(0), 900);
+    // FIX: a deep link (?view=) must win over the first-run auto-start. A push
+    // notification that lands on ?view=alerts used to be yanked back to Home
+    // 900ms later. Auto-start now stays silent whenever the launch URL names
+    // a view; the tour remains re-openable from "Take the tour".
+    let deepLinked = false;
+    try {
+      deepLinked = new URLSearchParams(window.location.search).has('view')
+        || window.location.hash.includes('view=');
+    } catch { deepLinked = false; }
+    if (!seen && !deepLinked) tId = setTimeout(() => goStepRef.current(0), 900);
     const onResize = () => {
       const s = STEPS[stepRef.current];
-      if (s && s.sel) measure(s.sel);
+      if (s && s.sel) measure(s.sel, stepRef.current);
     };
     window.addEventListener('resize', onResize);
     return () => {
@@ -80,14 +126,7 @@ export default function OnboardingTour() {
       window.removeEventListener('wgpt:tour', replay);
       window.removeEventListener('resize', onResize);
     };
-  }, [goStep, measure]);
-
-  const close = useCallback((done) => {
-    setActive(false);
-    if (done) {
-      try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* ignore */ }
-    }
-  }, []);
+  }, [measure]);
 
   // Escape closes the tour. It is a modal dialog, and a desktop user who opens
   // it by accident (or by pressing the sidebar button) must not have to hunt for

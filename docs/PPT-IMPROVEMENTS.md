@@ -54,7 +54,7 @@ Current: `User input → Grounding Layer → Data Arbiter → LLM → Output tra
 
 Proposed:
 ```
-User (text/voice) ──▶ Language layer (STT/intent, Bhashini)
+User (text/voice) ──▶ Language layer (STT/TTS, Sarvam)
         │
         ▼
 Data Arbiter ──▶ IMD API · Open-Meteo · WIS 2.0 · NDMA/SACHET CAP
@@ -78,7 +78,7 @@ Offline ladder: cloud → cache → on-device rules → P2P → sync
 
 1. **User interface** — PWA (Vite + React) — *unchanged*
 2. **Backend & API layer** — Python + FastAPI — *unchanged*
-3. **Language / voice** — Whisper + Bhashini + TTS — *unchanged*
+3. **Language / voice** — Sarvam (STT + TTS)
 4. **Arbiter & grounding layer** — Deterministic rules — not AI — *unchanged*
 5. **Data & integration** — **Production:** IMD API + Open-Meteo + WIS 2.0 + NDMA CAP.
    **Prototype:** IMD-grade demo fixtures + Open-Meteo + SACHET CAP sample feed

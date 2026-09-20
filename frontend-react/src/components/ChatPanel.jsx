@@ -146,7 +146,7 @@ const OFFLINE_VERDICT = {
 };
 
 export default function ChatPanel() {
-  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc, netState, showToast } = useApp();
+  const { lang, persona, handleResult, registerAsk, pendingAskRef, speak, stopSpeaking, loc, netState, showToast, setView } = useApp();
   const [log, setLog] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -259,7 +259,26 @@ export default function ChatPanel() {
       <p className="sub">
         {t(lang, 'askAs')} <b>{(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona}</b>
         {' · '}{loc.district}
+        {' · '}
+        <button type="button" className="linklike" onClick={() => setView('advisory')}>
+          {t(lang, 'askAdviceHint')}
+        </button>
       </p>
+      {/* Spoken answers: the switch lives here, above the conversation, so it
+          is found in seconds — not buried after the suggestion chips. Muted by
+          default; toggling never changes what is fetched, only whether the
+          answer is read aloud. */}
+      <button
+        type="button"
+        className={`ask-hear${muted ? '' : ' is-on'}`}
+        aria-pressed={!muted}
+        onClick={() => { stopSpeaking(); setMuted((m) => !m); }}
+        title={muted ? t(lang, 'muted') : t(lang, 'soundOn')}
+      >
+        <Icon name="speaker" size={16} />
+        <span>{t(lang, 'askHearAnswers')}</span>
+        <span className="ask-hear-state" aria-hidden>{muted ? t(lang, 'muted') : t(lang, 'soundOn')}</span>
+      </button>
       <div className="chatlog" ref={logRef} role="log" aria-live="polite" aria-relevant="additions">
         {log.length === 0 && !busy && (
           <>
@@ -406,6 +425,7 @@ export default function ChatPanel() {
       <form className="chatrow" data-tour="chatbox" onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <button
           className="btn ghost ask-mic" type="button" onClick={dictation.listen}
+          data-tour="mic"
           disabled={dictation.busy || dictation.unavailable}
           aria-pressed={dictation.listening} aria-label={t(lang, 'listen')}
           title={dictation.unavailable ? t(lang, 'voiceOffline') : t(lang, 'micHint')}
@@ -433,15 +453,7 @@ export default function ChatPanel() {
             {t(lang, k)}
           </button>
         ))}
-        <button
-          type="button"
-          className="btn ghost sm"
-          aria-pressed={muted}
-          onClick={() => { stopSpeaking(); setMuted((m) => !m); }}
-          title={muted ? t(lang, 'muted') : t(lang, 'soundOn')}
-        >
-          <Icon name="speaker" size={14} />{muted ? t(lang, 'muted') : t(lang, 'soundOn')}
-        </button>
+
       </div>
     </section>
   );

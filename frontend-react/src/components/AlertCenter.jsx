@@ -231,7 +231,7 @@ function NotifyDemo() {
         title={pushReady ? t(lang, 'demoPushHint') : t(lang, 'notifyPushFailed')}
         style={{ opacity: pushReady ? 1 : 0.5 }}
       >
-        <Icon name={pushReady ? 'wifi' : 'offline'} size={15} /> {t(lang, 'notifyTestSent')}
+        <Icon name={pushReady ? 'wifi' : 'offline'} size={15} /> {t(lang, 'notifyTest')}
       </button>
       <span className="mono" style={{ color: blocked ? 'var(--off)' : 'var(--ink-3)' }}>
         {blocked ? t(lang, 'notifyBlocked') : pushReady ? t(lang, 'notifyOnBackground') : t(lang, 'demoNotifyHint')}

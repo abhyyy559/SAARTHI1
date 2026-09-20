@@ -46,12 +46,16 @@ export function AskView() {
   );
 }
 
+// Alerts: SOS leads, then official alerts, then community reports. The old
+// order buried the one control that must work with shaking hands — the SOS
+// button — under the official list. Emergency carries its own translated
+// heading, so it needs no extra chrome here.
 export function AlertsView() {
   return (
     <>
       <ViewHead titleKey="viewAlerts" subKey="viewAlertsSub" />
-      <AlertCenter />
       <Emergency />
+      <AlertCenter />
     </>
   );
 }

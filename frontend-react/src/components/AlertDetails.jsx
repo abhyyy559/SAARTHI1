@@ -68,7 +68,7 @@ export default function AlertDetails({ alert, onBack, onAck }) {
   };
 
   return (
-    <section className="panel alert-details" aria-label="Alert details">
+    <section className="panel alert-details" aria-label={t(lang, 'viewAlerts')}>
       <div className="row" style={{ alignItems: 'center', gap: 8, marginBottom: 10 }}>
         {onBack && (
           <button type="button" className="btn ghost sm" onClick={onBack}>
@@ -88,7 +88,7 @@ export default function AlertDetails({ alert, onBack, onAck }) {
       )}
 
       <div className="evrow">
-        <span className="k">Validity</span>
+        <span className="k">{t(lang, 'detValidity')}</span>
         <span className="mono">
           {[alert.pre_alert_at || alert.valid_from, alert.starts_at, alert.ends_at || alert.valid_until || alert.expires]
             .filter(Boolean).map(fmt).join('  →  ') || '—'}
@@ -97,12 +97,12 @@ export default function AlertDetails({ alert, onBack, onAck }) {
 
       {instruction && (
         <div className="evrow">
-          <span className="k">Instruction</span>
+          <span className="k">{t(lang, 'detInstruction')}</span>
           <span>{instruction}</span>
         </div>
       )}
 
-      <h3 style={{ marginTop: 14 }}>Timeline</h3>
+      <h3 style={{ marginTop: 14 }}>{t(lang, 'detTimeline')}</h3>
       <ol className="alert-timeline">
         {history.map((h, i) => (
           <li key={i} className="alert-timeline-row">
@@ -123,7 +123,7 @@ export default function AlertDetails({ alert, onBack, onAck }) {
           <Icon name="check" size={14} />{' '}
           {ackState === 'acked' ? t(lang, 'ntfAcked') : t(lang, 'ntfAck')}
         </button>
-        {ackState === 'failed' && <span className="mono">Ack failed (offline?). Retry on reconnect.</span>}
+        {ackState === 'failed' && <span className="mono">{t(lang, 'detAckFailed')}</span>}
       </div>
     </section>
   );

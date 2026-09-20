@@ -98,7 +98,10 @@ export default function Advisor() {
   // which is exactly why a manual refresh appeared to "fix" it.
   return (
     <Card title={t(lang, 'advTitle')} sub={t(lang, 'advSub')}>
-      <div className="adv-grid">
+      {/* The consequence, stated once: a card tap sets the role for the whole
+          app — Home, Ask and My advice all follow it. */}
+      <p className="sub" style={{ marginBottom: 8 }}><Icon name="person" size={14} /> {t(lang, 'advSwitchNote')}</p>
+      <div className="adv-grid" data-tour="persona-grid">
         {USER_TYPES.map((ut) => (
           <AdviceCard key={ut.id} ut={ut} active={persona === ut.id} onPick={setPersona} />
         ))}
