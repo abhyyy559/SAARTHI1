@@ -65,11 +65,10 @@ export default function SourceStatus() {
             return (
               <div className="src-card" key={w.id} title={w.id}>
                 <div className="src-card-top">
-                  <Icon name="database" size={14} />
-                  <span className="eyebrow">{w.label}</span>
+                  <span className="tile-icon" aria-hidden="true"><Icon name="database" size={20} /></span>
+                  <span>{w.label}</span>
                 </div>
                 <div className="src-card-state">
-                  <span className={`dot ${status}`} aria-hidden="true" />
                   <span className={`prov ${status}`}>{status}</span>
                 </div>
                 {s && s.detail && <span className="sub src-card-detail">{String(s.detail)}</span>}
@@ -87,11 +86,10 @@ export default function SourceStatus() {
             .map((s, i) => (
               <div className="src-card" key={`extra-${i}`} title={String(s.id || s.name || '')}>
                 <div className="src-card-top">
-                  <Icon name="database" size={14} />
-                  <span className="eyebrow">{String(s.label || s.id || s.name || 'source')}</span>
+                  <span className="tile-icon" aria-hidden="true"><Icon name="database" size={20} /></span>
+                  <span>{String(s.label || s.id || s.name || 'source')}</span>
                 </div>
                 <div className="src-card-state">
-                  <span className={`dot ${String(s.status || s.state || 'UNCONFIGURED')}`} aria-hidden="true" />
                   <span className={`prov ${String(s.status || s.state || 'UNCONFIGURED')}`}>
                     {String(s.status || s.state || 'UNCONFIGURED')}
                   </span>
@@ -104,7 +102,7 @@ export default function SourceStatus() {
                 </div>
               </div>
             ))}
-          {failed && <p className="ask-ev-say">{t(lang, 'srcFailed')}</p>}
+          {failed && <p className="sub">{t(lang, 'srcFailed')}</p>}
         </div>
       )}
     </Card>

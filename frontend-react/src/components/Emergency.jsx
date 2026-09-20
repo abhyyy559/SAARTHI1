@@ -1,13 +1,11 @@
-// Emergency panel rebuilt for people who cannot read: one huge SOS button, a
-// grid of picture tiles for every other message, and an inbox that reads as an
-// icon plus one short word. Transport stays underneath - this panel only uses
-// the facade operations.
+// Emergency panel — the mayday console. A black control room: one huge SOS
+// slab with an ARM → FIRE sequence (stage drama, and no accidental sends),
+// a picture grid for every other message, and a delivery stepper that never
+// calls anything "delivered" that was not.
 //
 // Three delivery facts are never blurred: "queued" (accepted here), "local"
-// (still on this device) and "synced" (reached the relay). Nothing is shown as
-// delivered that was not, and a failed send says so.
-import { useCallback, useEffect, useState } from 'react';
-import './AlertCenter.css';
+// (still on this device) and "synced" (reached the relay). A failed send says so.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, EMERGENCY_TYPES } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
@@ -42,11 +40,6 @@ const iconOf = (type) => EMG_ICON[type] || 'info';
 const wordOf = (lang, type) =>
   (EMG_WORD[type] ? t(lang, EMG_WORD[type]) : String(type).replaceAll('_', ' '));
 
-const DANGER_TYPES = new Set(['DANGER_HERE', 'PEOPLE_TRAPPED']);
-// Danger / safe tiles only take their colour while selected - see AlertCenter.css.
-const tileClass = (type) =>
-  `pick-tile${type === 'IM_SAFE' ? ' pick-safe' : DANGER_TYPES.has(type) ? ' pick-danger' : ''}`;
-
 export default function Emergency() {
   const { loc, lang } = useApp();
   const [form, setForm] = useState({
@@ -55,6 +48,11 @@ export default function Emergency() {
   const [inbox, setInbox] = useState([]);
   const [note, setNote] = useState('');
   const [p2p, setP2p] = useState(null);
+  // ARM → FIRE: the SOS slab arms on first tap and sends on the second, so a
+  // shaking hand or a curious jury finger cannot fire a mayday by accident.
+  // It auto-disarms after a few seconds.
+  const [armed, setArmed] = useState(false);
+  const armTimer = useRef(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -69,7 +67,7 @@ export default function Emergency() {
     api.inbox()
       .then((d) => { if (alive) setInbox(d.messages || []); })
       .catch(() => { /* offline - inbox stays empty rather than invented */ });
-    return () => { alive = false; };
+    return () => { alive = false; clearTimeout(armTimer.current); };
   }, []);
 
   // Derived during render instead of held in state.
@@ -89,6 +87,18 @@ export default function Emergency() {
     } catch {
       setNote(t(lang, 'emgNotSent'));
     }
+  }
+
+  function onSos() {
+    if (!armed) {
+      setArmed(true);
+      clearTimeout(armTimer.current);
+      armTimer.current = setTimeout(() => setArmed(false), 4000);
+      return;
+    }
+    clearTimeout(armTimer.current);
+    setArmed(false);
+    send('NEED_HELP');
   }
 
   async function sync() {
@@ -120,25 +130,33 @@ export default function Emergency() {
   const step = (d) => setForm((f) => ({ ...f, people_count: Math.max(1, Number(f.people_count) + d) }));
 
   return (
-    <section className="panel emg-cmd">
-      <div className="emg-head">
-        <Icon name="shield" size={22} />
-        <h2>{t(lang, 'emgTitle')}</h2>
+    <section className="mayday" aria-label={t(lang, 'emgTitle')}>
+      <div className="may-title">
+        <h2 className="display">{t(lang, 'emgTitle')}</h2>
       </div>
-      <p className="sub">{t(lang, 'emgSub')}</p>
 
-      <p className="emg-eyebrow">{t(lang, 'emgCmdLabel')}</p>
-      <button type="button" className="btn danger-solid emg-sos" onClick={() => send('NEED_HELP')}>
-        <Icon name="sos" size={30} /> {t(lang, 'emgSos')}
-      </button>
+      <div className="sos-wrap">
+        <button
+          type="button"
+          className={`sos-btn${armed ? ' is-armed' : ''}`}
+          aria-pressed={armed}
+          onClick={onSos}
+        >
+          {armed ? t(lang, 'sbFiring') : t(lang, 'emgSos')}
+        </button>
+        <div className="sos-side">
+          <p>{armed ? t(lang, 'emgSosArmed') : t(lang, 'emgSub')}</p>
+          <p className="mono">{t(lang, 'emgArmHint')}</p>
+        </div>
+      </div>
 
-      <h3 className="emg-h3">{t(lang, 'emgPick')}</h3>
-      <div className="pick-grid">
+      <div className="kicker on-ink" style={{ marginBottom: 8 }}>{t(lang, 'emgPick')}</div>
+      <div className="needs-grid" role="group" aria-label={t(lang, 'emgPick')}>
         {EMERGENCY_TYPES.filter((type) => type !== 'NEED_HELP').map((type) => (
           <button
             key={type}
             type="button"
-            className={tileClass(type)}
+            className={`need-tile${form.message_type === type ? ' is-picked' : ''}`}
             aria-pressed={form.message_type === type}
             onClick={() => setForm((f) => ({ ...f, message_type: type }))}
           >
@@ -148,16 +166,17 @@ export default function Emergency() {
         ))}
       </div>
 
-      <div className="emg-row">
-        <span className="emg-step-label">{t(lang, 'emgPeople')}</span>
-        <span className="emg-step">
-          <button type="button" onClick={() => step(-1)} aria-label={t(lang, 'emgLess')}>−</button>
-          <span className="n">{form.people_count}</span>
-          <button type="button" onClick={() => step(1)} aria-label={t(lang, 'emgMore')}>+</button>
+      <div className="row" style={{ marginBottom: 10 }}>
+        <span className="kicker on-ink">{t(lang, 'emgPeople')}</span>
+        <span className="emg-step" role="group" aria-label={t(lang, 'emgPeople')}>
+          <button type="button" className="btn-icon" onClick={() => step(-1)} aria-label={t(lang, 'emgLess')}>−</button>
+          <span className="mono" style={{ minWidth: 32, textAlign: 'center', fontWeight: 800 }}>{form.people_count}</span>
+          <button type="button" className="btn-icon" onClick={() => step(1)} aria-label={t(lang, 'emgMore')}>+</button>
         </span>
         <button
           type="button"
-          className="pick-tile is-inline"
+          className={`need-tile${form.medical_required ? ' is-picked' : ''}`}
+          style={{ minHeight: 48, flexDirection: 'row', padding: '6px 12px' }}
           aria-pressed={form.medical_required}
           onClick={() => setForm((f) => ({ ...f, medical_required: !f.medical_required }))}
         >
@@ -166,8 +185,9 @@ export default function Emergency() {
         </button>
       </div>
 
-      <form className="row" onSubmit={(e) => { e.preventDefault(); send(); }}>
+      <form className="row" style={{ marginBottom: 10 }} onSubmit={(e) => { e.preventDefault(); send(); }}>
         <input
+          className="input"
           type="text"
           placeholder={t(lang, 'emgNotePh')}
           aria-label={t(lang, 'emgNotePh')}
@@ -175,38 +195,45 @@ export default function Emergency() {
           onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
           style={{ flex: 1 }}
         />
-        <button className="btn" type="submit">
-          <Icon name="send" size={14} /> {t(lang, 'emgSend')} · {wordOf(lang, form.message_type)}
+        <button className="btn btn-signal" type="submit">
+          <Icon name="send" size={16} /> {t(lang, 'emgSend')} · {wordOf(lang, form.message_type)}
         </button>
       </form>
 
-      <div className="emg-row">
-        <button className="btn ghost" type="button" onClick={sync}>
+      <div className="row" style={{ marginBottom: 6 }}>
+        <button className="btn btn-secondary sm" type="button" onClick={sync}>
           <Icon name="refresh" size={14} /> {t(lang, 'emgSync')}
         </button>
-        <button className="btn ghost" type="button" onClick={simulate}>
+        <button className="btn btn-secondary sm" type="button" onClick={simulate}>
           <Icon name="radio" size={14} /> {t(lang, 'emgSimulate')}
         </button>
-        <span className="tag"><Icon name="info" size={13} /> {t(lang, 'emgSimHint')}</span>
       </div>
-      {note ? <p className="emg-note" role="status">{note}</p> : null}
-      {p2p ? <P2PDemo trace={p2p.trace} properties={p2p.properties} lang={lang} /> : null}
+      {note ? <p className="mono" role="status" style={{ color: 'var(--signal)' }}>{note}</p> : null}
 
-      <h3 className="emg-h3">{t(lang, 'emgInboxTitle')}</h3>
+      {/* P2P is always on the board — stamped SIMULATED, never pretending to be
+          the real mesh. */}
+      <div className="p2p-panel" aria-label={t(lang, 'p2pTitle')}>
+        <div className="p2p-title">
+          <h3 className="display">{t(lang, 'p2pTitle')}</h3>
+          <span className="rubber-stamp" data-testid="p2p-simulated">{t(lang, 'p2pSimulated')}</span>
+        </div>
+        <P2PDemo trace={p2p?.trace} properties={p2p?.properties} lang={lang} />
+      </div>
+
+      <h3 className="display" style={{ marginTop: 16, fontSize: 22 }}>{t(lang, 'emgInboxTitle')}</h3>
       <p className="sub">{t(lang, 'emgNearby')}: {peers.join(', ') || t(lang, 'emgNoPeers')}</p>
-      <div className="emg-inbox">
+      <div className="stepper" style={{ marginTop: 8 }}>
         {inbox.map((m) => (
-          <div className="emg-msg" key={m.message_id}>
-            <Icon name={iconOf(m.message_type)} size={20} />
-            <span className="word">{wordOf(lang, m.message_type)}</span>
-            <span className="who">
-              {m.sender_id} · {t(lang, 'emgPeople')} {m.people_count}
-              {m.medical_required ? ` · ${t(lang, 'emgMedical')}` : ''}
-            </span>
-            <span className="meta">
-              {t(lang, 'emgHops').replace('{n}', m.hops)}
-              <span className="chip">{m.synced ? t(lang, 'emgChipSynced') : t(lang, 'emgChipLocal')}</span>
-            </span>
+          <div className="step is-done" key={m.message_id}>
+            <div>
+              <div className="step-t"><Icon name={iconOf(m.message_type)} size={16} /> {wordOf(lang, m.message_type)}</div>
+              <div className="step-s">
+                {m.sender_id} · {t(lang, 'emgPeople')} {m.people_count}
+                {m.medical_required ? ` · ${t(lang, 'emgMedical')}` : ''}
+                {' · '}{t(lang, 'emgHops').replace('{n}', m.hops)}
+                {' · '}{m.synced ? t(lang, 'emgChipSynced') : t(lang, 'emgChipLocal')}
+              </div>
+            </div>
           </div>
         ))}
         {inbox.length === 0 ? <p className="sub">{t(lang, 'emgInboxEmpty')}</p> : null}

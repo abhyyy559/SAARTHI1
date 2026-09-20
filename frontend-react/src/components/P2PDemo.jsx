@@ -1,5 +1,6 @@
 // P2P store-and-forward hop diagram: icon-first, minimal text.
-// S3.2.1: visible A→B→C hop story + store-and-forward outbox + mandatory SIMULATED badge.
+// The surrounding panel (Emergency) carries the mandatory SIMULATED stamp,
+// so this component is purely the trace + outbox + property chips.
 import { t } from '../i18n';
 import Icon from './icons';
 
@@ -41,59 +42,45 @@ export default function P2PDemo({ trace, properties, lang, outbox }) {
 
   return (
     <div className="p2p-demo" role="region" aria-label={t(lang, 'p2pTitle')}>
-      <div className="p2p-badge" data-testid="p2p-simulated" title={t(lang, 'p2pSimTitle')}>
-        <Icon name="info" size={12} />
-        <span>{t(lang, 'p2pSimulated')}</span>
-      </div>
+      <p className="p2p-story mono" aria-live="polite">
+        {steps.length > 0 ? hopStory : t(lang, 'sbP2pRelayIdle')}
+      </p>
 
-      <p className="p2p-story mono" aria-live="polite">{hopStory}</p>
-
-      {steps.length > 0 ? (
-      <div className="p2p-chain">
-        {steps.map((step, i) => {
-          const isLast = i === steps.length - 1;
-          return (
-            <div className="p2p-step" key={`${step.node}-${i}`}>
-              <div className="p2p-node">
-                <span className="p2p-icon">
-                  <Icon name={NODE_ICON[step.node] || 'radio'} size={22} />
-                </span>
-                <span className="p2p-name">{t(lang, NODE_LABEL[step.node] || step.node)}</span>
-                <span className="p2p-state">{step.state}</span>
+      {steps.length > 0 && (
+        <div className="stepper" aria-hidden="true">
+          {steps.map((step, i) => (
+            <div className={`step${i === steps.length - 1 ? ' is-now' : ' is-done'}`} key={`${step.node}-${i}`}>
+              <div>
+                <div className="step-t"><Icon name={NODE_ICON[step.node] || 'radio'} size={16} /> {t(lang, NODE_LABEL[step.node] || step.node)}</div>
+                <div className="step-s mono">{step.state}</div>
               </div>
-              {!isLast && (
-                <span className="p2p-arrow" aria-hidden="true">
-                  <Icon name="chevron" size={14} />
-                </span>
-              )}
             </div>
-          );
-        })}
-      </div>
-      ) : (
-        <p className="sub">{t(lang, 'p2pTitle')} — {t(lang, 'p2pSimulated')}</p>
+          ))}
+        </div>
       )}
 
       {pending.length > 0 ? (
-        <div className="p2p-outbox" aria-label={t(lang, 'p2pOutbox')}>
+        <div className="p2p-log" aria-label={t(lang, 'p2pOutbox')}>
           {pending.map((m, i) => (
-            <div className="p2p-outbox-row" key={m.message_id || i}>
-              <Icon name="layers" size={12} />
-              <span className="mono">{m.message_id || m.id || `#${i + 1}`} · {m.message_type || m.type || 'message'}</span>
-              <span className="chip">{m.synced ? t(lang, 'emgChipSynced') : t(lang, 'emgChipLocal')}</span>
+            <div className="log-line" key={m.message_id || i}>
+              <Icon name="layers" size={12} />{' '}
+              {m.message_id || m.id || `#${i + 1}`} · {m.message_type || m.type || 'message'}{' · '}
+              {m.synced ? t(lang, 'emgChipSynced') : t(lang, 'emgChipLocal')}
             </div>
           ))}
         </div>
       ) : null}
 
-      <div className="p2p-chips">
-        {chips.map((c, i) => (
-          <span className="chip" key={i}>
-            <Icon name={c.icon} size={12} />
-            <span>{t(lang, c.label)}{c.val ? ` ${c.val}` : ''}</span>
-          </span>
-        ))}
-      </div>
+      {chips.length > 0 && (
+        <div className="chip-row" style={{ marginTop: 10 }}>
+          {chips.map((c, i) => (
+            <span className="chip" key={i}>
+              <Icon name={c.icon} size={12} />
+              <span>{t(lang, c.label)}{c.val ? ` ${c.val}` : ''}</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

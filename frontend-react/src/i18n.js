@@ -32,6 +32,7 @@ const S = {
     viewEvidenceSub: 'Every number that reached an answer, with its source, timestamps and provenance label.',
     viewMapSub: 'Warning geography, plus an A to B travel check that never declares a route safe.',
     viewAlertsSub: 'Official CAP warnings in full, community observations clearly labelled, and the local emergent network.',
+    viewDetailsSub: 'The selected warning in full — severity, validity window, timeline and acknowledgement.',
     viewClimateSub: 'Multi-model spread is confidence context, never a warning. ERA5 trends derive from the series itself.',
     viewTrustSub: 'The safety architecture, enforced by tests - and attackable live on this screen.',
     viewHomeSub: 'Warnings first, then answers you can hear. One simple screen.',
@@ -52,7 +53,7 @@ const S = {
     homeAskAbout: 'Ask about this',
     homeType: 'Prefer typing? Ask here',
     homeHeard: 'I heard',
-    homeNoMic: 'Voice input is not available in this browser - type your question on the Ask page.',
+    homeNoMic: 'Voice input is not available in this browser — please type your question instead.',
     homeNoHear: 'Could not hear you clearly. Tap the mic and try again.',
     iAm: 'I am a',
     district: 'District',
@@ -65,7 +66,6 @@ const S = {
     q4: 'What should I do on my farm today?',
     navHome: 'Home',
     viewSituation: 'Situation',
-    viewAsk: 'Ask WeatherGPT',
     viewEvidence: 'Evidence & provenance',
     viewMap: 'Geography & routes',
     viewAlerts: 'Alerts & field reports',
@@ -117,6 +117,7 @@ const S = {
     navAdvisory: 'मेरी सलाह',
     viewAdvisory: 'मेरी सलाह',
     viewAdvisorySub: 'आपकी भूमिका, जगह और भाषा के अनुसार सलाह। निर्णय सहायता, सरकारी निर्देश नहीं।',
+    viewDetailsSub: 'चुनी गई चेतावनी का पूरा विवरण — गंभीरता, वैधता अवधि, समयरेखा और प्राप्ति।',
     chipHyd: 'आज हैदराबाद का मौसम',
     chipCyclone: 'क्या चक्रवात की चेतावनी है?',
     chipMumbai: 'मुंबई का 7-दिन का पूर्वानुमान',
@@ -138,7 +139,7 @@ const S = {
     homeAskAbout: 'इसके बारे में पूछें',
     homeType: 'टाइप करना चाहें? यहाँ पूछें',
     homeHeard: 'मैंने सुना',
-    homeNoMic: 'इस ब्राउज़र में आवाज़ उपलब्ध नहीं — Ask पेज पर टाइप करें।',
+    homeNoMic: 'इस ब्राउज़र में आवाज़ उपलब्ध नहीं — कृपया अपना सवाल टाइप करें।',
     homeNoHear: 'आवाज़ साफ़ नहीं आई। माइक दबाकर फिर कोशिश करें।',
     iAm: 'मैं हूँ',
     district: 'जिला',
@@ -187,6 +188,7 @@ const S = {
     navAdvisory: 'నా సలహా',
     viewAdvisory: 'నా సలహా',
     viewAdvisorySub: 'మీ వృత్తి, ప్రాంతం, భాషకు తగిన సూచనలు. నిర్ణయ సహాయం, అధికారిక ఆదేశం కాదు.',
+    viewDetailsSub: 'ఎంచుకున్న హెచ్చరిక పూర్తి వివరాలు — తీవ్రత, చెల్లుబాటు వ్యవధి, కాలక్రమం మరియు స్వీకారం.',
     chipHyd: 'ఈ రోజు హైదరాబాద్ వాతావరణం',
     chipCyclone: 'తుఫాను హెచ్చరిక ఉందా?',
     chipMumbai: 'ముంబై 7-రోజుల అంచనా',
@@ -208,7 +210,7 @@ const S = {
     homeAskAbout: 'దీని గురించి అడగండి',
     homeType: 'టైప్ చేయాలనుకుంటున్నారా? ఇక్కడ అడగండి',
     homeHeard: 'విన్నది',
-    homeNoMic: 'ఈ బ్రౌజర్‌లో వాయిస్ లేదు — Ask పేజీలో టైప్ చేయండి.',
+    homeNoMic: 'ఈ బ్రౌజర్‌లో వాయిస్ అందుబాటులో లేదు — దయచేసి మీ ప్రశ్నను టైప్ చేయండి.',
     homeNoHear: 'మీ గొంతు సరిగా వినిపించలేదు. మైక్ నొక్కి మళ్లీ ప్రయత్నించండి.',
     iAm: 'నేను',
     district: 'జిల్లా',
@@ -260,15 +262,21 @@ export const PERSONA_LABELS = {
   te: { general: 'సాధారణ', farmer: 'రైతు', driver: 'డ్రైవర్', fisherman: 'మత్స్యకారుడు', researcher: 'పరిశోధకుడు', disaster_manager: 'విపత్తు అధికారి' },
 };
 
-// Round2 nav: the citizen tabs. Home / Ask / My advice / Alerts /
-// Notifications / Trust. Admin stays a hidden demo-console view.
+// SIGNAL BOARD rail: the console nav. Home / Ask / My advice / Alerts /
+// Notifications / Advisor / Demo control panel / Trust / Alert details /
+// Sources. Ten sections, this order — the mobile More sheet reorders them
+// into its own list in Shell.jsx.
 export const NAV = [
   { id: 'home', icon: 'home', label: 'navHome' },
-  { id: 'ask', icon: 'mic', label: 'navAsk' },
-  { id: 'advisory', icon: 'shield', label: 'navAdvisory' },
-  { id: 'alerts', icon: 'bell', label: 'navAlerts' },
+  { id: 'ask', icon: 'chat', label: 'navAsk' },
+  { id: 'advisory', icon: 'sun', label: 'navAdvisory' },
+  { id: 'alerts', icon: 'alert', label: 'navAlerts' },
   { id: 'notifications', icon: 'bell', label: 'navNotifications' },
+  { id: 'advisor', icon: 'user', label: 'navAdvisor' },
+  { id: 'admin', icon: 'layers', label: 'navAdmin' },
   { id: 'trust', icon: 'shield', label: 'navTrust' },
+  { id: 'details', icon: 'file', label: 'navDetails' },
+  { id: 'sources', icon: 'database', label: 'navSources' },
 ];
 
 // Non-public views: reachable only by typing the URL (/?view=admin).

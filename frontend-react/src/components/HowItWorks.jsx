@@ -62,15 +62,17 @@ export default function HowItWorks() {
         {EXPLAINERS.map((e, i) => (
           <div className="how-row" key={e.id}>
             <span className="how-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-            <Icon name={e.icon} size={20} />
+            <span className="tile-icon" aria-hidden="true"><Icon name={e.icon} size={20} /></span>
             <div className="how-text">
               <b>{e.title}</b>
               <span className="sub">{e.desc}</span>
               {lang === 'hi' && e.hi && <span className="sub">{e.hi}</span>}
               {lang === 'te' && e.te && <span className="sub">{e.te}</span>}
             </div>
-            <Prov value={e.provenance} />
-            <span className={`prov ${e.status.toLowerCase()}`}>{e.status}</span>
+            <div className="how-text" style={{ flex: '0 0 auto' }}>
+              <Prov value={e.provenance} />
+              <span className="prov" aria-label={e.status}>{e.status}</span>
+            </div>
           </div>
         ))}
       </div>

@@ -27,3 +27,9 @@ test('LLM markdown variants all render: h1-h4, star bullets, numbered lists', ()
   assert.doesNotMatch(html, /###|\* Stay|1\. Check|---|__/);
   assert.match(html, /<p>Done.<\/p>/);
 });
+
+test('raw ISO timestamps in answers render human-readable, not verbatim', () => {
+  const html = formatAnswer('It is valid until 2026-09-20T22:43:00.994242+05:30.');
+  assert.doesNotMatch(html, /2026-09-20T22:43/);
+  assert.match(html, /20/); // day of month present in locale rendering
+});

@@ -8,7 +8,6 @@ import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
-import './ChatPanel.css';
 
 // Adapter ids are stable machine names; this is only a readable label for them.
 // The raw id stays in the row's title so the label can never hide the source.
@@ -48,13 +47,13 @@ export default function SourceStrip({ refreshKey }) {
 
   return (
     <div>
-      <div className="ask-facts-head">
-        <Icon name="database" size={14} className="icon ask-fact-ico" />
-        {t(lang, 'sourcesTitle')}
+      <div className="src-head">
+        <span className="tile-icon" aria-hidden="true"><Icon name="database" size={20} /></span>
+        <span className="kicker">{t(lang, 'sourcesTitle')}</span>
         {data.demo_mode ? <span className="prov DEMO">DEMO</span> : null}
       </div>
-      {failed && <p className="ask-ev-say">{t(lang, 'srcFailed')}</p>}
-      {!failed && sources.length === 0 && <p className="ask-ev-say">{t(lang, 'srcNone')}</p>}
+      {failed && <p className="sub">{t(lang, 'srcFailed')}</p>}
+      {!failed && sources.length === 0 && <p className="sub">{t(lang, 'srcNone')}</p>}
       {!failed && sources.length > 0 && (
         <div className="src-list">
           {sources.map((s) => (
@@ -82,10 +81,10 @@ export default function SourceStrip({ refreshKey }) {
       {gated.length > 0 && (
         <div className="src-keys">
           {gated.map(([key]) => (
-            <span className="ask-fact" key={key}>
-              <Icon name="lock" size={14} className="icon ask-fact-ico" />
-              <span className="ask-fact-label">{key}</span>
-              <span className="ask-fact-src">{t(lang, 'srcKeyGated')}</span>
+            <span className="src-item" key={key}>
+              <Icon name="lock" size={14} />
+              <span className="src-item-name">{key}</span>
+              <span className="sub">{t(lang, 'srcKeyGated')}</span>
               <span className="prov UNCONFIGURED">UNCONFIGURED</span>
             </span>
           ))}

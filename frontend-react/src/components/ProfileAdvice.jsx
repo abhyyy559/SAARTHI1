@@ -1,10 +1,14 @@
+// ProfileAdvice — My advice. Advisory ONLY lives here; Ask never shows it.
+//
+// The advisory text is split into numbered dispatch cards — one actionable
+// step per card — with the decision-support disclaimer pinned at the bottom.
+// Advice comes from the backend advisory service; nothing is re-derived here.
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { t, PERSONA_LABELS } from '../i18n';
 import { useApp } from '../store';
 import { Card } from './ui';
 import Icon from './icons';
-import { splitAdvisory } from '../format';
 
 export default function ProfileAdvice() {
   const { loc, persona, lang, speak, syncTick, setView, setPendingAsk } = useApp();
@@ -18,29 +22,44 @@ export default function ProfileAdvice() {
     return () => { active = false; };
   }, [loc, persona, lang, key, syncTick]);
   const current = response?.key === key ? response : null;
-  // Lead sentence big; context ('Note: ...') hides behind a disclosure.
-  const split = current && !current.error ? splitAdvisory(current.data.advisory) : null;
-  return <Card title={`${t(lang, 'adviceFor')} · ${PERSONA_LABELS[lang]?.[persona] || persona}`} sub={t(lang, 'adviceNote')} className="adv-lede-card">
-    <div role="status" className="adv-lede">
-      <span className="adv-tile" aria-hidden="true"><Icon name="shield" size={22} /></span>
-      <div className="adv-lede-text">
-        <div className="eyebrow">{t(lang, 'advEyebrow')}</div>
-        {!current ? t(lang, 'checking')
-          : current.error ? t(lang, 'adviceFailed')
-          : <>
-              <div className="adv-lede-title">{split.lead}</div>
-              {/* Visible, not collapsed: this is the sentence that differs per
-                  profile. Folding it away made "Guidance for you" identical for
-                  every occupation. */}
-              {split.detail && <p className="sub adv-lede-detail">{split.detail}</p>}
-            </>}
+
+  // Dispatch cards: one sentence per numbered card, in server order. The
+  // numbering is the card's identity — it says "do this, then this".
+  const text = current && !current.error ? String(current.data.advisory || '').trim() : '';
+  const steps = text ? text.split(/(?<=[.!?।])\s+/).map((s) => s.trim()).filter(Boolean) : [];
+  const personaLabel = (PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona;
+
+  return (
+    <Card title={`${t(lang, 'adviceFor')} · ${personaLabel}`} sub={t(lang, 'adviceNote')}>
+      <div role="status" aria-live="polite">
+        {!current ? <p className="mono">{t(lang, 'checking')}</p>
+          : current.error ? <p className="sub">{t(lang, 'adviceFailed')}</p>
+            : steps.length === 0 ? <p className="sub">{t(lang, 'adviceFailed')}</p>
+              : <div className="dispatch-list">
+                {steps.map((step, i) => (
+                  <article className="dispatch-card" key={i}>
+                    <span className="dispatch-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                    <p className="dispatch-text">{step}</p>
+                  </article>
+                ))}
+              </div>}
       </div>
-    </div>
-    {current?.data?.caveat && <div className="sub" style={{ marginTop: 6 }}>{current.data.caveat}</div>}
-    {current?.data && <div className="row">
-      <button className="btn ghost" type="button" onClick={() => speak(current.data.advisory)} aria-label={t(lang, 'alertsListen')}><Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}</button>
-      <button className="btn ghost" type="button" onClick={() => { setPendingAsk(`Explain this advice for a ${persona} in ${loc.district}: ${current.data.advisory}`); setView('ask'); }}>{t(lang, 'homeAskAbout')}</button>
-      <span className="sub">{current.data.provenance}</span>
-    </div>}
-  </Card>;
+      {current?.data?.caveat && <div className="sub" style={{ marginTop: 8 }}>{current.data.caveat}</div>}
+      {current?.data && (
+        <div className="row" style={{ marginTop: 8 }}>
+          <button className="btn btn-ghost sm" type="button" onClick={() => speak(current.data.advisory)} aria-label={t(lang, 'alertsListen')}>
+            <Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}
+          </button>
+          <button className="btn btn-ghost sm" type="button" onClick={() => { setPendingAsk(`Explain this advice for a ${persona} in ${loc.district}: ${current.data.advisory}`); setView('ask'); }}>
+            {t(lang, 'homeAskAbout')}
+          </button>
+          <span className="mono sub">{current.data.provenance}</span>
+        </div>
+      )}
+      {/* Decision-support disclaimer, always on screen. */}
+      <p className="disclaimer" style={{ marginTop: 12 }}>
+        <Icon name="alert" size={16} aria-hidden /> {t(lang, 'sbDisclaimer')}
+      </p>
+    </Card>
+  );
 }

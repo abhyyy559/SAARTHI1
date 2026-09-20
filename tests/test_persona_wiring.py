@@ -25,11 +25,20 @@ def test_store_exposes_persona_and_district():
     assert "loc, setDistrict, districts" in store  # context value carries location
 
 
-def test_topbar_dropdown_writes_to_store():
-    shell = _read(os.path.join('components', 'Shell.jsx'))
-    assert re.search(r"onChange=\{?\(?\s*e\)?\s*=>\s*setPersona\(e\.target\.value\)", shell), \
-        "persona dropdown must call setPersona"
-    assert "setDistrict" in shell, "district dropdown must write location to store"
+def test_persona_role_grid_writes_to_store():
+    # Persona selection moved out of the topbar into the Advisor role grid
+    # (signal-board redesign: a role-card grid, no dropdown). Pin the new
+    # wiring so a persona tap can never silently become cosmetic again.
+    advisor = _read(os.path.join('components', 'Advisor.jsx'))
+    assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*onPick\(ut\.id\)", advisor), \
+        "role card tap must call onPick with the user type"
+    assert re.search(r"onPick=\{setPersona\}", advisor), \
+        "role grid must wire onPick to the store's setPersona"
+    # District selection likewise moved out of the topbar — it now lives in
+    # the location prompt's manual district chips.
+    loc = _read(os.path.join('components', 'LocationPrompt.jsx'))
+    assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*setDistrict\(r\)", loc), \
+        "district chip must write location to store"
 
 
 def test_chatpanel_sends_persona_and_location():

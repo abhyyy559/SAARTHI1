@@ -61,21 +61,16 @@ export default function InstallPrompt() {
   };
 
   return (
-    <div role="dialog" aria-label={t(lang, 'installTitle')} style={{
-      position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-      background: 'var(--bg-2)', color: 'var(--ink)', border: '1px solid var(--line)',
-      borderRadius: 16, padding: '14px 16px', zIndex: 300, boxShadow: 'var(--shadow)',
-      maxWidth: 'min(420px, calc(100vw - 32px))',
-    }}>
-      <div style={{ fontWeight: 800, marginBottom: 4 }}>{t(lang, 'installTitle')}</div>
-      <div className="sub" style={{ marginBottom: 6 }}>
+    <div role="dialog" aria-label={t(lang, 'installTitle')} className="install-tip">
+      <div className="kicker">{t(lang, 'installTitle')}</div>
+      <div className="sub" style={{ marginBottom: 8 }}>
         {ios && !canInstall ? t(lang, 'iosHint') : t(lang, 'installBody')}
       </div>
-      <div className="row" style={{ display: 'flex', gap: 8 }}>
+      <div className="tour-actions" style={{ marginTop: 0 }}>
         {canInstall && !ios && (
-          <button type="button" className="btn" onClick={install}>{t(lang, 'installGo')}</button>
+          <button type="button" className="btn btn-signal" onClick={install}>{t(lang, 'installGo')}</button>
         )}
-        <button type="button" className="btn ghost" onClick={dismiss}>{t(lang, 'installLater')}</button>
+        <button type="button" className="btn btn-ghost" onClick={dismiss}>{t(lang, 'installLater')}</button>
       </div>
     </div>
   );

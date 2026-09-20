@@ -39,9 +39,9 @@ export default {
     alertsNoneTitle: 'All clear here',
     alertsNoneBody: 'We checked. No warning for your district now.',
 
-    // --- details view: no demo alert in play ---------------------------
+    // --- details view: nothing selected yet --------------------------------
     detailsNoneTitle: 'No alert selected',
-    detailsNoneBody: 'No demo alert is in play. Launch a scenario in the Demo control panel to see its full details here.',
+    detailsNoneBody: 'No alert is selected yet. Open the Alerts page, pick a warning, and its full details will appear here.',
 
     // --- empty state 2: service did NOT reach us. Never a green tick ---
     alertsCannotTitle: 'Cannot check now',
@@ -151,7 +151,7 @@ export default {
     alertsNoneBody: 'हमने जाँच लिया। आपके जिले में अभी कोई चेतावनी नहीं है।',
 
     detailsNoneTitle: 'कोई चेतावनी चयनित नहीं',
-    detailsNoneBody: 'अभी कोई डेमो चेतावनी सक्रिय नहीं है। डेमो कंट्रोल पैनल में एक सीनारियो चलाएँ।',
+    detailsNoneBody: 'अभी कोई चेतावनी चयनित नहीं है। चेतावनी पेज खोलें, एक चेतावनी चुनें, और उसका पूरा विवरण यहाँ दिखेगा।',
 
     alertsCannotTitle: 'अभी जाँच नहीं हो सकी',
     alertsCannotBody: 'चेतावनी सेवा ने जवाब नहीं दिया। हम यह नहीं कह सकते कि सब ठीक है।',
@@ -256,7 +256,7 @@ export default {
     alertsNoneBody: 'మేము తనిఖీ చేశాం. మీ జిల్లాకు ఇప్పుడు హెచ్చరిక లేదు.',
 
     detailsNoneTitle: 'ఎలాంటి హెచ్చరిక ఎంపిక కాలేదు',
-    detailsNoneBody: 'ప్రస్తుతం డెమో హెచ్చరిక ఏదీ లేదు. డెమో కంట్రోల్ ప్యానెల్‌లో ఒక దృశ్యాన్ని ప్రారంభించండి.',
+    detailsNoneBody: 'ఇంకా ఏ హెచ్చరిక ఎంపిక కాలేదు. హెచ్చరికల పేజీని తెరిచి, ఒక హెచ్చరికను ఎంచుకోండి — దాని పూర్తి వివరాలు ఇక్కడ కనిపిస్తాయి.',
 
     alertsCannotTitle: 'ఇప్పుడు తనిఖీ చేయలేము',
     alertsCannotBody: 'హెచ్చరిక సేవ సమాధానం ఇవ్వలేదు. ఇది సురక్షితం అని చెప్పలేము.',

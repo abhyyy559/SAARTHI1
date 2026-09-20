@@ -23,15 +23,6 @@ const STEPS = [
   { view: 'ask', sel: '[data-tour="nav-alerts"]', icon: 'bell', title: 'obt6t', body: 'obt6b' },
 ];
 
-const ICONS = {
-  check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12.5l2.5 2.5L16 9.5" /></svg>,
-  mic: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" /><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3" /></svg>,
-  shield: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L4 12l8 10 8-10-8-10z" /></svg>,
-  person: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" /></svg>,
-  chat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z" /></svg>,
-  bell: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>,
-};
-
 export default function OnboardingTour() {
   const { lang, setView } = useApp();
   const [active, setActive] = useState(false);
@@ -157,58 +148,48 @@ export default function OnboardingTour() {
   const tipTop = rect ? rect.top + rect.height + 12 : null;
   const flip = tipTop != null && tipTop > window.innerHeight - 220;
 
+  // Black console tooltip, signal-yellow title — reads like the rest of
+  // the board. The deep-link guard above is unchanged: a launch URL naming a
+  // view always wins over first-run auto-start.
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>
-      <div
-        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.62)' }}
-        onClick={() => close(false)}
-      />
+    <>
+      <div className="tour-scrim" onClick={() => close(false)} />
       {rect && (
         <div
           aria-hidden
+          className="tour-ring"
           style={{
-            position: 'fixed',
             top: Math.max(4, rect.top - pad),
             left: Math.max(4, rect.left - pad),
             width: rect.width + pad * 2,
             height: rect.height + pad * 2,
-            border: '3px solid var(--accent)',
-            borderRadius: 16,
-            boxShadow: '0 0 0 9999px rgba(0,0,0,.62), 0 0 32px var(--accent)',
-            pointerEvents: 'none',
           }}
         />
       )}
       <div
         ref={dialogRef}
         role="dialog" aria-modal="true" aria-label={t(lang, s.title)} tabIndex={-1}
-        className="card"
+        className="tour-tip"
         style={{
-          position: 'fixed',
           left: '50%', transform: 'translateX(-50%)',
           top: rect ? (flip ? Math.max(8, rect.top - 218) : Math.min(window.innerHeight - 218, rect.top + rect.height + 12)) : 'auto',
           bottom: rect ? undefined : 24,
-          width: 'min(400px, calc(100vw - 32px))',
-          maxHeight: 210,
         }}
       >
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6 }}>
-          <span style={{ width: 30, height: 30, color: 'var(--accent)', flexShrink: 0 }}>{ICONS[s.icon]}</span>
-          <b>{t(lang, s.title)}</b>
-          <span className="mono" style={{ marginLeft: 'auto' }}>{step + 1}/{STEPS.length}</span>
-        </div>
-        <p className="sub" style={{ marginBottom: 12 }}>{t(lang, s.body)}</p>
-        <div className="row" style={{ display: 'flex', gap: 8 }}>
+        <span className="tour-count">{step + 1}/{STEPS.length}</span>
+        <div className="display">{t(lang, s.title)}</div>
+        <p>{t(lang, s.body)}</p>
+        <div className="tour-actions">
           {step > 0 && (
-            <button type="button" className="btn ghost" onClick={() => goStep(step - 1)}>{t(lang, 'obBack')}</button>
+            <button type="button" className="btn btn-ghost" onClick={() => goStep(step - 1)}>{t(lang, 'obBack')}</button>
           )}
           <span style={{ flex: 1 }} />
-          <button type="button" className="btn ghost" onClick={() => close(true)}>{t(lang, 'obSkip')}</button>
-          <button type="button" className="btn" onClick={() => (step < STEPS.length - 1 ? goStep(step + 1) : (close(true), setView('home')))}>
+          <button type="button" className="btn btn-ghost" onClick={() => close(true)}>{t(lang, 'obSkip')}</button>
+          <button type="button" className="btn btn-signal" onClick={() => (step < STEPS.length - 1 ? goStep(step + 1) : (close(true), setView('home')))}>
             {t(lang, 'obNext')}
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

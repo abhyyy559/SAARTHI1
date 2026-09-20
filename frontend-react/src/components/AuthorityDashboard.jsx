@@ -50,10 +50,10 @@ function LedgerBlock({ title, data, simulated }) {
       </div>
       <div className="cov-bar" role="img"
         aria-label={`${pct(data.reached)} reached`}>
-        <span style={{ width: pct(data.reached), background: 'var(--live)' }} />
-        <span style={{ width: pct(data.PENDING || 0), background: 'var(--cached)' }} />
+        <span style={{ width: pct(data.reached), background: 'var(--sev-green)' }} />
+        <span style={{ width: pct(data.PENDING || 0), background: 'var(--sev-yellow)' }} />
         <span style={{ width: pct(data.OFFLINE || 0), background: '#f59e0b' }} />
-        <span style={{ width: pct(data.UNREACHABLE || 0), background: 'var(--off)' }} />
+        <span style={{ width: pct(data.UNREACHABLE || 0), background: 'var(--sev-red)' }} />
       </div>
       <div className="cov-stats">
         <Stat k={t(lang, 'covReached')} v={data.reached} />
@@ -145,7 +145,7 @@ export default function AuthorityDashboard() {
           {selectedAlert && (
             <div className="evrow">
               <span className="k">{selectedAlert.title} · {selectedAlert.district}</span>
-              <span className={`sev ${selectedAlert.severity}`}>{selectedAlert.severity}</span>
+              <span className="sev-stamp" data-sev={selectedAlert.severity}>{selectedAlert.severity}</span>
             </div>
           )}
           <LedgerBlock title={t(lang, 'covRealTitle')} data={cov.real} />

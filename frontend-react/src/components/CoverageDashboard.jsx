@@ -48,15 +48,15 @@ export default function CoverageDashboard({ district: initialDistrict }) {
   const ackRate = counts.delivered > 0 ? Math.round((counts.acknowledged / counts.delivered) * 100) : 0;
 
   return (
-    <Card title={t(lang, 'covTitle')} sub={t(lang, 'covNote')} className="ops-panel">
-      <div className="cov-filter" style={{ marginBottom: 12 }}>
+    <Card title={t(lang, 'covDistrictTitle')} sub={t(lang, 'covNote')} className="ops-panel">
+      <div className="cov-filter">
         <label className="mono" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {t(lang, 'district')}
           <select
+            className="input"
             value={district}
             onChange={(e) => setDistrict(e.target.value)}
             aria-label={t(lang, 'district')}
-            style={{ minWidth: 180 }}
           >
             <option value="">{t(lang, 'covAllDistricts')}</option>
             {DISTRICTS.map((d) => (
@@ -79,12 +79,7 @@ export default function CoverageDashboard({ district: initialDistrict }) {
               <Stat key={k} k={t(lang, `cov${k.charAt(0).toUpperCase() + k.slice(1)}`)} v={counts[k] || 0} />
             ))}
             {counts.p2p_relayed > 0 && (
-              <span className="cov-sim-badge" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                marginTop: 8, padding: '4px 8px', borderRadius: 4,
-                background: 'var(--bg-2)', border: '1px solid var(--line)',
-                fontSize: 11, fontWeight: 700, color: 'var(--accent)'
-              }}>
+              <span className="prov DEMO">
                 <Icon name="radio" size={12} /> {t(lang, 'covSimLabel')}
               </span>
             )}

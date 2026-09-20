@@ -62,6 +62,19 @@ export function splitAdvisory(text) {
   return { lead, detail };
 }
 
+// ISO timestamps sometimes arrive inside answer text verbatim ("valid until
+// 2026-09-20T22:43:00.994242+05:30"). Render them the way a person would say
+// them, in the viewer's own locale — never as machine noise. Display-only;
+// the underlying data is untouched.
+const ISO_TS_RE = /\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?\b/g;
+function humanizeTimestamps(text) {
+  return String(text || '').replace(ISO_TS_RE, (m) => {
+    const d = new Date(m);
+    if (Number.isNaN(d.getTime())) return m;
+    return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  });
+}
+
 // Markdown-lite for LLM answers: headings, bold, short lists, paragraphs.
 // HTML is escaped FIRST so model output can never inject markup.
 const esc = (s) =>
@@ -87,7 +100,7 @@ const bullet = (line) => {
 };
 
 export function formatAnswer(text) {
-  const lines = String(text || '').split('\n');
+  const lines = humanizeTimestamps(text).split('\n');
   let html = '';
   let inList = false;
   let para = [];

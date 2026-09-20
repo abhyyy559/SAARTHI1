@@ -1,7 +1,6 @@
-// Alert Center rebuilt for people who cannot read: every alert is a CARD with a
-// HAZARD icon, an official severity colour and ONE short translated word
-// (Danger / Be alert / Be careful / All clear / Not sure) before any sentence is
-// read. Details are secondary; Listen and Ask are the actions.
+// Alert Center — every alert is a bulletin card: a 6px signal bar on the
+// leading edge plus an uppercase severity stamp (never colour-only), the
+// headline, district + time, and a chevron. Tapping a card opens Details.
 //
 // The verdict is the backend's, decided once in verdict_service.py. This file
 // renders `warn.verdict` and never re-derives, upgrades or recolours a LEVEL.
@@ -16,7 +15,6 @@
 //   2. service unreachable                 -> GREY "cannot check", never a tick
 //   3. alerts exist for another district   -> BLUE "nearby", not covering you
 import { useCallback, useEffect, useState } from 'react';
-import './AlertCenter.css';
 import { api, demoAlertApi } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
@@ -27,36 +25,6 @@ import Icon from './icons';
 // translated, and no code is ever invented here.
 const SEV_WORD = { RED: 'sevRed', ORANGE: 'sevOrange', YELLOW: 'sevYellow', GREEN: 'sevGreen' };
 const sevKey = (s) => SEV_WORD[s] || 'sevUnknown';
-
-// Hazard text -> glyph, so the threat is readable before the word. Matched only
-// against the hazard/event/headline the source actually sent; nothing inferred.
-// Word boundaries matter: "wheat" must not match "heat".
-const HAZARD_ICON = [
-  [/\b(lightning|thunder|squall)\b/, 'bolt'],
-  [/\b(hail|storm)\b/, 'storm'],
-  [/\b(cyclone|wind|winds|gust|gusty|gale)\b/, 'wind'],
-  [/\b(flood|flooding|inundat\w*|waterlog\w*|surge)\b/, 'flood'],
-  [/\b(rain|rains|rainfall|shower|showers|drizzle)\b/, 'rain'],
-  [/\b(heat|heatwave|hot|temperature)\b/, 'heat'],
-  [/\b(snow|cold|frost|chill)\b/, 'snow'],
-  [/\b(fog|smog|visibility|dust)\b/, 'fog'],
-  [/\b(fire|flame|flames)\b/, 'flame'],
-  [/\b(wave|waves|swell|sea|marine|coastal)\b/, 'wave'],
-  [/\b(landslide|rockfall|avalanche)\b/, 'mountain'],
-];
-function hazardIcon(a) {
-  const text = `${a.hazard || ''} ${a.event || ''} ${a.headline || ''}`.toLowerCase();
-  for (const [re, icon] of HAZARD_ICON) if (re.test(text)) return icon;
-  return null;
-}
-
-// The four states the page can be in. `alerts` wins whenever a real alert
-// exists: an alert is never replaced by an empty-state panel.
-const EMPTY = {
-  clear: { icon: 'check', cls: 'is-clear', title: 'alertsNoneTitle', body: 'alertsNoneBody' },
-  unavailable: { icon: 'offline', cls: 'is-unavailable', title: 'alertsCannotTitle', body: 'alertsCannotBody' },
-  nearby: { icon: 'map', cls: 'is-nearby', title: 'alertsNearbyTitle', body: 'alertsNearbyBody' },
-};
 
 // Map backend lifecycle states to i18n keys
 const STATE_I18N_KEY = {
@@ -69,8 +37,8 @@ const STATE_I18N_KEY = {
   'CANCELLED': 'stCancelled',
 };
 
-function AlertCard({ a, nowMs, nearby = false, onClick, children }) {
-  const { lang, speak, setView, setPendingAsk, loc } = useApp();
+function AlertCard({ a, nowMs, nearby = false, onOpen }) {
+  const { lang, speak, setView, setPendingAsk, loc, setSelectedAlert } = useApp();
   const sev = a.severity || 'UNKNOWN';
   const exp = isExpired(a.valid_until || a.expires, nowMs);
   const until = formatValidUntil(a.valid_until || a.expires);
@@ -78,14 +46,15 @@ function AlertCard({ a, nowMs, nearby = false, onClick, children }) {
   const head = (a.headline || a.message || a.hazard || a.event || '').trim();
   const area = a.areaDesc || a.area;
   const ageMin = minutesSince(a.issued_at || a.sent, nowMs);
-  // Hazard first (what is coming), official severity colour second, severity
-  // icon only when the source told us nothing about the hazard.
-  const icon = hazardIcon(a) || (sev === 'GREEN' ? 'check' : sev === 'UNKNOWN' ? 'help' : 'alert');
   const spoken = `${a.hazard || a.event || ''}. ${head}. ${a.instruction || ''}`;
   const ask = (e) => {
     e.stopPropagation();
     setPendingAsk(`Tell me about this alert: ${a.hazard || a.event || ''} in ${area || loc.district}`);
     setView('ask');
+  };
+  const open = () => {
+    setSelectedAlert(a);
+    setView('details');
   };
   // Lifecycle state from backend — never re-derived here
   const lifecycleState = String(a.lifecycle_state || a.state || 'UPCOMING').toUpperCase();
@@ -104,50 +73,49 @@ function AlertCard({ a, nowMs, nearby = false, onClick, children }) {
 
   return (
     <article
-      className={`alert-card${exp ? ' is-expired' : ''}${nearby ? ' is-nearby' : ''}`}
+      className={`alert-card${exp ? ' is-expired' : ''}`}
       data-sev={sev}
-      data-unconf={a.unconfirmed ? 'true' : undefined}
       data-state={stateKey}
-      onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : undefined}
+      onClick={onOpen === false ? undefined : open}
+      // Card body is keyboard-activatable like Home's bulletin buttons.
+      // The target guard keeps Enter/Space on the inner Listen/Ask buttons
+      // from also opening Details (they stopPropagation their clicks).
+      tabIndex={onOpen === false ? undefined : 0}
+      onKeyDown={onOpen === false ? undefined : (e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+      }}
+      style={onOpen === false ? undefined : { cursor: 'pointer' }}
     >
-      <ol className="lc-steps" aria-hidden="true">
-        {LC_STEPS.map((s, i) => (
-          <li key={s.key} className={`lc-step${i === lcIndex ? ' is-now' : ''}${i < lcIndex ? ' is-done' : ''}`}>
-            <span className="lc-dot" />
-            <span className="lc-name">{t(lang, s.key)}</span>
-          </li>
-        ))}
-      </ol>
-      <span className="alert-icon" data-sev={sev} aria-hidden><Icon name={icon} size={26} /></span>
-      <div className="alert-body">
-        <div className="alert-sevrow">
-          <span className="alert-sevword">{t(lang, sevKey(sev))}</span>
-          <span className={`demo-state st-${stateKey}`}>{stateLabel}</span>
-          {nearby && (
-            <span className="alert-nearby-badge"><Icon name="map" size={12} />{t(lang, 'alertsNearbyBadge')}</span>
-          )}
-          {a.unconfirmed && (
-            <span className="alert-unconf"><Icon name="help" size={12} />{t(lang, 'basisUnverified')}</span>
-          )}
-          {exp && <span className="alert-exp">{t(lang, 'verdictExpired')}</span>}
+      <span className="sev-bar" aria-hidden="true" />
+      <div className="ac-body">
+        <div className="bc-head">
+          <span className="sev-stamp">{t(lang, sevKey(sev))}</span>
+          <span className="chip mono">{stateLabel}</span>
+          {nearby && <span className="chip"><Icon name="map" size={12} />{t(lang, 'alertsNearbyBadge')}</span>}
+          {a.unconfirmed && <span className="chip"><Icon name="help" size={12} />{t(lang, 'basisUnverified')}</span>}
+          {exp && <span className="chip">{t(lang, 'verdictExpired')}</span>}
         </div>
-        {head && <div className="alert-headline">{head}</div>}
-        <div className="alert-area">
-          {area && <><Icon name="pin" size={13} /><span>{area}</span></>}
-          {until && !exp && (
-            <><span>·</span><Icon name="clock" size={13} /><span>{until}{countdown && countdown !== 'expired' ? ` (${countdown})` : ''}</span></>
-          )}
-          {exp && <><span>·</span><span>{t(lang, 'staleMay')}</span></>}
-          {ageMin != null && <><span>·</span><span>{t(lang, 'agoPattern').replace('{m}', ageMin)}</span></>}
+        {head && <div className="ac-title">{head}</div>}
+        <div className="ac-meta">
+          {area && <span><Icon name="pin" size={13} /> {area}</span>}
+          {until && !exp && <span><Icon name="clock" size={13} /> {until}{countdown && countdown !== 'expired' ? ` (${countdown})` : ''}</span>}
+          {exp && <span>{t(lang, 'staleMay')}</span>}
+          {ageMin != null && <span className="mono">{t(lang, 'agoPattern').replace('{m}', ageMin)}</span>}
         </div>
-        <div className="alert-actions">
+        <ol className="stepper" aria-hidden="true" style={{ marginBottom: 4 }}>
+          {LC_STEPS.map((s, i) => (
+            <li key={s.key} className={`step${i === lcIndex ? ' is-now' : ''}${i < lcIndex ? ' is-done' : ''}`}>
+              <div><div className="step-t" style={{ fontSize: 12 }}>{t(lang, s.key)}</div></div>
+            </li>
+          ))}
+        </ol>
+        <div className="row">
           <button type="button" className="btn sm" onClick={(e) => { e.stopPropagation(); speak(spoken); }}>
             <Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}
           </button>
-          <button type="button" className="btn ghost sm" onClick={ask}>{t(lang, 'alertsAsk')}</button>
+          <button type="button" className="btn btn-ghost sm" onClick={ask}>{t(lang, 'alertsAsk')}</button>
         </div>
-        {children}
       </div>
     </article>
   );
@@ -155,16 +123,21 @@ function AlertCard({ a, nowMs, nearby = false, onClick, children }) {
 
 // One block, three looks. The icon and the colour carry the meaning before the
 // words are read: tick/green, offline/grey, map/blue.
+const EMPTY = {
+  clear: { icon: 'check', cls: 'is-clear', title: 'alertsNoneTitle', body: 'alertsNoneBody' },
+  unavailable: { icon: 'offline', cls: 'is-unavailable', title: 'alertsCannotTitle', body: 'alertsCannotBody' },
+  nearby: { icon: 'map', cls: 'is-nearby', title: 'alertsNearbyTitle', body: 'alertsNearbyBody' },
+};
+
 function EmptyState({ state, nearbyCount = 0, onRetry }) {
   const { lang } = useApp();
   const cfg = EMPTY[state];
   return (
-    <div className={`alert-none ${cfg.cls}`} data-state={state}>
-      <Icon name={cfg.icon} size={52} className="big" />
-      <div className="alert-headline">{t(lang, cfg.title)}</div>
+    <div className="empty-state" data-state={state}>
+      <div className="display"><Icon name={cfg.icon} size={40} /> {t(lang, cfg.title)}</div>
       <p className="sub">{t(lang, cfg.body).replace('{n}', nearbyCount)}</p>
       {state === 'unavailable' && (
-        <button type="button" className="btn ghost sm" onClick={onRetry}>
+        <button type="button" className="btn sm" onClick={onRetry}>
           <Icon name="refresh" size={14} /> {t(lang, 'alertsRetry')}
         </button>
       )}
@@ -173,23 +146,22 @@ function EmptyState({ state, nearbyCount = 0, onRetry }) {
 }
 
 // Official alerts that did NOT verify for this district. They are context and
-// must never read like the user's own warning, so every card here is dashed,
-// tinted and badged "nearby". When there is no alert of the user's own, this
-// section carries the whole state-3 banner.
+// must never read like the user's own warning, so every card here is dashed
+// and badged "nearby". When there is no alert of the user's own, this section
+// carries the whole state-3 banner.
 function NearbySection({ alerts, prominent, nowMs }) {
   const { lang } = useApp();
   return (
-    <section className={`nearby-sec${prominent ? ' is-prominent' : ''}`}>
+    <section aria-label={t(lang, 'alertsNearbyTitle')}>
+      <div className="alert-sec-title">
+        <span className="kicker">{t(lang, 'alertsNearbyTitle')}</span>
+      </div>
       {prominent ? (
         <EmptyState state="nearby" nearbyCount={alerts.length} />
       ) : (
-        <div className="nearby-head">
-          <Icon name="map" size={18} />
-          <h2>{t(lang, 'alertsNearbyTitle')}</h2>
-        </div>
+        <p className="sub">{t(lang, 'alertsNearbySub')}</p>
       )}
-      {!prominent && <p className="sub">{t(lang, 'alertsNearbySub')}</p>}
-      <div className="alert-stack">
+      <div className="alert-list">
         {alerts.map((a, i) => <AlertCard key={a.identifier || i} a={a} nowMs={nowMs} nearby />)}
       </div>
     </section>
@@ -215,17 +187,17 @@ function NotifyDemo() {
   const blocked = notifyPerm !== 'granted';
   return (
     <div className="row" style={{ alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-      <button type="button" className="btn ghost sm" onClick={simulateAlert}>
+      <button type="button" className="btn btn-ghost sm" onClick={simulateAlert}>
         <Icon name="bell" size={15} /> {t(lang, 'demoAlert')}
       </button>
-      <button type="button" className="btn ghost sm" onClick={simulateClear}>
+      <button type="button" className="btn btn-ghost sm" onClick={simulateClear}>
         <Icon name="check" size={15} /> {t(lang, 'demoClear')}
       </button>
       {/* This one is sent by the SERVER, so it is the honest proof of the
           closed-app path: close the tab, then press it from another device. */}
       <button
         type="button"
-        className="btn ghost sm"
+        className="btn btn-ghost sm"
         onClick={sendTestPush}
         disabled={!pushReady}
         title={pushReady ? t(lang, 'demoPushHint') : t(lang, 'notifyPushFailed')}
@@ -233,7 +205,7 @@ function NotifyDemo() {
       >
         <Icon name={pushReady ? 'wifi' : 'offline'} size={15} /> {t(lang, 'notifyTest')}
       </button>
-      <span className="mono" style={{ color: blocked ? 'var(--off)' : 'var(--ink-3)' }}>
+      <span className="mono sub">
         {blocked ? t(lang, 'notifyBlocked') : pushReady ? t(lang, 'notifyOnBackground') : t(lang, 'demoNotifyHint')}
       </span>
     </div>
@@ -334,16 +306,18 @@ export default function AlertCenter() {
   }
 
   return (
-    <section className="panel">
-      <h2>{t(lang, 'alertsTitle')} · {loc.district}</h2>
+    <>
+      <div className="alert-sec-title">
+        <h2 className="display">{t(lang, 'alertsTitle')} · {loc.district}</h2>
+      </div>
       {/* Demo-only: fire a warning and its all-clear through the real
           notification path, so the cycle can be shown without waiting for NDMA.
           Hidden outside demo mode — it is a demonstration, not a control. */}
       <NotifyDemo />
       {!warn ? (
-        <div className="mono">{t(lang, 'alertsLoading')}</div>
+        <div className="mono" role="status">{t(lang, 'alertsLoading')}</div>
       ) : state === 'alerts' ? (
-        <div className="alert-stack">
+        <div className="alert-list">
           {alerts.map((a, i) => <AlertCard key={a.identifier || i} a={a} nowMs={nowMs} />)}
         </div>
       ) : state === 'nearby' ? null : (
@@ -355,24 +329,28 @@ export default function AlertCenter() {
         <NearbySection alerts={nearby} prominent={state === 'nearby'} nowMs={nowMs} />
       )}
 
-      <h2 style={{ marginTop: 20 }}>{t(lang, 'commTitle')}</h2>
+      <div className="alert-sec-title">
+        <h2 className="display">{t(lang, 'commTitle')}</h2>
+      </div>
       <p className="sub">{t(lang, 'commSub')}</p>
-      {reports.length === 0 ? <p className="sub">{t(lang, 'commEmpty')}</p> : reports.map((r) => (
-        <div className="evrow" key={r.report_id}>
-          <span className="k rep-k">
-            <Icon name={REPORT_ICON[r.report_type] || 'info'} size={13} />
-            {REPORT_WORD[r.report_type] ? t(lang, REPORT_WORD[r.report_type]) : String(r.report_type).replaceAll('_', ' ')}
-            {' · '}{r.district}
-          </span>
-          <span>{r.text} <span className="prov COMMUNITY">COMMUNITY</span></span>
-        </div>
-      ))}
-      <div className="pick-grid">
+      {reports.length === 0
+        ? <p className="sub">{t(lang, 'commEmpty')}</p>
+        : reports.map((r) => (
+          <div className="evrow" key={r.report_id}>
+            <span className="k rep-k">
+              <Icon name={REPORT_ICON[r.report_type] || 'info'} size={13} />
+              {REPORT_WORD[r.report_type] ? t(lang, REPORT_WORD[r.report_type]) : String(r.report_type).replaceAll('_', ' ')}
+              {' · '}{r.district}
+            </span>
+            <span>{r.text} <span className="prov COMMUNITY">COMMUNITY</span></span>
+          </div>
+        ))}
+      <div className="needs-grid" role="group" aria-label={t(lang, 'commTitle')}>
         {REPORT_TYPES.map((rt) => (
           <button
             key={rt.id}
             type="button"
-            className="pick-tile"
+            className={`need-tile${form.report_type === rt.id ? ' is-picked' : ''}`}
             aria-pressed={form.report_type === rt.id}
             onClick={() => setForm({ ...form, report_type: rt.id })}
           >
@@ -383,6 +361,7 @@ export default function AlertCenter() {
       </div>
       <form onSubmit={submitReport} className="row">
         <input
+          className="input"
           type="text"
           placeholder={t(lang, 'commWhatPh')}
           aria-label={t(lang, 'commWhatPh')}
@@ -393,6 +372,6 @@ export default function AlertCenter() {
         <button className="btn" type="submit"><Icon name="send" size={14} /> {t(lang, 'commSend')}</button>
       </form>
       {reportNote ? <p className="mono" role="status">{reportNote}</p> : null}
-    </section>
+    </>
   );
 }

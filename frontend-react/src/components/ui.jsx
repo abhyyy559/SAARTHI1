@@ -1,5 +1,7 @@
 // Presentation primitives shared by every view. Severity and provenance are
 // ALWAYS rendered as a colour + its machine-readable label together (§ never colour-only).
+// SIGNAL BOARD: severity is a signal bar + stamped label driven by data-sev,
+// which only ever carries backend-provided severity.
 
 export function Card({ title, sub, eyebrow, actions, children, className = '', as: Tag = 'section', ...rest }) {
   return (
@@ -19,13 +21,19 @@ export function Card({ title, sub, eyebrow, actions, children, className = '', a
   );
 }
 
-/** Official IMD severity. Colour is only ever used together with this code. */
-export function Sev({ level }) {
+/** Backend-provided severity: a signal-bar host + uppercase stamp. */
+export function Sev({ level, stamp = true }) {
   if (!level) return null;
-  return <span className={`sev ${level}`} title={`Official severity: ${level}`}>{level}</span>;
+  return (
+    <span data-sev={level} title={`Official severity: ${level}`}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <span className="sev-bar" style={{ height: '1.4em' }} aria-hidden="true" />
+      {stamp && <span className="sev-stamp">{level}</span>}
+    </span>
+  );
 }
 
-/** Provenance of a single fact. Never claimant without a label. */
+/** Provenance of a single fact. Never colour-only, never claimant without a label. */
 export function Prov({ value }) {
   if (!value) return null;
   return <span className={`prov ${value}`} title={`Data provenance: ${value}`}>{value}</span>;

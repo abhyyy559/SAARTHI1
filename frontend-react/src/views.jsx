@@ -1,9 +1,7 @@
-// Round2 view set: Home (safety + speak/tap to ask), Ask (conversation +
-// voice), Alerts (official warnings + resilient SOS network), Notifications
-// (lifecycle trail), Advisor (persona advice), Admin (demo panel), Coverage
-// (authority dashboard). The jury can trigger every step of the alert story
-// live from these screens.
-import { useEffect, useState } from 'react';
+// SIGNAL BOARD view set: Home (district dispatch), Ask (facts console),
+// Advisory (dispatch cards), Alerts (mayday console), Notifications
+// (lifecycle trail), Advisor (role cards), Admin (backstage console),
+// Trust (source guarantees), Details (selected alert), Sources.
 import Home from './components/Home';
 import ChatPanel from './components/ChatPanel';
 import AlertCenter from './components/AlertCenter';
@@ -18,9 +16,6 @@ import AuthorityDashboard from './components/AuthorityDashboard';
 import CoverageDashboard from './components/CoverageDashboard';
 import SourceStatus from './components/SourceStatus';
 import HowItWorks from './components/HowItWorks';
-import './components/Round2.css';
-import './components/Home2.css';
-import './components/CalmCommand.css'; // "Calm Command" redesign — loads last
 import { useApp } from './store';
 import { t } from './i18n';
 import { Card } from './components/ui';
@@ -46,10 +41,9 @@ export function AskView() {
   );
 }
 
-// Alerts: SOS leads, then official alerts, then community reports. The old
-// order buried the one control that must work with shaking hands — the SOS
-// button — under the official list. Emergency carries its own translated
-// heading, so it needs no extra chrome here.
+// Alerts: the mayday console leads (SOS is the one control that must work
+// with shaking hands), then official bulletins, then the P2P panel — always
+// stamped SIMULATED. Emergency carries its own translated heading.
 export function AlertsView() {
   return (
     <>
@@ -78,7 +72,7 @@ export function AdvisorView() {
   );
 }
 
-// Advisory - the persona guidance (ProfileAdvice) lives here alone; the
+// Advisory — the persona guidance (ProfileAdvice) lives here alone; the
 // Home/chat surface never shows advice.
 export function AdvisoryView() {
   return (
@@ -110,49 +104,42 @@ export function TrustView() {
         sub={t(lang, 'srcStatusSub')}
       >
         <SourceStrip refreshKey={0} />
-        {/* SourceStatus used to be rendered twice on this view (once here and
-            once below the card), so the whole table appeared twice. */}
         <SourceStatus />
       </Card>
-      {/* What GIS actually does here, and what WIS 2.0 actually is. This
-          component existed but was never mounted, so the honest explanation of
-          both was unreachable. */}
       <HowItWorks />
     </>
   );
 }
 
-// Alert details as a view: shows the latest demo alert (or nothing selected).
-// Reached via ?view=details — e.g. from a future AlertCenter/AdminPanel
-// selection — without touching the citizen nav.
+// Alert details as a view: shows the citizen-selected alert (tapped from a
+// bulletin or alert card). If nothing was ever selected the board says so
+// honestly instead of inventing a "latest" alert.
 export function DetailsView() {
-  const { lang, setView } = useApp();
-  const [alert, setAlert] = useState(undefined);
-  useEffect(() => {
-    let dead = false;
-    import('./api').then(({ api }) =>
-      api.demoAlerts().then(
-        (d) => { if (!dead) setAlert((d.alerts || []).slice(-1)[0] || null); },
-        () => { if (!dead) setAlert(null); },
-      ));
-    return () => { dead = true; };
-  }, []);
-  if (alert === undefined) return null;
+  const { lang, setView, selectedAlert } = useApp();
+  if (!selectedAlert) {
+    return (
+      <>
+        <ViewHead titleKey="navDetails" subKey="viewDetailsSub" />
+        <div className="empty-state" data-state="details-none">
+          <div className="display">{t(lang, 'detailsNoneTitle')}</div>
+          <p className="sub">{t(lang, 'detailsNoneBody')}</p>
+          <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
+            <button type="button" className="btn" onClick={() => setView('alerts')}>
+              <Icon name="alert" size={18} />
+              {t(lang, 'navAlerts')}
+            </button>
+            <button type="button" className="btn ghost sm" onClick={() => setView('admin')}>
+              {t(lang, 'demoTitle')}
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
   return (
     <>
-      <ViewHead titleKey="viewAlerts" subKey="viewAlertsSub" />
-      {alert === null ? (
-        <div className="alert-none is-clear" data-state="details-none">
-          <Icon name="alert" size={52} className="big" />
-          <div className="alert-headline">{t(lang, 'detailsNoneTitle')}</div>
-          <p className="sub">{t(lang, 'detailsNoneBody')}</p>
-          <button type="button" className="btn ghost sm" onClick={() => setView('admin')}>
-            {t(lang, 'demoTitle')}
-          </button>
-        </div>
-      ) : (
-        <AlertDetails alert={alert} onBack={() => setView('alerts')} />
-      )}
+      <ViewHead titleKey="navDetails" subKey="viewDetailsSub" />
+      <AlertDetails alert={selectedAlert} onBack={() => setView('alerts')} />
     </>
   );
 }
@@ -161,7 +148,7 @@ export function DetailsView() {
 export function SourcesView() {
   return (
     <>
-      <ViewHead titleKey="viewTrust" subKey="viewTrustSub" />
+      <ViewHead titleKey="navSources" subKey="viewTrustSub" />
       <SourceStatus />
     </>
   );

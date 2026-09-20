@@ -89,6 +89,10 @@ export function AppProvider({ children }) {
   const [sources, setSources] = useState(null);
   const [pipe, setPipe] = useState({ lit: [], detail: {} });
   const [result, setResult] = useState(null);        // last chat turn → Evidence view
+  // The alert the citizen tapped to open in the Details view. Set by alert
+  // cards (home bulletins, alert center); Details reads it, so the empty
+  // state is honest when nothing was ever selected.
+  const [selectedAlert, setSelectedAlert] = useState(null);
   const [disaster, setDisaster] = useState(false);
   const [simOffline, setSimOffline] = useState(false);
   const online = useOnline();
@@ -300,9 +304,12 @@ export function AppProvider({ children }) {
     return () => { dead = true; };
   }, [loc.district, loc.lat, loc.lon, applyMode]);
 
+  // /api/location/search returns latitude/longitude while the geolocation path
+  // resolves to lat/lon. Accept both: a manual district pick must carry real
+  // coordinates, otherwise every lat/lon fetch 422s and the verdict degrades.
   const setDistrict = useCallback((d) => {
     if (d && d.district) {
-      const next = { district: d.district, lat: d.lat, lon: d.lon, source: 'manual' };
+      const next = { district: d.district, lat: d.lat ?? d.latitude, lon: d.lon ?? d.longitude, source: 'manual' };
       setLoc(next);
       setLocStatus('ready');
       setLocNote('');
@@ -529,6 +536,7 @@ export function AppProvider({ children }) {
     demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, setSources,
     conn, connectionPill, offline, online, simOffline, setSimOffline,
     pipe, setPipe, result, handleResult,
+    selectedAlert, setSelectedAlert,
     disaster, setDisaster,
     ask, registerAsk, speak, stopSpeaking, speechState, speechNote,
     pendingAskRef, setPendingAsk,
@@ -539,7 +547,8 @@ export function AppProvider({ children }) {
     publishVerdict,
     notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush,
   }), [view, lang, persona, theme, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
-    simOffline, pipe, result, handleResult, disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, setPendingAsk,
+    simOffline, pipe, result, handleResult, selectedAlert,
+    disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,
     netState, lastSync, syncTick, toast, showToast,
     publishVerdict, notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush, device]);

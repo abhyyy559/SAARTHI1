@@ -23,6 +23,23 @@ const STATE_ICON = {
   CANCELLED: 'offline',
 };
 
+// Identifier for the ack POST. CAP alerts carry id/identifier, but the IMD
+// verdict warning has neither (backend WeatherWarning model has no id field).
+// The ack endpoint requires a non-empty alert_id, so fall back to a stable
+// composite key derived from the warning's own fields — identical on every
+// render, and the backend records it as telemetry either way.
+function alertIdentifier(a) {
+  const id = a.id || a.identifier;
+  if (id) return String(id);
+  return [
+    'imd-warning',
+    a.district || a.area || a.areaDesc || '',
+    a.hazard || a.event || '',
+    a.severity || '',
+    a.valid_until || a.ends_at || a.expires || a.issued_at || '',
+  ].join('|');
+}
+
 function fmt(ts) {
   if (!ts) return '';
   try {
@@ -45,7 +62,7 @@ export default function AlertDetails({ alert, onBack, onAck }) {
   const source = String(alert.source || alert.provenance || '').toUpperCase();
   const sourceLabel = source.includes('DEMO') || source === 'DEMO'
     ? 'DEMO'
-    : (alert.id || alert.identifier || '').startsWith('demo-') ? 'DEMO' : 'NDMA-SACHET CAP';
+    : alertIdentifier(alert).startsWith('demo-') ? 'DEMO' : 'NDMA-SACHET CAP';
   const instruction = alert.instruction || '';
   const head = alert.title || alert.headline || alert.message || alert.hazard || alert.event || '';
   const history = Array.isArray(alert.history) ? alert.history
@@ -56,7 +73,7 @@ export default function AlertDetails({ alert, onBack, onAck }) {
     try {
       await api.ack({
         endpoint: device || 'web-client',
-        alert_id: String(alert.id || alert.identifier || ''),
+        alert_id: alertIdentifier(alert),
         event: 'acknowledged',
         district,
       });
@@ -68,24 +85,28 @@ export default function AlertDetails({ alert, onBack, onAck }) {
   };
 
   return (
-    <section className="panel alert-details" aria-label={t(lang, 'viewAlerts')}>
-      <div className="row" style={{ alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        {onBack && (
-          <button type="button" className="btn ghost sm" onClick={onBack}>
+    <section aria-label={t(lang, 'viewAlerts')}>
+      {onBack && (
+        <div className="row" style={{ marginBottom: 12 }}>
+          <button type="button" className="btn btn-ghost sm" onClick={onBack}>
             <Icon name="chevron" size={14} /> {t(lang, 'back') || 'Back'}
           </button>
-        )}
-        <span className="alert-sevword" data-sev={sev}>{sev}</span>
-        <span className={`demo-state st-${state.toLowerCase().replace(/[^a-z]/g, '')}`}>{state}</span>
-        <span className={`prov ${sourceLabel === 'DEMO' ? 'DEMO' : 'OFFICIAL'}`}>{sourceLabel}</span>
-      </div>
-
-      {head && <h2 style={{ marginTop: 0 }}>{head}</h2>}
-      {district && (
-        <p className="sub">
-          <Icon name="pin" size={13} /> {district}
-        </p>
+        </div>
       )}
+      {/* The bulletin masthead: signal bar + stamps — everything here is the
+          backend's own wording, severity first. */}
+      <article className="bulletin-card" data-sev={sev}>
+        <span className="sev-bar" aria-hidden="true" />
+        <div className="bc-head">
+          <span className="sev-stamp" data-sev={sev}>{sev}</span>
+          <span className="demo-state">{state}</span>
+          <span className={`prov ${sourceLabel === 'DEMO' ? 'DEMO' : 'OFFICIAL'}`}>{sourceLabel}</span>
+        </div>
+        {head && <h2 className="bc-title">{head}</h2>}
+        {district && (
+          <p className="bc-meta"><Icon name="pin" size={13} /> {district}</p>
+        )}
+      </article>
 
       <div className="evrow">
         <span className="k">{t(lang, 'detValidity')}</span>
@@ -102,11 +123,15 @@ export default function AlertDetails({ alert, onBack, onAck }) {
         </div>
       )}
 
-      <h3 style={{ marginTop: 14 }}>{t(lang, 'detTimeline')}</h3>
-      <ol className="alert-timeline">
+      <div className="alert-sec-title">
+        <span className="kicker">{t(lang, 'detTimeline')}</span>
+      </div>
+      <ol className="det-timeline">
         {history.map((h, i) => (
-          <li key={i} className="alert-timeline-row">
-            <Icon name={STATE_ICON[String(h.state || '').toUpperCase()] || 'info'} size={14} />
+          <li key={i} className="det-timeline-row">
+            <span className="tile-icon sm" aria-hidden="true">
+              <Icon name={STATE_ICON[String(h.state || '').toUpperCase()] || 'info'} size={14} />
+            </span>
             <span className="mono">{fmt(h.at)}</span>
             <span>{String(h.action || '')}</span>
             <b>{String(h.state || '')}</b>
@@ -116,14 +141,14 @@ export default function AlertDetails({ alert, onBack, onAck }) {
 
       <div className="row" style={{ marginTop: 12 }}>
         <button
-          type="button" className="btn sm" onClick={doAck}
+          type="button" className="btn" onClick={doAck}
           disabled={ackState === 'sending' || ackState === 'acked'}
           title={t(lang, 'ntfAckTitle')}
         >
           <Icon name="check" size={14} />{' '}
           {ackState === 'acked' ? t(lang, 'ntfAcked') : t(lang, 'ntfAck')}
         </button>
-        {ackState === 'failed' && <span className="mono">{t(lang, 'detAckFailed')}</span>}
+        {ackState === 'failed' && <span role="status" className="mono" style={{ color: 'var(--danger)' }}>{t(lang, 'detAckFailed')}</span>}
       </div>
     </section>
   );

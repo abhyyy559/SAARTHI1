@@ -1,8 +1,12 @@
 // Chat: the main feature. Questions carry WHO the user is (persona) and WHERE
-// they are (district) - the backend answers, advises and assesses risk for that
-// person in that place, in the selected language. Spoken answers are OFF by
-// default - the user must explicitly enable them. Question chips match the
-// persona; a demo-safe example row is shown on an empty chat.
+// they are (district) - the backend answers for that person in that place, in
+// the selected language. Spoken answers are OFF by default - the user must
+// explicitly enable them. Question chips match the persona; a demo-safe example
+// row is shown on an empty chat.
+//
+// FACTS-ONLY: the strip at the top says so, and the escape link to My advice
+// sits right beside it. Ask never gives guidance; it answers from official
+// bulletins.
 //
 // Trust console, not a chatbot: every answer shows which source grounded which
 // fact, the source's provenance verbatim, and the ONE server verdict for the
@@ -17,7 +21,6 @@ import { minutesSince } from '../format';
 import { useVoiceInput } from '../useVoiceInput';
 import Icon from './icons';
 import RichText from './RichText';
-import './ChatPanel.css';
 
 // Provenance is a fixed, machine-readable vocabulary. Never translate it, never
 // map one value onto another — styles.css colours each class.
@@ -39,34 +42,20 @@ const typeMeta = (type) => TYPE_META[type] || { icon: 'file', key: 'evOther' };
 function sanitizeForTTS(text, maxChars = 600) {
   if (!text) return '';
   let t = String(text);
-  // Remove URLs
   t = t.replace(/https?:\/\/\S+/g, '');
-  // Remove markdown headers
   t = t.replace(/^#{1,6}\s+/gm, '');
-  // Remove markdown emphasis
   t = t.replace(/(\*\*|__)(.*?)\1/g, '$2');
   t = t.replace(/(\*|_)(.*?)\1/g, '$2');
-  // Remove markdown code
   t = t.replace(/`{1,3}(.*?)`{1,3}/gs, '$1');
-  // Remove markdown strikethrough
   t = t.replace(/~~(.*?)~~/g, '$1');
-  // Remove markdown blockquotes
   t = t.replace(/^>\s*/gm, '');
-  // Remove markdown horizontal rules
   t = t.replace(/^[-*_]{3,}\s*$/gm, '');
-  // Remove markdown links [text](url) -> keep text
   t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-  // Remove markdown images
   t = t.replace(/!\[([^\]]*)\]\([^)]+\)/g, '');
-  // Remove comment lines (// ...)
   t = t.replace(/^\/\/.*$/gm, '');
-  // Remove inline comments (// ...)
   t = t.replace(/\s\/\/.*$/gm, '');
-  // Remove emoji
   t = t.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2500}-\u{2BEF}\u{2702}-\u{27B0}\u{24C2}-\u{1F251}\u{1F926}-\u{1F937}]+/gu, '');
-  // Collapse whitespace
   t = t.replace(/\s+/g, ' ').trim();
-  // Truncate at sentence boundary
   if (t.length > maxChars) {
     const truncated = t.slice(0, maxChars);
     const lastEnd = Math.max(truncated.lastIndexOf('.'), truncated.lastIndexOf('!'), truncated.lastIndexOf('?'));
@@ -124,15 +113,17 @@ function verdictView(lang, m) {
 
 function VerdictBanner({ lang, view }) {
   return (
-    <div className="ask-verdict" data-unconfirmed={!view.confirmed}>
-      <Icon name="shield" size={16} className="icon ask-verdict-ico" />
-      <span className="ask-lvl" data-level={view.level}>{view.level}</span>
-      {view.severity && <span className={`sev ${view.severity}`}>{view.severity}</span>}
-      {view.hazard && <span className="ask-verdict-haz">{view.hazard}</span>}
-      {view.basis && (
-        <span className="ask-verdict-basis">{t(lang, 'verdictBasis')}: {view.basis}</span>
-      )}
-      <span className="ask-verdict-say">{view.say}</span>
+    <div className="verdict-mini" data-sev={view.level} role="status">
+      <span className="sev-bar" aria-hidden="true" />
+      <div className="vm-body">
+        <div className="bc-head">
+          <span className="sev-stamp">{view.level}</span>
+          {view.severity && <span className="sev-stamp" data-sev={view.severity}>{view.severity}</span>}
+          {!view.confirmed && <span className="warn-chip">{t(lang, 'warnUnconfirmed')}</span>}
+        </div>
+        {view.hazard && <div className="vm-haz">{view.hazard}</div>}
+        <div className="vm-say">{view.say}{view.basis ? ` · ${t(lang, 'verdictBasis')}: ${view.basis}` : ''}</div>
+      </div>
     </div>
   );
 }
@@ -255,37 +246,45 @@ export default function ChatPanel() {
   }, [pendingAskRef, ask]);
 
   return (
-    <section className="card" aria-label={t(lang, 'chatRegion')}>
-      <p className="sub">
-        {t(lang, 'askAs')} <b>{(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona}</b>
-        {' · '}{loc.district}
-        {' · '}
-        <button type="button" className="linklike" onClick={() => setView('advisory')}>
+    <section aria-label={t(lang, 'chatRegion')}>
+      {/* The facts-only boundary, stated before the first message. */}
+      <div className="facts-strip">
+        <span className="facts-icon"><Icon name="file" size={20} /></span>
+        <div>
+          <p>{t(lang, 'sbFactsOnly')}</p>
+          <p className="sub">{t(lang, 'askAs')} <b>{(PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona}</b> · {loc.district}</p>
+        </div>
+        <button type="button" className="facts-escape" onClick={() => setView('advisory')}>
+          <Icon name="sun" size={16} />
           {t(lang, 'askAdviceHint')}
         </button>
-      </p>
-      {/* Spoken answers: the switch lives here, above the conversation, so it
-          is found in seconds — not buried after the suggestion chips. Muted by
-          default; toggling never changes what is fetched, only whether the
-          answer is read aloud. */}
-      <button
-        type="button"
-        className={`ask-hear${muted ? '' : ' is-on'}`}
-        aria-pressed={!muted}
-        onClick={() => { stopSpeaking(); setMuted((m) => !m); }}
-        title={muted ? t(lang, 'muted') : t(lang, 'soundOn')}
-      >
-        <Icon name="speaker" size={16} />
-        <span>{t(lang, 'askHearAnswers')}</span>
-        <span className="ask-hear-state" aria-hidden>{muted ? t(lang, 'muted') : t(lang, 'soundOn')}</span>
-      </button>
-      <div className="chatlog" ref={logRef} role="log" aria-live="polite" aria-relevant="additions">
+      </div>
+
+      {/* Spoken answers: the slab switch lives here, above the conversation, so
+          it is found in seconds. Muted by default; toggling never changes what
+          is fetched, only whether the answer is read aloud. */}
+      <div className="hear-row">
+        <button
+          type="button"
+          role="switch"
+          className="switch"
+          aria-checked={!muted}
+          aria-label={t(lang, 'askHearAnswers')}
+          onClick={() => { stopSpeaking(); setMuted((m) => !m); }}
+        >
+          <span className="switch-track"><span className="switch-thumb" /></span>
+        </button>
+        <span className="switch-label">{t(lang, 'askHearAnswers')}</span>
+        <span className="sub mono">{muted ? t(lang, 'muted') : t(lang, 'soundOn')}</span>
+      </div>
+
+      <div className="chat" ref={logRef} role="log" aria-live="polite" aria-relevant="additions">
         {log.length === 0 && !busy && (
           <>
-            <p className="empty">{t(lang, 'chatEmpty')}</p>
-            <div className="quick-row">
+            <p className="sub">{t(lang, 'chatEmpty')}</p>
+            <div className="chip-row">
               {EXAMPLE_CHIPS.map((k) => (
-                <button key={k} type="button" className="btn ghost sm" onClick={() => ask(t(lang, k))} disabled={busy}>
+                <button key={k} type="button" className="chip" onClick={() => ask(t(lang, k))} disabled={busy}>
                   {t(lang, k)}
                 </button>
               ))}
@@ -298,115 +297,109 @@ export default function ChatPanel() {
           // to the first evidence entry's provenance (same fact, older build).
           const fresh = m.dataFreshness || (m.evidence && m.evidence[0] && m.evidence[0].provenance) || '';
           return (
-            <div className={`msg ${m.role}`} key={i}>
-              {m.live && <div className="mono">{t(lang, 'liveNote')}</div>}
+            <div className={`msg ${m.role === 'bot' ? 'is-assistant' : 'is-user'}`} key={i}>
+              {m.live && <div className="mono sub">{t(lang, 'liveNote')}</div>}
               {/* Verdict first: the answer's trustworthiness should land before
                   the prose does. */}
               {view && <VerdictBanner lang={lang} view={view} />}
-              {m.role === 'bot' && m.structured ? (
-                <div className="evbox">
-                  <div className="evrow"><span className="k">temp</span><span>{m.structured.temperature ?? '–'}°C · {m.structured.condition || '—'}</span></div>
-                  <div className="evrow"><span className="k">rain</span><span>{m.structured.rainfall ?? '–'} mm · wind {m.structured.wind_speed ?? '–'} km/h</span></div>
-                  <div className="evrow">
-                    <span className="k">{t(lang, 'freshness')}</span>
-                    <span>
-                      {m.cachedAge != null ? `${m.cachedAge}m` : ''}
-                      {m.stale ? ` · ${t(lang, 'staleTag')}` : ''} <ProvBadge value="CACHED" />
-                    </span>
+              <div className="bubble">
+                {m.role === 'bot' && m.structured ? (
+                  <div className="evbox">
+                    <div className="evrow"><span className="k">temp</span><span>{m.structured.temperature ?? '–'}°C · {m.structured.condition || '—'}</span></div>
+                    <div className="evrow"><span className="k">rain</span><span>{m.structured.rainfall ?? '–'} mm · wind {m.structured.wind_speed ?? '–'} km/h</span></div>
+                    <div className="evrow">
+                      <span className="k">{t(lang, 'freshness')}</span>
+                      <span>
+                        {m.cachedAge != null ? `${m.cachedAge}m` : ''}
+                        {m.stale ? ` · ${t(lang, 'staleTag')}` : ''} <ProvBadge value="CACHED" />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ) : (m.role === 'bot' ? <RichText text={m.text} /> : m.text)}
-              {m.fallback && <span className="mono">AI OFFLINE</span>}
+                ) : (m.role === 'bot' ? <RichText text={m.text} /> : m.text)}
+              </div>
+              {m.fallback && <span className="mono sub">AI OFFLINE</span>}
               {m.role === 'bot' && (
-                <div className="ask-meta">
+                <div className="msg-meta">
                   {fresh && (<><span>{t(lang, 'freshness')}</span><ProvBadge value={fresh} /></>)}
-                  {m.ms != null && <span>{(m.ms / 1000).toFixed(1)}s</span>}
+                  {m.ms != null && <span className="mono">{(m.ms / 1000).toFixed(1)}s</span>}
                   {m.queued ? <span>{t(lang, 'queuedChip')}</span> : null}
                   {m.text && (
                     <button
-                      type="button" className="btn ghost sm" aria-label={t(lang, 'replay')}
+                      type="button" className="speak-btn" aria-label={t(lang, 'replay')}
                       title={t(lang, 'replay')} onClick={() => speak(sanitizeForTTS(m.text))}
                     >
-                      <Icon name="speaker" size={14} />
+                      <Icon name="speaker" size={14} /> {t(lang, 'replay')}
                     </button>
                   )}
                 </div>
               )}
               {m.role === 'bot' && m.evidence && m.evidence.length > 0 && (
-                <div className="ask-facts">
-                  <div className="ask-facts-head">
-                    <Icon name="database" size={14} className="icon ask-fact-ico" />
-                    {t(lang, 'factsTitle')}
+                <div className="evbox" style={{ maxWidth: 'min(640px, 100%)' }}>
+                  <div className="bc-head" style={{ marginBottom: 6 }}>
+                    <span className="kicker"><Icon name="database" size={14} /> {t(lang, 'factsTitle')}</span>
                   </div>
-                  <div className="ask-chips">
+                  <div className="chip-row" style={{ marginBottom: 8 }}>
                     {m.evidence.map((e, k) => {
                       const meta = typeMeta(e.type);
                       return (
-                        <span className="ask-fact" key={k} title={`${e.type || ''} · ${e.source || ''}`}>
-                          <Icon name={meta.icon} size={14} className="icon ask-fact-ico" />
-                          <span className="ask-fact-label">{t(lang, meta.key)}</span>
-                          <span className="ask-fact-src">{e.source}</span>
+                        <span className="chip" key={k} title={`${e.type || ''} · ${e.source || ''}`}>
+                          <Icon name={meta.icon} size={14} />
+                          <span>{t(lang, meta.key)} · {e.source}</span>
                           <ProvBadge value={e.provenance} />
                         </span>
                       );
                     })}
                   </div>
-                  <details className="ask-ev">
-                    <summary className="ask-ev-sum">
-                      <Icon name="eye" size={14} />
-                      <span>{t(lang, 'why')}</span>
-                      <Icon name="chevron" size={14} className="icon ask-ev-chev" />
-                    </summary>
-                    <div className="evbox ask-ev-body">
-                  {m.evidence.map((e, k) => (
-                    <div className="evrow" key={k}>
-                      <span className="k">{t(lang, typeMeta(e.type).key)} · {e.source} · {e.type}</span>
-                      <span>
-                        {e.issued_at ? `${t(lang, 'evIssued')} ${stamp(e.issued_at)}` : ''}
-                        {e.valid_until ? ` · ${t(lang, 'evValidTo')} ${stamp(e.valid_until)}` : ''}
-                        {' '}<ProvBadge value={e.provenance} />
-                      </span>
-                    </div>
-                  ))}
-                  {fresh && (
+                  <details>
+                    <summary className="mono"><Icon name="eye" size={14} /> {t(lang, 'why')}</summary>
+                    {m.evidence.map((e, k) => (
+                      <div className="evrow" key={k}>
+                        <span className="k">{t(lang, typeMeta(e.type).key)} · {e.source} · {e.type}</span>
+                        <span>
+                          {e.issued_at ? `${t(lang, 'evIssued')} ${stamp(e.issued_at)}` : ''}
+                          {e.valid_until ? ` · ${t(lang, 'evValidTo')} ${stamp(e.valid_until)}` : ''}
+                          {' '}<ProvBadge value={e.provenance} />
+                        </span>
+                      </div>
+                    ))}
+                    {fresh && (
+                      <div className="evrow">
+                        <span className="k">{t(lang, 'freshness')}</span>
+                        <span><ProvBadge value={fresh} /></span>
+                      </div>
+                    )}
+                    {view && (
+                      <div className="evrow">
+                        <span className="k">{t(lang, 'verdictTitle')}</span>
+                        <span>
+                          <span className="sev-stamp" data-sev={view.level}>{view.level}</span>
+                          {view.basis ? ` · ${view.basis}` : ''}
+                        </span>
+                      </div>
+                    )}
+                    {view && view.severity && (
+                      <div className="evrow">
+                        <span className="k">{t(lang, 'verdictOfficial')}</span>
+                        <span className="sev-stamp" data-sev={view.severity}>{view.severity}</span>
+                      </div>
+                    )}
+                    {view && view.nearby > 0 && (
+                      <div className="evrow">
+                        <span className="k">{t(lang, 'nearby')}</span>
+                        <span>{view.nearby}</span>
+                      </div>
+                    )}
+                    {m.risk && m.risk.level && (
+                      <div className="evrow">
+                        <span className="k">{t(lang, 'riskNote')}</span>
+                        <span>{m.risk.level}{m.risk.reason ? ` · ${m.risk.reason}` : ''}</span>
+                      </div>
+                    )}
                     <div className="evrow">
-                      <span className="k">{t(lang, 'freshness')}</span>
-                      <span><ProvBadge value={fresh} /></span>
+                      <span className="k">{t(lang, 'aiRole')}</span>
+                      <span>{t(lang, 'aiRoleValue')}</span>
                     </div>
-                  )}
-                  {view && (
-                    <div className="evrow">
-                      <span className="k">{t(lang, 'verdictTitle')}</span>
-                      <span>
-                        <span className="ask-lvl" data-level={view.level}>{view.level}</span>
-                        {view.basis ? ` · ${view.basis}` : ''}
-                      </span>
-                    </div>
-                  )}
-                  {view && view.severity && (
-                    <div className="evrow">
-                      <span className="k">{t(lang, 'verdictOfficial')}</span>
-                      <span><span className={`sev ${view.severity}`}>{view.severity}</span></span>
-                    </div>
-                  )}
-                  {view && view.nearby > 0 && (
-                    <div className="evrow">
-                      <span className="k">{t(lang, 'nearby')}</span>
-                      <span>{view.nearby}</span>
-                    </div>
-                  )}
-                  {m.risk && m.risk.level && (
-                    <div className="evrow">
-                      <span className="k">{t(lang, 'riskNote')}</span>
-                      <span>{m.risk.level}{m.risk.reason ? ` · ${m.risk.reason}` : ''}</span>
-                    </div>
-                  )}
-                  <div className="evrow">
-                    <span className="k">{t(lang, 'aiRole')}</span>
-                    <span>{t(lang, 'aiRoleValue')}</span>
-                  </div>
-                  {view && view.detail && <p className="ask-ev-say">{view.detail}</p>}
-                    </div>
+                    {view && view.detail && <p className="sub">{view.detail}</p>}
                   </details>
                 </div>
               )}
@@ -415,45 +408,44 @@ export default function ChatPanel() {
         })}
         {/* Thinking dots come AFTER the question they answer — never above it. */}
         {busy && log.length > 0 && log[log.length - 1].role === 'user' && (
-          <div className="msg bot typing" aria-live="polite">
-            <span className="wx-typing" aria-label={t(lang, 'voiceWorking')}>
-              <span /><span /><span />
-            </span>
+          <div className="msg is-assistant" aria-live="polite">
+            <div className="bubble"><span className="mono" aria-label={t(lang, 'voiceWorking')}>···</span></div>
           </div>
         )}
       </div>
-      <form className="chatrow" data-tour="chatbox" onSubmit={(e) => { e.preventDefault(); ask(); }}>
+
+      <form className="composer" data-tour="chatbox" onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <button
-          className="btn ghost ask-mic" type="button" onClick={dictation.listen}
+          className={`mic-btn${dictation.listening ? ' is-live' : ''}`} type="button" onClick={dictation.listen}
           data-tour="mic"
           disabled={dictation.busy || dictation.unavailable}
           aria-pressed={dictation.listening} aria-label={t(lang, 'listen')}
           title={dictation.unavailable ? t(lang, 'voiceOffline') : t(lang, 'micHint')}
         >
-          <Icon name="mic" />
-          <span className="ask-mic-label">
+          <Icon name="mic" size={22} />
+          <span className="sr-only">
             {dictation.listening ? `${dictation.elapsed}s` : t(lang, 'listen')}
           </span>
         </button>
         <input
+          className="input"
           type="text"
           placeholder={t(lang, 'askPh')}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           aria-label={t(lang, 'askPh')}
         />
-        <button className="btn" type="submit" disabled={busy}>
-          <Icon name="send" />{busy ? '...' : t(lang, 'send')}
+        <button className="btn" type="submit" disabled={busy} aria-label={t(lang, 'send')}>
+          <Icon name="send" size={18} />{busy ? '···' : t(lang, 'send')}
         </button>
       </form>
-      {dictation.note && <p className="mono">{dictation.note}</p>}
-      <div className="row">
+      {dictation.note && <p className="mono sub">{dictation.note}</p>}
+      <div className="suggestions">
         {SUGGESTIONS.map((k) => (
-          <button key={k} type="button" className="btn ghost sm" onClick={() => ask(t(lang, k))} disabled={busy}>
+          <button key={k} type="button" className="chip" onClick={() => ask(t(lang, k))} disabled={busy}>
             {t(lang, k)}
           </button>
         ))}
-
       </div>
     </section>
   );
