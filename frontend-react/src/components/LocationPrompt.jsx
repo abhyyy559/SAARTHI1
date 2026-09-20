@@ -76,7 +76,7 @@ export default function LocationPrompt({ inline = false }) {
         <button
           type="button"
           className="btn btn-ghost sm"
-          style={{ color: 'var(--paper)', borderColor: 'var(--line-soft)' }}
+          style={{ color: 'var(--ink)', borderColor: 'var(--line-soft)' }}
           onClick={() => setManual((m) => !m)}
           aria-expanded={manual}
         >

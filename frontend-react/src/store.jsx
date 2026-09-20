@@ -68,7 +68,7 @@ export function AppProvider({ children }) {
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));
   const [persona, setPersona] = useState(() => readPref('wgpt.persona', 'fisherman'));
   const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
-  const [theme, setTheme] = useState(() => readPref('wgpt.theme', 'auto'));
+  // Single light theme: no theme state, no switcher, no data-theme attribute.
   // Truthful until /api/mode answers: the backend decides the mode, not a guess.
   // Three modes, not two — see docs/SOURCE-MODES.md. `sourceMode` is the truth
   // ('demo' | 'imd' | 'hybrid'); `demoMode` stays a derived boolean because a
@@ -256,13 +256,6 @@ export function AppProvider({ children }) {
       setSpeechNote('voiceFallback'); setSpeechState('playing'); synth.speak(utterance);
     }
   }, [lang, stopSpeaking]);
-
-  useEffect(() => {
-    writePref('wgpt.theme', theme);
-    const el = document.documentElement;
-    if (theme === 'auto') el.removeAttribute('data-theme');
-    else el.setAttribute('data-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     writePref('wgpt.lang', lang);
@@ -532,7 +525,6 @@ export function AppProvider({ children }) {
     view, setView,
     lang, setLang,
     persona, setPersona,
-    theme, setTheme,
     demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, setSources,
     conn, connectionPill, offline, online, simOffline, setSimOffline,
     pipe, setPipe, result, handleResult,
@@ -546,7 +538,7 @@ export function AppProvider({ children }) {
     netState, lastSync, syncTick, toast, showToast,
     publishVerdict,
     notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush,
-  }), [view, lang, persona, theme, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
+  }), [view, lang, persona, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
     simOffline, pipe, result, handleResult, selectedAlert,
     disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,

@@ -1,22 +1,14 @@
 // App shell — the SIGNAL BOARD console.
-// Black desktop rail (248px) with full-bleed yellow active blocks,
+// White desktop rail (248px) with full-bleed yellow active blocks,
 // a utility top bar, hazard-stripe demo/offline banners, exactly four
-// mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet,
-// and a working day/night toggle.
+// mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet.
+// Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
 import { NAV, t } from '../i18n';
 import { useApp, SOURCE_MODES } from '../store';
 import Icon from './icons';
 import InstallPrompt from './InstallPrompt';
 import OnboardingTour from './OnboardingTour';
-
-const THEME_ORDER = ['auto', 'light', 'dark'];
-
-function themeIcon(theme) {
-  if (theme === 'dark') return 'moon';
-  if (theme === 'light') return 'sun';
-  return 'monitor';
-}
 
 const NAV_ICONS = {
   home: 'home',
@@ -130,7 +122,7 @@ function MoreSheet({ open, onClose }) {
 }
 
 export default function Shell({ children }) {
-  const { view, setView, lang, setLang, loc, theme, setTheme, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState } = useApp();
+  const { view, setView, lang, setLang, loc, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState } = useApp();
   const online = netState !== 'offline';
   const [moreOpen, setMoreOpen] = useState(false);
   const [toast, setToast] = useState(null);
@@ -154,11 +146,6 @@ export default function Shell({ children }) {
       clearTimeout(toastTimer.current);
     };
   }, []);
-
-  const cycleTheme = () => {
-    const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
-    setTheme(next);
-  };
 
   const conn = !online ? 'offline' : 'online';
   const connLabel = t(lang, conn === 'online' ? 'connOnline' : 'connOffline');
@@ -266,15 +253,6 @@ export default function Shell({ children }) {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className="btn-icon theme-btn"
-              title={t(lang, 'themeLabel')}
-              aria-label={t(lang, 'themeLabel')}
-              onClick={cycleTheme}
-            >
-              <Icon name={themeIcon(theme)} size={20} />
-            </button>
           </div>
         </header>
 
@@ -312,5 +290,3 @@ export default function Shell({ children }) {
     </div>
   );
 }
-
-export { THEME_ORDER };

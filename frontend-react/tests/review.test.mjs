@@ -94,8 +94,10 @@ test('the Home notification listen control has an accessible name', () => {
 test('chrome labels come from the string files, not hardcoded English', () => {
   assert.doesNotMatch(shell, /DISASTER MODE - verified/);
   assert.match(shell, /t\(lang, 'disasterBanner'\)/);
+  // Single light theme: the theme switcher was deliberately deleted, so there
+  // is no theme control left to carry a hardcoded or string-file label.
   assert.doesNotMatch(shell, /aria-label="Colour theme"/);
-  assert.match(shell, /t\(lang, 'themeLabel'\)/);
+  assert.doesNotMatch(shell, /themeLabel/);
   assert.doesNotMatch(shell, /aria-label="Sections"/);
 });
 
