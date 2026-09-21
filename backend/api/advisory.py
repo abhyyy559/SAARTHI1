@@ -15,6 +15,47 @@ from ..utils.time import iso_now
 router = APIRouter(prefix="/api")
 
 
+def _grounding_summary(current, forecast, alerts, verdict,
+                       current_prov, forecast_prov, alerts_prov) -> dict:
+    """Honest "what this advice rests on" summary for the UI grounding banner.
+
+    Pure derivation from the inputs the rules engine already used — no new
+    fetches, no severity inference, no re-grading. Missing inputs are reported
+    as unavailable, never padded. Weather context is append-only: the observed
+    numbers are facts that can explain advice, never a reason to soften an
+    official alert (the engine still owns severity).
+    """
+    try:
+        from ..services.advisory_service import observation_numbers
+        observed = observation_numbers(current) if current else {}
+    except Exception:
+        observed = {}
+    observed = observed if isinstance(observed, dict) else {}
+    days = forecast.get("days") if isinstance(forecast, dict) else None
+    return {
+        "alerts": {
+            "count": len(alerts or []),
+            "confirmed": bool((verdict or {}).get("confirmed")),
+            "level": (verdict or {}).get("level"),
+            "severity": (verdict or {}).get("severity"),
+            "provenance": alerts_prov,
+        },
+        "current": {
+            "available": current is not None,
+            "provenance": current_prov,
+            "temp_c": observed.get("temp_c"),
+            "humidity_pct": observed.get("humidity_pct"),
+            "rain_mm": observed.get("rain_mm"),
+            "wind_kph": observed.get("wind_kph"),
+        },
+        "forecast": {
+            "available": forecast is not None and isinstance(days, list) and len(days) > 0,
+            "provenance": forecast_prov,
+            "days": len(days) if isinstance(days, list) else 0,
+        },
+    }
+
+
 @router.get("/advisory/cards")
 async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
                                   lang: str = "en", persona: str = "general") -> dict:
@@ -75,6 +116,11 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
         "persona": persona,
         "lang": lang,
         "provenance": {"current": prov_c, "forecast": prov_f, "alerts": alerts_prov},
+        # Honest grounding for the Advisory UI banner: which alerts and which
+        # weather the cards were built from, and where each came from. Alerts
+        # and weather are both named; a missing input shows as unavailable.
+        "grounding": _grounding_summary(
+            cur_d, fc_d, alerts, verdict, prov_c, prov_f, alerts_prov),
         "official_instruction": False,
         "generated_at": iso_now(),
     }
