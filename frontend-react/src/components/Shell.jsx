@@ -189,6 +189,17 @@ export default function Shell({ children }) {
     return () => window.removeEventListener('wgpt:notifications-open', open);
   }, []);
 
+  // Belt and braces for the redirect above: React runs child effects before
+  // parent effects, so on a FRESH ?view=notifications load the child's
+  // wgpt:notifications-open fires before this listener attaches and the event
+  // is lost. Watching the view directly has no ordering dependency.
+  useEffect(() => {
+    if (view === 'notifications') {
+      setPanelOpen(true);
+      setView('home');
+    }
+  }, [view, setView]);
+
   useEffect(() => {
     const onToast = (e) => {
       setToast(e.detail || null);

@@ -123,6 +123,33 @@ def test_push_test_endpoint_broadcasts_to_district(client, monkeypatch):
     assert payload["url"] == "/?view=alerts"
 
 
+def test_push_test_endpoint_with_alert_id_deep_links(client, monkeypatch):
+    """POST /api/push/test with alert_id carries it in the payload and deep-links
+    the tap to that alert — proving the tap → alert-detail path, not just delivery.
+    Without alert_id the tap opens the alerts list (unchanged)."""
+    push_service.subscribe(dict(SUB), district=DISTRICT)
+    sent = []
+
+    def fake_send_one(subscription, payload):
+        sent.append(payload)
+        return True, "delivered"
+
+    monkeypatch.setattr(push_service, "send_one", fake_send_one)
+
+    r = client.post("/api/push/test", json={"district": DISTRICT, "alert_id": "demo-123"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "sent"
+    assert sent[0]["alert_id"] == "demo-123"
+    assert sent[0]["url"] == "/?view=alerts&alert=demo-123"
+
+    # Without alert_id: no alert_id key expectations, list-level deep link.
+    sent.clear()
+    r = client.post("/api/push/test", json={"district": DISTRICT})
+    assert r.status_code == 200, r.text
+    assert "alert_id" not in sent[0]
+    assert sent[0]["url"] == "/?view=alerts"
+
+
 def test_broadcast_prunes_only_gone_subscriptions(monkeypatch):
     """Never silently unsubscribe: only a 404/410 ('gone') prunes a device. A
     500 or timeout keeps the subscription for the next attempt."""

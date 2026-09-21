@@ -6,6 +6,7 @@ browser never tells us who the user is — a subscription is an opaque endpoint
 plus two public keys.
 """
 from fastapi import APIRouter
+from urllib.parse import quote
 
 from ..services import alert_watcher, push_service
 from ..utils.time import iso_now
@@ -51,9 +52,16 @@ async def test_push(payload: dict | None = None) -> dict:
     """Send a real push right now, so the path can be proven end to end.
 
     Targets one endpoint when given, otherwise every subscriber for the district.
+    Accepts an optional alert_id: when provided the payload carries it and the
+    tap deep-links to that alert (/?view=alerts&alert=<id>), proving the full
+    tap-to-alert path. Without it, the tap opens the alerts list.
     """
     payload = payload or {}
     endpoint = payload.get("endpoint")
+    # Optional: tie the test push to a real alert so the demo can prove the
+    # notification-tap → alert-detail path, not just notification delivery.
+    alert_id = (payload.get("alert_id") or "").strip()
+    deep = {"alert_id": alert_id, "url": f"/?view=alerts&alert={quote(alert_id, safe='')}"} if alert_id else {"url": "/?view=alerts"}
     if endpoint:
         sub = next((s for s in push_service.subscriptions() if s["endpoint"] == endpoint), None)
         if not sub:
@@ -66,7 +74,7 @@ async def test_push(payload: dict | None = None) -> dict:
             "kind": "test",
             # A tap on the test notification opens the app on the alerts view,
             # like a real alert notification does.
-            "url": "/?view=alerts",
+            **deep,
         })
         return {"status": "sent" if ok else "failed", "reason": reason, "generated_at": iso_now()}
 
@@ -79,7 +87,7 @@ async def test_push(payload: dict | None = None) -> dict:
         "severity": "YELLOW",
         "district": district,
         "kind": "test",
-        "url": "/?view=alerts",
+        **deep,
     }, district=district)
     return {"status": "sent", **result, "generated_at": iso_now()}
 

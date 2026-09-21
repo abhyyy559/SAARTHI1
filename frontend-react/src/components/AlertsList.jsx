@@ -83,11 +83,21 @@ export default function AlertsList({ initialAlertId = null }) {
       if (w?.warning && (w.verified?.verified || w.verdict?.basis === 'unverified_warning')) {
         official.unshift({ ...w.warning, headline: w.warning.message });
       }
+      // The backend can return the same warning twice: once as the headline
+      // `warning` (verdict input) and once inside cap_alerts. Never render the
+      // same alert as two rows — an identical twin reads as two emergencies.
+      const seenIds = new Set();
+      const deduped = official.filter((a) => {
+        const key = a.id || a.identifier || a.headline;
+        if (seenIds.has(key)) return false;
+        seenIds.add(key);
+        return true;
+      });
       const demo = [...(d?.alerts || [])];
       // Emergency alerts only in the main list. Community items are shown in
       // their own section below, so a stray community-provenance item is
       // filtered here, not promoted to an emergency alert.
-      setAlerts(mergeAlerts(official, demo).filter((a) => !isCommunityItem(a)));
+      setAlerts(mergeAlerts(deduped, demo).filter((a) => !isCommunityItem(a)));
     });
     // Community observations render separately; their failure must never
     // change the emergency list (or its empty states).
@@ -126,76 +136,99 @@ export default function AlertsList({ initialAlertId = null }) {
     );
   }
 
+  // Ended alerts stay visible with their full lifecycle, but under their own
+  // honest heading — an ENDED row under "Emergency alerts" reads as active.
+  const isEndedAlert = (a) => String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
+  const activeAlerts = alerts.filter((a) => !isEndedAlert(a));
+  const endedAlerts = alerts.filter(isEndedAlert);
+  const renderRows = (list) => list.map((a) => {
+      const key = alertKey(a);
+      const open = openId === key;
+      const sev = a.severity || 'UNKNOWN';
+      const head = (a.headline || a.title || a.message || a.hazard || a.event || '').trim();
+      const district = a.district || a.areaDesc || a.area || loc.district;
+      const tag = a._origin === 'demo' ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
+      const state = String(a.lifecycle_state || a.state || '').toUpperCase();
+      return (
+        <div key={key} className={`alerts-row${open ? ' is-open' : ''}`} role="listitem" data-sev={sev}>
+          <button
+            type="button"
+            className="alerts-row-head"
+            style={{ minHeight: 56 }}
+            aria-expanded={!!open}
+            aria-label={`${head || t(lang, 'listUnknownAlert')} — ${open ? t(lang, 'listCollapse') : t(lang, 'listExpand')}`}
+            onClick={() => setOpenId(open ? null : key)}
+          >
+            <span className="sev-bar" aria-hidden="true" />
+            <span className="alerts-row-main">
+              <span className="alerts-row-title">
+                <SevStamp lang={lang} level={sev} />
+                <span>{head || t(lang, 'listUnknownAlert')}</span>
+              </span>
+              <span className="alerts-row-meta mono">
+                <span className="chip">{tag}</span>
+                {district && <span>{district}</span>}
+                {state && <span>{state}</span>}
+                {' · '}{relTime(alertTime(a), nowMs)}
+              </span>
+            </span>
+            <span style={{ display: 'inline-flex', transform: open ? 'rotate(-90deg)' : undefined }} aria-hidden="true">
+              <Icon name="chevron" size={18} />
+            </span>
+          </button>
+          {open && (
+            <div className="alerts-row-detail">
+              {/* The detail renders inline — the separate Details route is
+                  gone by design. onBack collapses the row instead of
+                  navigating away. */}
+              <AlertDetails
+                alert={a}
+                onBack={() => setOpenId(null)}
+              />
+              <div className="row" style={{ marginTop: 8 }}>
+                <button
+                  type="button" className="btn btn-ghost sm" style={{ minHeight: 44 }}
+                  onClick={() => speak(`${head}. ${a.instruction || ''}`)}
+                >
+                  <Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}
+                </button>
+                <button
+                  type="button" className="btn btn-ghost sm" style={{ minHeight: 44 }}
+                  onClick={() => setOpenId(null)}
+                >
+                  {t(lang, 'listCollapse')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+  });
   return (
     <>
       <div className="alert-sec-title">
         <span className="kicker">{t(lang, 'alertsEmergencyTitle')}</span>
       </div>
       <div className="alerts-list" role="list">
-      {alerts.map((a) => {
-        const key = alertKey(a);
-        const open = openId === key;
-        const sev = a.severity || 'UNKNOWN';
-        const head = (a.headline || a.title || a.message || a.hazard || a.event || '').trim();
-        const district = a.district || a.areaDesc || a.area || loc.district;
-        const tag = a._origin === 'demo' ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
-        const state = String(a.lifecycle_state || a.state || '').toUpperCase();
-        return (
-          <div key={key} className={`alerts-row${open ? ' is-open' : ''}`} role="listitem" data-sev={sev}>
-            <button
-              type="button"
-              className="alerts-row-head"
-              style={{ minHeight: 56 }}
-              aria-expanded={!!open}
-              aria-label={`${head || t(lang, 'listUnknownAlert')} — ${open ? t(lang, 'listCollapse') : t(lang, 'listExpand')}`}
-              onClick={() => setOpenId(open ? null : key)}
-            >
-              <span className="sev-bar" aria-hidden="true" />
-              <span className="alerts-row-main">
-                <span className="alerts-row-title">
-                  <SevStamp lang={lang} level={sev} />
-                  <span>{head || t(lang, 'listUnknownAlert')}</span>
-                </span>
-                <span className="alerts-row-meta mono">
-                  <span className="chip">{tag}</span>
-                  {district && <span>{district}</span>}
-                  {state && <span>{state}</span>}
-                  {' · '}{relTime(alertTime(a), nowMs)}
-                </span>
-              </span>
-              <span style={{ display: 'inline-flex', transform: open ? 'rotate(-90deg)' : undefined }} aria-hidden="true">
-                <Icon name="chevron" size={18} />
-              </span>
-            </button>
-            {open && (
-              <div className="alerts-row-detail">
-                {/* The detail renders inline — the separate Details route is
-                    gone by design. onBack collapses the row instead of
-                    navigating away. */}
-                <AlertDetails
-                  alert={a}
-                  onBack={() => setOpenId(null)}
-                />
-                <div className="row" style={{ marginTop: 8 }}>
-                  <button
-                    type="button" className="btn btn-ghost sm" style={{ minHeight: 44 }}
-                    onClick={() => speak(`${head}. ${a.instruction || ''}`)}
-                  >
-                    <Icon name="speaker" size={14} /> {t(lang, 'alertsListen')}
-                  </button>
-                  <button
-                    type="button" className="btn btn-ghost sm" style={{ minHeight: 44 }}
-                    onClick={() => setOpenId(null)}
-                  >
-                    {t(lang, 'listCollapse')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {activeAlerts.length === 0 ? (
+        <div role="status">
+          <div className="display">{t(lang, 'alertsNoneTitle')}</div>
+          <p className="sub">{t(lang, 'alertsNoneBody')}</p>
+        </div>
+      ) : renderRows(activeAlerts)}
       </div>
+      {/* Past alerts: completed emergencies with their full lifecycle. Kept
+          visible, but never under the active "Emergency alerts" heading. */}
+      {endedAlerts.length > 0 && (
+        <>
+          <div className="alert-sec-title">
+            <span className="kicker">{t(lang, 'alertsPastTitle')}</span>
+          </div>
+          <div className="alerts-list" role="list">
+            {renderRows(endedAlerts)}
+          </div>
+        </>
+      )}
       {/* Community observations live here, never in the emergency list above.
           COMMUNITY provenance is badged on the section and on every row, in
           machine-readable form, so a community report can never be mistaken

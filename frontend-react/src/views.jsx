@@ -84,13 +84,11 @@ function AdminGate({ children }) {
 
 // Home: the wow hero on top, the conversation below it, then today's warnings
 // as teasers into the Alerts route. The old standalone Ask route is gone.
+// NOTE: no ViewHead here by design — Ask's hero carries the single Home h1
+// (Worker 3 contract), and the tab bar already labels this view "Home". A
+// ViewHead would create a second h1 and push Ask below the fold of meaning.
 export function HomeView() {
-  return (
-    <>
-      <ViewHead titleKey="navHome" subKey="viewHomeSub" />
-      <Home />
-    </>
-  );
+  return <Home />;
 }
 
 // Alerts: one route. SOS first (shaking hands), then the bulletin list with

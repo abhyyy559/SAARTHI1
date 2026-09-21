@@ -170,6 +170,12 @@ export function AppProvider({ children }) {
     setToast(msg);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 4000);
+    // Shell renders toasts from the wgpt:toast DOM event (its own toast
+    // state); the store's toast state has no renderer, so without this event
+    // the message is silent — the exact "button does nothing" failure mode.
+    try {
+      window.dispatchEvent(new CustomEvent('wgpt:toast', { detail: msg }));
+    } catch { /* non-DOM environment */ }
   }, []);
   // One place that reads a /api/mode payload. The backend owns the mode; the UI
   // never infers it from a boolean it happens to have lying around.
@@ -698,9 +704,13 @@ export function AppProvider({ children }) {
   }, [simOffline]);
 
   // Proves the closed-app path: the SERVER sends this one, not the page.
+  // When an alert is selected the test push deep-links to it, so the demo
+  // proves the tap → alert-detail path, not just delivery.
   const sendTestPush = useCallback(async () => {
     try {
-      const r = await api.pushTest({ district: loc.district });
+      const body = { district: loc.district };
+      if (selectedAlert && selectedAlert.id) body.alert_id = selectedAlert.id;
+      const r = await api.pushTest(body);
       if (r && r.status === 'sent') {
         showToast(r.delivered ? `${t(lang, 'notifyTestSent')} (${r.delivered})` : t(lang, 'notifyTestNone'));
       } else {
@@ -709,7 +719,7 @@ export function AppProvider({ children }) {
     } catch {
       showToast(t(lang, 'notifyPushFailed'));
     }
-  }, [loc.district, lang, showToast]);
+  }, [loc.district, lang, showToast, selectedAlert]);
 
   const offline = simOffline || !online;
   const conn = offline ? 'OFFLINE' : backendState;

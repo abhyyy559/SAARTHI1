@@ -6,7 +6,7 @@
 //
 // The list is backed ONLY by /api/notifications (the server's push log —
 // nothing is invented to look busy), newest-first, with read/unread stamps.
-// Tapping a row marks it read and deep-links into the relevant alert
+// Tapping a row marks it read and opens the relevant alert in-app
 // (?view=alerts); mark-all-read and per-alert acknowledgement follow the
 // server-confirmed honesty pattern (the row only flips after the POST
 // succeeds). The push switch calls the store's toggleNotify — the enable
@@ -201,8 +201,9 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
   };
 
   // Tapping a notification marks it read and opens the relevant content: an
-  // alert-carrying notification deep-links into ?view=alerts with that alert
-  // selected; anything else just marks read and closes.
+  // alert-carrying notification opens the alerts view with that alert
+  // selected (in-app state — the user is already here, so no URL round-trip);
+  // anything else just marks read and closes.
   const openItem = (n) => {
     markRead(n, true);
     if (n.alert_id) {
