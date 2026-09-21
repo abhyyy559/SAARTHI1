@@ -132,7 +132,10 @@ test('homechat strings: EN/HI/TE parity and no Tamil script', () => {
     'hcFactsClose', 'hcAs', 'hcComposerHint', 'hcSend', 'hcMicHint', 'hcQueuedChip',
     'hcQueuedText', 'hcListen', 'hcStopListen', 'hcSpeaking', 'hcBasedOn',
     'hcBasedOnSaved', 'hcAskAboutThis', 'hcOpenAdvisory', 'hcComposing',
-    'hcSuggestionsHint', 'hcReadMore', 'hcReadLess', 'hcEmptyLine'];
+    'hcSuggestionsHint', 'hcReadMore', 'hcReadLess', 'hcEmptyLine',
+    // Crew B (voice-first rebuild, 2026-09-21): voice-UX state copy.
+    'hcListening', 'hcUnderstanding', 'hcMicPermission', 'hcMicStop',
+    'hcMicBlockedTitle', 'hcMicBlockedBody', 'hcMicBlockedOpen'];
   for (const key of keys) {
     const hits = s.match(new RegExp(`${key}: ['"]`, 'g')) || [];
     assert.equal(hits.length, 3, `${key} must exist in EN/HI/TE`);
@@ -147,4 +150,96 @@ test('HomeChat is injectable: every dependency arrives via props with safe defau
   for (const p of ['onAsk', 'speak', 'stopSpeaking', 'speechState', 'netState', 'api', 'onOpenAdvisory']) {
     assert.match(j, new RegExp(`${p}\\s*=`), `${p} must be a destructured prop with a default`);
   }
+});
+
+// --- voice-UX: exact screen copy ---------------------------------------------------
+test('mic states carry the exact voice-UX copy in EN', () => {
+  const src = strs();
+  const en = src.slice(0, src.indexOf('hi: {'));
+  assert.match(en, /hcListening:\s*'Listening\.\.\.'/, 'tap → "Listening..."');
+  assert.match(en, /hcUnderstanding:\s*'Understanding your text\.\.\.'/,
+    'finalize → "Understanding your text..."');
+  assert.match(en, /hcComposing:\s*'Generating\.\.\.'/, 'after enter → "Generating..."');
+});
+
+// --- voice-UX: three distinct mic phases ------------------------------------------
+test('mic status banner covers recording / processing / permission, each visually distinct', () => {
+  const j = chat();
+  assert.match(j, /hc-mic-status/, 'status banner must exist');
+  assert.match(j, /is-\$\{dictation\.state\}/, 'banner class must follow the hook phase');
+  for (const key of ['hcListening', 'hcUnderstanding', 'hcMicPermission']) {
+    assert.match(j, new RegExp(key), `banner must render ${key}`);
+  }
+  assert.match(j, /aria-live="polite"/, 'banner must be announced');
+  const c = css();
+  for (const phase of ['is-recording', 'is-processing', 'is-permission']) {
+    assert.match(c, new RegExp(`\\.hc-mic-status\\.${phase}`), `banner must style ${phase} distinctly`);
+  }
+  assert.match(c, /@keyframes hc-pulse/, 'recording must pulse');
+  assert.match(c, /@keyframes hc-shimmer/, 'processing must shimmer');
+});
+
+// --- voice-UX: streaming STT lands live in the input ------------------------------
+test('streaming STT: interim words flow live into the input via the hook onPartial', () => {
+  const j = chat();
+  assert.match(j, /useVoiceInput\(lang, handleVoiceFinal, handleVoicePartial\)/,
+    'hook must receive the final + partial handlers');
+  assert.match(j, /handleVoicePartial = useCallback\(\(interim\) => \{ setInput\(interim\); \}, \[\]\)/,
+    'interim words must land LIVE in the input while speaking');
+  assert.match(j, /handleVoiceFinal = useCallback\(\(text\) => \{ setInput\(text\); \}, \[\]\)/,
+    'finalized text must land in the input ready to send (never auto-sent)');
+});
+
+// --- voice-UX: input locks, Generating… indicator ----------------------------------
+test('after enter the input locks and a living Generating… indicator replaces the dead wait', () => {
+  const j = chat();
+  assert.match(j, /disabled=\{busy\}/, 'the text input must lock while the answer generates');
+  assert.match(j, /hc-typing/, 'a typing indicator must render while busy');
+  const dots = j.match(/className="hc-typing-dot"/g) || [];
+  assert.equal(dots.length, 3, 'typing indicator must be three animated dots');
+  assert.match(j, /aria-label=\{t\(lang, 'hcComposing'\)\}/,
+    'indicator must carry the translated Generating label');
+  assert.match(j, /className="hc-sr">\{t\(lang, 'hcComposing'\)\}/,
+    'Generating copy must also be screen-reader text');
+  const c = css();
+  assert.match(c, /\.hc-typing-dot[^}]*animation:\s*hc-typing/, 'dots must animate');
+  assert.match(c, /@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)[\s\S]{0,1200}\.hc-typing-dot/,
+    'dots must stop under reduced motion');
+});
+
+// --- voice-UX: TTS auto-play is mic-turn-only --------------------------------------
+test('TTS auto-plays for mic-initiated turns; typed turns stay tap-to-play', () => {
+  const j = chat();
+  assert.match(j, /voiceTurnRef/, 'turns must be classified by mic press');
+  assert.match(j, /onClick=\{handleMicPress\}/, 'mic press must mark the turn as voice-initiated');
+  assert.match(j, /if \(voiceTurn && bot\.text\) speakFor\(bot\)/,
+    'the answer must auto-play TTS only on voice turns');
+  assert.match(j, /voiceTurnRef\.current = false; setInput\(e\.target\.value\)/,
+    'manual edits must re-classify the turn as typed');
+  assert.match(j, /onListen=\{\(\) => handleListen\(m\)\}/,
+    'the speaker icon on every bot message stays tap-to-play');
+  assert.doesNotMatch(j, /splitSpeakChunks/, 'Crew B must not own TTS chunking — the injected speak does');
+});
+
+// --- voice-UX: mic denied → kind guidance + Settings link -------------------------
+test('mic denied shows kind guidance with a Settings permissions link', () => {
+  const j = chat();
+  assert.match(j, /micBlocked/, 'a blocked state must be computed');
+  assert.match(j, /t\(lang, 'homeNoMic'\)/, 'blocked must key off the hook mic-failure note');
+  assert.match(j, /className="hc-mic-blocked"/, 'blocked card must render');
+  for (const key of ['hcMicBlockedTitle', 'hcMicBlockedBody', 'hcMicBlockedOpen']) {
+    assert.match(j, new RegExp(`t\\(lang, '${key}'\\)`), `blocked card must use ${key}`);
+  }
+  assert.match(j, /setView\('settings'\)/, 'blocked card must open the Settings view');
+  assert.match(j, /role="alert"/, 'blocked card must be announced');
+});
+
+// --- voice-UX: queued offline dictation --------------------------------------------
+test('dictated offline questions queue honestly like typed ones', () => {
+  const j = chat();
+  assert.match(j, /queueQuery/, 'offline turns (typed or dictated) must queue');
+  assert.match(j, /hcQueuedChip/, 'the honest queued chip still applies');
+  // The voice-turn marker never leaks into the queue replay: replayed
+  // answers are typed turns, so no surprise TTS when the network returns.
+  assert.match(j, /voiceTurnRef\.current = false/, 'the marker is consumed per send');
 });

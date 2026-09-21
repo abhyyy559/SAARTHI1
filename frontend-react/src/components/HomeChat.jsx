@@ -57,7 +57,19 @@ export default function HomeChat({
     () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
     []
   );
-  const dictation = useVoiceInput(lang, (text) => setInput(text));
+  // --- Voice-UX states (Crew B, voice-first rebuild) ---------------------------
+  // Streaming STT: the hook's third arg (onPartial) fires with interim
+  // words while the user is still speaking — they land LIVE in the input box,
+  // no need to stop talking. The finalized text replaces the interim via
+  // handleVoiceFinal and sits ready to send (never auto-sent).
+  const handleVoicePartial = useCallback((interim) => { setInput(interim); }, []);
+  const handleVoiceFinal = useCallback((text) => { setInput(text); }, []);
+  // Mic-initiated turns: the mic press marks the turn so its answer
+  // auto-plays TTS on arrival; typed turns stay tap-to-play. Consumed once
+  // per send inside ask(); manual edits re-classify as a typed turn.
+  const voiceTurnRef = useRef(false);
+
+  const dictation = useVoiceInput(lang, handleVoiceFinal, handleVoicePartial);
 
   // The store's ask()/pendingAsk one-shot hand-off, owned by this component.
   // (Effects are registered after `ask` is defined, below.)
@@ -72,6 +84,16 @@ export default function HomeChat({
   // The injected ask, or the default backend call. The answer object follows
   // the /chat contract: { answer, evidence, risk, warning, verdict,
   // data_freshness, structured_fallback }.
+  // speakFor is the single TTS entry point: tap-to-play on the speaker icon
+  // (handleListen) and auto-play for mic-initiated turns (ask) both funnel
+  // through it, so the injected store speak (chunked TTS) is the only
+  // voice out. Chunking itself stays Crew C's — never duplicated here.
+  const speakFor = useCallback((m) => {
+    stopSpeaking();
+    setSpeakingId(m.id);
+    speak(sanitizeForTTS(m.text));
+  }, [stopSpeaking, speak]);
+
   const doAsk = useCallback(
     (q) => {
       if (onAsk) return onAsk(q);
@@ -103,6 +125,11 @@ export default function HomeChat({
   const ask = useCallback(async (text, opts = {}) => {
     const q = (typeof text === 'string' && text ? text : input).trim();
     if (!q || busy) return;
+    // Voice-UX turn classification: a mic-initiated turn auto-plays TTS on
+    // the answer (spec §4); typed turns stay tap-to-play. The marker is
+    // consumed here so every send re-decides the next turn.
+    const voiceTurn = opts.voice === true || voiceTurnRef.current;
+    voiceTurnRef.current = false;
     setInput('');
     setBusy(true);
     setLog((l) => [...l, { role: 'user', text: q, id: nextId() }]);
@@ -127,6 +154,9 @@ export default function HomeChat({
         id: nextId(),
       };
       setLog((l) => [...l, bot]);
+      // Auto-play TTS for mic-initiated turns only — the speaker icon on
+      // every bot message keeps tap-to-play for everything else.
+      if (voiceTurn && bot.text) speakFor(bot);
       // Streaming reveal — progressively, unless reduced motion is set.
       setShown(0);
       setStreamId(bot.id);
@@ -134,7 +164,7 @@ export default function HomeChat({
       enqueueOffline(q);
     }
     setBusy(false);
-  }, [input, busy, netState, doAsk, enqueueOffline]);
+  }, [input, busy, netState, doAsk, enqueueOffline, speakFor]);
 
   // The store's ask()/pendingAsk one-shot hand-off, owned by this component:
   // - registerAsk publishes this chat's submit so any mounted caller (e.g.
@@ -142,7 +172,7 @@ export default function HomeChat({
   // - a pending question set just before navigating home (Advisor's "ask
   //   about this") is consumed once on mount, then cleared. Without this the
   //   buttons silently did nothing — the question never reached the chat.
-  const { registerAsk, pendingAskRef } = useApp();
+  const { registerAsk, pendingAskRef, setView } = useApp();
   useEffect(() => {
     registerAsk(ask);
     return () => registerAsk(null);
@@ -228,16 +258,24 @@ export default function HomeChat({
     };
   }, [popOpen]);
 
-  const handleListen = useCallback((m) => {
-    stopSpeaking();
-    setSpeakingId(m.id);
-    speak(sanitizeForTTS(m.text));
-  }, [stopSpeaking, speak]);
+  // Mic press marks the turn as voice-initiated (auto-play on answer) and
+  // toggles the hook's recording. Manual edits below re-classify as typed.
+  const handleMicPress = useCallback(() => {
+    voiceTurnRef.current = true;
+    dictation.listen();
+  }, [dictation]);
 
   const handleStop = useCallback(() => {
     stopSpeaking();
     setSpeakingId(null);
   }, [stopSpeaking]);
+
+  // Tap-to-play: the speaker icon on every bot message. Toggles to Stop
+  // while that message is speaking.
+  const handleListen = useCallback((m) => {
+    if (speakingId === m.id && speechState !== 'idle') handleStop();
+    else speakFor(m);
+  }, [speakingId, speechState, handleStop, speakFor]);
 
   const handleAskAbout = useCallback((m) => {
     // Facts-only follow-up: prefill the composer with the answer's lead so
@@ -249,6 +287,12 @@ export default function HomeChat({
 
   const SUGGESTIONS = PERSONA_QUESTIONS[persona] || PERSONA_QUESTIONS.general;
   const personaLabel = persona ? ((PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona) : t(lang, 'roleNotSet');
+
+  // Mic denied / unavailable: the voice hook surfaces the failure only as
+  // the localized 'homeNoMic' note, so the blocked card keys off that exact
+  // note. (Coordinator flag: a machine-readable `denied` flag on
+  // useVoiceInput would be more robust than matching the note string.)
+  const micBlocked = dictation.state === 'idle' && dictation.note === t(lang, 'homeNoMic');
 
   return (
     // Ask is the hero of Home (2026-09-21): the first thing the eye hits and
@@ -336,7 +380,7 @@ export default function HomeChat({
                 revealChars={m.id === streamId ? shown : Infinity}
                 streaming={m.id === streamId}
                 speaking={speakingId === m.id && speechState !== 'idle'}
-                onListen={() => (speakingId === m.id && speechState !== 'idle' ? handleStop() : handleListen(m))}
+                onListen={() => handleListen(m)}
                 onAskAbout={() => handleAskAbout(m)}
                 onOpenAdvisory={onOpenAdvisory}
               />
@@ -358,19 +402,66 @@ export default function HomeChat({
         ))}
         {busy && (
           <div className="hc-msg is-bot" aria-live="polite">
-            <div className="hc-bubble"><span aria-label={t(lang, 'hcComposing')}>···</span></div>
+            {/* Generating… — a living typing indicator, never a dead blank
+                wait. Transform/opacity-only dots, honours reduced motion. */}
+            <div className="hc-bubble hc-typing" aria-label={t(lang, 'hcComposing')}>
+              <span className="hc-typing-dot" aria-hidden="true" />
+              <span className="hc-typing-dot" aria-hidden="true" />
+              <span className="hc-typing-dot" aria-hidden="true" />
+              <span className="hc-sr">{t(lang, 'hcComposing')}</span>
+            </div>
           </div>
         )}
       </div>
 
+      {/* Voice-UX states: tap the mic → pulsing "Listening..."; pause /
+          finalize → "Understanding your text..."; the permission request gets
+          its own state too. All three are visually distinct, and each is
+          announced to screen readers. */}
+      {dictation.state !== 'idle' && (
+        <div className={`hc-mic-status is-${dictation.state}`} role="status" aria-live="polite">
+          <span className="hc-mic-pulse" aria-hidden="true" />
+          <span className="hc-mic-status-text">
+            {dictation.state === 'recording'
+              ? t(lang, 'hcListening')
+              : dictation.state === 'processing'
+                ? t(lang, 'hcUnderstanding')
+                : t(lang, 'hcMicPermission')}
+          </span>
+          {dictation.state === 'recording' && (
+            <span className="hc-mic-timer" aria-hidden="true">{dictation.elapsed}s</span>
+          )}
+        </div>
+      )}
+
+      {/* Mic denied: kind, honest guidance with a way out — one tap to the
+          Settings permissions screen. The raw hook note is suppressed while
+          this card shows so the user does not read the same failure twice. */}
+      {micBlocked && (
+        <div className="hc-mic-blocked" role="alert">
+          <span className="hc-mic-blocked-icon" aria-hidden="true"><Icon name="mic" size={20} /></span>
+          <div className="hc-mic-blocked-body">
+            <b className="hc-mic-blocked-title">{t(lang, 'hcMicBlockedTitle')}</b>
+            <p className="hc-mic-blocked-text">{t(lang, 'hcMicBlockedBody')}</p>
+          </div>
+          <button
+            type="button"
+            className="hc-mic-blocked-open"
+            onClick={() => setView('settings')}
+          >
+            {t(lang, 'hcMicBlockedOpen')}
+          </button>
+        </div>
+      )}
+
       <form className="hc-composer" data-tour="home-chat" onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <button
-          className={`hc-mic${dictation.listening ? ' is-live' : ''}`}
+          className={`hc-mic${dictation.listening ? ' is-live' : ''}${dictation.state === 'processing' ? ' is-processing' : ''}`}
           type="button"
-          onClick={dictation.listen}
-          disabled={dictation.busy || dictation.unavailable}
+          onClick={handleMicPress}
+          disabled={dictation.busy || dictation.unavailable || busy}
           aria-pressed={dictation.listening}
-          aria-label={t(lang, 'hcMicHint')}
+          aria-label={dictation.listening ? t(lang, 'hcMicStop') : t(lang, 'hcMicHint')}
           title={dictation.unavailable ? t(lang, 'voiceOffline') : t(lang, 'hcMicHint')}
         >
           <Icon name="mic" size={22} aria-hidden="true" />
@@ -381,15 +472,17 @@ export default function HomeChat({
           type="text"
           placeholder={t(lang, 'hcComposerHint')}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => { voiceTurnRef.current = false; setInput(e.target.value); }}
           aria-label={t(lang, 'hcComposerHint')}
+          disabled={busy}
+          aria-disabled={busy}
         />
         <button className="hc-send" type="submit" disabled={busy} aria-label={t(lang, 'hcSend')}>
           <Icon name="send" size={18} aria-hidden="true" />
           {busy ? '···' : t(lang, 'hcSend')}
         </button>
       </form>
-      {dictation.note && <p className="hc-composer-note">{dictation.note}</p>}
+      {dictation.note && !micBlocked && <p className="hc-composer-note">{dictation.note}</p>}
 
       <div className="hc-chips-label">{t(lang, 'hcSuggestionsHint')}</div>
       <div className="hc-chips-wrap">
