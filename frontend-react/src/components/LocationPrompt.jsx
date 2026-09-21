@@ -8,7 +8,7 @@ import { useApp } from '../store';
 import Icon from './icons';
 
 export default function LocationPrompt({ inline = false }) {
-  const { lang, locStatus, locNote, requestLocation, setDistrict } = useApp();
+  const { lang, locStatus, locNote, requestLocation, setDistrict, setView } = useApp();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -35,6 +35,14 @@ export default function LocationPrompt({ inline = false }) {
     <button type="button" className={`btn${inline ? ' sm btn-secondary' : ''}`} onClick={requestLocation} disabled={busy}>
       <Icon name="pin" size={16} />
       {t(lang, locStatus === 'idle' ? 'locCta' : 'locRetry')}
+    </button>
+  );
+
+  // A denied permission cannot be re-prompted in-app — point at the settings
+  // permissions center, which carries the platform guidance.
+  const settingsLink = locStatus === 'denied' && (
+    <button type="button" className={`btn btn-ghost${inline ? ' sm' : ''}`} onClick={() => setView('settings')}>
+      {t(lang, 'locOpenSettings')}
     </button>
   );
 
@@ -73,6 +81,7 @@ export default function LocationPrompt({ inline = false }) {
       <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'wrap', maxWidth: '100%' }}>
         {busy && <span role="status" className="mono" style={{ color: 'var(--ink-soft)' }}>{t(lang, locStatus === 'requesting' ? 'locLocating' : 'locResolving')}</span>}
         {cta}
+        {settingsLink}
         <button
           type="button"
           className="btn btn-ghost sm"
@@ -98,6 +107,7 @@ export default function LocationPrompt({ inline = false }) {
       <div className="row">
         <Icon name="pin" size={30} />
         {cta}
+        {settingsLink}
         <button type="button" className="btn btn-ghost" onClick={() => setManual((m) => !m)} aria-expanded={manual}>
           {t(lang, 'locManualPh')}
         </button>
