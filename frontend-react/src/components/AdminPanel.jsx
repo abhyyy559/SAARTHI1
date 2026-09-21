@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { t } from '../i18n';
 import { useApp, SOURCE_MODES, modeLabel, modeNote } from '../store';
+import { adminStats } from '../notificationUtils';
 import { Card } from './ui';
 import Icon from './icons';
 
@@ -34,6 +35,45 @@ const SCENARIOS = [
   { id: 'rain', icon: 'rain', label: 'sbScnRain', sev: 'ORANGE', hint: 'Visakhapatnam' },
   { id: 'cyclone', icon: 'wind', label: 'sbScnCyclone', sev: 'RED', hint: 'Kakinada' },
 ];
+
+// Create-form presets mirror the backend's one-tap scenarios, but land in the
+// form (editable) instead of firing immediately — the operator tweaks first,
+// then creates. Same content as /api/demo/alerts/scenario.
+const PRESETS = {
+  thunderstorm: {
+    title: 'Severe Thunderstorm Warning', hazard: 'Thunderstorm', severity: 'ORANGE',
+    district: 'Hyderabad', area: 'Hyderabad district',
+    instruction: 'Avoid unnecessary outdoor travel during the valid hours.',
+    pre_min: 0.2, start_min: 0.7, end_min: 3,
+  },
+  heatwave: {
+    title: 'Heat Wave Warning', hazard: 'Heat wave', severity: 'YELLOW',
+    district: 'Warangal', area: 'Warangal district',
+    instruction: 'Avoid outdoor exposure during peak afternoon hours. Hydrate frequently.',
+    pre_min: 0.2, start_min: 0.7, end_min: 3,
+  },
+  rain: {
+    title: 'Heavy Rainfall Alert', hazard: 'Heavy rain', severity: 'ORANGE',
+    district: 'Visakhapatnam', area: 'Visakhapatnam district',
+    instruction: 'Waterlogging likely on low-lying roads. Avoid vulnerable routes.',
+    pre_min: 0.2, start_min: 0.7, end_min: 3,
+  },
+  cyclone: {
+    title: 'Cyclone Alert', hazard: 'Cyclone', severity: 'RED',
+    district: 'Kakinada', area: 'Kakinada district (coastal)',
+    instruction: 'Fishermen: do not venture into the sea. Follow evacuation instructions.',
+    pre_min: 0.2, start_min: 0.7, end_min: 3,
+  },
+};
+
+function StatTile({ label, value, tone }) {
+  return (
+    <div className="admin-tile" {...(tone ? { 'data-sev-ink': tone.toLowerCase() } : {})}>
+      <b>{value}</b>
+      <span>{label}</span>
+    </div>
+  );
+}
 
 function StateChip({ state }) {
   const { lang } = useApp();
@@ -147,6 +187,8 @@ export default function AdminPanel() {
   // The mode switch is available in demo AND hybrid: switching out of imd is
   // how the presenter starts the demo; switching out of demo is how they end it.
   const modeSwitchAvailable = sourceMode === 'demo' || sourceMode === 'hybrid';
+  // At-a-glance counts, derived only from the demo alert list the panel fetched.
+  const stats = adminStats(alerts);
 
   const reload = useCallback(() => {
     if (!demoLive) return;
@@ -242,6 +284,22 @@ export default function AdminPanel() {
             <p className="sub">{t(lang, 'demoScenarioHint')}</p>
           </Card>
 
+          <Card title={t(lang, 'adminStatsTitle')} className="ops-panel">
+            <div className="admin-tiles">
+              <StatTile label={t(lang, 'adminTotal')} value={stats.total} />
+              <StatTile label={t(lang, 'adminActive')} value={stats.live} tone={stats.live > 0 ? 'red' : 'green'} />
+              <StatTile label={t(lang, 'adminEnded')} value={stats.ended} tone="green" />
+              <StatTile label={t(lang, 'adminCancelled')} value={stats.cancelled} />
+            </div>
+            <div className="admin-sev-row">
+              {['RED', 'ORANGE', 'YELLOW', 'GREEN'].map((s) => (
+                <span key={s} className="admin-sev" data-sev={s} title={s}>
+                  <i>{stats.bySeverity[s]}</i> {s}
+                </span>
+              ))}
+            </div>
+          </Card>
+
           <Card title={t(lang, 'demoActiveTitle')} sub={t(lang, 'demoActiveSub')} className="ops-panel"
             actions={<button type="button" className="btn btn-ghost sm" onClick={reset}>{t(lang, 'demoReset')}</button>}>
             {!alerts ? <p className="mono">{t(lang, 'checking')}</p>
@@ -255,6 +313,18 @@ export default function AdminPanel() {
           </Card>
 
           <Card title={t(lang, 'demoCreateTitle')} sub={t(lang, 'demoCreateSub')} className="ops-panel">
+            <div className="ops-grid" style={{ marginBottom: 10 }}>
+              {Object.entries(PRESETS).map(([id, p]) => (
+                <button key={id} type="button" className="scn-card" data-sev={p.severity} disabled={!!busy}
+                  onClick={() => setForm((f) => ({ ...f, ...p }))}>
+                  <span className="display">{p.title}</span>
+                  <span className="mono" style={{ fontSize: 11, opacity: 0.7 }}>
+                    {p.district} · <span className="sev-stamp" data-sev={p.severity}>{p.severity}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="sub">{t(lang, 'adminPreset')}</p>
             <form onSubmit={create} className="form-grid">
               <label>{t(lang, 'demoFTitle')}
                 <input className="input" value={form.title} required

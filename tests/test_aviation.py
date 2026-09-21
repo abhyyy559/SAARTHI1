@@ -143,11 +143,17 @@ def test_no_cloud_proxy_without_labels(monkeypatch):
 # --- 3. Severity never escalated ----------------------------------------------
 
 def _wire_alert(monkeypatch, severity):
+    # `expires` must be in the future regardless of when the suite runs: a
+    # hardcoded expiry (2026-09-21) became stale and the verdict engine —
+    # correctly — stopped confirming the warning, failing severity-passthrough.
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
     alert = {
         "identifier": "av-1", "headline": "Heavy rain expected",
         "severity": severity, "event": "Rain", "area": "Hyderabad",
         "source": "NDMA-Sachet-CAP", "provenance": "LIVE",
-        "effective": "2026-09-20T00:00:00", "expires": "2026-09-21T00:00:00",
+        "effective": (now - timedelta(hours=2)).isoformat(),
+        "expires": (now + timedelta(hours=6)).isoformat(),
     }
     _wire(monkeypatch, alerts={"relevant": [alert], "nearby": [],
                               "provenance": "LIVE", "feeds": ["NDMA-Sachet-CAP"],
@@ -201,7 +207,13 @@ def test_disclaimer_en_hi_te(monkeypatch):
 def test_route_registered_on_app():
     from backend import main
 
+    # FastAPI >= 0.118 defers include_router to an _IncludedRouter wrapper:
+    # app.routes does not expose the nested paths until first request / first
+    # OpenAPI build. route-introspection via .routes alone reports only the
+    # top-level routes, which read as "router missing" when the app is fine.
+    # The OpenAPI schema is the materialized view of every mounted route.
     paths = {getattr(r, "path", None) for r in main.app.routes}
+    paths |= set(main.app.openapi()["paths"])
     assert "/api/aviation/briefing" in paths, sorted(p for p in paths if p)
     print("PASS: test_route_registered_on_app")
 

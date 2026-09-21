@@ -32,6 +32,11 @@ import { useApp } from '../store';
 import Icon from './icons';
 
 const SEEN_KEY = 'wgpt-onboarded';
+// First-run handoff: the welcome/permissions flow (FirstRunOnboarding.jsx)
+// sets this flag when it finishes and THEN dispatches wgpt:tour itself. The
+// tour's own auto-start waits for the flag so the two first-run flows can
+// never overlap (welcome card and spotlight ring at the same time).
+const ONBOARD_DONE_KEY = 'wgpt.onboarded';
 
 const STEPS = [
   { view: 'home', sels: ['[data-tour="verdict"]'], icon: 'sun', title: 'ot1t', body: 'ot1b' },
@@ -165,7 +170,9 @@ export default function OnboardingTour() {
       deepLinked = new URLSearchParams(window.location.search).has('view')
         || window.location.hash.includes('view=');
     } catch { deepLinked = false; }
-    if (!seen && !deepLinked) tId = setTimeout(() => goStepRef.current(0), 900);
+    let onboarded = true;
+    try { onboarded = localStorage.getItem(ONBOARD_DONE_KEY) === '1'; } catch { /* treat as done: never double-run */ }
+    if (!seen && !deepLinked && onboarded) tId = setTimeout(() => goStepRef.current(0), 900);
     const onResize = () => {
       // Never wake a dormant tour: without this, any viewport resize while
       // the tour was never started runs measure() -> skip() -> goStep(),

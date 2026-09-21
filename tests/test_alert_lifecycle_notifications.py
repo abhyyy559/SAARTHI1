@@ -14,6 +14,7 @@ A missed transition is the failure under test: simulate the whole lifecycle
 and assert the notification count and kinds match exactly.
 """
 import asyncio
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -114,6 +115,13 @@ def test_demo_update_fires_updated_notification(client, demo_mode):
 
 
 def _cap_alert(aid, severity="ORANGE", sent="2026-09-20T10:00:00+05:30"):
+    # `expires` must always be in the future: these tests exercise the
+    # transition logic, not the clock. A hardcoded expiry date silently
+    # passed its own date (2026-09-21) and the verdict engine — correctly —
+    # treated every warning as over, turning the chain tests false-red.
+    # `sent` stays fixed on purpose: the fingerprint (id@sent) and the
+    # `updated` test's bulletin ordering depend on it.
+    now = datetime.now(timezone.utc)
     return {
         "id": aid,
         "severity": severity,
@@ -122,7 +130,7 @@ def _cap_alert(aid, severity="ORANGE", sent="2026-09-20T10:00:00+05:30"):
         "headline": "Thunderstorm warning",
         "source": "NDMA-Sachet-CAP",
         "sent": sent,
-        "expires": "2026-09-21T10:00:00+05:30",
+        "expires": (now + timedelta(hours=6)).isoformat(),
         "relevance": {"relevant": True},
     }
 

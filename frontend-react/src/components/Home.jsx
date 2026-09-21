@@ -15,7 +15,6 @@ import { api } from '../api';
 import { useApp } from '../store';
 import { minutesSince, isExpired } from '../format';
 import Icon from './icons';
-import LocationPrompt from './LocationPrompt';
 import HomeHero from './HomeHero';
 import HomeChat from './HomeChat';
 import AviationBriefing from './AviationBriefing';
@@ -94,14 +93,14 @@ function WarningTeasers() {
 }
 
 export default function Home() {
-  const { lang, persona, loc, locReady, speak, stopSpeaking, speechState, netState, setView, setListenState } = useApp();
+  const { lang, persona, loc, speak, stopSpeaking, speechState, netState, setView, setListenState } = useApp();
   return (
     <div className="home-stack">
-      {!locReady && <LocationPrompt />}
-      <section className="home-chat">
+      <section aria-label={t(lang, 'heroAskAnything')} className="home-chat">
         {/* Ask is the hero of Home: it mounts FIRST, above the verdict card.
             Identity resets with lang/role/district so a new context never
-            inherits the old one's answers. */}
+            inherits the old one's answers. The location prompt renders once,
+            inside HomeHero next to the place row — never duplicated here. */}
         <HomeChat
           key={`chat:${lang}:${persona}:${loc.district}`}
           lang={lang}
