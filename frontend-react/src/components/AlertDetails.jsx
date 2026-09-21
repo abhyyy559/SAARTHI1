@@ -4,6 +4,10 @@
 // - Renders the backend's severity/state AS-IS (never re-derived, never upgraded).
 // - Shows district, validity window (pre_alert_at/starts_at/ends_at or
 //   valid_from/valid_until), source (DEMO vs NDMA-SACHET CAP), instruction.
+// - Full lifecycle: started, completed-or-expected-end, effects, issuer,
+//   reason — from the backend's lifecycle_detail (alert_service), with honest
+//   fallbacks only to fields the backend actually sent. A field with no value
+//   renders "not available", never a guess.
 // - Timeline UPCOMING -> PRE-ALERT -> ACTIVE -> UPDATED/EXTENDED -> ENDED from
 //   alert.history (fallback: lifecycle_state/state single entry).
 // - Ack button POSTs /api/ack via api.ack (falls back to fetch when offline-sim).
@@ -13,6 +17,33 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import { sevWord } from './ui';
+
+// Full lifecycle detail (alerts redesign). Canonical fields come from the
+// backend's lifecycle_detail (see backend/services/alert_service.py). The
+// fallbacks only read fields the backend actually sent (sender, onset,
+// expires, description …): a field with no value stays null so the UI says
+// "not available" instead of inventing one.
+export function lifecycleDetail(a = {}) {
+  const back = (a && a.lifecycle_detail) || {};
+  const pick = (...vals) => {
+    for (const v of vals) {
+      if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+    }
+    return null;
+  };
+  const src = String(a.source || '').toLowerCase();
+  const ident = String(a.id || a.identifier || '').toLowerCase();
+  const isDemo = src.includes('demo') || ident.startsWith('demo-');
+  const reasonParts = [String(a.urgency || '').trim(), String(a.certainty || '').trim()].filter(Boolean);
+  return {
+    startedAt: pick(back.started_at, a.started_at, a.onset, a.effective),
+    expectedEndAt: pick(back.expected_end_at, a.expected_end_at, a.ends_at, a.expires, a.valid_until),
+    completedAt: pick(back.completed_at, a.completed_at),
+    issuer: pick(back.issuer, a.issuer, a.sender, isDemo ? 'DEMO' : 'NDMA-SACHET CAP'),
+    reason: pick(back.reason, a.reason, reasonParts.length ? reasonParts.join(', ') : null),
+    effects: pick(back.effects, a.effects, a.description),
+  };
+}
 
 const STATE_ICON = {
   UPCOMING: 'clock',
@@ -71,6 +102,11 @@ export default function AlertDetails({ alert, onBack, onAck }) {
   const head = alert.title || alert.headline || alert.message || alert.hazard || alert.event || '';
   const history = Array.isArray(alert.history) ? alert.history
     : [{ at: alert.updated_at || alert.issued_at || alert.sent, action: 'state', state }];
+  // Full lifecycle — every alert carries it, honestly badged when a field is
+  // missing. Never re-derived here: lifecycleDetail reads the backend's own
+  // lifecycle_detail first and only falls back to fields the backend sent.
+  const lc = lifecycleDetail(alert);
+  const na = <span className="det-na">{t(lang, 'detNotAvailable')}</span>;
 
   const doAck = async () => {
     setAckState('sending');
@@ -138,6 +174,35 @@ export default function AlertDetails({ alert, onBack, onAck }) {
           <span>{instruction}</span>
         </div>
       )}
+
+      {/* Full lifecycle: when it started, when it completed or is expected to
+          end, effects, who issued it, why. "Not available" is shown honestly
+          for fields the backend did not have — never a guess. */}
+      <div className="alert-sec-title">
+        <span className="kicker">{t(lang, 'detLifecycle')}</span>
+      </div>
+      <div className="evrow">
+        <span className="k">{t(lang, 'detStarted')}</span>
+        <span className="mono">{lc.startedAt ? fmt(lc.startedAt) : na}</span>
+      </div>
+      <div className="evrow">
+        <span className="k">{lc.completedAt ? t(lang, 'detEndedAt') : t(lang, 'detExpectedEnd')}</span>
+        <span className="mono">
+          {lc.completedAt ? fmt(lc.completedAt) : lc.expectedEndAt ? fmt(lc.expectedEndAt) : na}
+        </span>
+      </div>
+      <div className="evrow">
+        <span className="k">{t(lang, 'detIssuer')}</span>
+        <span>{lc.issuer || na}</span>
+      </div>
+      <div className="evrow">
+        <span className="k">{t(lang, 'detReason')}</span>
+        <span>{lc.reason || na}</span>
+      </div>
+      <div className="evrow">
+        <span className="k">{t(lang, 'detEffects')}</span>
+        <span>{lc.effects || na}</span>
+      </div>
 
       <div className="alert-sec-title">
         <span className="kicker">{t(lang, 'detTimeline')}</span>

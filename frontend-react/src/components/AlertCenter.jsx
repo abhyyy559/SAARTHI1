@@ -25,6 +25,9 @@ import Icon from './icons';
 // the whole app so the board can never disagree with itself. Codes are never
 // translated, and no code is ever invented here.
 import { sevWord } from './ui';
+// Full lifecycle detail is the shared helper in AlertDetails: backend's
+// lifecycle_detail first, honest fallbacks only to fields the backend sent.
+import { lifecycleDetail } from './AlertDetails';
 
 // Map backend lifecycle states to i18n keys
 const STATE_I18N_KEY = {
@@ -71,6 +74,7 @@ function AlertCard({ a, nowMs, nearby = false, onOpen }) {
     { key: 'lcLive', states: ['active', 'updated', 'extended'] },
     { key: 'lcResolved', states: ['ended', 'cancelled'] },
   ];
+  const lc = lifecycleDetail(a);
   const lcIndex = Math.max(0, LC_STEPS.findIndex((s) => s.states.includes(stateKey)));
 
   return (
@@ -105,6 +109,17 @@ function AlertCard({ a, nowMs, nearby = false, onOpen }) {
           {exp && <span>{t(lang, 'staleMay')}</span>}
           {ageMin != null && <span className="mono">{t(lang, 'agoPattern').replace('{m}', ageMin)}</span>}
         </div>
+        {/* Full lifecycle in one line: issuer, started, expected/actual end.
+            "Not available" when the backend did not have the field. */}
+        {(lc.issuer || lc.startedAt || lc.expectedEndAt || lc.completedAt) && (
+          <div className="ac-meta">
+            {lc.issuer && <span><Icon name="info" size={13} /> {lc.issuer}</span>}
+            {lc.startedAt && <span>{t(lang, 'detStarted')}: {lc.startedAt}</span>}
+            {lc.completedAt
+              ? <span>{t(lang, 'detEndedAt')}: {lc.completedAt}</span>
+              : lc.expectedEndAt && <span>{t(lang, 'detExpectedEnd')}: {lc.expectedEndAt}</span>}
+          </div>
+        )}
         <ol className="stepper" aria-hidden="true" style={{ marginBottom: 4 }}>
           {LC_STEPS.map((s, i) => (
             <li key={s.key} className={`step${i === lcIndex ? ' is-now' : ''}${i < lcIndex ? ' is-done' : ''}`}>
