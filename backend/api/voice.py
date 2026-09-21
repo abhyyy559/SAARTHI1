@@ -6,12 +6,16 @@ and the frontend uses the Web Speech API. Rural-accessible either way.
 Latency instrumentation: transcribe/synthesize/synthesize-stream all report
 ``X-TTFB-Ms`` (internal time-to-first-byte) and log a structured
 ``voice_ttfb_ms=...`` line so the demo path can be held to < 1.5 s.
+transcribe-stream additionally logs ``voice_stream_first_partial_ms=...`` —
+the time from socket accept to the first interim transcript, i.e. the number
+the < 1 s STT budget is measured against.
 """
+import asyncio
 import json
 import logging
 import time
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from ..adapters import stt_provider, tts_provider
@@ -168,6 +172,90 @@ async def synthesize_stream(payload: dict):
     )
 
 
+@router.websocket("/api/voice/transcribe-stream")
+async def transcribe_stream(websocket: WebSocket, language: str = "en"):
+    """Streaming STT relay: browser -> this socket -> Sarvam streaming STT.
+
+    Browser protocol (JSON text frames):
+      -> {"audio": "<base64 16kHz PCM>"}   mic frames, ~4 per second
+      -> {"flush": true}                   user stopped; finalize now
+      <- {"partial": "..."}                interim transcript (live)
+      <- {"final": "..."}                  final transcript after flush
+      <- {"error": "<code>", "message": "..."}  honest failure
+
+    The Sarvam leg is the provider's WebSocket streaming API (16 kHz PCM in,
+    partial transcripts out) — the only path that can put a first interim on
+    screen in < 1 s. Without a configured key this socket closes immediately
+    with an error frame and the frontend uses on-device recognition instead.
+    """
+    t0 = time.perf_counter()
+    await websocket.accept()
+    if not stt_provider.streaming_available():
+        await websocket.send_json({"error": "browser-fallback",
+                                   "message": "No STT provider configured"})
+        await websocket.close()
+        return
+    try:
+        session = await stt_provider.open_stream(language)
+    except AdapterUnavailable as exc:
+        await websocket.send_json({"error": "provider-unavailable", "message": str(exc)})
+        await websocket.close()
+        return
+
+    first_partial_ms: float | None = None
+
+    async def pump_sarvam():
+        nonlocal first_partial_ms
+        try:
+            async for kind, text in session:
+                if kind == "partial":
+                    if first_partial_ms is None:
+                        first_partial_ms = (time.perf_counter() - t0) * 1000
+                        logger.info("voice_stream_first_partial_ms=%.1f", first_partial_ms)
+                    await websocket.send_json({"partial": text})
+                elif kind == "error":
+                    await websocket.send_json({"error": "provider-error", "message": text})
+        except Exception as exc:  # socket already gone — nothing to report to
+            logger.debug("transcribe-stream pump ended: %s", exc)
+
+    pump = asyncio.ensure_future(pump_sarvam())
+    try:
+        while True:
+            try:
+                msg = await websocket.receive_json()
+            except WebSocketDisconnect:
+                break
+            if not isinstance(msg, dict):
+                continue
+            if msg.get("audio"):
+                await session.send_audio(msg["audio"])
+            elif msg.get("flush"):
+                final = await session.flush()
+                await websocket.send_json({"final": final})
+                break
+    except AdapterUnavailable as exc:
+        try:
+            await websocket.send_json({"error": "provider-error", "message": str(exc)})
+        except Exception:
+            pass
+    except Exception as exc:
+        logger.warning("transcribe-stream relay error: %s", exc)
+    finally:
+        pump.cancel()
+        try:
+            await session.aclose()
+        except Exception:
+            pass
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
 @router.get("/api/voice/status")
 async def voice_status() -> dict:
+    # NOTE: no `stt_streaming` field here on purpose — streaming availability
+    # is exactly "a key is configured", i.e. stt == "sarvam-live", and an
+    # existing backend test pins this payload's exact shape. The frontend
+    # treats stt == "sarvam-live" as streaming-eligible.
     return {"stt": stt_provider.provider_name(), "tts": tts_provider.provider_name()}

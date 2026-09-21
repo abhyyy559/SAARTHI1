@@ -25,6 +25,21 @@ def provider_name() -> str:
     return "sarvam-live" if config.SARVAM_API_KEY else BROWSER_FALLBACK
 
 
+# --- shared HTTP client (connection reuse) ---------------------------------
+# synthesize_chunked() fires one request per sentence-chunk; without reuse each
+# pays a fresh TCP+TLS handshake to api.sarvam.ai (~100-300 ms). One client for
+# the process keeps every chunk after the first on a warm connection.
+
+_client: httpx.AsyncClient | None = None
+
+
+def _http() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(timeout=30.0)
+    return _client
+
+
 async def synthesize(text: str, language: str = "en-IN") -> tuple[str, str]:
     """Returns (audio_base64_wav, provider). Raises AdapterUnavailable when unconfigured."""
     # Sanitize text for TTS
@@ -39,18 +54,24 @@ async def synthesize(text: str, language: str = "en-IN") -> tuple[str, str]:
         raise AdapterUnavailable("browser-fallback")
     lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, language)
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(
-                config.SARVAM_TTS_URL,
-                headers={"api-subscription-key": key},
-                json={"inputs": [text], "target_language_code": lang,
-                      "model": config.SARVAM_TTS_MODEL, "speaker": config.SARVAM_TTS_SPEAKER},
-            )
-            resp.raise_for_status()
-            audios = (resp.json().get("audios") or [])
-            if not audios:
-                raise AdapterUnavailable("empty TTS response")
-            raw = base64.b64decode(audios[0])
+        # TTS latency audit (2026-09-21): the bulbul request carries no padding
+        # or quality knobs that inflate latency — inputs, language, model,
+        # speaker. Latency scales with input length, so the lever is chunk
+        # sizing (see synthesize_chunked): the first chunk is kept small so
+        # first audio beats the < 2 s budget while playback pipelines the rest.
+        # _http() reuses one connection for the whole process instead of paying
+        # a fresh TCP+TLS handshake per chunk (~100-300 ms each).
+        resp = await _http().post(
+            config.SARVAM_TTS_URL,
+            headers={"api-subscription-key": key},
+            json={"inputs": [text], "target_language_code": lang,
+                  "model": config.SARVAM_TTS_MODEL, "speaker": config.SARVAM_TTS_SPEAKER},
+        )
+        resp.raise_for_status()
+        audios = (resp.json().get("audios") or [])
+        if not audios:
+            raise AdapterUnavailable("empty TTS response")
+        raw = base64.b64decode(audios[0])
     except AdapterUnavailable:
         raise
     except Exception as exc:
@@ -60,7 +81,8 @@ async def synthesize(text: str, language: str = "en-IN") -> tuple[str, str]:
     return base64.b64encode(raw).decode("ascii"), "sarvam-live"
 
 
-async def synthesize_chunked(text: str, language: str = "en-IN"):
+async def synthesize_chunked(text: str, language: str = "en-IN",
+                             first_chunk_chars: int = 220, chunk_chars: int = 450):
     """Yield (audio_base64, provider, index, total) per sentence-chunk.
 
     HONESTY NOTE: Sarvam bulbul has no streaming API — this is
@@ -69,11 +91,31 @@ async def synthesize_chunked(text: str, language: str = "en-IN"):
     streaming endpoint can emit audio progressively instead of waiting for
     the whole text. Raises AdapterUnavailable if no chunk could be made.
 
+    LATENCY: the FIRST chunk is capped at first_chunk_chars (default 220).
+    Bulbul latency grows with input length, so the small first chunk is what
+    lets first audio beat the < 2 s budget; playback pipelines the remaining
+    full-size chunks while they generate. One extra provider call per answer
+    is the trade — worth it for voice turns.
+
     Chunking happens on the RAW text (then each chunk is sanitized): the
     whole-text sanitize_for_tts() truncates at 600 chars, which would
     silently drop safety advice on long texts.
     """
-    chunks = [c for c in (sanitize_for_tts(c) for c in split_sentences(text, max_chars=450)) if c]
+    pieces = [p for p in split_sentences(text, max_chars=min(first_chunk_chars, chunk_chars))]
+    chunks: list[str] = []
+    cur, first_done = "", False
+    for raw in pieces:
+        clean = sanitize_for_tts(raw)
+        if not clean:
+            continue
+        limit = chunk_chars if first_done else first_chunk_chars
+        if cur and len(cur) + 1 + len(clean) > limit:
+            chunks.append(cur)
+            cur, first_done = clean, True
+        else:
+            cur = clean if not cur else f"{cur} {clean}"
+    if cur:
+        chunks.append(cur)
     if not chunks:
         report(NAME, UNCONFIGURED, "empty text after sanitize — browser fallback")
         raise AdapterUnavailable("browser-fallback")

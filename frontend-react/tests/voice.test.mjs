@@ -58,3 +58,31 @@ test('respects a custom maxLen', () => {
   assert.ok(chunks.length >= 3);
   for (const c of chunks) assert.ok(c.length <= 10, `chunk too long: ${c}`);
 });
+
+// --- latency assertions (Crew C) --------------------------------------------
+// The TTS pipeline overlaps synthesis with playback: the first chunk must be
+// small enough to synthesize fast, and chunking a full answer must itself be
+// instant (it runs on the critical path before the first provider call).
+
+test('chunking a full-length answer is instant (not on the latency path)', () => {
+  const answer = Array.from({ length: 20 }, (_, i) =>
+    `Sentence ${i} carries realistic answer text about the weather situation and what the current conditions mean for the district.`).join(' ');
+  const t0 = Date.now();
+  const chunks = splitSpeakChunks(answer);
+  const ms = Date.now() - t0;
+  assert.ok(chunks.length >= 2);
+  assert.ok(ms < 500, `chunking ${answer.length} chars took ${ms} ms`);
+});
+
+test('first chunk of a long answer stays small for fast first-audio', () => {
+  // Mirrors the backend's adaptive first chunk (220 chars): playback of chunk
+  // 1 starts while chunk 2+ synthesize, so the first chunk is what the
+  // < 2 s first-audio budget is measured against.
+  const answer = Array.from({ length: 10 }, (_, i) =>
+    `Point ${i}: the forecast shows conditions worth noting for your area today.`).join(' ');
+  const chunks = splitSpeakChunks(answer, 220);
+  assert.ok(chunks.length >= 2, 'long answer must chunk');
+  assert.ok(chunks[0].length <= 220, `first chunk ${chunks[0].length} chars — too big for fast first audio`);
+  // No words lost across the re-chunk.
+  assert.equal(chunks.join(' ').split(/\s+/).length, answer.split(/\s+/).length);
+});
