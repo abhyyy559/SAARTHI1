@@ -113,6 +113,48 @@ async function* synthesizeStream(text, language, { signal } = {}) {
   if (tail) yield JSON.parse(tail);
 }
 
+// Streaming chat: POSTs to /api/chat/stream and yields parsed NDJSON lines —
+// {type:'meta'} then {type:'token',text}*, then {type:'final'}?, {type:'done'} —
+// as they arrive, so the answer renders token-by-token with a real first-token
+// latency instead of waiting for the whole response. No 5s cap here: a stream
+// legitimately stays open while the model generates.
+async function* chatStreamLines(body, { signal } = {}) {
+  if (offlineSim) throw new Error('OFFLINE (simulated) — showing cached data only');
+  const ctrl = new AbortController();
+  const onAbort = () => ctrl.abort();
+  signal?.addEventListener('abort', onAbort);
+  let r;
+  try {
+    r = await fetch(full('/api/chat/stream'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    signal?.removeEventListener('abort', onAbort);
+    throw e.name === 'AbortError' ? e : new Error(`chat stream unreachable (${e.message || e})`);
+  }
+  signal?.removeEventListener('abort', onAbort);
+  if (!r.ok) throw new Error(`HTTP ${r.status} on /api/chat/stream`);
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (line) yield JSON.parse(line);
+    }
+  }
+  const tail = buf.trim();
+  if (tail) yield JSON.parse(tail);
+}
+
 const V = '/api/v1';
 
 export const api = {
@@ -144,6 +186,7 @@ export const api = {
   impact: (a, b, userType = 'driver') =>
     j(`${V}/impact/analyze?lat1=${a.lat}&lon1=${a.lon}&lat2=${b.lat}&lon2=${b.lon}&user_type=${userType}`),
   chat: (body) => post(`${V}/chat`, body),
+  chatStream: (body, opts) => chatStreamLines(body, opts),
   guidance: (q, lang) => j(`${V}/emergency/guidance?q=${encodeURIComponent(q)}&lang=${lang}`),
   sos: (payload) => post(`${V}/emergency/messages`, payload),
   inbox: () => j(`${V}/emergency/messages`),

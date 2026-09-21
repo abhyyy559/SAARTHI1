@@ -1,8 +1,9 @@
 // IA dedup + 360px regression tests (2026-09-20).
 //
 // The public IA is Home · Alerts · Advisory · the bell (notifications panel)
-// · More (Offline & P2P, Trust & sources, Settings, tour replay). Ask /
-// Advisor / Details / Sources routes are gone; their content was folded in.
+// · More (Trust & sources, Settings, tour replay). Ask / Advisor / Details /
+// Sources / Offline-P2P routes are gone; their content was folded in (P2P's QR
+// relay remains a background capability with no page).
 // Aviation is a PROFILE, not a menu row — its briefing renders on Home for
 // the aviation persona. Everything must render without horizontal overflow at
 // 320–360px.
@@ -30,9 +31,12 @@ test('public IA is exactly Home · Alerts · Advisory · More', () => {
 
 test('More sheet lists the deduped destinations; notifications moved to the bell panel', () => {
   // Notifications left the More sheet: the topbar bell opens the side panel,
-  // which is the one and only notifications home.
-  for (const v of ['offline', 'trust', 'settings'])
+  // which is the one and only notifications home. The offline/P2P page left
+  // the sheet too (conversational-first rebuild): the QR relay is a background
+  // capability with no screen.
+  for (const v of ['trust', 'settings'])
     assert.match(shell, new RegExp(`\\{ view: '${v}'`), `More sheet must list ${v}`);
+  assert.doesNotMatch(shell, /\{ view: 'offline'/, 'offline/P2P must not be a More-sheet row anymore');
   assert.doesNotMatch(shell, /\{ view: 'notifications'/, 'notifications must not be a More-sheet/rail row');
   // Tour replay is the last row.
   assert.match(shell, /sbTakeTour/);
@@ -57,7 +61,7 @@ test('aviation is a persona: briefing renders on Home for the aviation profile',
 });
 
 test('removed routes have no registration, no public entry', () => {
-  for (const v of ['ask', 'advisor', 'details', 'sources']) {
+  for (const v of ['ask', 'advisor', 'details', 'sources', 'offline']) {
     assert.doesNotMatch(app, new RegExp(`^\\s*${v}: \\w+View,$`, 'm'), `${v} must not be registered`);
   }
   // Stale deep links fall back to Home — documented in App.jsx.
@@ -129,12 +133,15 @@ test('tour is exactly five icon-led steps on the deduped IA', () => {
 });
 
 // --- admin invisibility -------------------------------------------------------
-test('offline route mounts Agent 2\'s OfflineP2P panel per the integration contract', () => {
-  const off = read('../src/components/OfflineView.jsx');
-  assert.match(off, /<OfflineP2P[\s\S]*?api=\{api\}/);
-  assert.match(off, /demoMode=\{demoMode\}/, 'relay stays demo-gated');
-  assert.match(off, /alerts=\{alerts\}/, 'cached alerts pass through for offline evaluation');
-  assert.match(views, /OfflineView/, 'views.jsx routes offline to the shell');
+// --- P2P has no page (conversational-first rebuild): QR relay is a background
+// capability only — no view route, no nav entry, no dedicated components.
+test('no P2P/offline page exists; QR relay stays a background capability', () => {
+  assert.doesNotMatch(views, /OfflineView/, 'views.jsx must not route an offline view');
+  assert.doesNotMatch(shell, /view: 'offline'/, 'shell must not carry an offline nav entry');
+  assert.doesNotMatch(app, /OfflineView/, 'App must not register an offline view');
+  const qr = read('../src/p2pqr.js');
+  assert.ok(qr.length > 0, 'p2pqr.js background capability is kept');
+  assert.doesNotMatch(shell, /QrRelay|QrScan/, 'QR relay has no nav entry');
 });
 
 test('admin is absent from tabs, More sheet, and tour', () => {

@@ -11,21 +11,16 @@ import { test } from 'node:test';
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 
 // --- P2P honesty -----------------------------------------------------------
-test('every P2P occurrence carries the exact simulated label', () => {
-  // Emergency + AlertDetails render the label through the p2pSimulated key;
-  // assert the key exists in the components AND resolves to the exact label
-  // in all three languages (checked in alerts.js), plus the verbatim usage
-  // in NotificationCenter / P2PDemo.
-  // (Worker 4: NotificationCenter was superseded by the notifications side
-  // panel — the verbatim usage now lives in NotificationsPanel.)
+// Conversational-first rebuild: the dedicated P2P page/panels were removed —
+// the QR relay is a background capability with no screen. What remains of the
+// honesty contract: notification rows for relayed items still stamp the exact
+// simulated label, and the removed panels must stay removed.
+test('removed P2P panels stay removed; relayed notification rows keep the exact simulated label', () => {
   for (const f of ['../src/components/Emergency.jsx', '../src/components/AlertDetails.jsx']) {
     const code = read(f);
-    assert.match(code, /p2pSimulated/, `${f} must render the translated simulated label`);
-    assert.match(code, /p2p-simulated/, `${f} must stamp the simulated panel`);
+    assert.doesNotMatch(code, /p2pSimulated/, `${f} must not render P2P panels anymore`);
+    assert.doesNotMatch(code, /p2p-simulated/, `${f} must not stamp a simulated panel`);
   }
-  const alerts = read('../src/strings/areas/alerts.js');
-  const hits = alerts.match(/p2pSimulated: 'SIMULATED — FOR DEMO ONLY',/g) || [];
-  assert.equal(hits.length, 3, 'p2pSimulated must be the exact label in EN/HI/TE');
   const ntf = read('../src/components/NotificationsPanel.jsx');
   assert.match(ntf, /ntfSimulatedTag/, 'notification rows must stamp simulated P2P');
   const hs = read('../src/strings/areas/harboursignal.js');

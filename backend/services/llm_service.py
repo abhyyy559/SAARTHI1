@@ -82,6 +82,12 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
     # (Open-Meteo in live mode, IMD in demo). Warnings always carry their own
     # source inside `verified`. Never default this to IMD blindly.
     days = forecast.get("days") or []
+    # LATENCY: the phrasing layer only ever reasons about ~3 days; sending all
+    # 7 inflates every prompt for no gain. Trim the evidence copy, never the
+    # caller's dict.
+    if len(days) > 3:
+        forecast = {**forecast, "days": days[:3]}
+        days = forecast["days"]
     tomorrow = days[1] if len(days) > 1 else (days[0] if days else {})
     tomorrow_rainfall_mm = tomorrow.get("rainfall")
     tomorrow_rainfall_prob = tomorrow.get("precipitation_probability")
@@ -269,3 +275,123 @@ class LLMService:
         if not content:
             return _template_answer(evidence, language), True
         return content, False
+
+    async def generate_stream(self, evidence: dict, question: str, language: str):
+        """Yield {"type": "token", "text": delta} as the model produces them, then
+        {"type": "end", "fallback": bool, "model_error": str, "truncated": bool}.
+
+        Token streaming for the chat UI's live reveal — the first token reaches
+        the user without waiting for the full response. Any failure degrades to
+        the grounded template answer (single token, fallback=True); a mid-stream
+        failure ends with truncated=True so the caller substitutes the template.
+        <think>...</think> spans are filtered incrementally so model reasoning
+        can never leak into the visible stream.
+        """
+        if not self.enabled:
+            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
+            return
+        if not config.LLM_MODEL_KNOWN:
+            model_error = (
+                f"Invalid LLM_MODEL '{config.LLM_MODEL}': not a known model on the "
+                "configured endpoint. Fix LLM_MODEL (default: 'openai/gpt-oss-120b') "
+                "or unset it to use the default."
+            )
+            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "end", "fallback": True, "model_error": model_error, "truncated": False}
+            return
+
+        user_type = evidence.get("user_type", "general")
+        directive = LANG_DIRECTIVE.get(language, LANG_DIRECTIVE["en"])
+        system = (
+            f"{SYSTEM_RULES}\n{directive}\n"
+            f"The user is a {user_type}: keep the facts simple and relevant to them, but give no advice."
+        )
+        user = (
+            "VERIFIED BACKEND DATA (the only source of facts):\n"
+            f"{json.dumps(evidence, ensure_ascii=False, default=str)}\n\n"
+            f"USER QUESTION: {question}\n"
+            "Answer from the data above. If a fact is missing, say it is not available."
+        )
+        payload = {
+            "model": config.LLM_MODEL,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 240,
+            "stream": True,
+        }
+        sent_any = False
+        try:
+            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
+                async with client.stream(
+                    "POST",
+                    f"{config.LLM_BASE_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
+                    json=payload,
+                ) as resp:
+                    resp.raise_for_status()
+                    buf = ""
+                    thinking = False
+                    async for line in resp.aiter_lines():
+                        s = line.strip()
+                        if not s.startswith("data:"):
+                            continue
+                        data = s[5:].strip()
+                        if data == "[DONE]":
+                            break
+                        try:
+                            obj = json.loads(data)
+                        except Exception:
+                            continue
+                        delta = (obj.get("choices") or [{}])[0].get("delta", {}).get("content") or ""
+                        if not delta:
+                            continue
+                        buf += delta
+                        # Incremental <think> filter: hold everything from an
+                        # opening tag until its close tag; drop the span.
+                        out = []
+                        while buf:
+                            if not thinking:
+                                i = buf.find("<think>")
+                                if i < 0:
+                                    # Hold a trailing partial tag ("<", "<th", …)
+                                    # so a tag split across chunks can't leak.
+                                    hold = 0
+                                    for k in range(1, min(len(buf), 7) + 1):
+                                        if buf[-k:] == "<think>"[:k]:
+                                            hold = k
+                                    out.append(buf[:len(buf) - hold] if hold else buf)
+                                    buf = buf[len(buf) - hold:] if hold else ""
+                                else:
+                                    out.append(buf[:i])
+                                    buf = buf[i:]
+                                    thinking = True
+                            else:
+                                j = buf.find("</think>")
+                                if j < 0:
+                                    break  # hold until the close tag (or EOS)
+                                buf = buf[j + len("</think>"):]
+                                thinking = False
+                        if out:
+                            sent_any = True
+                            yield {"type": "token", "text": "".join(out)}
+                    # Flush the tail; an unclosed <think> at EOS means a
+                    # reasoning fragment — dropped, never shown.
+                    if not thinking and buf:
+                        sent_any = True
+                        yield {"type": "token", "text": buf}
+        except Exception:
+            if not sent_any:
+                yield {"type": "token", "text": _template_answer(evidence, language)}
+                yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
+            else:
+                yield {"type": "end", "fallback": True, "model_error": "", "truncated": True}
+            return
+        if not sent_any:
+            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
+            return
+        yield {"type": "end", "fallback": False, "model_error": "", "truncated": False}

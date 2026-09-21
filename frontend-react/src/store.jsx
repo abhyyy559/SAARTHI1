@@ -92,7 +92,7 @@ export function AppProvider({ children }) {
   const [view, setView] = useState(() => {
     try {
       const v = new URLSearchParams(window.location.search).get('view');
-      return ['home', 'alerts', 'advisory', 'notifications', 'offline', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
+      return ['home', 'alerts', 'advisory', 'notifications', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));
@@ -378,6 +378,8 @@ export function AppProvider({ children }) {
   }, [lang]);
   const speak = useCallback(async (text) => {
     if (!text) return;
+    // Crew G sound toggle: user-muted sound suppresses all TTS.
+    try { if (localStorage.getItem('wgpt.sound') === '0') return; } catch { /* ignore */ }
     stopSpeaking();
     const id = speechId.current;
     // Optimistic: the indicator renders on the next frame, within 100ms of the tap.

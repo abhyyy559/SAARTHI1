@@ -46,6 +46,14 @@ export default function HomeChat({
   const [popOpen, setPopOpen] = useState(false);
   const [streamId, setStreamId] = useState(null);
   const [shown, setShown] = useState(0);
+  // True token streaming (default backend path): the id of the bot message
+  // currently receiving tokens. Unlike the typewriter `streamId` reveal (used
+  // only for the injected-onAsk path), a live message grows as tokens arrive —
+  // revealChars stays Infinity and the caret shows via `streaming`.
+  const [liveId, setLiveId] = useState(null);
+  // "Generating…" shows while busy AND no token has arrived yet; the moment
+  // the first token streams in, the living answer replaces the indicator.
+  const [streamTextStarted, setStreamTextStarted] = useState(false);
   const [speakingId, setSpeakingId] = useState(null);
   const logRef = useRef(null);
   const inputRef = useRef(null);
@@ -94,19 +102,8 @@ export default function HomeChat({
     speak(sanitizeForTTS(m.text));
   }, [stopSpeaking, speak]);
 
-  const doAsk = useCallback(
-    (q) => {
-      if (onAsk) return onAsk(q);
-      return apiClient.chat({
-        message: q,
-        latitude: loc && loc.lat,
-        longitude: loc && loc.lon,
-        language: lang,
-        user_type: persona || 'general',
-      });
-    },
-    [onAsk, apiClient, loc, lang, persona]
-  );
+  // (doAsk was folded into ask(): the injected onAsk keeps the non-streaming
+  // contract; the default backend call streams tokens via apiClient.chatStream.)
 
   const enqueueOffline = useCallback((q) => {
     const n = queueQuery({
@@ -132,6 +129,7 @@ export default function HomeChat({
     voiceTurnRef.current = false;
     setInput('');
     setBusy(true);
+    setStreamTextStarted(false);
     setLog((l) => [...l, { role: 'user', text: q, id: nextId() }]);
     if (netState !== 'live') {
       // Offline (§9): the question appears immediately with an honest queued
@@ -140,8 +138,14 @@ export default function HomeChat({
       setBusy(false);
       return;
     }
-    try {
-      const r = await doAsk(q);
+    const body = {
+      message: q,
+      latitude: loc && loc.lat,
+      longitude: loc && loc.lon,
+      language: lang,
+      user_type: persona || 'general',
+    };
+    const addBotFromResponse = (r) => {
       const bot = {
         role: 'bot',
         text: r.answer || '',
@@ -157,14 +161,75 @@ export default function HomeChat({
       // Auto-play TTS for mic-initiated turns only — the speaker icon on
       // every bot message keeps tap-to-play for everything else.
       if (voiceTurn && bot.text) speakFor(bot);
-      // Streaming reveal — progressively, unless reduced motion is set.
+      // Typewriter reveal — progressively, unless reduced motion is set.
       setShown(0);
       setStreamId(bot.id);
-    } catch {
-      enqueueOffline(q);
+    };
+    if (onAsk) {
+      // Injected ask (tests/embeds): the original non-streaming contract.
+      try {
+        addBotFromResponse(await onAsk(q));
+      } catch {
+        enqueueOffline(q);
+      }
+      setBusy(false);
+      return;
     }
+    // Default backend call: TRUE token streaming. The bot shell lands instantly
+    // with the live caret; "Generating…" shows only until the first token
+    // arrives, then tokens stream in as the model produces them.
+    const botId = nextId();
+    setLog((l) => [...l, { role: 'bot', text: '', evidence: [], id: botId, fallback: false, live: !!opts.live }]);
+    setLiveId(botId);
+    let fullText = '';
+    let streamFailed = false;
+    try {
+      for await (const ev of apiClient.chatStream(body)) {
+        if (ev.type === 'meta') {
+          setLog((l) => l.map((m) => (m.id === botId
+            ? { ...m, evidence: ev.evidence || [], risk: ev.risk, warning: ev.warning, verdict: ev.verdict }
+            : m)));
+        } else if (ev.type === 'token' && ev.text) {
+          fullText += ev.text;
+          const t = fullText;
+          setStreamTextStarted(true);
+          setLog((l) => l.map((m) => (m.id === botId ? { ...m, text: t } : m)));
+        } else if (ev.type === 'final') {
+          fullText = ev.answer || '';
+          const t = fullText;
+          const fb = !!ev.structured_fallback;
+          setLog((l) => l.map((m) => (m.id === botId ? { ...m, text: t, fallback: fb } : m)));
+        } else if (ev.type === 'done') {
+          const fb = !!ev.structured_fallback;
+          setLog((l) => l.map((m) => (m.id === botId ? { ...m, fallback: m.fallback || fb } : m)));
+        }
+      }
+    } catch {
+      streamFailed = true;
+    }
+    setLiveId(null);
     setBusy(false);
-  }, [input, busy, netState, doAsk, enqueueOffline, speakFor]);
+    if (streamFailed && !fullText) {
+      // The stream never produced anything: fall back to the non-streaming
+      // endpoint (the pre-streaming behavior), then to the offline queue.
+      // Hold busy through the fallback so the input stays locked and the
+      // Generating… indicator keeps the turn visibly alive.
+      setBusy(true);
+      setLog((l) => l.filter((m) => m.id !== botId));
+      try {
+        addBotFromResponse(await apiClient.chat(body));
+      } catch {
+        enqueueOffline(q);
+      }
+      setBusy(false);
+      return;
+    }
+    if (streamFailed) {
+      // Partial stream: keep what arrived, honestly flagged as fallback.
+      setLog((l) => l.map((m) => (m.id === botId ? { ...m, fallback: true } : m)));
+    }
+    if (voiceTurn && fullText) speakFor({ id: botId, text: fullText });
+  }, [input, busy, netState, onAsk, apiClient, loc, lang, persona, enqueueOffline, speakFor]);
 
   // The store's ask()/pendingAsk one-shot hand-off, owned by this component:
   // - registerAsk publishes this chat's submit so any mounted caller (e.g.
@@ -288,11 +353,9 @@ export default function HomeChat({
   const SUGGESTIONS = PERSONA_QUESTIONS[persona] || PERSONA_QUESTIONS.general;
   const personaLabel = persona ? ((PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona) : t(lang, 'roleNotSet');
 
-  // Mic denied / unavailable: the voice hook surfaces the failure only as
-  // the localized 'homeNoMic' note, so the blocked card keys off that exact
-  // note. (Coordinator flag: a machine-readable `denied` flag on
-  // useVoiceInput would be more robust than matching the note string.)
-  const micBlocked = dictation.state === 'idle' && dictation.note === t(lang, 'homeNoMic');
+  // Mic denied: machine-readable flag from useVoiceInput (Crew C), with the
+  // localized 'homeNoMic' note as fallback for older hook shapes.
+  const micBlocked = dictation.state === 'idle' && (dictation.denied === true || dictation.note === t(lang, 'homeNoMic'));
 
   return (
     // Ask is the hero of Home (2026-09-21): the first thing the eye hits and
@@ -378,7 +441,7 @@ export default function HomeChat({
                 lang={lang}
                 message={m}
                 revealChars={m.id === streamId ? shown : Infinity}
-                streaming={m.id === streamId}
+                streaming={m.id === streamId || m.id === liveId}
                 speaking={speakingId === m.id && speechState !== 'idle'}
                 onListen={() => handleListen(m)}
                 onAskAbout={() => handleAskAbout(m)}
@@ -400,10 +463,12 @@ export default function HomeChat({
             )}
           </div>
         ))}
-        {busy && (
+        {busy && !streamTextStarted && (
           <div className="hc-msg is-bot" aria-live="polite">
             {/* Generating… — a living typing indicator, never a dead blank
-                wait. Transform/opacity-only dots, honours reduced motion. */}
+                wait. Transform/opacity-only dots, honours reduced motion.
+                Hidden the moment the first streamed token arrives: the living
+                answer itself is the progress signal from there on. */}
             <div className="hc-bubble hc-typing" aria-label={t(lang, 'hcComposing')}>
               <span className="hc-typing-dot" aria-hidden="true" />
               <span className="hc-typing-dot" aria-hidden="true" />

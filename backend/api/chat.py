@@ -2,11 +2,15 @@
 
 Demo mode: IMD fixtures (DEMO). Live mode: Open-Meteo + IMD-live + CAP (provenance
 per fact). Both modes refuse to invent (§54/§59). Spec alias: POST /api/chat/query.
+Token streaming: POST /api/chat/stream (NDJSON: meta, token*, final?, done).
 """
 import asyncio
+import json
 import re
+import time
 
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
 from .. import config
 from ..adapters.registry import AdapterUnavailable
@@ -17,6 +21,7 @@ from ..services.alert_service import gather_alerts
 from ..services.imd_service import IMDService
 from ..services.llm_service import LLMService, build_evidence_package, _template_answer
 from ..services.location_service import LocationService
+from ..services.response_validator import validate as validate_answer
 from ..services.validation_service import ValidationService
 from ..services.verdict_service import build_verdict
 from ..utils.time import iso_now
@@ -338,9 +343,15 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
     return current_dict, forecast_dict, verified_dict, ev, notes
 
 
-async def _handle(req: ChatRequest) -> ChatResponse:
-    import time
-    t0 = time.perf_counter()
+async def _prepare(req: ChatRequest) -> dict:
+    """Run everything before the LLM call. Returns a ctx dict.
+
+    ctx["early"] is a ChatResponse when the pipeline short-circuits on total
+    data failure (the honest unavailable answer); otherwise None, and the
+    remaining keys carry the pipeline state both /api/chat and /api/chat/stream
+    need. Severity/advisory/evidence are identical for both endpoints — one
+    payload can never carry two verdicts.
+    """
     rules = WeatherRules()
     rules.parse(req.message)
     loc = LocationService().resolve(req.latitude, req.longitude)
@@ -362,13 +373,14 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         # evidence of safety). The verdict is the authority for both. The
         # verified payload is marked unavailable so advisory_for reports
         # "service unreachable", never the dishonest "no warning found".
-        return _build_response(loc, verified_dict, risk, None, None,
-                               _unavailable_answer(req.language),
-                               advisory_for({**verified_dict, "warning_service": "unavailable"},
-                                            req.user_type, req.language, verdict=verdict,
-                                            coastal=loc.get("coastal"), district=loc.get("district")),
-                               req.language, {"status": "unavailable", "provenance": "UNAVAILABLE"}, [], True,
-                               user_type=req.user_type, verdict=verdict)
+        early = _build_response(loc, verified_dict, risk, None, None,
+                                _unavailable_answer(req.language),
+                                advisory_for({**verified_dict, "warning_service": "unavailable"},
+                                             req.user_type, req.language, verdict=verdict,
+                                             coastal=loc.get("coastal"), district=loc.get("district")),
+                                req.language, {"status": "unavailable", "provenance": "UNAVAILABLE"}, [], True,
+                                user_type=req.user_type, verdict=verdict)
+        return {"early": early}
 
     advisory = advisory_for(verified_dict, req.user_type, req.language, verdict=verdict,
                             coastal=loc.get("coastal"), district=loc.get("district"))
@@ -389,20 +401,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         source_name=notes.get("source_name", "IMD"),
     )
 
-    llm = LLMService()
-    model_error = ""
-    try:
-        answer, fallback = await llm.generate(evidence, req.message, req.language)
-    except RuntimeError as exc:
-        # Honest degradation: an invalid LLM_MODEL must never 500 /api/chat.
-        # The user gets the grounded template answer with a visible model_error
-        # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
-        # startup already shouted about it on stderr.
-        model_error = str(exc)
-        answer, fallback = _template_answer(evidence, req.language), True
-
-    # Post-LLM response validation (§10, §43): the gate before delivery.
-    from ..services.response_validator import validate as validate_answer
+    # Numbers the post-LLM response validator (§10, §43) may check.
     numbers: list[float] = []
     for blob in (current_dict, forecast_dict):
         if not isinstance(blob, dict):
@@ -414,10 +413,38 @@ async def _handle(req: ChatRequest) -> ChatResponse:
             for v in (day or {}).values():
                 if isinstance(v, (int, float)):
                     numbers.append(float(v))
-    answer, findings = validate_answer(answer, llm_verified, numbers, req.language)
+
+    weather_block = {"current": current_dict, "forecast_days": (forecast_dict or {}).get("days", [])[:3]}
+    return {
+        "early": None,
+        "loc": loc,
+        "verified_dict": verified_dict,
+        "risk": risk,
+        "current_dict": current_dict,
+        "forecast_dict": forecast_dict,
+        "advisory": advisory,
+        "language": req.language,
+        "user_type": req.user_type,
+        "weather_block": weather_block,
+        "ev": ev,
+        "verdict": verdict,
+        "evidence": evidence,
+        "llm_verified": llm_verified,
+        "numbers": numbers,
+        "message": req.message,
+    }
+
+
+def _finalize_answer(ctx: dict, raw: str, fallback: bool = False) -> tuple[str, bool]:
+    """Post-LLM validation (§10, §43) + rain-lead guarantee on the full text.
+
+    Returns (answer, structured_fallback). Shared by /api/chat and
+    /api/chat/stream so the streamed answer and the JSON answer are identical.
+    """
+    answer, findings = validate_answer(raw, ctx["llm_verified"], ctx["numbers"], ctx["language"])
+    fallback = fallback or bool(findings)
     if findings:
-        evidence["validation_findings"] = findings
-        fallback = True
+        ctx["evidence"]["validation_findings"] = findings
 
     # Prepend a clear rain answer for "rain tomorrow" queries (T2.1 S2.1.4).
     # The template answer already does this; the LLM may phrase it differently or
@@ -425,17 +452,108 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     # yes/no when the answer already gave one — the inline copy that used to live
     # here compared the exact line text instead, so "Yes — rain likely tomorrow
     # (22.0 mm)." was prepended straight above "**Yes**, it will rain tomorrow."
-    answer = _ensure_rain_lead(req.message, forecast_dict, answer, req.language)
+    answer = _ensure_rain_lead(ctx["message"], ctx["forecast_dict"], answer, ctx["language"])
+    return answer, fallback
 
+
+async def _handle(req: ChatRequest) -> ChatResponse:
+    t0 = time.perf_counter()
+    ctx = await _prepare(req)
+    if ctx["early"] is not None:
+        return ctx["early"]
+
+    llm = LLMService()
+    model_error = ""
+    try:
+        answer, fallback = await llm.generate(ctx["evidence"], ctx["message"], ctx["language"])
+    except RuntimeError as exc:
+        # Honest degradation: an invalid LLM_MODEL must never 500 /api/chat.
+        # The user gets the grounded template answer with a visible model_error
+        # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
+        # startup already shouted about it on stderr.
+        model_error = str(exc)
+        answer, fallback = _template_answer(ctx["evidence"], ctx["language"]), True
+
+    # Post-LLM response validation (§10, §43): the gate before delivery.
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
     # guidance lives in the separate Advisory surface (see ChatResponse.advisory).
+    answer, fallback = _finalize_answer(ctx, answer, fallback)
 
-    weather_block = {"current": current_dict, "forecast_days": (forecast_dict or {}).get("days", [])[:3]}
     response_time_ms = int((time.perf_counter() - t0) * 1000)
-    return _build_response(loc, verified_dict, risk, current_dict or {}, forecast_dict or {},
-                           answer, advisory, req.language, weather_block, ev, fallback,
-                           user_type=req.user_type, verdict=verdict, response_time_ms=response_time_ms,
-                           model_error=model_error)
+    return _build_response(ctx["loc"], ctx["verified_dict"], ctx["risk"], ctx["current_dict"] or {},
+                           ctx["forecast_dict"] or {}, answer, ctx["advisory"], ctx["language"],
+                           ctx["weather_block"], ctx["ev"], fallback,
+                           user_type=ctx["user_type"], verdict=ctx["verdict"],
+                           response_time_ms=response_time_ms, model_error=model_error)
+
+
+def _ndjson(obj: dict) -> bytes:
+    return (json.dumps(obj, ensure_ascii=False, default=str) + "\n").encode("utf-8")
+
+
+@router.post("/api/chat/stream")
+async def chat_stream(req: ChatRequest):
+    """Token-streaming chat (NDJSON lines): meta, token*, final?, done.
+
+    `meta` carries every ChatResponse field except the answer; `token` lines
+    append to the answer as the model produces them (real first-token latency);
+    `final` (only when post-LLM validation corrected the streamed text, or the
+    stream broke mid-flight) replaces the streamed text; `done` closes with
+    structured_fallback / model_error / response_time_ms. Validation, the
+    rain-lead rule, and the honesty gates are identical to /api/chat.
+    """
+    async def gen():
+        t0 = time.perf_counter()
+        ctx = await _prepare(req)
+        if ctx["early"] is not None:
+            d = ctx["early"].model_dump(mode="json")
+            answer = d.pop("answer", "")
+            yield _ndjson({"type": "meta", **d})
+            if answer:
+                yield _ndjson({"type": "token", "text": answer})
+            yield _ndjson({"type": "done", "structured_fallback": True, "model_error": "",
+                           "response_time_ms": int((time.perf_counter() - t0) * 1000)})
+            return
+
+        resp = _build_response(ctx["loc"], ctx["verified_dict"], ctx["risk"],
+                               ctx["current_dict"] or {}, ctx["forecast_dict"] or {},
+                               "", ctx["advisory"], ctx["language"], ctx["weather_block"],
+                               ctx["ev"], False,
+                               user_type=ctx["user_type"], verdict=ctx["verdict"])
+        d = resp.model_dump(mode="json")
+        d.pop("answer", None)
+        yield _ndjson({"type": "meta", **d})
+
+        llm = LLMService()
+        parts: list[str] = []
+        fallback = False
+        model_error = ""
+        truncated = False
+        async for ev in llm.generate_stream(ctx["evidence"], ctx["message"], ctx["language"]):
+            if ev.get("type") == "token":
+                text = ev.get("text", "")
+                parts.append(text)
+                yield _ndjson({"type": "token", "text": text})
+            elif ev.get("type") == "end":
+                fallback = bool(ev.get("fallback"))
+                model_error = ev.get("model_error", "")
+                truncated = bool(ev.get("truncated"))
+        raw = "".join(parts)
+        if truncated or not raw.strip():
+            # The live answer broke mid-flight: substitute the grounded template,
+            # flagged as fallback — never deliver a half answer as if complete.
+            raw = _template_answer(ctx["evidence"], ctx["language"])
+            fallback = True
+        answer, validated_fallback = _finalize_answer(ctx, raw)
+        fallback = fallback or validated_fallback
+        if answer != raw:
+            yield _ndjson({"type": "final", "answer": answer,
+                           "structured_fallback": fallback})
+        yield _ndjson({"type": "done", "structured_fallback": fallback,
+                       "model_error": model_error,
+                       "response_time_ms": int((time.perf_counter() - t0) * 1000)})
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson")
 
 
 from fastapi import Response
