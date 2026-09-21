@@ -12,7 +12,7 @@ import { useApp } from '../store';
 import { Card } from './ui';
 import Icon from './icons';
 import WeatherBasis from './WeatherBasis';
-import { splitAdvisory } from '../format';
+import { splitAdvisory, bulletize } from '../format';
 
 // Every user type the product serves — the pitch's "one platform, many users".
 // Keep in sync with advisory_service._NO_WARN keys (backend decides wording).
@@ -69,6 +69,9 @@ function AdviceCard({ ut, active, onPick }) {
   }, [active, ut.id, loc, lang, syncTick]);
 
   const split = data && !err ? splitAdvisory(data.advisory) : null;
+  // Bullets, not paragraphs: the detail half renders as at most five short
+  // points. The lead stays one line on top.
+  const bullets = split && split.detail ? bulletize(split.detail, 5) : [];
   return (
     <>
       <RoleCard ut={ut} active={active} onPick={onPick} />
@@ -78,9 +81,13 @@ function AdviceCard({ ut, active, onPick }) {
             : err ? <span className="sub">{t(lang, 'adviceFailed')}</span>
               : <>
                 <div className="adv-lead">{split.lead}</div>
-                {/* The occupation-specific half of the advisory must be on
-                    screen, not behind a tap. */}
-                {split.detail && <p className="sub">{split.detail}</p>}
+                {/* The occupation-specific half of the advisory: short bullet
+                    points, never a wall of text. */}
+                {bullets.length > 0 && (
+                  <ul className="adv-bullets">
+                    {bullets.map((b, i) => <li key={i}>{b}</li>)}
+                  </ul>
+                )}
                 {/* The weather the advice was grounded in (observed numbers +
                     provenance), or the honest unavailable line. Facts only. */}
                 <WeatherBasis basis={data.weather_basis} alertCount={data.relevant_alerts} lang={lang} />

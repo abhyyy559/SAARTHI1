@@ -1,8 +1,9 @@
 // Ask-as-hero regression tests (2026-09-21, Worker 3).
 //
 // Ask (HomeChat) is the hero of Home: it mounts first, above the compact
-// HomeHero verdict bulletin. WarningTeasers and the aviation briefing stay
-// intact; the data-tour="home-chat" composer hook and every HomeChat
+// HomeHero verdict bulletin. The aviation briefing stays intact; alert
+// mentions live only in the global AlertOverlay (Home carries no per-page
+// alert block). The data-tour="home-chat" composer hook and every HomeChat
 // capability (voice, speak, advisory handoff, offline queue) are untouched.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -26,9 +27,12 @@ test('Ask mounts above HomeHero on Home', () => {
   assert.ok(chatAt < heroAt, 'Ask must render before the verdict card');
 });
 
-test('WarningTeasers and the aviation briefing keep their behavior', () => {
+test('Home carries no per-page alert block; the aviation briefing keeps its behavior', () => {
   const h = home();
-  assert.match(h, /<WarningTeasers \/>/, 'teasers stay on Home');
+  // The alert is mentioned exactly once app-wide: the global AlertOverlay.
+  // Home must not repeat it with its own teasers section.
+  assert.doesNotMatch(h, /<WarningTeasers/, 'per-page alert teasers are gone from Home');
+  assert.doesNotMatch(h, /teaser-list|className="teasers"/, 'no teasers section markup on Home');
   assert.match(h, /persona === 'aviation'/, 'briefing stays gated on the aviation profile');
   assert.match(h, /<AviationBriefing \/>/, 'the briefing mounts on Home');
   assert.match(h, /key=\{`chat:\$\{lang\}:\$\{persona\}:\$\{loc\.district\}`\}/, 'chat identity still resets per lang/role/district');

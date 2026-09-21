@@ -378,6 +378,32 @@ button.chip:active { transform: translateY(1px); }
 /* "Not available" is a fact, not a failure — quieter than real values. */
 .det-na { color: var(--ink-soft); font-style: italic; }
 
+/* Alert detail cards: one bordered card per section (Details, Timeline)
+   instead of loose label rows, so the expanded alert reads as a document,
+   not a debug dump. */
+.alert-detail { display: grid; gap: 0; }
+.alert-detail .bulletin-card { margin-bottom: 12px; }
+.det-card {
+  background: var(--card); border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 2px 12px 8px; margin-top: 12px;
+}
+.det-card > h3 { font-size: 15px; margin: 10px 0 2px; }
+.det-card .evrow:last-child { border-bottom: 0; }
+/* What-to-do callout: the instruction is the most actionable thing on the
+   card, so it gets a highlighted box of its own. */
+.det-callout {
+  background: var(--tint-amber); border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 10px 12px; margin-top: 12px;
+}
+.det-callout .kicker {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--ink-soft); font-weight: 800;
+}
+.det-callout p { margin: 4px 0 0; font-weight: 600; }
+.det-actions { margin-top: 12px; }
+/* The expanded detail must not open hidden under the sticky header. */
+.alerts-row-detail { scroll-margin-top: 84px; }
+
 /* Lifecycle stepper */
 .stepper { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--card); }
@@ -1207,3 +1233,98 @@ button.chip:active { transform: translateY(1px); }
 }
 .obw-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .obw-actions .btn-signal { min-height: var(--tap, 44px); }
+
+/* ---- Global alert overlay: one slim pill over every page -------------- */
+/* Fixed: never pushes content, never blocks taps outside the pill itself. */
+/* Bottom-anchored so it never fights the sticky topbar's variable height. */
+.alert-overlay {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 84px); /* clears the mobile nav */
+  z-index: 55; /* above content, below voice popup / toast / sheets */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(92vw, 560px);
+  pointer-events: none; /* the wrapper is click-through */
+}
+.alert-overlay-pill,
+.alert-overlay-x {
+  pointer-events: auto;
+}
+.alert-overlay-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-left: 6px solid var(--ink);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  max-width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.alert-overlay[data-sev="CRITICAL"] .alert-overlay-pill,
+.alert-overlay[data-sev="RED"] .alert-overlay-pill { border-left-color: #B3352B; }
+.alert-overlay[data-sev="HIGH"] .alert-overlay-pill,
+.alert-overlay[data-sev="ORANGE"] .alert-overlay-pill { border-left-color: #C56A1B; }
+.alert-overlay[data-sev="MODERATE"] .alert-overlay-pill,
+.alert-overlay[data-sev="YELLOW"] .alert-overlay-pill { border-left-color: #8A6D1A; }
+.alert-overlay[data-sev="LOW"] .alert-overlay-pill,
+.alert-overlay[data-sev="GREEN"] .alert-overlay-pill { border-left-color: #2F6B3C; }
+.alert-overlay-icon { display: inline-flex; color: #B3352B; flex: 0 0 auto; }
+.alert-overlay-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.alert-overlay-text b { font-size: 13px; }
+.alert-overlay-head {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.alert-overlay-x {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+@media (min-width: 861px) {
+  /* Desktop: dock bottom-right instead of floating center. */
+  .alert-overlay {
+    left: auto;
+    right: 24px;
+    transform: none;
+    bottom: 24px;
+  }
+}
+
+/* ---- Advisory bullets: short points, never walls of text --------------- */
+.adv-bullets {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.adv-bullets li::marker {
+  color: var(--ink-soft);
+}

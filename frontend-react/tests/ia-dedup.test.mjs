@@ -159,8 +159,9 @@ test('admin is absent from tabs, More sheet, and tour', () => {
 });
 
 // --- home assembly -------------------------------------------------------------
-test('home is hero + chat + warning teasers, no dispatch strip', () => {
+test('home is hero + chat, no dispatch strip, no per-page alert block', () => {
   assert.match(home, /<HomeHero \/>/);
   assert.match(home, /<HomeChat[\s\S]*?key=\{`chat:/, 'Agent 3 HomeChat mounts with the identity key');
   assert.doesNotMatch(home, /ActionTiles|DispatchStrip/, 'old action tiles and dispatch strip are gone');
+  assert.doesNotMatch(home, /<WarningTeasers|teaser-list|className="teasers"/, 'alert mentions live only in the global overlay, not on Home');
 });

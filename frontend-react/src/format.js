@@ -48,6 +48,20 @@ export function minutesSince(iso, nowMs) {
   return Math.max(0, Math.floor((nowMs - t) / 60000));
 }
 
+// Advisory prose → short bullets. Advisory text arrives as paragraphs; the
+// user asked for bullet points, not walls of text. Splits on sentence
+// boundaries (same rule as splitAdvisory), drops empties, caps the count so
+// a long model answer can never turn into a long list. Display-only.
+export function bulletize(text, max = 5) {
+  const s = String(text || '').trim();
+  if (!s) return [];
+  return s
+    .split(/(?<=[.!?।])\s+/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, Math.max(1, max));
+}
+
 // Split an advisory into the first actionable line (lead) and the rest
 // (detail). 'Note: ...' sentences never lead — they are context, not action.
 // An illiterate user should only need the lead.

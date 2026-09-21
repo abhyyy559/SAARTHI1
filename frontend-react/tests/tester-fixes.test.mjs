@@ -62,8 +62,8 @@ test('ended alerts render under Past alerts, not Emergency alerts', () => {
   const l = list();
   assert.match(l, /isEndedAlert/, 'an ended predicate must partition the list');
   assert.match(l, /alertsPastTitle/, 'the past section must use its own i18n title');
-  assert.match(l, /renderRows\(endedAlerts\)/, 'ended alerts render in the past section');
-  assert.match(l, /renderRows\(activeAlerts\)/, 'active alerts stay in the emergency section');
+  assert.match(l, /renderRows\(endedAlerts, 'ended'\)/, 'ended alerts render in the past section');
+  assert.match(l, /renderRows\(activeAlerts, 'active'\)/, 'active alerts stay in the emergency section');
   const i18n = read('../src/i18n.js');
   const hits = i18n.match(/alertsPastTitle: '/g) || [];
   assert.equal(hits.length, 3, 'alertsPastTitle must exist in en, hi and te');

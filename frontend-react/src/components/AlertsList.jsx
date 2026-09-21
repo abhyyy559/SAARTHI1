@@ -152,7 +152,9 @@ export default function AlertsList({ initialAlertId = null }) {
   const isEndedAlert = (a) => String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
   const activeAlerts = alerts.filter((a) => !isEndedAlert(a));
   const endedAlerts = alerts.filter(isEndedAlert);
-  const renderRows = (list) => list.map((a) => {
+  // section prefixes the DOM id: renderRows runs once per section, so a
+  // bare index would emit duplicate ids across the active/ended lists.
+  const renderRows = (list, section) => list.map((a, i) => {
       const key = alertKey(a);
       const open = openId === key;
       const sev = a.severity || 'UNKNOWN';
@@ -160,15 +162,27 @@ export default function AlertsList({ initialAlertId = null }) {
       const district = a.district || a.areaDesc || a.area || loc.district;
       const tag = isDemoAlert(a) ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
       const state = String(a.lifecycle_state || a.state || '').toUpperCase();
+      const rowId = `alert-row-${section}-${i}`;
+      const toggle = () => {
+        const next = open ? null : key;
+        setOpenId(next);
+        // Keep the expanded detail clear of the sticky header: the detail
+        // used to open with its title hidden underneath the top nav.
+        if (!open) {
+          requestAnimationFrame(() => {
+            document.getElementById(rowId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          });
+        }
+      };
       return (
-        <div key={key} className={`alerts-row${open ? ' is-open' : ''}`} role="listitem" data-sev={sev}>
+        <div key={key} id={rowId} className={`alerts-row${open ? ' is-open' : ''}`} role="listitem" data-sev={sev}>
           <button
             type="button"
             className="alerts-row-head"
             style={{ minHeight: 56 }}
             aria-expanded={!!open}
             aria-label={`${head || t(lang, 'listUnknownAlert')} — ${open ? t(lang, 'listCollapse') : t(lang, 'listExpand')}`}
-            onClick={() => setOpenId(open ? null : key)}
+            onClick={toggle}
           >
             <span className="sev-bar" aria-hidden="true" />
             <span className="alerts-row-main">
@@ -190,12 +204,9 @@ export default function AlertsList({ initialAlertId = null }) {
           {open && (
             <div className="alerts-row-detail">
               {/* The detail renders inline — the separate Details route is
-                  gone by design. onBack collapses the row instead of
-                  navigating away. */}
-              <AlertDetails
-                alert={a}
-                onBack={() => setOpenId(null)}
-              />
+                  gone by design. The row header toggles, and the Close
+                  button below collapses it. */}
+              <AlertDetails alert={a} />
               <div className="row" style={{ marginTop: 8 }}>
                 <button
                   type="button" className="btn btn-ghost sm" style={{ minHeight: 44 }}
@@ -226,7 +237,7 @@ export default function AlertsList({ initialAlertId = null }) {
           <div className="display">{t(lang, 'alertsNoneTitle')}</div>
           <p className="sub">{t(lang, 'alertsNoneBody')}</p>
         </div>
-      ) : renderRows(activeAlerts)}
+      ) : renderRows(activeAlerts, 'active')}
       </div>
       {/* Past alerts: completed emergencies with their full lifecycle. Kept
           visible, but never under the active "Emergency alerts" heading. */}
@@ -236,7 +247,7 @@ export default function AlertsList({ initialAlertId = null }) {
             <span className="kicker">{t(lang, 'alertsPastTitle')}</span>
           </div>
           <div className="alerts-list" role="list">
-            {renderRows(endedAlerts)}
+            {renderRows(endedAlerts, 'ended')}
           </div>
         </>
       )}

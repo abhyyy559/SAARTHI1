@@ -24,8 +24,6 @@ export default {
     // Ask is facts-only — guidance lives on the advisory page.
     askAdviceHint: 'Need guidance instead? Open My advice',
     // --- alert details: labels, previously hardcoded English -------------------
-    detValidity: 'Validity',
-    detInstruction: 'Instruction',
     detTimeline: 'Timeline',
     detAckFailed: 'Ack failed (offline?). Try again when you are online.',
     // --- trust / sources: manual re-check --------------------------------------
@@ -49,8 +47,6 @@ export default {
     connOffline: 'ऑफ़लाइन',
     askHearAnswers: 'उत्तर ज़ोर से सुनें',
     askAdviceHint: 'मार्गदर्शन चाहिए? मेरी सलाह खोलें',
-    detValidity: 'वैधता',
-    detInstruction: 'निर्देश',
     detTimeline: 'समयरेखा',
     detAckFailed: 'प्राप्ति दर्ज नहीं हुई (ऑफ़लाइन?)। ऑनलाइन आने पर फिर कोशिश करें।',
     trustRecheck: 'फिर जाँचें',
@@ -71,8 +67,6 @@ export default {
     connOffline: 'ఆఫ్‌లైన్',
     askHearAnswers: 'సమాధానాలు బిగ్గరగా వినండి',
     askAdviceHint: 'మార్గదర్శకం కావాలా? నా సలహా తెరవండి',
-    detValidity: 'చెల్లుబాటు',
-    detInstruction: 'సూచన',
     detTimeline: 'కాలక్రమం',
     detAckFailed: 'స్వీకారం నమోదు కాలేదు (ఆఫ్‌లైన్?). ఆన్‌లైన్‌కు వచ్చాక మళ్లీ ప్రయత్నించండి.',
     trustRecheck: 'మళ్లీ తనిఖీ చేయండి',

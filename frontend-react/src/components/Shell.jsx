@@ -9,6 +9,7 @@ import { useApp, SOURCE_MODES } from '../store';
 import { resolveVoicePopup } from '../voiceUi';
 import { notificationsApi } from '../api';
 import Icon from './icons';
+import AlertOverlay from './AlertOverlay';
 import InstallPrompt from './InstallPrompt';
 import NotificationsPanel from './NotificationsPanel';
 import OnboardingTour from './OnboardingTour';
@@ -423,6 +424,10 @@ export default function Shell({ children }) {
           {toast.text}
         </div>
       )}
+      {/* One alert mention for the whole app: a slim overlay on top of every
+          page, visible only while alerts are active. The Alerts view stays
+          the single full home; per-page alert blocks were removed. */}
+      <AlertOverlay />
       <VoicePopups />
     </div>
   );

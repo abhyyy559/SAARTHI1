@@ -1,11 +1,14 @@
 // Alert Details — single-alert view (Round2 S1.2.3).
 //
-// Props: { alert, onBack, onAck }.
-// - Renders the backend's severity/state AS-IS (never re-derived, never upgraded).
-// - Shows district, validity window (pre_alert_at/starts_at/ends_at or
-//   valid_from/valid_until), source (DEMO vs NDMA-SACHET CAP), instruction.
-// - Full lifecycle: started, completed-or-expected-end, effects, issuer,
-//   reason — from the backend's lifecycle_detail (alert_service), with honest
+// Props: { alert, onAck }.
+// - Renders the backend's severity AS-IS (never re-derived, never upgraded);
+//   lifecycle states render as translated human words (Upcoming, Pre-alert…),
+//   never raw backend codes.
+// - Shows district, source (DEMO vs NDMA-SACHET CAP), instruction (What to do).
+// - Details: status, started, expected end/ended, issued by, effects and
+//   reason (only when the backend supplies them) — from the backend's
+//   lifecycle_detail (alert_service), with honest "not started yet" for
+//   upcoming alerts and no filler rows.
 //   fallbacks only to fields the backend actually sent. A field with no value
 //   renders "not available", never a guess.
 // - Timeline UPCOMING -> PRE-ALERT -> ACTIVE -> UPDATED/EXTENDED -> ENDED from
@@ -55,6 +58,19 @@ const STATE_ICON = {
   CANCELLED: 'offline',
 };
 
+// Human-readable lifecycle state names (EN/HI/TE via i18n). The backend's
+// raw state codes (UPCOMING, PRE-ALERT, …) and internal action names
+// ("state", "created") must never leak into the UI as literal text.
+const STATE_LABEL_KEY = {
+  UPCOMING: 'stUpcoming',
+  'PRE-ALERT': 'stPreAlert',
+  ACTIVE: 'stActive',
+  UPDATED: 'stUpdated',
+  EXTENDED: 'stExtended',
+  ENDED: 'stEnded',
+  CANCELLED: 'stCancelled',
+};
+
 // Identifier for the ack POST. CAP alerts carry id/identifier, but the IMD
 // verdict warning has neither (backend WeatherWarning model has no id field).
 // The ack endpoint requires a non-empty alert_id, so fall back to a stable
@@ -83,13 +99,20 @@ function fmt(ts) {
   }
 }
 
-export default function AlertDetails({ alert, onBack, onAck }) {
+export default function AlertDetails({ alert, onAck }) {
   const { lang, device } = useApp();
   const [ackState, setAckState] = useState('idle'); // idle | sending | acked | failed
   if (!alert) return null;
 
+  const stateLabel = (s) => {
+    const up = String(s || '').toUpperCase();
+    const key = STATE_LABEL_KEY[up];
+    return key ? t(lang, key) : (s ? String(s) : up);
+  };
+
   const sev = alert.severity || 'UNKNOWN';
   const state = String(alert.lifecycle_state || alert.state || 'UPCOMING').toUpperCase();
+  const isUpcoming = state === 'UPCOMING';
   const district = alert.district || alert.areaDesc || alert.area || '';
   // Provenance honesty: demo/admin content wears the DEMO badge; the official
   // badge names the alert's real source (SACHET / NDMA / IMD), never a guess.
@@ -125,90 +148,91 @@ export default function AlertDetails({ alert, onBack, onAck }) {
   };
 
   return (
-    <section aria-label={t(lang, 'viewAlerts')}>
-      {onBack && (
-        <div className="row" style={{ marginBottom: 12 }}>
-          <button type="button" className="btn btn-ghost sm" onClick={onBack}>
-            <Icon name="chevron" size={14} /> {t(lang, 'back') || 'Back'}
-          </button>
-        </div>
-      )}
+    <section aria-label={t(lang, 'viewAlerts')} className="alert-detail">
       {/* The bulletin masthead: signal bar + stamps — everything here is the
-          backend's own wording, severity first. */}
+          backend's own wording, severity first. The bc-body wrapper stacks
+          the chips above the title (the card is display:flex for the
+          severity bar, so bare children would sit side-by-side). */}
       <article className="bulletin-card" data-sev={sev}>
         <span className="sev-bar" aria-hidden="true" />
-        <div className="bc-head">
-          <span className="sev-stamp" data-sev={sev}>{sevWord(lang, sev)}</span>
-          <span className="demo-state">{state}</span>
-          <span className={`prov ${sourceLabel === 'DEMO' ? 'DEMO' : 'OFFICIAL'}`}>{sourceLabel}</span>
+        <div className="bc-body">
+          <div className="bc-head">
+            <span className="sev-stamp" data-sev={sev}>{sevWord(lang, sev)}</span>
+            <span className="demo-state">{stateLabel(state)}</span>
+            <span className={`prov ${sourceLabel === 'DEMO' ? 'DEMO' : 'OFFICIAL'}`}>{sourceLabel}</span>
+          </div>
+          {head && <h2 className="bc-title">{head}</h2>}
+          {district && (
+            <p className="bc-meta"><Icon name="pin" size={13} /> {district}</p>
+          )}
         </div>
-        {head && <h2 className="bc-title">{head}</h2>}
-        {district && (
-          <p className="bc-meta"><Icon name="pin" size={13} /> {district}</p>
-        )}
       </article>
 
-      <div className="evrow">
-        <span className="k">{t(lang, 'detValidity')}</span>
-        <span className="mono">
-          {[alert.pre_alert_at || alert.valid_from, alert.starts_at, alert.ends_at || alert.valid_until || alert.expires]
-            .filter(Boolean).map(fmt).join('  →  ') || '—'}
-        </span>
-      </div>
-
+      {/* What to do: the single most important thing on the card, so it gets
+          its own highlighted box instead of hiding in a label/value row. */}
       {instruction && (
-        <div className="evrow">
-          <span className="k">{t(lang, 'detInstruction')}</span>
-          <span>{instruction}</span>
+        <div className="det-callout">
+          <span className="kicker">{t(lang, 'detWhatToDo')}</span>
+          <p>{instruction}</p>
         </div>
       )}
 
-      {/* Full lifecycle: when it started, when it completed or is expected to
-          end, effects, who issued it, why. "Not available" is shown honestly
-          for fields the backend did not have — never a guess. */}
-      <div className="alert-sec-title">
-        <span className="kicker">{t(lang, 'detLifecycle')}</span>
-      </div>
-      <div className="evrow">
-        <span className="k">{t(lang, 'detStarted')}</span>
-        <span className="mono">{lc.startedAt ? fmt(lc.startedAt) : na}</span>
-      </div>
-      <div className="evrow">
-        <span className="k">{lc.completedAt ? t(lang, 'detEndedAt') : t(lang, 'detExpectedEnd')}</span>
-        <span className="mono">
-          {lc.completedAt ? fmt(lc.completedAt) : lc.expectedEndAt ? fmt(lc.expectedEndAt) : na}
-        </span>
-      </div>
-      <div className="evrow">
-        <span className="k">{t(lang, 'detIssuer')}</span>
-        <span>{lc.issuer || na}</span>
-      </div>
-      <div className="evrow">
-        <span className="k">{t(lang, 'detReason')}</span>
-        <span>{lc.reason || na}</span>
-      </div>
-      <div className="evrow">
-        <span className="k">{t(lang, 'detEffects')}</span>
-        <span>{lc.effects || na}</span>
+      {/* Details: one card, one time-window pair (Started / Ends) instead of
+          the old Validity arrow-chain duplicating Expected end. Optional
+          fields (reason, effects) render only when the backend sent them —
+          no "Not available" filler rows. */}
+      <div className="det-card">
+        <h3>{t(lang, 'detLifecycle')}</h3>
+        <div className="evrow">
+          <span className="k">{t(lang, 'detStatus')}</span>
+          <span><b>{stateLabel(state)}</b></span>
+        </div>
+        <div className="evrow">
+          <span className="k">{t(lang, 'detStarted')}</span>
+          <span className="mono">
+            {lc.startedAt ? fmt(lc.startedAt) : isUpcoming ? t(lang, 'detNotStarted') : na}
+          </span>
+        </div>
+        <div className="evrow">
+          <span className="k">{lc.completedAt ? t(lang, 'detEndedAt') : t(lang, 'detExpectedEnd')}</span>
+          <span className="mono">
+            {(lc.completedAt || lc.expectedEndAt) ? fmt(lc.completedAt || lc.expectedEndAt) : na}
+          </span>
+        </div>
+        <div className="evrow">
+          <span className="k">{t(lang, 'detIssuer')}</span>
+          <span>{lc.issuer || na}</span>
+        </div>
+        {lc.reason && (
+          <div className="evrow">
+            <span className="k">{t(lang, 'detReason')}</span>
+            <span>{lc.reason}</span>
+          </div>
+        )}
+        {lc.effects && (
+          <div className="evrow">
+            <span className="k">{t(lang, 'detEffects')}</span>
+            <span>{lc.effects}</span>
+          </div>
+        )}
       </div>
 
-      <div className="alert-sec-title">
-        <span className="kicker">{t(lang, 'detTimeline')}</span>
+      <div className="det-card">
+        <h3>{t(lang, 'detTimeline')}</h3>
+        <ol className="det-timeline">
+          {history.map((h, i) => (
+            <li key={i} className="det-timeline-row">
+              <span className="tile-icon sm" aria-hidden="true">
+                <Icon name={STATE_ICON[String(h.state || '').toUpperCase()] || 'info'} size={14} />
+              </span>
+              <span className="mono">{fmt(h.at)}</span>
+              <b>{stateLabel(h.state)}</b>
+            </li>
+          ))}
+        </ol>
       </div>
-      <ol className="det-timeline">
-        {history.map((h, i) => (
-          <li key={i} className="det-timeline-row">
-            <span className="tile-icon sm" aria-hidden="true">
-              <Icon name={STATE_ICON[String(h.state || '').toUpperCase()] || 'info'} size={14} />
-            </span>
-            <span className="mono">{fmt(h.at)}</span>
-            <span>{String(h.action || '')}</span>
-            <b>{String(h.state || '')}</b>
-          </li>
-        ))}
-      </ol>
 
-      <div className="row" style={{ marginTop: 12 }}>
+      <div className="row det-actions">
         <button
           type="button" className="btn" onClick={doAck}
           disabled={ackState === 'sending' || ackState === 'acked'}

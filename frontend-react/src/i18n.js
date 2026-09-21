@@ -431,7 +431,7 @@ const EXTRA = {
 // is required; area files must NOT redefine these keys (see modes.test.mjs).
 const ALERTS_REDESIGN = {
   en: {
-    detLifecycle: 'Full lifecycle',
+    detLifecycle: 'Details',
     detStarted: 'Started',
     detEndedAt: 'Ended',
     detExpectedEnd: 'Expected end',
@@ -439,6 +439,9 @@ const ALERTS_REDESIGN = {
     detReason: 'Why this alert',
     detEffects: 'Effects',
     detNotAvailable: 'Not available',
+    detNotStarted: 'Not started yet',
+    detStatus: 'Status',
+    detWhatToDo: 'What to do',
     alertsEmergencyTitle: 'Emergency alerts',
     alertsPastTitle: 'Past alerts',
     commSecTitle: 'Community reports — not official',
@@ -446,7 +449,7 @@ const ALERTS_REDESIGN = {
     commReportType: 'Report',
   },
   hi: {
-    detLifecycle: 'पूरा जीवनचक्र',
+    detLifecycle: 'विवरण',
     detStarted: 'शुरू हुआ',
     detEndedAt: 'समाप्त',
     detExpectedEnd: 'अपेक्षित समाप्ति',
@@ -454,6 +457,9 @@ const ALERTS_REDESIGN = {
     detReason: 'यह चेतावनी क्यों',
     detEffects: 'प्रभाव',
     detNotAvailable: 'उपलब्ध नहीं',
+    detNotStarted: 'अभी शुरू नहीं हुआ',
+    detStatus: 'स्थिति',
+    detWhatToDo: 'क्या करें',
     alertsEmergencyTitle: 'आपातकालीन चेतावनियाँ',
     alertsPastTitle: 'पिछली चेतावनियाँ',
     commSecTitle: 'सामुदायिक रिपोर्ट — सरकारी नहीं',
@@ -461,7 +467,7 @@ const ALERTS_REDESIGN = {
     commReportType: 'रिपोर्ट',
   },
   te: {
-    detLifecycle: 'పూర్తి జీవితచక్రం',
+    detLifecycle: 'వివరాలు',
     detStarted: 'ప్రారంభమైంది',
     detEndedAt: 'ముగిసింది',
     detExpectedEnd: 'ఆశించిన ముగింపు',
@@ -469,6 +475,9 @@ const ALERTS_REDESIGN = {
     detReason: 'ఈ హెచ్చరిక ఎందుకు',
     detEffects: 'ప్రభావాలు',
     detNotAvailable: 'అందుబాటులో లేదు',
+    detNotStarted: 'ఇంకా ప్రారంభం కాలేదు',
+    detStatus: 'స్థితి',
+    detWhatToDo: 'ఏమి చేయాలి',
     alertsEmergencyTitle: 'అత్యవసర హెచ్చరికలు',
     alertsPastTitle: 'గత హెచ్చరికలు',
     commSecTitle: 'ప్రజల నివేదికలు — అధికారికం కాదు',

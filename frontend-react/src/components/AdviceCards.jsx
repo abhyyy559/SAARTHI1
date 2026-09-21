@@ -20,6 +20,7 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import { Card, SevStamp } from './ui';
 import Icon from './icons';
+import { bulletize } from '../format';
 
 const KIND_ICON = {
   agriculture: 'crop',
@@ -87,6 +88,9 @@ function GroundingBanner({ grounding, lang }) {
 function AdviceCard({ card, lang }) {
   const sev = card.severity_word === 'info' ? 'INFO' : (card.severity_word || 'UNKNOWN');
   const accent = SEV_ACCENT[sev] || SEV_ACCENT.UNKNOWN;
+  // Bullets, not paragraphs: a multi-sentence body becomes short points
+  // (max four); a single sentence stays a single line.
+  const bodyBullets = bulletize(card.body, 4);
   return (
     <article className="advice-card" data-sev={sev} aria-labelledby={`ac-${card.id}`}
       style={{ borderLeft: `6px solid ${accent}` }}
@@ -118,7 +122,13 @@ function AdviceCard({ card, lang }) {
           <span className="advice-donow-label" style={{ fontWeight: 800, fontSize: 13 }}>
             {t(lang, 'doNow')}
           </span>
-          <p className="advice-body" style={{ margin: 0 }}>{card.body}</p>
+          {bodyBullets.length > 1 ? (
+            <ul className="adv-bullets" style={{ margin: 0 }}>
+              {bodyBullets.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
+          ) : (
+            <p className="advice-body" style={{ margin: 0 }}>{card.body}</p>
+          )}
         </div>
       </div>
       {card.basis?.length > 0 && (

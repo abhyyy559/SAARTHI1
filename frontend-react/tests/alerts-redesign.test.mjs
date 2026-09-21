@@ -30,9 +30,13 @@ const emgSrc = read('../src/components/Emergency.jsx');
 
 const NEW_KEYS = [
   'detLifecycle', 'detStarted', 'detEndedAt', 'detExpectedEnd', 'detIssuer',
-  'detReason', 'detEffects', 'detNotAvailable', 'alertsEmergencyTitle',
+  'detReason', 'detEffects', 'detNotAvailable', 'detNotStarted', 'detStatus',
+  'detWhatToDo', 'alertsEmergencyTitle', 'alertsPastTitle',
   'commSecTitle', 'commSecSub', 'commReportType',
 ];
+// Lifecycle state words (stUpcoming, stPreAlert, …) live in the alerts area
+// strings (strings/areas/alerts.js) — the single canonical home, so area
+// files never shadow the redesign block.
 
 // --- string parity ----------------------------------------------------------
 
@@ -125,9 +129,25 @@ test('alert details: exports the pure lifecycleDetail helper', () => {
 });
 
 test('alert details: renders the full lifecycle with honest fallbacks', () => {
-  for (const key of ['detLifecycle', 'detStarted', 'detEndedAt', 'detExpectedEnd', 'detIssuer', 'detReason', 'detEffects', 'detNotAvailable']) {
+  for (const key of ['detLifecycle', 'detStatus', 'detStarted', 'detNotStarted', 'detEndedAt', 'detExpectedEnd',
+    'detIssuer', 'detReason', 'detEffects', 'detNotAvailable', 'detWhatToDo']) {
     assert.match(detailsSrc, new RegExp(`'${key}'`), `AlertDetails must render ${key}`);
   }
+  // Lifecycle states render as human words (Upcoming, Pre-alert, …) from the
+  // alerts area strings — the raw backend codes and internal action names
+  // ("state") must never leak into the UI as literal text.
+  for (const key of ['stUpcoming', 'stPreAlert', 'stActive', 'stUpdated', 'stExtended', 'stEnded', 'stCancelled']) {
+    assert.match(detailsSrc, new RegExp(`'${key}'`), `AlertDetails must translate state via ${key}`);
+  }
+  assert.doesNotMatch(detailsSrc, /<span>\{String\(h\.action/, 'timeline must not print the raw action name');
+});
+
+test('alert details: state words come from the alerts area strings', () => {
+  const alertsArea = read('../src/strings/areas/alerts.js');
+  for (const key of ['stUpcoming', 'stPreAlert', 'stActive', 'stUpdated', 'stExtended', 'stEnded', 'stCancelled']) {
+    assert.match(alertsArea, new RegExp(`^\\s*${key}:`, 'm'), `alerts area must define ${key}`);
+  }
+  assert.ok(!TAMIL.test(alertsArea.match(/stUpcoming[\s\S]{0,400}/)[0]), 'no Tamil script near state words');
 });
 
 test('alert details: severity still comes from the backend payload only', () => {
@@ -146,8 +166,10 @@ test('alerts list: the lifecycle has one implementation, rendered inline', () =>
 test('alert details: acknowledge and timeline keep working', () => {
   assert.match(detailsSrc, /api\.ack/, 'Acknowledge still POSTs');
   assert.match(detailsSrc, /detTimeline/, 'the existing timeline stays');
-  assert.match(detailsSrc, /detValidity/, 'validity window stays');
-  assert.match(detailsSrc, /detInstruction/, 'instruction stays');
+  // The old Validity arrow-chain (which duplicated the Expected end row)
+  // is replaced by the Started / Expected-end pair in the Details card.
+  assert.doesNotMatch(detailsSrc, /detValidity/, 'no duplicate validity chain');
+  assert.match(detailsSrc, /detWhatToDo/, 'instruction renders as a What-to-do callout');
 });
 
 test('alert details: no bolt-on widgets — title and full details only', () => {

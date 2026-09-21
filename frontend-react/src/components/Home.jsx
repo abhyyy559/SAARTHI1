@@ -4,93 +4,19 @@
 //      eye hits and the largest element on the screen.
 //   2. HomeHero — the safety-critical current-conditions verdict readout,
 //      compact and subordinate to Ask.
-//   3. Warning teasers — today's warnings as compact rows into the Alerts route.
 //
-// The old dispatch strip, action tiles and separate Ask page are gone (IA
-// dedup): the district stamp lives in the topbar and the hero; navigation
-// lives in the tab bar. Advice never appears here — it lives in Advisory.
-import { useEffect, useState } from 'react';
+// Alert mentions live in exactly one place: the global AlertOverlay (a slim
+// pill over every page, only while alerts are active). Home carries no
+// per-page alert block — the old WarningTeasers section was removed so the
+// alert is never repeated page after page. The old dispatch strip, action
+// tiles and separate Ask page are gone (IA dedup): the district stamp lives
+// in the topbar and the hero; navigation lives in the tab bar. Advice never
+// appears here — it lives in Advisory.
 import { t } from '../i18n';
-import { api } from '../api';
 import { useApp } from '../store';
-import { minutesSince, isExpired } from '../format';
-import Icon from './icons';
 import HomeHero from './HomeHero';
 import HomeChat from './HomeChat';
 import AviationBriefing from './AviationBriefing';
-
-import { sevWord } from './ui';
-
-// Compact warning teasers: icon + severity word + one line, tap → Alerts.
-function WarningTeasers() {
-  const { lang, loc, setView, setSelectedAlert, syncTick } = useApp();
-  const [items, setItems] = useState([]);
-  const locKey = `${loc.district}|${loc.lat}|${loc.lon}`;
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    api.warnings(loc.district, loc.lat, loc.lon)
-      .then((d) => {
-        if (!alive) return;
-        const out = [];
-        if (d && d.warning && !isExpired(d.warning.valid_until, nowMs)) {
-          out.push({ ...d.warning, headline: d.warning.message || d.warning.hazard, kind: 'official' });
-        }
-        for (const a of (d && d.cap_alerts) || []) {
-          if (!isExpired(a.valid_until || a.expires, nowMs)) out.push({ ...a, kind: 'official' });
-        }
-        setItems(out.slice(0, 3));
-      })
-      .catch(() => { if (alive) setItems([]); });
-    return () => { alive = false; };
-  }, [locKey, loc.district, loc.lat, loc.lon, syncTick, nowMs]);
-
-  if (items.length === 0) return null;
-  return (
-    <section aria-label={t(lang, 'navAlerts')} className="teasers">
-      <div className="alert-sec-title">
-        <h2 className="display"><Icon name="alert" size={20} aria-hidden="true" /> {t(lang, 'navAlerts')}</h2>
-        <button type="button" className="btn btn-ghost sm" onClick={() => setView('alerts')}>
-          {t(lang, 'hAlertsGo')} <Icon name="chevron" size={13} aria-hidden="true" />
-        </button>
-      </div>
-      <div className="teaser-list">
-        {items.map((a, i) => {
-          const sev = a.severity || 'UNKNOWN';
-          const head = (a.headline || a.message || a.hazard || a.event || '').trim();
-          return (
-            <button
-              key={a.identifier || a.id || i}
-              type="button"
-              className="teaser-row"
-              data-sev={sev}
-              onClick={() => { setSelectedAlert(a); setView('alerts'); }}
-            >
-              <span className="sev-bar" aria-hidden="true" />
-              <span className="teaser-icon" aria-hidden="true">
-                <Icon name={sev === 'LOW' ? 'check' : sev === 'UNKNOWN' ? 'help' : 'alert'} size={22} />
-              </span>
-              <span className="teaser-body">
-                <span className="sev-stamp">{sevWord(lang, sev)}</span>
-                <span className="teaser-head">{head}</span>
-                <span className="teaser-meta">
-                  {a.issued_at && minutesSince(a.issued_at, nowMs) != null
-                    ? t(lang, 'agoPattern').replace('{m}', minutesSince(a.issued_at, nowMs)) : ''}
-                </span>
-              </span>
-              <Icon name="chevron" size={18} aria-hidden="true" />
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
 
 export default function Home() {
   const { lang, persona, loc, speak, stopSpeaking, speechState, netState, setView, setListenState } = useApp();
@@ -124,7 +50,6 @@ export default function Home() {
           <AviationBriefing />
         </section>
       )}
-      <WarningTeasers />
     </div>
   );
 }
