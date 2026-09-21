@@ -38,10 +38,11 @@ const MORE_ROWS = [
 
 // Global voice popup — unmissable, Harbour Signal dressed. speak() flips
 // speechState synchronously on tap so the Speaking card renders on the next
-// frame; HomeChat/ChatPanel mirror their mic phase into listenState for the
-// Listening card. Fixed near the top so it never covers the mic toggle or
+// frame; HomeChat mirrors its mic phase into listenState for the Listening
+// card. Fixed near the top so it never covers the mic toggle or
 // the chat composer at mobile widths. aria-live announces it to screen
 // readers. Dismissal is automatic: state returns to idle on audio end,
+// or the user taps it away.
 // final transcript, error, timeout, or permission denial.
 function VoicePopups() {
   const { lang, speechState, stopSpeaking, listenState } = useApp();

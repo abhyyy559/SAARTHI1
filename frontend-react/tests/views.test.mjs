@@ -15,8 +15,10 @@ function chatKey(lang, persona, district) {
   return Function('lang', 'persona', 'loc', `return ${match[1]}`)(lang, persona, { district });
 }
 
-// Home renders a single conversation: one ChatPanel, no sibling voice panel.
+// Home renders a single conversation: one HomeChat, no sibling voice panel.
 // Voice is the mic button on the chat input (dictation), not a separate session.
+// (Phase 0, 2026-09-21: the dead ChatPanel.jsx was deleted; this guard stays to
+// keep it from being reintroduced under the old name.)
 test('Home renders exactly one HomeChat and no separate voice session', () => {
   assert.match(source, /<HomeChat[\s\S]*?\/>/);
   assert.doesNotMatch(source, /<ChatPanel|<VoicePanel/, 'ChatPanel is superseded by HomeChat');

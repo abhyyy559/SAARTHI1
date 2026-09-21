@@ -3,6 +3,7 @@
 // district chips), language (script chips), alerts (bell switch).
 import { t, DISTRICTS } from '../i18n';
 import { useApp } from '../store';
+import { pushReasonKey } from '../notify';
 import Icon from './icons';
 import { Card } from './ui';
 
@@ -41,13 +42,7 @@ export default function SettingsPanel() {
     : pushMode === 'inapp'
       ? {
           icon: 'info',
-          text: t(lang, 'setPushInAppWhy').replace('{reason}', t(lang, {
-            'unsupported': 'rsnUnsupported',
-            'server-unavailable': 'rsnServer',
-            'denied': 'rsnDenied',
-            'sw-unavailable': 'rsnSw',
-            'server-rejected': 'rsnRejected',
-          }[pushReason] || 'rsnFailed')),
+          text: t(lang, 'setPushInAppWhy').replace('{reason}', t(lang, pushReasonKey(pushReason))),
         }
       : null;
   return (

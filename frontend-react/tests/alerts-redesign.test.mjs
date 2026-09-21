@@ -11,8 +11,9 @@
 // - AlertDetails exports the pure lifecycleDetail helper and renders the
 //   full lifecycle (started / completed-or-expected-end / issuer / reason /
 //   effects) with an honest "not available" fallback — never a guess.
-// - AlertCenter (verdict surface) shares lifecycleDetail instead of growing
-//   its own copy.
+// - AlertsList (the live verdict surface) renders AlertDetails inline, so the
+//   lifecycle has exactly one implementation — Phase 0 (2026-09-21) deleted
+//   the dead AlertCenter.jsx that used to share the helper by import.
 // - AlertDetails and AlertsList keep no severity math: severity still renders
 //   from the backend payload only.
 import assert from 'node:assert/strict';
@@ -25,7 +26,6 @@ const TAMIL = /[\u0B80-\u0BFF]/;
 const i18nSrc = read('../src/i18n.js');
 const listSrc = read('../src/components/AlertsList.jsx');
 const detailsSrc = read('../src/components/AlertDetails.jsx');
-const centerSrc = read('../src/components/AlertCenter.jsx');
 
 const NEW_KEYS = [
   'detLifecycle', 'detStarted', 'detEndedAt', 'detExpectedEnd', 'detIssuer',
@@ -74,7 +74,7 @@ test('alerts redesign: no string area redefines the new keys', () => {
 });
 
 test('alerts redesign: no Tamil script in touched files', () => {
-  for (const [name, src] of [['AlertsList.jsx', listSrc], ['AlertDetails.jsx', detailsSrc], ['AlertCenter.jsx', centerSrc]]) {
+  for (const [name, src] of [['AlertsList.jsx', listSrc], ['AlertDetails.jsx', detailsSrc]]) {
     assert.ok(!TAMIL.test(src), `${name} must contain no Tamil script`);
   }
 });
@@ -121,9 +121,13 @@ test('alert details: severity still comes from the backend payload only', () => 
   assert.match(detailsSrc, /const sev = alert\.severity \|\| 'UNKNOWN'/, 'severity is read, never re-derived');
 });
 
-test('alert center: shares the lifecycle helper instead of forking it', () => {
-  assert.match(centerSrc, /import \{ lifecycleDetail \} from '\.\/AlertDetails'/);
-  assert.match(centerSrc, /lifecycleDetail\(a\)/, 'AlertCard must use the shared helper');
+test('alerts list: the lifecycle has one implementation, rendered inline', () => {
+  // Phase 0 (2026-09-21): the dead AlertCenter.jsx used to import the shared
+  // lifecycleDetail helper. The live surface (AlertsList) renders AlertDetails
+  // inline instead, so there is exactly one lifecycle implementation and
+  // nothing to fork.
+  assert.match(listSrc, /<AlertDetails/, 'AlertsList must render AlertDetails inline');
+  assert.match(detailsSrc, /export function lifecycleDetail/, 'the helper must stay exported for reuse');
 });
 
 test('alert details: acknowledge and timeline keep working', () => {

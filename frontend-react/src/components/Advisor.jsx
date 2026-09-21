@@ -65,8 +65,8 @@ function AdviceCard({ ut, active, onPick }) {
             : err ? <span className="sub">{t(lang, 'adviceFailed')}</span>
               : <>
                 <div className="adv-lead">{split.lead}</div>
-                {/* Same reason as ProfileAdvice: the occupation-specific half
-                    of the advisory must be on screen, not behind a tap. */}
+                {/* The occupation-specific half of the advisory must be on
+                    screen, not behind a tap. */}
                 {split.detail && <p className="sub">{split.detail}</p>}
                 {/* The weather the advice was grounded in (observed numbers +
                     provenance), or the honest unavailable line. Facts only. */}

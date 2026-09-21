@@ -23,15 +23,19 @@ test('no client-side severity mapping exists any more', () => {
   assert.doesNotMatch(code, /severity/i);
 });
 
-test('HeroCard renders the backend verdict instead of deriving a level', () => {
-  const hero = readFileSync(new URL('../src/components/HeroCard.jsx', import.meta.url), 'utf8');
-  assert.match(hero, /warn\.verdict/, 'HeroCard must read the backend verdict');
-  assert.doesNotMatch(hero, /heroState/, 'HeroCard must not derive severity locally');
+test('HomeHero renders the backend verdict instead of deriving a level', () => {
+  // Phase 0 (2026-09-21): HeroCard.jsx was dead code (nothing rendered it;
+  // HomeHero.jsx is the live hero). The invariant moves to the live file.
+  const hero = readFileSync(new URL('../src/components/HomeHero.jsx', import.meta.url), 'utf8');
+  assert.match(hero, /warn\.verdict/, 'HomeHero must read the backend verdict');
+  assert.doesNotMatch(hero, /heroState/, 'HomeHero must not derive severity locally');
 });
 
-test('AlertCenter renders the same verdict, so the two views cannot disagree', () => {
-  const alerts = readFileSync(new URL('../src/components/AlertCenter.jsx', import.meta.url), 'utf8');
-  assert.match(alerts, /warn\.verdict|\.verdict\b/, 'AlertCenter must read the backend verdict');
+test('AlertsList renders the same verdict, so the two views cannot disagree', () => {
+  // Phase 0 (2026-09-21): AlertCenter.jsx was dead code (nothing rendered it;
+  // AlertsList.jsx is the live alerts surface). The invariant moves to it.
+  const alerts = readFileSync(new URL('../src/components/AlertsList.jsx', import.meta.url), 'utf8');
+  assert.match(alerts, /warn\.verdict|\.verdict\b/, 'AlertsList must read the backend verdict');
   assert.doesNotMatch(alerts, /heroState/);
 });
 

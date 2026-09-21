@@ -95,7 +95,7 @@ function SeverityDial({ level, word }) {
 }
 
 export default function HomeHero() {
-  const { lang, loc, locReady, speak, setDistrict, setPendingAsk, syncTick, publishVerdict, offline, persona } = useApp();
+  const { lang, loc, locReady, speak, setDistrict, ask, syncTick, publishVerdict, offline, persona } = useApp();
   const [warn, setWarn] = useState(null);
   const [current, setCurrent] = useState(null);
   const [stale, setStale] = useState(false);
@@ -198,7 +198,9 @@ export default function HomeHero() {
   const focusLabel = `${t(lang, 'heroFocus')}: ${PERSONA_LABELS[lang]?.[persona] || PERSONA_LABELS.en[persona] || PERSONA_LABELS.en.general}`;
 
   const askAbout = () => {
-    setPendingAsk(w ? `${t(lang, 'homeAskAbout')}: ${hazard} in ${loc.district}` : `${loc.district}`);
+    // HomeChat is mounted on this view and publishes its submit to the store,
+    // so the question is asked immediately — not dropped into a dead ref.
+    ask(w ? `${t(lang, 'homeAskAbout')}: ${hazard} in ${loc.district}` : `${loc.district}`);
     const el = document.querySelector('[data-tour="home-chat"]');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };

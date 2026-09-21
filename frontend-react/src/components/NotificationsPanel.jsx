@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react';
 import { notificationsApi } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
+import { pushReasonKey } from '../notify';
 import { saveNotificationSnapshot, readNotificationSnapshot } from '../offline';
 import Icon from './icons';
 import { SevStamp } from './ui';
@@ -218,21 +219,15 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
   const unread = (items || []).filter((n) => !n.read).length;
 
   // Honest push-state line under the switch: permission alone is not push.
-  // In-app-only names the reason (same mapping as SettingsPanel) — the panel
-  // is the primary push UI, so it must not show a vaguer line than Settings.
-  const reasonKey = {
-    'unsupported': 'rsnUnsupported',
-    'server-unavailable': 'rsnServer',
-    'denied': 'rsnDenied',
-    'sw-unavailable': 'rsnSw',
-    'server-rejected': 'rsnRejected',
-  }[pushReason] || 'rsnFailed';
+  // In-app-only names the reason (same mapping as SettingsPanel, via the
+  // shared pushReasonKey in notify.js) — the panel is the primary push UI,
+  // so it must not show a vaguer line than Settings.
   const pushHint = !notifyOn
     ? t(lang, 'panelPushHint')
     : notifyPerm === 'denied' ? t(lang, 'notifyBlocked')
       : pushReady ? t(lang, 'notifyOnBackground')
         : pushMode === 'inapp'
-          ? t(lang, 'setPushInAppWhy').replace('{reason}', t(lang, reasonKey))
+          ? t(lang, 'setPushInAppWhy').replace('{reason}', t(lang, pushReasonKey(pushReason)))
           : t(lang, 'notifyNoPush');
 
   return (

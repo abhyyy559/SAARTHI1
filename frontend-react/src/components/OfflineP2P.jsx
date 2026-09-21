@@ -138,7 +138,6 @@ export default function OfflineP2P({
   }, [online, allAlerts]);
 
   const stamps = useMemo(() => {
-    const d = agoDict(lang);
     const at = (name) => (cache[name] || {}).at || ((cache[name] || {}).data || {}).at || null;
     return [
       { icon: 'thermometer', label: t(lang, 'op2pCheckedWeather'), at: at('observation') || at('warning') },

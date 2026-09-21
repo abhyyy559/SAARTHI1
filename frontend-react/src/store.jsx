@@ -1,10 +1,10 @@
 // Single application store. Views read from here instead of prop-drilling, and
-// `ask()` is registered by ChatPanel from inside an EFFECT (never during render).
+// `ask()` is registered by HomeChat from inside an EFFECT (never during render).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, HYD, onDemoForbidden, setOfflineSim } from './api';
 import { DISTRICTS, t } from './i18n';
 import { cacheGuidance, useOnline } from './offline';
-import { askNotifyPermission, forgetNotified, hasPushSubscription, notify, notifySupport, subscribeToPush, unsubscribeFromPush } from './notify';
+import { askNotifyPermission, forgetNotified, hasPushSubscription, notify, notifySupport, pushReasonKey, subscribeToPush, unsubscribeFromPush } from './notify';
 import { tagFor, transition } from './alertWatch';
 import { splitSpeakChunks } from './speakChunks';
 
@@ -83,19 +83,6 @@ const readDevice = () => {
     return d;
   } catch { return 'anonymous'; }
 };
-
-// Machine reason from subscribeToPush() -> user-visible i18n key. The reason
-// is part of the honest enable state: "background unavailable" without a why
-// is a shrug, not an explanation. Module scope: the mapping never changes.
-const PUSH_REASON_KEYS = {
-  'unsupported': 'rsnUnsupported',
-  'server-unavailable': 'rsnServer',
-  'denied': 'rsnDenied',
-  'sw-unavailable': 'rsnSw',
-  'server-rejected': 'rsnRejected',
-  'failed': 'rsnFailed',
-};
-const pushReasonKey = (r) => PUSH_REASON_KEYS[r] || 'rsnFailed';
 
 export function AppProvider({ children }) {
   // One-way deep link. IA dedup (2026-09-20): the only public views are
@@ -242,7 +229,7 @@ export function AppProvider({ children }) {
         if (wasDown) {
           wasDown = false;
           // Queued offline questions are replayed (and the queue cleared) by
-          // ChatPanel, which owns the chat log. This effect used to clear the
+          // HomeChat, which owns the chat log. This effect used to clear the
           // queue here first, so every question asked while offline was dropped
           // without ever being replayed. One owner, and it is the one that can
           // actually show the answers.
@@ -263,7 +250,7 @@ export function AppProvider({ children }) {
   }, [simOffline, applyMode]);
   const askRef = useRef(null);
 
-  // ChatPanel publishes its submit handler here from an effect — safe, no render-time ref write.
+  // HomeChat publishes its submit handler here from an effect — safe, no render-time ref write.
   const registerAsk = useCallback((fn) => { askRef.current = fn; }, []);
   const ask = useCallback((text) => { if (askRef.current) askRef.current(text); }, []);
 
@@ -285,7 +272,7 @@ export function AppProvider({ children }) {
   const speechId = useRef(0);
   const [speechState, setSpeechState] = useState('idle');
   const [speechNote, setSpeechNote] = useState('');
-  // Global STT phase mirror: HomeChat/ChatPanel report their useVoiceInput
+  // Global STT phase mirror: HomeChat reports its useVoiceInput
   // state here so Shell can render one unmissable Listening popup.
   const [listenState, setListenState] = useState('idle');
   const cancelAudio = useCallback(() => {
@@ -439,7 +426,7 @@ export function AppProvider({ children }) {
     } catch { /* storage unavailable */ }
   }, [persona]);
 
-  // One-shot question hand-off: ChatPanel consumes it once on mount, then clears.
+  // One-shot question hand-off: HomeChat consumes it once on mount, then clears.
   const setPendingAsk = useCallback((text) => {
     pendingAskRef.current = typeof text === 'string' && text.trim() ? text.trim() : null;
   }, []);

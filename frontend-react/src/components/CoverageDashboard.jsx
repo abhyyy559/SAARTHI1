@@ -30,7 +30,7 @@ export default function CoverageDashboard({ district: initialDistrict }) {
   // Initial fetch and refresh on district change / syncTick
   useEffect(() => {
     fetchCoverage(district);
-  }, [district, fetchCoverage]);
+  }, [district, fetchCoverage, syncTick]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {

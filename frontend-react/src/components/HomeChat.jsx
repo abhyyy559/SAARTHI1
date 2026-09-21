@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t, PERSONA_LABELS, PERSONA_QUESTIONS } from '../i18n';
 import { api as defaultApi } from '../api';
+import { useApp } from '../store';
 import { queueQuery, readQueue, clearQueue, answerOffline } from '../offline';
 import { useVoiceInput } from '../useVoiceInput';
 import Icon from './icons';
@@ -57,6 +58,9 @@ export default function HomeChat({
     []
   );
   const dictation = useVoiceInput(lang, (text) => setInput(text));
+
+  // The store's ask()/pendingAsk one-shot hand-off, owned by this component.
+  // (Effects are registered after `ask` is defined, below.)
 
   // Mirror the mic phase to the shell for the global Listening popup.
   // Cleanup resets to idle so an unmount can never strand the popup.
@@ -131,6 +135,27 @@ export default function HomeChat({
     }
     setBusy(false);
   }, [input, busy, netState, doAsk, enqueueOffline]);
+
+  // The store's ask()/pendingAsk one-shot hand-off, owned by this component:
+  // - registerAsk publishes this chat's submit so any mounted caller (e.g.
+  //   HomeHero's "ask about this") can submit a question directly.
+  // - a pending question set just before navigating home (Advisor's "ask
+  //   about this") is consumed once on mount, then cleared. Without this the
+  //   buttons silently did nothing — the question never reached the chat.
+  const { registerAsk, pendingAskRef } = useApp();
+  useEffect(() => {
+    registerAsk(ask);
+    return () => registerAsk(null);
+  }, [ask, registerAsk]);
+  useEffect(() => {
+    const pending = pendingAskRef.current;
+    if (pending) {
+      pendingAskRef.current = null;
+      ask(pending);
+    }
+    // One-shot on mount by design.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Streaming effect: grow the newest bot answer until fully revealed.
   useEffect(() => {

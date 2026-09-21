@@ -41,16 +41,20 @@ def test_persona_role_grid_writes_to_store():
         "district chip must write location to store"
 
 
-def test_chatpanel_sends_persona_and_location():
-    chat = _read(os.path.join('components', 'ChatPanel.jsx'))
+def test_homechat_sends_persona_and_location():
+    # Phase 0 (2026-09-21): ChatPanel.jsx was dead code (nothing rendered it);
+    # HomeChat.jsx is the live chat. The persona/location wiring contract is
+    # unchanged — only the owner moved.
+    chat = _read(os.path.join('components', 'HomeChat.jsx'))
     assert "user_type: persona" in chat, "chat must send the selected persona"
-    assert "latitude: loc.lat" in chat, "chat must send the selected district coords"
+    assert "latitude: loc && loc.lat" in chat, "chat must send the selected district coords"
     assert "language: lang" in chat, "chat must send the selected language"
     assert "PERSONA_LABELS" in chat, "chat header must show who is being answered"
 
 
 def test_persona_chips_differ_by_persona():
-    chat = _read(os.path.join('components', 'ChatPanel.jsx'))
+    # Phase 0 (2026-09-21): see above — ChatPanel.jsx deleted, HomeChat.jsx live.
+    chat = _read(os.path.join('components', 'HomeChat.jsx'))
     assert "PERSONA_QUESTIONS[persona]" in chat, "question chips must follow persona"
 
 

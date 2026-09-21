@@ -35,8 +35,9 @@ function alertTime(a) {
   return a.updated_at || a.issued_at || a.sent || a.created_at || '';
 }
 
-// Community report types -> translated word. Same keys AlertCenter uses, so
-// the two surfaces can never disagree on what a report type is called.
+// Community report types -> translated word. This is the single place these
+// keys are defined, so every surface that renders a report type calls the
+// same word and can never disagree.
 const REPORT_WORD = {
   flooding: 'rtFlooding',
   road_blocked: 'rtRoadBlocked',

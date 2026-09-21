@@ -3,7 +3,7 @@
 // the icon carries the meaning, the text only confirms.
 //
 // SELECTOR CONTRACTS (Agent 4 / anyone touching IA — read before renaming):
-//   1. hero   -> '[data-tour="verdict"]'     on the Home HeroCard (components/HeroCard.jsx).
+//   1. hero   -> '[data-tour="verdict"]'     on the Home hero (components/HomeHero.jsx).
 //   2. chat   -> '[data-tour="home-chat"]'   on the HOME chat composer. This is
 //      the contract for the home composer: whoever mounts it MUST carry
 //      data-tour="home-chat", or the step skips itself honestly (see below).

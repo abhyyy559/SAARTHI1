@@ -10,7 +10,7 @@ import { test } from 'node:test';
 const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8');
 const advisor = src('components/Advisor.jsx');
 const home = src('components/Home.jsx');
-const hero = src('components/HeroCard.jsx');
+const hero = src('components/HomeHero.jsx');
 const shell = src('components/Shell.jsx');
 const app = src('App.jsx');
 const store = src('store.jsx');
@@ -41,14 +41,14 @@ test('a persona change is in the fetch dependency list of the advice card', () =
 });
 
 // --- state that never resets when what it describes changes -----------------
+//
+// Phase 0 (2026-09-21): HeroCard.jsx was dead code (nothing rendered it);
+// HomeHero.jsx is the live hero. The profile-advice caching the first test
+// below guarded no longer exists in the rewrite — advice never renders on
+// Home — so that test is dropped with the file. The stale-flag and
+// provenance invariants move to HomeHero.
 
-test('HeroCard drops the previous profile advice instead of showing it under the new name', () => {
-  assert.doesNotMatch(hero, /const \[advisory, setAdvisory\] = useState\(''\)/);
-  assert.match(hero, /advisoryAt\.key === advKey/, 'advice must be stamped with persona:lang:district');
-  assert.match(hero, /const advKey = `\$\{(persona \|\| 'general')\}:?\$\{lang\}:\$\{loc\.district\}`/);
-});
-
-test('HeroCard clears the stale flag on ANY answered request', () => {
+test('HomeHero clears the stale flag on ANY answered request', () => {
   // setStale(false) used to sit inside `if (d.warning)`, so a live, calm district
   // stayed labelled CACHED for the rest of the session.
   const then = hero.slice(hero.indexOf('api.warnings(loc.district'), hero.indexOf('api.current('));
@@ -61,11 +61,13 @@ test('HeroCard clears the stale flag on ANY answered request', () => {
 });
 
 test('the hero status chip cannot say LIVE over a DEMO/CACHED payload', () => {
-  // The chip hardcoded 'LIVE' while the evidence line rendered the payload's own
-  // provenance, so the card contradicted itself: "LIVE" beside "DEMO".
+  // The old card hardcoded 'LIVE' while the evidence line rendered the
+  // payload's own provenance, so the card contradicted itself: "LIVE" beside
+  // "DEMO". HomeHero derives evProv honestly: pending/aged/unavailable win
+  // over the payload's own provenance word, which is the last resort.
   assert.doesNotMatch(hero, /basis === 'unavailable' \? t\(lang, 'basisUnavailable'\) : 'LIVE'/);
-  assert.match(hero, /const payloadProv = /);
-  assert.match(hero, /: payloadProv\}/);
+  assert.match(hero, /const evProv = pending \? '—' : aged \? 'CACHED' : basis === 'unavailable' \? 'UNAVAILABLE'/);
+  assert.match(hero, /\{evProv\}/, 'the evidence line must render the derived provenance');
 });
 
 // --- the error boundary ------------------------------------------------------
@@ -121,10 +123,12 @@ test('the api client defines no method key twice', () => {
   assert.deepEqual(dupes, [], `duplicate api keys: ${dupes.join(', ')}`);
 });
 
-test('the store does not clear the offline queue before ChatPanel can replay it', () => {
+test('the store does not clear the offline queue before HomeChat can replay it', () => {
   // flushQueueOnReconnect() cleared the queue on reconnect without replaying, so
-  // every question asked while offline was dropped and ChatPanel's replay found
-  // nothing. ChatPanel owns replay (and the clear that follows it).
+  // every question asked while offline was dropped and HomeChat's replay found
+  // nothing. HomeChat owns replay (and the clear that follows it).
+  // (Phase 0, 2026-09-21: the dead ChatPanel.jsx that used to own this was
+  // deleted; the live owner is HomeChat.)
   assert.doesNotMatch(store, /flushQueueOnReconnect/);
   assert.doesNotMatch(store, /clearQueue/);
   assert.doesNotMatch(store, /readQueue/);

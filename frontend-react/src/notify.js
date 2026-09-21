@@ -47,6 +47,20 @@ export const PUSH_REASONS = {
   UNSUBSCRIBED: 'unsubscribed', // unsubscribe: done
 };
 
+// Machine reason from subscribeToPush() -> user-visible i18n key. The reason
+// is part of the honest enable state: "background unavailable" without a why
+// is a shrug, not an explanation. Single copy — the store, SettingsPanel and
+// NotificationsPanel all render through this (it used to be triplicated).
+const PUSH_REASON_KEYS = {
+  'unsupported': 'rsnUnsupported',
+  'server-unavailable': 'rsnServer',
+  'denied': 'rsnDenied',
+  'sw-unavailable': 'rsnSw',
+  'server-rejected': 'rsnRejected',
+  'failed': 'rsnFailed',
+};
+export const pushReasonKey = (r) => PUSH_REASON_KEYS[r] || 'rsnFailed';
+
 // navigator.serviceWorker.ready NEVER settles when no worker is registered —
 // main.jsx only registers /sw.js in production builds, and even there the
 // registration waits for window load. Awaiting it bare is how the "Allow

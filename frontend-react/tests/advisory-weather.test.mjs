@@ -72,9 +72,10 @@ test('every new key exists in EN/HI/TE with no Tamil script', () => {
   }
 });
 
-test('Advisor and ProfileAdvice render the WeatherBasis line', () => {
+test('Advisor renders the WeatherBasis line', () => {
+  // Phase 0 (2026-09-21): ProfileAdvice.jsx was dead code (nothing rendered
+  // it); Advisor.jsx is the live advisory surface and already renders it.
   assert.match(read('../src/components/Advisor.jsx'), /<WeatherBasis/);
   assert.match(read('../src/components/Advisor.jsx'), /data\.weather_basis/);
-  assert.match(read('../src/components/ProfileAdvice.jsx'), /<WeatherBasis/);
   assert.match(read('../src/components/WeatherBasis.jsx'), /formatWeatherBasis/);
 });

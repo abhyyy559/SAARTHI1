@@ -69,11 +69,12 @@ test('persona starts null — no silent Fisherman default', () => {
 });
 
 test('requests fall back explicitly to general when no role is set', () => {
-  for (const f of ['../src/components/ChatPanel.jsx', '../src/components/ProfileAdvice.jsx',
-                   '../src/components/HeroCard.jsx']) {
-    const code = read(f);
-    assert.match(code, /persona \|\| 'general'/, `${f} must pass persona || 'general'`);
-  }
+  // Phase 0 (2026-09-21): ChatPanel.jsx/ProfileAdvice.jsx/HeroCard.jsx were
+  // dead code (nothing rendered them). HomeChat.jsx is the live chat path and
+  // carries the fallback; Advisor passes the picked card's own id (never null
+  // at the call site) and HomeHero sends no persona.
+  const code = read('../src/components/HomeChat.jsx');
+  assert.match(code, /persona \|\| 'general'/, 'HomeChat must pass persona || \'general\'');
 });
 
 // --- severity: translate only, never derive ----------------------------------
@@ -149,9 +150,15 @@ test('sev word keys exist for EN/HI/TE', () => {
 });
 
 test('offline verdict detail is translated with the cannot-check wording', () => {
-  const code = read('../src/components/ChatPanel.jsx');
-  assert.match(code, /offlineVerdictDetail/, 'offline verdict detail must go through t()');
-  assert.doesNotMatch(code, /backend unreachable - warning status cannot be confirmed/);
+  // Phase 0 (2026-09-21): ChatPanel.jsx was dead code (nothing rendered it);
+  // HomeChat.jsx is the live chat and answers offline questions through
+  // answerOffline(), whose cannot-check wording is pinned by the
+  // 'answerOffline is fully translated' test above. This guards that the live
+  // chat keeps that path — a future chat rewrite must not drop it silently.
+  const code = read('../src/components/HomeChat.jsx');
+  assert.match(code, /answerOffline\(/, 'the live chat must answer offline via answerOffline()');
+  assert.match(code, /verdict: \{ level: 'UNKNOWN', confirmed: false, basis: 'unavailable' \}/,
+    'offline answers must carry an unavailable verdict, never a calm');
   const hs = read('../src/strings/areas/harboursignal.js');
   const hits = hs.match(/offlineVerdictDetail: '/g) || [];
   assert.equal(hits.length, 3, 'offlineVerdictDetail must exist in EN/HI/TE');
@@ -206,5 +213,5 @@ test('CityOpsPanel honest states: UNAVAILABLE per metric, translated retry', () 
   assert.match(code, /UNAVAILABLE/, 'provenance fallback must be honest UNAVAILABLE, never a guess');
   assert.match(code, /cityRetry/, 'failed fetch must offer a translated retry');
   assert.match(code, /aria-live="polite"/, 'async state must be announced politely');
-  assert.doesNotMatch(code, /\"No active official alerts/, 'no hardcoded English alert copy');
+  assert.doesNotMatch(code, /"No active official alerts/, 'no hardcoded English alert copy');
 });

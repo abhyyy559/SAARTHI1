@@ -10,6 +10,7 @@ const {
   subscribeToPush,
   hasPushSubscription,
   askNotifyPermission,
+  pushReasonKey,
   PUSH_REASONS,
 } = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
@@ -244,4 +245,33 @@ test('askNotifyPermission returns granted after the prompt is accepted', async (
   } finally {
     restoreBrowser();
   }
+});
+
+// --- pushReasonKey: the single machine-reason -> i18n-key map ----------------
+// Phase 0 (2026-09-21): the mapping was duplicated in store.jsx, SettingsPanel
+// and NotificationsPanel. notify.js now owns it; this suite pins both the
+// values and the single-owner invariant.
+test('pushReasonKey maps every machine reason to its i18n key', () => {
+  assert.equal(pushReasonKey('unsupported'), 'rsnUnsupported');
+  assert.equal(pushReasonKey('server-unavailable'), 'rsnServer');
+  assert.equal(pushReasonKey('denied'), 'rsnDenied');
+  assert.equal(pushReasonKey('sw-unavailable'), 'rsnSw');
+  assert.equal(pushReasonKey('server-rejected'), 'rsnRejected');
+  assert.equal(pushReasonKey('failed'), 'rsnFailed');
+  assert.equal(pushReasonKey('bogus-reason'), 'rsnFailed', 'unknown reasons must fall back, never render a raw key');
+});
+
+test('no file duplicates the push-reason map', () => {
+  // The literal i18n keys may appear only in notify.js (the map itself) and
+  // this test (the pins). Any other copy is a drift waiting to happen.
+  const offenders = [];
+  for (const f of [
+    '../src/store.jsx',
+    '../src/components/SettingsPanel.jsx',
+    '../src/components/NotificationsPanel.jsx',
+  ]) {
+    const src = readFileSync(new URL(f, import.meta.url), 'utf8');
+    if (/'rsnUnsupported'/.test(src)) offenders.push(f);
+  }
+  assert.deepEqual(offenders, [], 'push-reason map is duplicated again');
 });
