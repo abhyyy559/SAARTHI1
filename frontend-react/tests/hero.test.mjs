@@ -70,3 +70,56 @@ test('expired means past valid_until only — never on missing data', () => {
   assert.equal(isExpired(null, now), false);
   assert.equal(isExpired('junk', now), false);
 });
+
+// --- sky hero (Crew A, 2026-09-21): creative weather band --------------------
+
+test('sky band labels weather provenance from the payload, never hardcoded LIVE', () => {
+  const hero = readFileSync(new URL('../src/components/HomeHero.jsx', import.meta.url), 'utf8');
+  assert.match(hero, /setWxProv/, 'the hero must track weather provenance separately from the verdict');
+  assert.match(hero, /d\.provenance \? d\.provenance : 'UNAVAILABLE'/, 'provenance must come from the API payload');
+  assert.match(hero, /\{wxProvLabel\}/, 'the sky band must render the derived provenance');
+  // The verdict provenance invariant from review.test.mjs is unchanged.
+  assert.match(hero, /const evProv = pending \? '—' : aged \? 'CACHED'/);
+  assert.doesNotMatch(hero, /heroState/, 'no client-side severity derivation');
+});
+
+test('the hero has a manual city fallback wired to the location search', () => {
+  const hero = readFileSync(new URL('../src/components/HomeHero.jsx', import.meta.url), 'utf8');
+  assert.match(hero, /api\.searchLocation/, 'the hero must use the existing location-search API');
+  assert.match(hero, /setDistrict\(first\)/, 'applying a city must go through the store, never guessed coords');
+  assert.match(hero, /cityNoMatch/, 'a no-match search is an honest translated state');
+  assert.match(hero, /cityFailed/, 'a failed search is an honest translated state');
+  assert.match(hero, /!locReady && \(/, 'the fallback shows when location is denied or unavailable');
+});
+
+test('safety lenses are descriptive, never a client-side severity', () => {
+  const hero = readFileSync(new URL('../src/components/HomeHero.jsx', import.meta.url), 'utf8');
+  for (const fn of ['heatWord', 'rainWord', 'windWord']) {
+    assert.match(hero, new RegExp(fn), `${fn} must exist`);
+  }
+  for (const key of ['lensHeat', 'lensRain', 'lensWind', 'lensNA']) {
+    assert.match(hero, new RegExp(key), `${key} must be rendered`);
+  }
+  // The verdict stamp keeps its one severity mapping; the lenses must not
+  // invent another one (no risk scores, no low/high bucketing of values).
+  assert.doesNotMatch(hero, /riskLevel|riskScore|lensSev/, 'no second severity concept');
+  // Missing values render the honest "not available yet", never a dash or a
+  // fake calm.
+  assert.match(hero, /lensNA/, 'missing lens data must say it is not available');
+});
+
+test('new hero strings have EN/HI/TE parity and no Tamil script', () => {
+  const s = readFileSync(new URL('../src/strings/areas/home2.js', import.meta.url), 'utf8');
+  const keys = [
+    'lensTitle', 'lensHeat', 'lensRain', 'lensWind', 'lensNA',
+    'heatVeryHot', 'heatHot', 'heatWarm', 'heatMild', 'heatCool',
+    'rainDry', 'rainLight', 'rainSteady', 'rainHeavy',
+    'windCalm', 'windBreezy', 'windWindy', 'windGusty',
+    'cityTitle', 'cityPh', 'cityApply', 'cityNoMatch', 'cityFailed', 'wxUnavailable',
+  ];
+  for (const key of keys) {
+    const hits = s.match(new RegExp(`${key}: '`, 'g')) || [];
+    assert.equal(hits.length, 3, `${key} must exist in EN/HI/TE`);
+  }
+  assert.doesNotMatch(s, /[\u0B80-\u0BFF]/, 'no Tamil script anywhere');
+});
