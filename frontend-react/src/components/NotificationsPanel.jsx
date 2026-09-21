@@ -101,7 +101,7 @@ function PanelRow({ n, lang, speak, saving, acked, onOpen, onAck }) {
 export default function NotificationsPanel({ open, onClose, onUnread }) {
   const {
     lang, loc, device, showToast, syncTick, setView, setSelectedAlert, speak,
-    notifyOn, toggleNotify, notifyPerm, pushReady,
+    notifyOn, toggleNotify, notifyPerm, pushReady, pushMode, pushReason,
   } = useApp();
   const [items, setItems] = useState(null);
   const [offline, setOffline] = useState(false);
@@ -217,10 +217,22 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
   const unread = (items || []).filter((n) => !n.read).length;
 
   // Honest push-state line under the switch: permission alone is not push.
+  // In-app-only names the reason (same mapping as SettingsPanel) — the panel
+  // is the primary push UI, so it must not show a vaguer line than Settings.
+  const reasonKey = {
+    'unsupported': 'rsnUnsupported',
+    'server-unavailable': 'rsnServer',
+    'denied': 'rsnDenied',
+    'sw-unavailable': 'rsnSw',
+    'server-rejected': 'rsnRejected',
+  }[pushReason] || 'rsnFailed';
   const pushHint = !notifyOn
     ? t(lang, 'panelPushHint')
     : notifyPerm === 'denied' ? t(lang, 'notifyBlocked')
-      : pushReady ? t(lang, 'notifyOnBackground') : t(lang, 'notifyNoPush');
+      : pushReady ? t(lang, 'notifyOnBackground')
+        : pushMode === 'inapp'
+          ? t(lang, 'setPushInAppWhy').replace('{reason}', t(lang, reasonKey))
+          : t(lang, 'notifyNoPush');
 
   return (
     <>

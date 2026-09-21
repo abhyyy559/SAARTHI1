@@ -1,13 +1,16 @@
 // Real operating-system notifications, driven by the app's own verdict.
 //
-// Scope, stated honestly: these fire while the app is open (a background tab is
-// fine). A notification that arrives when the app is fully closed needs a push
-// server, VAPID keys and a subscription store — that is not demo mode, and faking
-// it would be a claim we cannot back.
+// Two paths, both real:
+// - In-app: notify() below fires while the app is open (a background tab is
+//   fine). The constructor fallback covers browsers with no SW registered.
+// - Closed-app: genuine Web Push. subscribeToPush() registers the service
+//   worker, creates a VAPID subscription and POSTs it to /api/push/subscribe;
+//   the server then pushes to the device even with the app and tab closed.
+//   The SW's push handler renders it and its notificationclick handler opens
+//   the deep link (payload.url).
 //
-// The Notifications API is the same one a push server would end up calling, so
-// nothing here is throwaway: a real push service only replaces *who* calls
-// notify(), not this code.
+// Honesty is load-bearing here: the UI reports pushMode off/background/inapp
+// with the concrete reason, never a silent fallback.
 
 const SEEN_KEY = 'wgpt-notified-v1';
 
@@ -40,6 +43,8 @@ export const PUSH_REASONS = {
   SW_MISSING: 'sw-unavailable', // no service worker could be provided
   REJECTED: 'server-rejected', // the server refused the subscription
   FAILED: 'failed', // anything else (network, unexpected)
+  NONE: 'none', // unsubscribe: there was nothing subscribed
+  UNSUBSCRIBED: 'unsubscribed', // unsubscribe: done
 };
 
 // navigator.serviceWorker.ready NEVER settles when no worker is registered —
@@ -135,17 +140,17 @@ export async function subscribeToPush({ api, district, language, persona }, opts
 
 /** Stop background push for this device, on both sides. */
 export async function unsubscribeFromPush(api) {
-  if (!pushSupported()) return { ok: false, reason: 'unsupported' };
+  if (!pushSupported()) return { ok: false, reason: PUSH_REASONS.UNSUPPORTED };
   try {
     const reg = await withTimeout(pushRegistration(), SW_READY_TIMEOUT_MS);
     const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
-    if (!sub) return { ok: true, reason: 'none' };
+    if (!sub) return { ok: true, reason: PUSH_REASONS.NONE };
     const endpoint = sub.endpoint;
     await sub.unsubscribe().catch(() => { /* server cleanup still worth trying */ });
     await api.pushUnsubscribe(endpoint).catch(() => { /* best effort */ });
-    return { ok: true, reason: 'unsubscribed' };
+    return { ok: true, reason: PUSH_REASONS.UNSUBSCRIBED };
   } catch {
-    return { ok: false, reason: 'failed' };
+    return { ok: false, reason: PUSH_REASONS.FAILED };
   }
 }
 
@@ -244,8 +249,11 @@ export async function notify({ title, body, tag, severity = 'UNKNOWN', silent = 
   } catch { /* fall through to the constructor */ }
 
   try {
-    // eslint-disable-next-line no-new
-    new Notification(title, { body, tag, icon: '/icons/icon-192.png' });
+    // Constructor fallback (no service worker): keep the deep link — a tap
+    // that opens a blank tab is a broken promise. data.url is honoured here
+    // because there is no SW notificationclick handler on this path.
+    const n = new Notification(title, { body, tag, icon: '/icons/icon-192.png' }); // eslint-disable-line no-new
+    n.onclick = () => { try { window.open(url, '_blank', 'noopener'); } catch {} n.close(); };
     if (tag) markSeen(tag);
     return true;
   } catch {

@@ -185,20 +185,18 @@ def _cap_fingerprint(gathered: dict[str, Any]) -> str:
     return "|".join(sorted(parts))
 
 
-def _official_alert_key(district: str, gathered: dict[str, Any],
-                        verdict: dict[str, Any]) -> str:
-    """Stable grouping key so the inbox timelines one official warning.
+def _official_alert_id(gathered: dict[str, Any]) -> str:
+    """Raw CAP alert id for the push payload and deep link.
 
-    Prefers the strongest relevant CAP alert's own id (the notification
-    carries the real alert id, never an invented one). Falls back to a
-    district+hazard key so a verdict without visible alert ids still groups
-    its start/update/clear into one trail.
+    The payload/deep-link id must match the raw `a.id` the app's AlertsList
+    matches on (`alertKey`), otherwise a notification tap lands on the list
+    without expanding the alert. "" when no relevant CAP id exists — the
+    deep link then falls back to the plain alerts view.
     """
     for a in gathered.get("relevant") or []:
         if isinstance(a, dict) and a.get("id"):
-            return f"cap:{a['id']}"
-    hazard = str(verdict.get("hazard") or "warning")
-    return f"official:{district}:{hazard}"
+            return str(a["id"])
+    return ""
 
 
 # Internal watcher bookkeeping lives under underscore keys in the same store
@@ -420,7 +418,7 @@ async def check_district(district: str) -> dict[str, Any]:
     if not kind:
         return {"district": district, "level": verdict.get("level"), "notified": None}
 
-    payload = message_for(kind, verdict, district, alert_id=_official_alert_key(district, gathered, verdict))
+    payload = message_for(kind, verdict, district, alert_id=_official_alert_id(gathered))
     result = push_service.broadcast(payload, district=district)
     # The push happened (or was attempted): record it in the history the user
     # scrolls. This was the missing link — official-chain transitions pushed

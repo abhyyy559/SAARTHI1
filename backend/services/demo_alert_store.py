@@ -144,19 +144,6 @@ def apply_action(alert_id: str, action: str, patch: dict[str, Any] | None = None
         if sev not in SEVERITIES:
             return alert, f"bad-severity: {patch['severity']!r}"
         alert["severity"] = sev
-    patch = dict(patch or {})
-    for key in ("title", "hazard", "district", "area", "instruction",
-                "pre_alert_at", "starts_at", "ends_at",
-                # Full-lifecycle detail (alerts redesign): editable like the
-                # other content fields.
-                "issuer", "reason", "effects"):
-        if key in patch and patch[key] is not None:
-            alert[key] = patch[key]
-    if "severity" in patch and patch["severity"] is not None:
-        sev = str(patch["severity"]).upper()
-        if sev not in SEVERITIES:
-            return alert, f"bad-severity: {patch['severity']!r}"
-        alert["severity"] = sev
     new_state, error = alert_service.set_lifecycle(alert, action)
     if error:
         alert["lifecycle_detail"] = alert_service.lifecycle_detail(alert)

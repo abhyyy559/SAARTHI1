@@ -79,9 +79,11 @@ def test_official_transition_payload_carries_alert_id_and_deep_link(monkeypatch)
     assert result["notified"] == "escalate"
     assert captured["district"] == DISTRICT
     payload = captured["payload"]
-    assert payload["alert_id"] == "cap:cap-999"
-    assert payload["url"].startswith("/?view=alerts")
-    assert "alert=" in payload["url"]
+    # Raw CAP id (no `cap:` grouping prefix): the app matches ?alert= against
+    # the alert's own id, so the tap expands the alert instead of landing on
+    # the bare list.
+    assert payload["alert_id"] == "cap-999"
+    assert payload["url"] == "/?view=alerts&alert=cap-999"
 
 
 def test_demo_payload_carries_alert_id_and_deep_link():

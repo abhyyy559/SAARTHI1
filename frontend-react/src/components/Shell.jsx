@@ -318,6 +318,7 @@ export default function Shell({ children }) {
             <button
               type="button"
               className="btn-icon bell-btn"
+              data-tour="notify-bell"
               title={t(lang, 'navNotifications')}
               aria-label={unread > 0 ? t(lang, 'panelBellUnread').replace('{n}', String(unread)) : t(lang, 'navNotifications')}
               aria-haspopup="dialog"
