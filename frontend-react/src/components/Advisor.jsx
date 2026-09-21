@@ -11,6 +11,7 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import { Card } from './ui';
 import Icon from './icons';
+import WeatherBasis from './WeatherBasis';
 import { splitAdvisory } from '../format';
 
 // Every user type the product serves — the pitch's "one platform, many users".
@@ -67,6 +68,9 @@ function AdviceCard({ ut, active, onPick }) {
                 {/* Same reason as ProfileAdvice: the occupation-specific half
                     of the advisory must be on screen, not behind a tap. */}
                 {split.detail && <p className="sub">{split.detail}</p>}
+                {/* The weather the advice was grounded in (observed numbers +
+                    provenance), or the honest unavailable line. Facts only. */}
+                <WeatherBasis basis={data.weather_basis} alertCount={data.relevant_alerts} lang={lang} />
                 <div className="row" style={{ gap: 6, marginTop: 6 }}>
                   <button type="button" className="btn btn-ghost sm"
                     onClick={() => speak(data.advisory)}>

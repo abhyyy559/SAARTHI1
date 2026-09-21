@@ -83,15 +83,26 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
 @router.get("/advisory")
 async def advisory(severity: str = "GREEN", hazard: str = "", user_type: str = "general",
                    language: str = "en", rain_mm: Optional[float] = None,
-                   wind_kph: Optional[float] = None, temp_c: Optional[float] = None) -> dict:
+                   wind_kph: Optional[float] = None, temp_c: Optional[float] = None,
+                   humidity_pct: Optional[float] = None,
+                   lat: Optional[float] = None, lon: Optional[float] = None) -> dict:
     sev = (severity or "GREEN").upper()
     verified = {"verified": sev not in ("GREEN", "NONE", ""), "severity": sev, "hazard": hazard}
     floor = advisory_for(verified, user_type, language)
     # Rule layer (T2.1 S2.1.3): append-only, never softens the floor above.
-    current = {"rain_mm": rain_mm, "wind_kph": wind_kph, "temp_c": temp_c}
+    # When the client did not pass weather numbers but did pass a location,
+    # the server fetches the current observation itself (DEMO fixtures / live
+    # chain / UNAVAILABLE — same provenance semantics as /api/advisory/cards)
+    # so persona advice reflects real conditions, not alerts alone.
+    # Missing/unreachable weather yields no weather lines — never an invented
+    # calm, never a false all-clear.
+    current, weather_basis = await weather_mod.resolve_advisory_weather(
+        lat, lon, {"rain_mm": rain_mm, "wind_kph": wind_kph,
+                   "temp_c": temp_c, "humidity_pct": humidity_pct})
     extra = weather_advisories(current, None, user_type, language)
     return {
         "advisory": floor + weather_advisories_text(extra, language),
+        "weather_basis": weather_basis,
         "user_type": user_type,
         "official_instruction": False,
         "note": "WeatherGPT contextual recommendation — not an official government instruction.",

@@ -136,6 +136,66 @@ async def _cross_check(lat: float, lon: float) -> tuple[dict | None, str]:
         return None, "UNCONFIGURED"
 
 
+async def advisory_current_observation(lat: float, lon: float) -> tuple[dict | None, str]:
+    """Current-observation blob for server-side advisory weather grounding.
+
+    Same provenance semantics as /api/advisory/cards: DEMO_MODE reads fixtures
+    (provenance DEMO); otherwise the live chain (_live_current: IMD ->
+    Open-Meteo -> OWM -> cache, imd mode official-only). An unreachable IMD in
+    imd mode raises AdapterUnavailable inside _live_current rather than
+    backfilling with non-official sources — surfaced here as (None,
+    "UNAVAILABLE"). Never returns invented numbers.
+    """
+    if config.DEMO_MODE:
+        imd = _services()["imd"]
+        data = (await imd.get_current_weather(lat, lon)).model_dump(mode="json")
+        return data, "DEMO"
+    try:
+        return await _live_current(lat, lon)
+    except AdapterUnavailable:
+        return None, "UNAVAILABLE"
+
+
+async def resolve_advisory_weather(lat: Optional[float], lon: Optional[float],
+                                  explicit: dict) -> tuple[dict, dict]:
+    """Merge client-supplied weather numbers with a server-side fetch.
+
+    `explicit` holds the optional client query values for rain_mm / wind_kph /
+    temp_c / humidity_pct (None = not passed). When every explicit value is
+    absent and lat/lon are present, the current observation is fetched
+    server-side via advisory_current_observation(); otherwise only the
+    explicit numbers are used — a client-supplied partial set is never
+    silently padded with fetched data.
+
+    Returns (current, weather_basis): `current` feeds weather_advisories();
+    `weather_basis` is the honest "based on" block — the observed values we
+    actually have plus provenance (LIVE/CACHED/DEMO/CLIENT/UNAVAILABLE).
+    Missing or unreachable weather yields provenance UNAVAILABLE with no
+    values and no weather lines: never an invented calm, never a false
+    all-clear.
+    """
+    from ..services.advisory_service import observation_numbers
+    keys = ("rain_mm", "wind_kph", "temp_c", "humidity_pct")
+    have_explicit = any(explicit.get(k) is not None for k in keys)
+    fetched = {k: None for k in keys}
+    prov = "UNAVAILABLE"
+    if not have_explicit and lat is not None and lon is not None:
+        obs, prov = await advisory_current_observation(lat, lon)
+        if obs is not None:
+            fetched = observation_numbers(obs)
+        # obs None -> prov UNAVAILABLE, fetched stays all-None: no weather
+        # lines, no invented values.
+    elif have_explicit:
+        prov = "CLIENT"
+    current = {k: (explicit.get(k) if explicit.get(k) is not None else fetched[k])
+               for k in keys}
+    basis = {"provenance": prov}
+    for k in keys:
+        if current[k] is not None:
+            basis[k] = current[k]
+    return current, basis
+
+
 @router.get("/weather/current")
 async def current_wx(lat: float = 17.385, lon: float = 78.4867, district: Optional[str] = None) -> dict:
     s = _services()

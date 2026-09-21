@@ -9,6 +9,7 @@ import { t, PERSONA_LABELS } from '../i18n';
 import { useApp } from '../store';
 import { Card } from './ui';
 import Icon from './icons';
+import WeatherBasis from './WeatherBasis';
 
 export default function ProfileAdvice() {
   const { loc, persona, lang, speak, syncTick, setView, setPendingAsk } = useApp();
@@ -58,6 +59,13 @@ export default function ProfileAdvice() {
               </div>}
       </div>
       {current?.data?.caveat && <div className="sub" style={{ marginTop: 8 }}>{current.data.caveat}</div>}
+      {/* The weather the advice was grounded in (observed numbers +
+          provenance), or the honest unavailable line. Facts only. */}
+      {current?.data && !current.error && (
+        <div style={{ marginTop: 8 }}>
+          <WeatherBasis basis={current.data.weather_basis} alertCount={current.data.relevant_alerts} lang={lang} />
+        </div>
+      )}
       {current?.data && (
         <div className="row" style={{ marginTop: 8 }}>
           <button className="btn btn-ghost sm" type="button" onClick={() => speak(current.data.advisory)} aria-label={t(lang, 'alertsListen')}>
