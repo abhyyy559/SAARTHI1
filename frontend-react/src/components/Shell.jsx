@@ -202,9 +202,14 @@ export default function Shell({ children }) {
 
   useEffect(() => {
     const onToast = (e) => {
-      setToast(e.detail || null);
+      // The event detail may be a plain string (store's showToast) or an
+      // object ({text, error}). The renderer reads toast.text, so normalize:
+      // a string detail must not render as an empty toast.
+      const detail = e.detail;
+      const shaped = typeof detail === 'string' ? { text: detail } : detail;
+      setToast(shaped || null);
       clearTimeout(toastTimer.current);
-      if (e.detail) {
+      if (shaped) {
         toastTimer.current = setTimeout(() => setToast(null), 4200);
       }
     };

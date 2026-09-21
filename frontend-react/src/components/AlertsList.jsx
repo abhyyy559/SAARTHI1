@@ -86,9 +86,17 @@ export default function AlertsList({ initialAlertId = null }) {
       // The backend can return the same warning twice: once as the headline
       // `warning` (verdict input) and once inside cap_alerts. Never render the
       // same alert as two rows — an identical twin reads as two emergencies.
+      // Canonical identity: a real id wins; otherwise the headline,
+      // normalized — the twins can differ by a trailing period or case
+      // ("…places." vs "…places"), which must not defeat the dedup.
+      const canonKey = (a) => {
+        const raw = a.id || a.identifier;
+        if (raw) return `id:${raw}`;
+        return `h:${String(a.headline || '').trim().toLowerCase().replace(/[.\s]+$/, '')}`;
+      };
       const seenIds = new Set();
       const deduped = official.filter((a) => {
-        const key = a.id || a.identifier || a.headline;
+        const key = canonKey(a);
         if (seenIds.has(key)) return false;
         seenIds.add(key);
         return true;

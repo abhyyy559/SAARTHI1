@@ -25,6 +25,17 @@ test('store showToast dispatches wgpt:toast so Shell actually renders it', () =>
   );
 });
 
+test("Shell normalizes string toast details — a string must not render empty", () => {
+  const sh = read('../src/components/Shell.jsx');
+  // The renderer reads toast.text; the store dispatches a plain string. If the
+  // listener sets the raw string, the toast div renders empty (tester FAIL 1b).
+  assert.match(
+    sh,
+    /typeof detail === 'string' \? \{ text: detail \}/,
+    'onToast must wrap string details as {text}'
+  );
+});
+
 // --- 2. Test push can deep-link to a real alert ---------------------------------
 test('sendTestPush carries the selected alert id to /api/push/test', () => {
   const s = store();
@@ -39,11 +50,11 @@ test('sendTestPush carries the selected alert id to /api/push/test', () => {
 test('AlertsList dedups the headline warning against cap_alerts', () => {
   const l = list();
   assert.match(l, /seenIds/, 'a dedup set must guard the official list');
-  assert.match(
-    l,
-    /a\.id \|\| a\.identifier \|\| a\.headline/,
-    'dedup keys on the alert identity'
-  );
+  assert.match(l, /canonKey/, 'dedup must use a canonical key, not raw fields');
+  // The twins can differ by a trailing period or case ("…places." vs
+  // "…places"): the key must normalize or the rows survive as duplicates.
+  assert.match(l, /\.toLowerCase\(\)/, 'dedup key normalizes case');
+  assert.match(l, /replace\(\/\[\.\\s\]\+\$\//, 'dedup key strips trailing punctuation');
 });
 
 // --- 4b. Ended alerts get their own honest section ------------------------------
