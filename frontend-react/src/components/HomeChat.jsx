@@ -226,7 +226,19 @@ export default function HomeChat({
   const personaLabel = persona ? ((PERSONA_LABELS[lang] && PERSONA_LABELS[lang][persona]) || persona) : t(lang, 'roleNotSet');
 
   return (
-    <section className="hc" aria-label={t(lang, 'hcRegion')}>
+    // Ask is the hero of Home (2026-09-21): the first thing the eye hits and
+    // the largest element on the screen. Facts-only strip stays directly under
+    // the header — the boundary, stated before the first message. The
+    // data-tour="home-chat" hook on the composer is a selector contract with
+    // OnboardingTour and must never move.
+    <section className="hc is-hero" aria-label={t(lang, 'hcRegion')}>
+      <header className="hc-hero-head">
+        <span className="hc-hero-badge" aria-hidden="true"><Icon name="chat" size={30} /></span>
+        <div className="hc-hero-titles">
+          <h1 className="hc-hero-title">{t(lang, 'askHeroTitle')}</h1>
+          <p className="hc-hero-sub">{t(lang, 'askHeroSub')}</p>
+        </div>
+      </header>
       {/* Facts-only strip: the boundary, stated before the first message. */}
       <div className="hc-facts">
         <span className="hc-facts-icon" aria-hidden="true"><Icon name="file" size={20} /></span>

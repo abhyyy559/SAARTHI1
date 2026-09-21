@@ -1,7 +1,10 @@
-// HomeHero — the wow moment. Designed for zero reading ability:
-// WHAT is happening in the sky  → one giant condition icon (110px)
-// HOW BAD is it                 → a signal-mast severity dial + stamp (icon+word+color)
-// WHAT do I do next             → one short impact line + two 44px buttons
+// HomeHero — the compact current-conditions verdict readout. Designed for
+// zero reading ability: WHAT is happening in the sky  → a condition icon
+// (56px), HOW BAD is it → a signal-mast severity dial + stamp (icon+word+
+// color), WHAT do I do next → one short impact line + two 44px buttons.
+//
+// Compact on purpose (2026-09-21): Ask is the hero of Home, so this card
+// stays safety-critical but subordinate — a bulletin, not the wow moment.
 //
 // Honesty contract (same as the old HeroCard): the backend verdict is the ONE
 // severity, never re-derived; missing data renders as "can't check", never an
@@ -205,7 +208,7 @@ export default function HomeHero() {
       <div className="hh-top">
         <div className="hh-sky">
           <span className="hh-icon" data-cond={condIcon} aria-hidden="true">
-            <Icon name={condIcon} size={104} />
+            <Icon name={condIcon} size={56} />
           </span>
           <span className="hh-temp" aria-label={`${t(lang, 'heroTempNow')} ${temp != null ? `${temp}°C` : '—'}`}>
             {temp != null ? `${temp}°` : '–'}
