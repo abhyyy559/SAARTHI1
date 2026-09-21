@@ -106,11 +106,12 @@ test('More sheet never exceeds the viewport', () => {
 });
 
 // --- tour --------------------------------------------------------------------
-test('tour is exactly four icon-led steps on the deduped IA', () => {
+test('tour is exactly five icon-led steps on the deduped IA', () => {
   const steps = [...tour.matchAll(/\{ view: '[^']+'[^}]*icon: '[^']+'[^}]*title: '[^']+'[^}]*body: '[^']+'[^}]*\}/g)];
-  assert.equal(steps.length, 4, `tour must have exactly 4 steps, got ${steps.length}`);
-  assert.ok(steps.every((st) => /icon: '(sun|chat|bell|offline|person|info)'/.test(st[0])), 'every step has an icon');
+  assert.equal(steps.length, 5, `tour must have exactly 5 steps, got ${steps.length}`);
+  assert.ok(steps.every((st) => /icon: '(sun|chat|bell|offline|person|info|radio)'/.test(st[0])), 'every step has an icon');
   assert.ok(!steps.some((st) => /view: 'ask'/.test(st[0])), 'no tour step points at the removed Ask route');
+  assert.ok(steps.some((st) => /action: 'notify'/.test(st[0])), 'the notifications step wires the Allow-notifications action');
 });
 
 // --- admin invisibility -------------------------------------------------------
