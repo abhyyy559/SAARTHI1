@@ -524,3 +524,102 @@
     scroll-snap-type: none;
   }
 }
+
+/* --- Ask-as-hero (2026-09-21): the chat board is Home's flagship ------------
+ *
+ * Harbour Signal, but dominant: a white card with the standard 2px ink
+ * border and a harder shadow, the biggest title on the screen, a taller
+ * composer, and a conversation area with real presence (min 32vh) so the
+ * chat — not the verdict card — is the largest element on Home. The
+ * composer hook (data-tour="home-chat") and the 44px touch targets below
+ * are unchanged; the hero rules only ever ADD emphasis.
+ */
+
+.hc.is-hero {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 18px 16px;
+  gap: 14px;
+}
+
+.hc-hero-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hc-hero-badge {
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--brand);
+  color: var(--on-brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hc-hero-titles {
+  min-width: 0;
+}
+
+.hc-hero-title {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.hc-hero-sub {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+/* The conversation area carries the view: it is the largest block on Home. */
+.hc.is-hero .hc-log {
+  min-height: 32vh;
+}
+
+/* A taller, more inviting composer — mic and send grow with it (≥44px
+ * touch contract is additive-only, so the 44px rule above stays). */
+.hc.is-hero .hc-composer {
+  padding: 8px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.hc.is-hero .hc-composer input {
+  min-height: 52px;
+  font-size: 17px;
+  padding: 0 12px;
+}
+
+.hc.is-hero .hc-mic,
+.hc.is-hero .hc-send {
+  min-width: 52px;
+  min-height: 52px;
+}
+
+/* ≤380px: the hero card tightens so it still fits the smallest phones. */
+@media (max-width: 380px) {
+  .hc.is-hero {
+    padding: 14px 12px;
+    gap: 12px;
+  }
+
+  .hc-hero-title {
+    font-size: 23px;
+  }
+
+  .hc-hero-badge {
+    width: 48px;
+    height: 48px;
+  }
+}

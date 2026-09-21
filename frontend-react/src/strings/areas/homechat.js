@@ -29,6 +29,9 @@ export default {
     hcReadMore: 'Read more',
     hcReadLess: 'Show less',
     hcEmptyLine: 'Ask about your work or plans — answers stay in facts mode.',
+    // --- Worker 3 (home-ask-focus, 2026-09-21): Ask is the hero of Home -----
+    askHeroTitle: 'Ask about your weather',
+    askHeroSub: 'Answers from official data — type or speak.',
   },
   hi: {
     hcRegion: 'SAARTHI से पूछें',
@@ -55,6 +58,9 @@ export default {
     hcReadMore: 'और पढ़ें',
     hcReadLess: 'छिपाएँ',
     hcEmptyLine: 'अपने काम या योजना के बारे में पूछें — उत्तर तथ्य मोड में ही रहेंगे।',
+    // --- Worker 3 (home-ask-focus, 2026-09-21): Ask is the hero of Home -----
+    askHeroTitle: 'अपने मौसम के बारे में पूछें',
+    askHeroSub: 'आधिकारिक आंकड़ों पर आधारित उत्तर — टाइप करें या बोलें।',
   },
   te: {
     hcRegion: 'SAARTHIని అడగండి',
@@ -81,5 +87,8 @@ export default {
     hcReadMore: 'మరింత చదవండి',
     hcReadLess: 'దాచండి',
     hcEmptyLine: 'మీ పని లేదా ప్రణాళిక గురించి అడగండి — సమాధానాలు వాస్తవ మోడ్‌లోనే ఉంటాయి.',
+    // --- Worker 3 (home-ask-focus, 2026-09-21): Ask is the hero of Home -----
+    askHeroTitle: 'మీ వాతావరణం గురించి అడగండి',
+    askHeroSub: 'అధికారిక డేటా నుండి సమాధానాలు — టైప్ చేయండి లేదా మాట్లాడండి.',
   },
 };

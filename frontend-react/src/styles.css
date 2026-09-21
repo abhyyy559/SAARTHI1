@@ -892,27 +892,29 @@ button.chip:active { transform: translateY(1px); }
 
 /* ================= IA dedup + icon-first redesign (2026-09-20) ============= */
 
-/* ---------- Home hero: the wow. One giant sky, one dial, one line. -------- */
+/* ---------- Home hero: compact verdict bulletin (Ask is the hero) --------- */
+/* 2026-09-21: Ask owns the spotlight, so the hero is a subordinate bulletin —
+ * same verdict, same honesty contract, roughly half the height. */
 .home-hero {
-  background: var(--card); border: 2px solid var(--ink); border-radius: 16px;
-  padding: 20px 18px 16px; display: grid; gap: 14px;
+  background: var(--card); border: 2px solid var(--ink); border-radius: 14px;
+  padding: 14px 14px 12px; display: grid; gap: 10px;
   box-shadow: 4px 4px 0 var(--ink);
 }
-.hh-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.hh-sky { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.hh-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hh-sky { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .hh-icon {
-  width: 128px; height: 128px; flex: 0 0 128px; border-radius: 50%;
-  border: 3px solid var(--ink); background: var(--tint, var(--paper));
+  width: 64px; height: 64px; flex: 0 0 64px; border-radius: 50%;
+  border: 2px solid var(--ink); background: var(--tint, var(--paper));
   display: inline-flex; align-items: center; justify-content: center; color: var(--ink);
 }
 .home-hero[data-sev="CRITICAL"] .hh-icon, .home-hero[data-sev="HIGH"] .hh-icon { background: var(--tint-red, #FDECEA); }
 .home-hero[data-sev="MODERATE"] .hh-icon { background: var(--tint-amber, #FFF4D6); }
 .home-hero[data-sev="LOW"] .hh-icon { background: var(--tint-green, #E7F4EA); }
 .home-hero[data-sev="UNKNOWN"] .hh-icon { background: var(--tint-unknown, #EFEAE0); }
-.hh-temp { font-size: 56px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
-.hh-dial { flex: 0 0 auto; }
-.hh-impact { display: flex; align-items: center; gap: 12px; margin: 0; flex-wrap: wrap; }
-.hh-impact-text { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+.hh-temp { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.hh-dial { flex: 0 0 auto; width: 116px; height: auto; }
+.hh-impact { display: flex; align-items: center; gap: 10px; margin: 0; flex-wrap: wrap; }
+.hh-impact-text { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
 .hh-place { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .hh-pin { color: var(--sea); display: inline-flex; }
 .hh-place b { font-size: 17px; }

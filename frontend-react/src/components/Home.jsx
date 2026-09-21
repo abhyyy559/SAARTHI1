@@ -1,7 +1,9 @@
-// Home — one screen, one job: what's happening, and ask about it.
+// Home — one screen, one job: ask about it first.
 //
-//   1. HomeHero — the wow: giant sky icon, severity dial, one-line impact.
-//   2. The conversation (Agent 3's HomeChat) — the old Ask route lives here now.
+//   1. Ask, the hero (Agent 3's HomeChat) — the flagship, the first thing the
+//      eye hits and the largest element on the screen.
+//   2. HomeHero — the safety-critical current-conditions verdict readout,
+//      compact and subordinate to Ask.
 //   3. Warning teasers — today's warnings as compact rows into the Alerts route.
 //
 // The old dispatch strip, action tiles and separate Ask page are gone (IA
@@ -96,17 +98,10 @@ export default function Home() {
   return (
     <div className="home-stack">
       {!locReady && <LocationPrompt />}
-      <HomeHero />
-      {/* Aviation is a profile, not a menu: the briefing lives on the
-          dashboard itself when the aviation profile is active. */}
-      {persona === 'aviation' && (
-        <section aria-label={t(lang, 'utAviation')} className="home-aviation">
-          <AviationBriefing />
-        </section>
-      )}
-      <section aria-label={t(lang, 'heroAskAnything')} className="home-chat">
-        {/* Agent 3's conversation: identity resets with lang/role/district so a
-            new context never inherits the old one's answers. */}
+      <section className="home-chat">
+        {/* Ask is the hero of Home: it mounts FIRST, above the verdict card.
+            Identity resets with lang/role/district so a new context never
+            inherits the old one's answers. */}
         <HomeChat
           key={`chat:${lang}:${persona}:${loc.district}`}
           lang={lang}
@@ -120,6 +115,16 @@ export default function Home() {
           onVoiceState={setListenState}
         />
       </section>
+      {/* The verdict readout stays — safety-critical — but compact and
+          subordinate, below Ask. */}
+      <HomeHero />
+      {/* Aviation is a profile, not a menu: the briefing lives on the
+          dashboard itself when the aviation profile is active. */}
+      {persona === 'aviation' && (
+        <section aria-label={t(lang, 'utAviation')} className="home-aviation">
+          <AviationBriefing />
+        </section>
+      )}
       <WarningTeasers />
     </div>
   );
