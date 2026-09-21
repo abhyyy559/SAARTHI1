@@ -104,6 +104,9 @@ def test_demo_store_patch_can_edit_lifecycle_fields():
         a = demo_alert_store.create({
             "title": "Edit drill", "district": "Hyderabad", "severity": "YELLOW",
         })
+        # "update" is only a legal verb once the alert has left UPCOMING.
+        _, act_err = demo_alert_store.apply_action(a["id"], "activate")
+        assert act_err is None
         updated, err = demo_alert_store.apply_action(
             a["id"], "update",
             {"issuer": "IMD demo cell", "reason": "Cyclone watch", "effects": "Strong winds"},
