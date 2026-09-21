@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../i18n';
 import Icon from './icons';
 import { Card, SevStamp } from './ui';
-import { readCache, readQueue, useOnline } from '../offline';
+import { readCache, readQueue, useOnline, probeOfflineShell, saveDemoAlertsSnapshot } from '../offline';
 import {
   checkedAgo,
   drainQueue,
@@ -25,6 +25,10 @@ import {
 
 const HOP_MS = 700;
 const TRANS_MS = 10000;
+// Relay-log refresh: poll cadence (covers a second device) + BroadcastChannel
+// name (instant cross-tab on the same device).
+const RELAY_LOG_POLL_MS = 10000;
+const P2P_BC = 'saarthi-p2p-relay';
 const TR_WORD = { 'pre-alert': 'op2pTrPreAlert', active: 'op2pTrActive', ended: 'op2pTrEnded' };
 
 function agoDict(lang) {
@@ -37,6 +41,9 @@ function agoDict(lang) {
 export default function OfflineP2P({
   api, lang = 'en', district = '', online: onlineProp,
   alerts = [], demoMode = false, deviceId = '',
+  // Worker 5: the app's built-in offline simulator (store simOffline). The
+  // panel only renders the toggle; the store owns the actual network cut.
+  simOffline = false, onToggleSimOffline = null,
 }) {
   const hookOnline = useOnline();
   const online = onlineProp !== undefined ? onlineProp : hookOnline;
@@ -52,6 +59,15 @@ export default function OfflineP2P({
   const [relayErr, setRelayErr] = useState('');
   const [relayLog, setRelayLog] = useState([]);
   const timers = useRef([]);
+  // Worker 5 additions:
+  // - shell: app-shell readiness probe result (honest cached/not-saved chip)
+  // - demoAlerts: live demo alert list (backend) for the relay picker
+  // - relayNote: transient "relay arrived from another tab" note
+  // - bcRef: BroadcastChannel for instant cross-tab relay delivery
+  const [shell, setShell] = useState(null);
+  const [demoAlerts, setDemoAlerts] = useState([]);
+  const [relayNote, setRelayNote] = useState('');
+  const bcRef = useRef(null);
 
   useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
@@ -63,19 +79,57 @@ export default function OfflineP2P({
   // Re-read snapshots whenever connectivity flips or the district changes.
   useEffect(() => { refreshCache(); }, [online, district, refreshCache]);
 
+  // Worker 5: app-shell readiness probe, once per mount. A worker that is
+  // merely registered but not controlling the page cannot serve the shell
+  // offline — the chip below reports that honestly.
+  useEffect(() => {
+    let dead = false;
+    probeOfflineShell().then((r) => { if (!dead) setShell(r); });
+    return () => { dead = true; };
+  }, []);
+
+  // Worker 5: demo alerts live on the backend, not in the verdict cache, and
+  // the relay picker needs their ids. Fetch + snapshot whenever online in
+  // demo mode; offline, the snapshot (read by OfflineView) carries on.
+  useEffect(() => {
+    let dead = false;
+    if (!online || !demoMode || !api || typeof api.demoAlerts !== 'function') return;
+    api.demoAlerts(district).then((d) => {
+      if (dead) return;
+      const list = (d && d.alerts) || [];
+      setDemoAlerts(list);
+      saveDemoAlertsSnapshot(list, district);
+    }).catch(() => { /* offline mid-flight — the snapshot stays as it was */ });
+    return () => { dead = true; };
+  }, [online, demoMode, district, api]);
+
+  // Alerts for the picker and the offline evaluation: cached warning/alert
+  // (via props) plus demo alerts (live fetch above), deduped by id.
+  const allAlerts = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const a of [...(alerts || []), ...demoAlerts]) {
+      const id = a && (a.id || a.alert_id);
+      if (!id || seen.has(String(id))) continue;
+      seen.add(String(id));
+      out.push(a);
+    }
+    return out;
+  }, [alerts, demoAlerts]);
+
   // Offline alert evaluation: every 10s while offline, check the cached alert
   // schedules for crossed boundaries. evaluateNewTransitions dedupes via a
   // fired-set in localStorage — a re-render never double-notifies.
   useEffect(() => {
-    if (online || !alerts.length) return;
+    if (online || !allAlerts.length) return;
     const tick = () => {
-      const fresh = evaluateNewTransitions(alerts);
+      const fresh = evaluateNewTransitions(allAlerts);
       if (fresh.length) setTransitions((prev) => [...prev, ...fresh]);
     };
     tick();
     const id = setInterval(tick, TRANS_MS);
     return () => clearInterval(id);
-  }, [online, alerts]);
+  }, [online, allAlerts]);
 
   const stamps = useMemo(() => {
     const d = agoDict(lang);
@@ -105,8 +159,8 @@ export default function OfflineP2P({
   }, [online, replaying, api, lang, district]);
 
   const pickable = useMemo(
-    () => (alerts || []).filter((a) => a && (a.id || a.alert_id)),
-    [alerts],
+    () => (allAlerts || []).filter((a) => a && (a.id || a.alert_id)),
+    [allAlerts],
   );
   useEffect(() => {
     if (!alertId && pickable.length) setAlertId(String(pickable[0].id || pickable[0].alert_id));
@@ -123,9 +177,45 @@ export default function OfflineP2P({
 
   useEffect(() => { loadRelayLog(); }, [loadRelayLog, phase]);
 
+  // Worker 5: two-tab / two-device relay visibility. Poll the durable relay
+  // log while online (covers a relay fired from a second DEVICE), and listen
+  // on a BroadcastChannel for instant cross-tab delivery on the same device.
+  // Polling is the fallback where BroadcastChannel is unavailable.
+  useEffect(() => {
+    if (!online) return;
+    const id = setInterval(loadRelayLog, RELAY_LOG_POLL_MS);
+    return () => clearInterval(id);
+  }, [online, loadRelayLog]);
+
+  useEffect(() => {
+    let ch = null;
+    try {
+      ch = new BroadcastChannel(P2P_BC);
+      ch.onmessage = (e) => {
+        if (e && e.data && e.data.type === 'relay-done') {
+          loadRelayLog();
+          setRelayNote(t(lang, 'op2pRelayArrived'));
+        }
+      };
+    } catch { /* unsupported — the poll above still covers it */ }
+    bcRef.current = ch;
+    return () => {
+      if (ch) { try { ch.close(); } catch { /* ignore */ } }
+      bcRef.current = null;
+    };
+  }, [loadRelayLog, lang]);
+
+  // Announce a finished relay so sibling tabs refresh their relay log at once.
+  const announceRelayDone = useCallback((id) => {
+    try {
+      if (bcRef.current) bcRef.current.postMessage({ type: 'relay-done', alert_id: id, at: Date.now() });
+    } catch { /* ignore */ }
+  }, []);
+
   const runRelay = useCallback(async () => {
     if (!demoMode || !alertId || phase === 'sending' || !api) return;
     setRelayErr('');
+    setRelayNote('');
     setPhase('sending');
     setHopStates([]);
     let resp;
@@ -152,12 +242,16 @@ export default function OfflineP2P({
           if (i === states.length - 1) {
             setPhase(resp.status === 'failed' ? 'failed' : 'relayed');
             loadRelayLog();
+            announceRelayDone(alertId);
           }
         }, HOP_MS / 2));
       }, i * HOP_MS));
     });
-    if (!states.length) setPhase(resp.status === 'failed' ? 'failed' : 'relayed');
-  }, [demoMode, alertId, phase, api, failHop, lang, loadRelayLog]);
+    if (!states.length) {
+      setPhase(resp.status === 'failed' ? 'failed' : 'relayed');
+      announceRelayDone(alertId);
+    }
+  }, [demoMode, alertId, phase, api, failHop, lang, loadRelayLog, announceRelayDone]);
 
   const phaseWord = phase === 'idle' ? '' : t(lang,
     phase === 'sending' ? 'op2pRelaySending' : phase === 'relayed' ? 'op2pRelayed' : 'op2pRelayFailed');
@@ -182,6 +276,24 @@ export default function OfflineP2P({
               <span>{s.label}: {s.at ? checkedAgo(s.at, Date.now(), agoDict(lang)) : t(lang, 'op2pNoCache')}</span>
             </span>
           ))}
+          {/* Worker 5: app-shell honesty — can this page actually paint offline? */}
+          <span className="chip" role="status">
+            <Icon name={shell && shell.ready ? 'check' : 'offline'} size={14} />
+            <span>{shell == null ? t(lang, 'op2pShellChecking') : t(lang, shell.ready ? 'op2pShellSaved' : 'op2pShellNotSaved')}</span>
+          </span>
+          {/* Worker 5: built-in offline simulator — cuts the network path in-app. */}
+          {onToggleSimOffline && (
+            <label className="chip" style={{ cursor: 'pointer', minHeight: 44 }} title={t(lang, 'op2pSimulateOfflineNote')}>
+              <input
+                type="checkbox"
+                checked={!!simOffline}
+                onChange={onToggleSimOffline}
+                style={{ width: 20, height: 20 }}
+                aria-label={t(lang, 'op2pSimulateOffline')}
+              />
+              <span>{t(lang, 'op2pSimulateOffline')}</span>
+            </label>
+          )}
         </div>
       </Card>
 
@@ -321,6 +433,12 @@ export default function OfflineP2P({
               )}
             </div>
           </>
+        )}
+
+        {relayNote && (
+          <p className="sub" role="status" style={{ marginTop: 12 }}>
+            <Icon name="radio" size={12} /> {relayNote}
+          </p>
         )}
 
         {relayLog.length > 0 && (

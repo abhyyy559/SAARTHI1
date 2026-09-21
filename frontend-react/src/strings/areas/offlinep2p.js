@@ -30,6 +30,15 @@ export default {
     op2pNotDemo: 'Switch to demo mode to run the relay.',
     op2pMeshNote: 'Demo mesh — no real phone radio yet.',
     op2pRetry: 'Try again',
+    // --- Worker 5 (offline + P2P testability) ---------------------------------
+    // Shell-readiness honesty + the built-in offline simulator + two-tab relay
+    // arrival note. Machine codes (SIMULATED, severities) stay untranslated.
+    op2pShellSaved: 'App shell saved for offline',
+    op2pShellNotSaved: 'Shell not saved yet — open the app once while online',
+    op2pShellChecking: 'Checking app shell…',
+    op2pSimulateOffline: 'Simulate offline',
+    op2pSimulateOfflineNote: 'Cuts the network path in-app, so offline states can be tested without touching the phone.',
+    op2pRelayArrived: 'Relay arrived from another tab.',
   },
   hi: {
     op2pTitle: 'ऑफ़लाइन व नज़दीकी',
@@ -60,6 +69,13 @@ export default {
     op2pNotDemo: 'रिले चलाने के लिए डेमो मोड पर जाएँ।',
     op2pMeshNote: 'डेमो जाल — असली फ़ोन रेडियो अभी नहीं।',
     op2pRetry: 'फिर कोशिश करें',
+    // --- Worker 5 (offline + P2P testability) ---------------------------------
+    op2pShellSaved: 'ऐप शेल ऑफ़लाइन के लिए सहेजा गया',
+    op2pShellNotSaved: 'शेल अभी सहेजा नहीं — ऑनलाइन एक बार खोलें',
+    op2pShellChecking: 'ऐप शेल जाँच रहे…',
+    op2pSimulateOffline: 'ऑफ़लाइन दिखाएँ',
+    op2pSimulateOfflineNote: 'फ़ोन छुए बिना ऑफ़लाइन स्थिति परखने के लिए ऐप में ही नेटवर्क काटता है।',
+    op2pRelayArrived: 'दूसरे टैब से रिले आया।',
   },
   te: {
     op2pTitle: 'ఆఫ్‌లైన్ & సమీపం',
@@ -90,5 +106,12 @@ export default {
     op2pNotDemo: 'రిలే నడపడానికి డెమో మోడ్‌కు మారండి.',
     op2pMeshNote: 'డెమో మెష్ — నిజమైన ఫోన్ రేడియో ఇంకా లేదు.',
     op2pRetry: 'మళ్లీ ప్రయత్నించు',
+    // --- Worker 5 (offline + P2P testability) ---------------------------------
+    op2pShellSaved: 'యాప్ షెల్ ఆఫ్‌లైన్ కోసం భద్రపరచబడింది',
+    op2pShellNotSaved: 'షెల్ ఇంకా భద్రపరచలేదు — ఆన్‌లైన్‌లో ఒకసారి తెరవండి',
+    op2pShellChecking: 'యాప్ షెల్ తనిఖీ చేస్తున్నాం…',
+    op2pSimulateOffline: 'ఆఫ్‌లైన్ అనుకరించు',
+    op2pSimulateOfflineNote: 'ఫోన్‌ను తాకకుండా ఆఫ్‌లైన్ స్థితులను పరీక్షించడానికి యాప్‌లోనే నెట్‌వర్క్‌ను నిలిపివేస్తుంది.',
+    op2pRelayArrived: 'మరో ట్యాబ్ నుండి రిలే వచ్చింది.',
   },
 };

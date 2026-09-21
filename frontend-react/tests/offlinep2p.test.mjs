@@ -182,3 +182,62 @@ test('offlinep2p strings exist in EN/HI/TE with no Tamil script', () => {
   // Tamil Unicode block U+0B80–U+0BFF must never appear.
   assert.doesNotMatch(code, /[\u0B80-\u0BFF]/, 'no Tamil script content');
 });
+
+// --- Worker 5 (offline + P2P testability) -------------------------------------
+test('sw.js serves the app shell for deep-link navigations when offline', () => {
+  const code = read('../src/sw.js');
+  assert.match(code, /NavigationRoute/, 'must register a navigation fallback route');
+  assert.match(code, /createHandlerBoundToURL\('\/index\.html'\)/, 'fallback must serve the precached shell');
+  // API traffic must keep failing loudly offline — never served from cache.
+  assert.match(code, /denylist/, 'the navigation route must denylist API paths');
+  assert.match(code, /\^\\\/api/, 'the denylist must cover /api');
+  // Caching stays workbox-owned; the push/message handlers are untouched.
+  assert.match(code, /precacheAndRoute\(self\.__WB_MANIFEST\)/, 'precache stays workbox-owned');
+  assert.match(code, /addEventListener\('push'/, 'push handler must be untouched');
+  assert.match(code, /addEventListener\('notificationclick'/, 'notificationclick handler must be untouched');
+  assert.match(code, /OFFLINE_PROBE/, 'offline probe handler must be untouched');
+});
+
+test('offline.js exposes the shell probe and demo-alerts snapshot helpers', () => {
+  const code = read('../src/offline.js');
+  assert.match(code, /export function probeOfflineShell/, 'shell readiness probe must exist');
+  assert.match(code, /OFFLINE_PROBE/, 'probe must use the SW message channel');
+  assert.match(code, /no-controller/, 'a page with no controlling worker must report not-ready');
+  assert.match(code, /export function saveDemoAlertsSnapshot/, 'demo alerts snapshot saver must exist');
+  assert.match(code, /export function readDemoAlertsSnapshot/, 'demo alerts snapshot reader must exist');
+  assert.match(code, /Array\.isArray\(d\.alerts\)/, 'the reader must never invent a list');
+});
+
+test('OfflineP2P keeps the two-tab relay flow live and offers the offline simulator', () => {
+  const code = read('../src/components/OfflineP2P.jsx');
+  assert.match(code, /BroadcastChannel/, 'sibling tabs must hear about a finished relay instantly');
+  assert.match(code, /saarthi-p2p-relay/, 'the channel name must be stable for both tabs');
+  assert.match(code, /setInterval\(loadRelayLog/, 'the relay log must poll for second-device relays');
+  assert.match(code, /op2pRelayArrived/, 'cross-tab arrival must be announced, translated');
+  assert.match(code, /api\.demoAlerts\(district\)/, 'the panel must fetch demo alerts for the relay picker');
+  assert.match(code, /saveDemoAlertsSnapshot/, 'demo alerts must be snapshotted for offline');
+  assert.match(code, /onToggleSimOffline/, 'the built-in offline simulator toggle must be wired');
+  assert.match(code, /op2pSimulateOffline/, 'the simulator label must be translated');
+  assert.match(code, /probeOfflineShell/, 'the shell-readiness chip must probe the worker');
+  assert.match(code, /op2pShellSaved|op2pShellNotSaved/, 'shell state must be labelled honestly');
+  assert.match(code, /p2pSimulated/, 'the SIMULATED stamp stays unconditional');
+});
+
+test('OfflineView wires the simulator and merges demo alerts without touching the store', () => {
+  const code = read('../src/components/OfflineView.jsx');
+  assert.match(code, /simOffline, setSimOffline/, 'must read the store simulator state');
+  assert.match(code, /onToggleSimOffline=\{/, 'must pass the toggle down to the panel');
+  assert.match(code, /demo_alerts/, 'must merge the demo-alerts snapshot into the alert list');
+  assert.doesNotMatch(code, /setOfflineSim\(/, 'must not call the API cut directly — the store owns that');
+});
+
+test('Worker 5 strings exist in EN/HI/TE with no Tamil script', () => {
+  const code = read('../src/strings/areas/offlinep2p.js');
+  for (const key of ['op2pShellSaved', 'op2pShellNotSaved', 'op2pShellChecking',
+                     'op2pSimulateOffline', 'op2pSimulateOfflineNote', 'op2pRelayArrived']) {
+    const hits = code.match(new RegExp(`${key}:`, 'g')) || [];
+    assert.equal(hits.length, 3, `${key} must be translated in all three languages`);
+  }
+  assert.match(code, /Worker 5/, 'new strings must sit in a clearly-marked block');
+  assert.doesNotMatch(code, /[\u0B80-\u0BFF]/, 'no Tamil script content');
+});
