@@ -52,6 +52,12 @@ export default function OnboardingTour() {
   const [ctaBusy, setCtaBusy] = useState(false);
   const stepRef = useRef(0);
   const dialogRef = useRef(null);
+  const activeRef = useRef(false);
+  // Mirrors `active` for the resize listener below: a viewport resize must
+  // only re-measure a tour the user actually started. Without this guard, a
+  // resize (phone rotation, window resize, full-page screenshot) while the
+  // tour is dormant would run measure() -> skip() -> goStep(), popping the
+  // tour open mid-session and yanking the view back to Home.
 
   // The notifications CTA: the same enable flow as the bell, but retry-safe —
   // it only ever enables, so a tap can never switch alerts back off.
@@ -64,6 +70,7 @@ export default function OnboardingTour() {
   // The tour is closed deliberately (Skip/Escape/finish) or never opened;
   // defined before measure because a skipped step may need to close the tour.
   const close = useCallback((done) => {
+    activeRef.current = false;
     setActive(false);
     if (done) {
       try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* ignore */ }
@@ -122,6 +129,7 @@ export default function OnboardingTour() {
     const idx = STEPS.indexOf(s);
     stepRef.current = idx;
     setStep(idx);
+    activeRef.current = true;
     setView(s.view);
     setRect(null);
     setActive(true);
@@ -146,6 +154,10 @@ export default function OnboardingTour() {
     } catch { deepLinked = false; }
     if (!seen && !deepLinked) tId = setTimeout(() => goStepRef.current(0), 900);
     const onResize = () => {
+      // Never wake a dormant tour: without this, any viewport resize while
+      // the tour was never started runs measure() -> skip() -> goStep(),
+      // popping the tour open mid-session and yanking the view to Home.
+      if (!activeRef.current) return;
       const s = STEPS[stepRef.current];
       if (s && s.sels) measure(s.sels, stepRef.current);
     };
