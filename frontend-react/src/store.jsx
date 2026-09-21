@@ -86,8 +86,9 @@ const readDevice = () => {
 
 export function AppProvider({ children }) {
   // One-way deep link. IA dedup (2026-09-20): the only public views are
-  // home · alerts · advisory + the More sheet's notifications · offline ·
-  // aviation · trust · settings. admin stays hidden (PIN-gated direct URL).
+  // home · alerts · advisory + the More sheet's notifications · trust ·
+  // settings. No offline/aviation view (background capabilities only).
+  // admin stays hidden (PIN-gated direct URL).
   // (Initial state only — in-app navigation stays via setView.)
   const [view, setView] = useState(() => {
     try {

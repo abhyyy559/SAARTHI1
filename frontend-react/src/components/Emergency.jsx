@@ -14,6 +14,7 @@ import { api, EMERGENCY_TYPES } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
+import QrRelay from './QrRelay';
 
 // One glyph and one short word per message type - the picture is the label.
 const EMG_ICON = {
@@ -88,6 +89,10 @@ export default function Emergency() {
   const [sending, setSending] = useState(false);
   const [hiddenIds, setHiddenIds] = useState(readHiddenIds);
   const armTimer = useRef(null);
+  // QR relay disclosure: the relay stays a background capability — no page,
+  // no nav. A fully-offline phone can hand its SOS to a nearby phone via
+  // rotating QR frames, straight from the SOS console.
+  const [showQr, setShowQr] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -235,7 +240,30 @@ export default function Emergency() {
         <button className="btn btn-secondary sm" type="button" onClick={sync}>
           <Icon name="refresh" size={14} /> {t(lang, 'emgSync')}
         </button>
+        <button
+          className="btn btn-secondary sm"
+          type="button"
+          onClick={() => setShowQr((s) => !s)}
+          aria-expanded={showQr}
+        >
+          <Icon name="radio" size={14} /> {t(lang, 'emgQrRelay')}
+        </button>
       </div>
+      {showQr && (
+        <div style={{ marginBottom: 10 }}>
+          <QrRelay
+            alerts={mine.map((m) => ({
+              id: m.message_id,
+              title: `${wordOf(lang, m.message_type)} — SOS`,
+              hazard: 'SOS',
+              source: 'community',
+              sent_at: m.timestamp,
+            }))}
+            lang={lang}
+            bare
+          />
+        </div>
+      )}
       {note ? <p className="mono" role="status">{note}</p> : null}
 
       <div className="emg-inbox-meta">

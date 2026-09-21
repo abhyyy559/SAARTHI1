@@ -83,3 +83,49 @@ def test_stream_answer_matches_non_streaming():
     r = client.post("/api/chat", json=body)
     assert r.status_code == 200, r.text
     assert _norm(r.json()["answer"]) == _norm(answer), "stream and non-stream answers must be identical"
+
+
+def test_truncated_stream_emits_final_with_complete_template(monkeypatch):
+    """A mid-stream break must NOT leave the client holding half an answer.
+
+    When the model truncates, the stream must emit a `final` event carrying
+    the complete grounded template (structured_fallback=True) so the client
+    can swap the partial text out — never present a half answer as complete.
+    """
+    import backend.api.chat as chat_mod
+
+    async def fake_stream(self, evidence, message, language):
+        yield {"type": "token", "text": "Yes — rain"}
+        yield {"type": "token", "text": " likely tom"}
+        yield {"type": "end", "fallback": False, "model_error": "boom", "truncated": True}
+
+    monkeypatch.setattr(chat_mod.LLMService, "generate_stream", fake_stream)
+    client = TestClient(app)
+    lines = _stream_lines(client, {"message": "Will it rain tomorrow?", "language": "en"})
+    kinds = [ln["type"] for ln in lines]
+    assert kinds[0] == "meta" and kinds[-1] == "done"
+    finals = [ln for ln in lines if ln["type"] == "final"]
+    assert len(finals) == 1, "truncation must emit exactly one final event"
+    final = finals[0]
+    assert final["structured_fallback"] is True
+    partial = "".join(ln.get("text", "") for ln in lines if ln["type"] == "token")
+    assert partial == "Yes — rain likely tom"
+    assert final["answer"].strip() != partial.strip(), "final must replace, not repeat, the partial text"
+    assert len(final["answer"]) > len(partial), "final must carry the complete template answer"
+    assert kinds.index("final") < kinds.index("done"), "final must come before done"
+
+
+def test_strip_think_blocks_drops_unclosed_span():
+    """A model cut off by max_tokens before </think> must not leak reasoning.
+
+    The non-streaming path must strip unclosed <think> spans exactly like the
+    streaming path does at EOS (one pipeline, one truth).
+    """
+    from backend.services.llm_service import _strip_think_blocks
+    lt, gt = chr(60), chr(62)
+    leaked = f"{lt}think{gt}step one: clouds look dark, step two{lt}/think{gt} Yes, rain likely."
+    assert _strip_think_blocks(leaked) == "Yes, rain likely."
+    unclosed = f"Some intro. {lt}think{gt}private chain of thought that never closes"
+    assert _strip_think_blocks(unclosed) == "Some intro."
+    clean = "No tags here at all."
+    assert _strip_think_blocks(clean) == clean

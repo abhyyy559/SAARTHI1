@@ -290,6 +290,21 @@
   line-height: 1.4;
 }
 
+/* Grounded-fallback honesty chip: a degraded answer must never look
+   identical to a fully verified one. Amber tint + shield icon + words. */
+.hcm-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  background: var(--tint-amber);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .hc-speaking {
   display: inline-flex;
   align-items: center;

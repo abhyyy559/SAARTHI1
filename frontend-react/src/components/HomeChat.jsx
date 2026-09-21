@@ -76,6 +76,11 @@ export default function HomeChat({
   // auto-plays TTS on arrival; typed turns stay tap-to-play. Consumed once
   // per send inside ask(); manual edits re-classify as a typed turn.
   const voiceTurnRef = useRef(false);
+  // Abort the in-flight LLM stream when a new turn starts or this component
+  // unmounts (navigation mid-generation). Without this the fetch and the
+  // backend generation keep running for a dead view — wasted work per
+  // abandoned turn.
+  const streamAbortRef = useRef(null);
 
   const dictation = useVoiceInput(lang, handleVoiceFinal, handleVoicePartial);
 
@@ -154,6 +159,7 @@ export default function HomeChat({
         warning: r.warning,
         verdict: r.verdict,
         fallback: !!r.structured_fallback,
+        modelError: r.model_error || '',
         live: !!opts.live,
         id: nextId(),
       };
@@ -181,10 +187,14 @@ export default function HomeChat({
     const botId = nextId();
     setLog((l) => [...l, { role: 'bot', text: '', evidence: [], id: botId, fallback: false, live: !!opts.live }]);
     setLiveId(botId);
+    // A new turn supersedes any still-running stream from a previous turn.
+    if (streamAbortRef.current) { try { streamAbortRef.current.abort(); } catch { /* ignore */ } }
+    const aborter = new AbortController();
+    streamAbortRef.current = aborter;
     let fullText = '';
     let streamFailed = false;
     try {
-      for await (const ev of apiClient.chatStream(body)) {
+      for await (const ev of apiClient.chatStream(body, { signal: aborter.signal })) {
         if (ev.type === 'meta') {
           setLog((l) => l.map((m) => (m.id === botId
             ? { ...m, evidence: ev.evidence || [], risk: ev.risk, warning: ev.warning, verdict: ev.verdict }
@@ -201,11 +211,15 @@ export default function HomeChat({
           setLog((l) => l.map((m) => (m.id === botId ? { ...m, text: t, fallback: fb } : m)));
         } else if (ev.type === 'done') {
           const fb = !!ev.structured_fallback;
-          setLog((l) => l.map((m) => (m.id === botId ? { ...m, fallback: m.fallback || fb } : m)));
+          setLog((l) => l.map((m) => (m.id === botId
+            ? { ...m, fallback: m.fallback || fb, modelError: ev.model_error || m.modelError }
+            : m)));
         }
       }
-    } catch {
-      streamFailed = true;
+    } catch (e) {
+      // An aborted stream (new turn / unmount) is a deliberate stop, not a
+      // failure: never fall back or queue for a turn the user walked away from.
+      streamFailed = !(e && e.name === 'AbortError');
     }
     setLiveId(null);
     setBusy(false);
@@ -242,6 +256,11 @@ export default function HomeChat({
     registerAsk(ask);
     return () => registerAsk(null);
   }, [ask, registerAsk]);
+  // Abort any in-flight stream on unmount so navigation can't leak the fetch
+  // or keep the backend generating for a dead view.
+  useEffect(() => () => {
+    if (streamAbortRef.current) { try { streamAbortRef.current.abort(); } catch { /* ignore */ } }
+  }, []);
   useEffect(() => {
     const pending = pendingAskRef.current;
     if (pending) {

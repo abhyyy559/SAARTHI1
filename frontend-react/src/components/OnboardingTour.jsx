@@ -67,10 +67,20 @@ export default function OnboardingTour() {
     try { await enableNotify(); } finally { setCtaBusy(false); }
   }, [ctaBusy, pushMode, enableNotify]);
 
+  // Generation counter: close() bumps it, and every pending measure/tick/skip
+  // chain captured at start bails the moment the generation changes. Without
+  // this, a tick() already queued for a slow/absent target could fire AFTER
+  // the user deliberately closed the tour (Escape/Skip/scrim) and call
+  // skip() -> goStep(), popping the tour back open at step N+1 and yanking
+  // the view to Home — the exact failure the resize guard alone can't stop.
+  const genRef = useRef(0);
+
   // The tour is closed deliberately (Skip/Escape/finish) or never opened;
   // defined before measure because a skipped step may need to close the tour.
   const close = useCallback((done) => {
+    genRef.current += 1; // invalidate every in-flight measure chain
     activeRef.current = false;
+    stepRef.current = -1;
     setActive(false);
     if (done) {
       try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* ignore */ }
@@ -93,7 +103,10 @@ export default function OnboardingTour() {
     // empty space. A zero-size hit (display:none) counts as missing too.
     const SKIP_AFTER_MS = 2500;
     const started = Date.now();
+    const gen = genRef.current; // the measure chain this tick belongs to
+    const alive = () => genRef.current === gen && stepRef.current === stepIdx;
     const skip = () => {
+      if (!alive()) return; // tour moved on or was closed: never advance
       if (stepIdx >= STEPS.length - 1) close(true);
       else goStepRef.current(stepIdx + 1);
     };
@@ -105,13 +118,13 @@ export default function OnboardingTour() {
       return null;
     };
     const tick = () => {
-      if (stepRef.current !== stepIdx) return; // user moved on
+      if (!alive()) return; // user moved on, or closed the tour mid-poll
       const el = find();
       if (el) {
         try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch { /* ignore */ }
         // Measure after scroll settles so the ring lands on the element.
         setTimeout(() => {
-          if (stepRef.current !== stepIdx) return;
+          if (!alive()) return;
           const r = el.getBoundingClientRect();
           if (r.width === 0 && r.height === 0) { skip(); return; }
           setRect({ top: r.top, left: r.left, width: r.width, height: r.height });

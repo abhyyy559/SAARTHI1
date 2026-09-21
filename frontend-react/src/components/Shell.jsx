@@ -227,7 +227,7 @@ export default function Shell({ children }) {
   // The demo-data banner only belongs where demo/sample content can appear:
   // never on Admin or Trust chrome. SOS carries its own
   // "SIMULATED — FOR DEMO ONLY" stamp and lives inside the alerts view.
-  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'offline', 'trust']);
+  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'trust']);
   const showDemoBanner = demoLive && demoBannerViews.has(view);
 
   return (

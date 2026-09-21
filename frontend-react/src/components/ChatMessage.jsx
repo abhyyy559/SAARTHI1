@@ -60,6 +60,12 @@ export default function ChatMessage({
       <div className="hcm-verdict">
         <SevStamp lang={lang} level={verdictLevel(message)} />
       </div>
+      {(message.fallback || message.modelError) && !stillStreaming && (
+        <p className="hcm-fallback" role="note">
+          <Icon name="shield" size={14} aria-hidden="true" />
+          <span><b>{t(lang, 'hcFallbackChip')}</b> · {t(lang, 'hcFallbackText')}</span>
+        </p>
+      )}
       <p className="hcm-fold">
         {fold}
         {stillStreaming && <span className="hc-caret" aria-hidden="true" />}

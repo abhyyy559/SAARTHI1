@@ -85,7 +85,6 @@ const S = {
     viewAdvisory: 'My advice',
     viewAdvisorySub: 'Guidance tuned to your role, place and language. Decision support, never an official instruction.',
     // ---- IA dedup (2026-09-20): one Alerts, one Trust & sources, no Ask route ----
-    navOffline: 'Offline & P2P',
     navAviation: 'Aviation',
     navSettings: 'Settings',
     navTrustSources: 'Trust & sources',
@@ -157,7 +156,6 @@ const S = {
     navAdvisory: 'मेरी सलाह',
     viewAdvisory: 'मेरी सलाह',
     viewAdvisorySub: 'आपकी भूमिका, जगह और भाषा के अनुसार सलाह। निर्णय सहायता, सरकारी निर्देश नहीं।',
-    navOffline: 'ऑफ़लाइन व P2P',
     navAviation: 'विमानन',
     navSettings: 'सेटिंग्स',
     navTrustSources: 'भरोसा व स्रोत',
@@ -266,7 +264,6 @@ const S = {
     navAdvisory: 'నా సలహా',
     viewAdvisory: 'నా సలహా',
     viewAdvisorySub: 'మీ వృత్తి, ప్రాంతం, భాషకు తగిన సూచనలు. నిర్ణయ సహాయం, అధికారిక ఆదేశం కాదు.',
-    navOffline: 'ఆఫ్‌లైన్ & P2P',
     navAviation: 'విమానయానం',
     navSettings: 'సెట్టింగ్‌లు',
     navTrustSources: 'నమ్మకం & మూలాలు',
@@ -441,7 +438,6 @@ export const NAV = [
   { id: 'advisory', icon: 'sun', label: 'navAdvisory' },
   // Secondary views: reachable from the More sheet only (never a primary tab).
   { id: 'notifications', icon: 'bell', label: 'navNotifications' },
-  { id: 'offline', icon: 'offline', label: 'navOffline' },
   { id: 'trust', icon: 'shield', label: 'navTrustSources' },
   { id: 'settings', icon: 'list', label: 'navSettings' },
   { id: 'admin', icon: 'layers', label: 'navAdmin' },

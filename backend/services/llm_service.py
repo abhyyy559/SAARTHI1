@@ -74,6 +74,15 @@ LANG_DIRECTIVE = {
 # Strip <think>...</think> reasoning blocks (qwen/gpt-oss emit them).
 _LT = chr(60)  # "<"
 _THINK = re.compile(_LT + "think" + chr(62) + ".*?" + _LT + "/think" + chr(62), re.S)
+# An UNCLOSED trailing <think> (model hit max_tokens before </think>): strip
+# from the opening tag to the end so chain-of-thought can never leak. The
+# streaming path already drops unclosed spans at EOS; this keeps the
+# non-streaming fallback identical (one pipeline, one truth).
+_THINK_OPEN = re.compile(_LT + "think" + chr(62) + ".*", re.S)
+
+
+def _strip_think_blocks(text):
+    return _THINK_OPEN.sub("", _THINK.sub("", text or "")).strip()
 
 
 def build_evidence_package(*, location: dict, current: dict, forecast: dict, verified: dict, risk: dict, user_type: str,
@@ -271,7 +280,7 @@ class LLMService:
         except Exception:
             return _template_answer(evidence, language), True
 
-        content = _THINK.sub("", content or "").strip()
+        content = _strip_think_blocks(content)
         if not content:
             return _template_answer(evidence, language), True
         return content, False

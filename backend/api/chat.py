@@ -539,6 +539,7 @@ async def chat_stream(req: ChatRequest):
                 model_error = ev.get("model_error", "")
                 truncated = bool(ev.get("truncated"))
         raw = "".join(parts)
+        streamed = raw  # what the client has already rendered, token by token
         if truncated or not raw.strip():
             # The live answer broke mid-flight: substitute the grounded template,
             # flagged as fallback — never deliver a half answer as if complete.
@@ -546,7 +547,10 @@ async def chat_stream(req: ChatRequest):
             fallback = True
         answer, validated_fallback = _finalize_answer(ctx, raw)
         fallback = fallback or validated_fallback
-        if answer != raw:
+        # Compare against what the client actually saw, not the substituted
+        # raw: on truncation the client holds partial text, so it must get a
+        # `final` event carrying the complete template answer to swap in.
+        if answer != streamed:
             yield _ndjson({"type": "final", "answer": answer,
                            "structured_fallback": fallback})
         yield _ndjson({"type": "done", "structured_fallback": fallback,
