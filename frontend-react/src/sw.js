@@ -12,11 +12,27 @@
 // below. What is added here is a message channel, which workbox does not
 // provide. Nothing in this file decides what to cache.
 import { clientsClaim } from 'workbox-core';
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
 
 // Injected at build time. Workbox owns caching; see the note above.
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// Worker 5 (offline + P2P testability) — offline navigation fallback.
+// Every in-app route is the same index.html shell; a deep link such as
+// /?view=offline must paint with NO network, not fail. This route answers
+// navigation requests from the precached shell. /api, /ws, the worker itself
+// and the workbox runtime are excluded so API calls keep failing LOUDLY
+// offline (the UI must render honest UNAVAILABLE states, never fake data).
+// Caching stays workbox-owned; the push/notificationclick/message handlers
+// below are untouched.
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+    denylist: [/^\/api\//, /^\/ws/, /\/sw\.js$/, /\/workbox-.*\.js$/, /\/manifest\.webmanifest$/],
+  }),
+);
+
 self.skipWaiting();
 clientsClaim();
 

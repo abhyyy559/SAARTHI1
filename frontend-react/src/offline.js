@@ -101,6 +101,50 @@ export function readAdvisorySnapshot() {
   return (readCache().advisory || {}).data || null;
 }
 
+// Demo alerts snapshot: the demo alert LIST for the P2P relay picker. The
+// verdict/warning cache does not carry demo alerts, so the Offline & P2P panel
+// fetches them itself whenever online in demo mode and snapshots them here.
+// Rendered with a DEMO stamp — never as official. { alerts, district, at }.
+export function saveDemoAlertsSnapshot(alerts, district) {
+  saveCache('demo_alerts', { alerts: Array.isArray(alerts) ? alerts : [], district, at: new Date().toISOString() });
+}
+
+export function readDemoAlertsSnapshot() {
+  const d = (readCache().demo_alerts || {}).data || null;
+  return d && Array.isArray(d.alerts) ? d : null;
+}
+
+// App-shell readiness probe (Worker 5): asks the service worker whether it is
+// actively CONTROLLING this page. A worker that is merely registered — or an
+// app opened for the first time — cannot serve the shell offline, and the
+// Offline & P2P panel reports that honestly ("not saved yet") instead of a
+// green dot that lies. Resolves { ready: true } or { ready: false, reason }.
+export function probeOfflineShell(timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    try {
+      if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+        resolve({ ready: false, reason: 'no-controller' });
+        return;
+      }
+      const timer = setTimeout(() => {
+        navigator.serviceWorker.removeEventListener('message', onMsg);
+        resolve({ ready: false, reason: 'timeout' });
+      }, timeoutMs);
+      const onMsg = (e) => {
+        if (e.data && e.data.type === 'OFFLINE_PROBE_RESULT') {
+          clearTimeout(timer);
+          navigator.serviceWorker.removeEventListener('message', onMsg);
+          resolve(e.data.controlling ? { ready: true } : { ready: false, reason: 'not-controlling' });
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', onMsg);
+      navigator.serviceWorker.controller.postMessage({ type: 'OFFLINE_PROBE' });
+    } catch {
+      resolve({ ready: false, reason: 'error' });
+    }
+  });
+}
+
 // Offline query queue: localStorage, HARD CAP 20 entries, oldest evicted.
 // Each entry is a small JSON blob (<2KB) — quota-safe by three orders.
 // (IndexedDB migration only if spare time allows; the cap is the safety.)
