@@ -85,10 +85,11 @@ test('the error boundary copy is not hardcoded English', () => {
 // --- accessible names on icon-only controls ----------------------------------
 
 test('the notification listen control has an accessible name', () => {
-  // IA dedup (2026-09-20): notifications moved off Home into their own route.
-  // The Listen control is a real <button> with icon + translated text, never
-  // an icon-only span: the text node gives it its accessible name.
-  const ntf = src('components/NotificationCenter.jsx');
+  // Worker 4 (2026-09-21): notifications moved off their own route into the
+  // bell's side panel. The Listen control is a real <button> with icon +
+  // translated text, never an icon-only span: the text node gives it its
+  // accessible name.
+  const ntf = src('components/NotificationsPanel.jsx');
   assert.doesNotMatch(ntf, /<span aria-hidden[^>]*>\s*<\/span>\s*<\/button>/);
   assert.match(ntf, /<button[^>]*>[\s\S]{0,120}?t\(lang, 'alertsListen'\)/);
   assert.doesNotMatch(home, /h-notif-speak/, 'Home no longer carries the notification strip');

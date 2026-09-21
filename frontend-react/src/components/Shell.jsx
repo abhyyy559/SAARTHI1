@@ -7,15 +7,16 @@ import { useEffect, useRef, useState } from 'react';
 import { HIDDEN_VIEWS, NAV, PRIMARY_VIEWS, t } from '../i18n';
 import { useApp, SOURCE_MODES } from '../store';
 import { resolveVoicePopup } from '../voiceUi';
+import { notificationsApi } from '../api';
 import Icon from './icons';
 import InstallPrompt from './InstallPrompt';
+import NotificationsPanel from './NotificationsPanel';
 import OnboardingTour from './OnboardingTour';
 
 const NAV_ICONS = {
   home: 'home',
   alerts: 'alert',
   advisory: 'sun',
-  notifications: 'bell',
   offline: 'offline',
   aviation: 'send',
   trust: 'shield',
@@ -24,8 +25,9 @@ const NAV_ICONS = {
 };
 
 // IA dedup: three primary tabs; everything else lives in the More sheet.
+// Notifications are NOT a More-sheet row: the topbar bell opens the
+// notifications side panel, which is the one and only notifications home.
 const MORE_ROWS = [
-  { view: 'notifications', labelKey: 'navNotifications', icon: 'bell' },
   { view: 'offline', labelKey: 'navOffline', icon: 'offline' },
   { view: 'trust', labelKey: 'navTrustSources', icon: 'shield' },
   { view: 'settings', labelKey: 'navSettings', icon: 'list' },
@@ -155,15 +157,37 @@ function MoreSheet({ open, onClose }) {
 }
 
 export default function Shell({ children }) {
-  const { view, setView, lang, setLang, loc, locReady, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState } = useApp();
+  const { view, setView, lang, setLang, loc, locReady, sourceMode, setBackendMode, disaster, netState, device, syncTick } = useApp();
   const online = netState !== 'offline';
   const [moreOpen, setMoreOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('lang', lang);
   }, [lang]);
+
+  // The bell badge: the server's unread count for this device. Refreshed on
+  // district/device/sync changes; while the panel is open the panel reports
+  // its own count so the badge clears the moment items are marked read.
+  useEffect(() => {
+    if (panelOpen) return undefined;
+    let alive = true;
+    notificationsApi.unread(loc.district, device)
+      .then((d) => { if (alive) setUnread(Number(d.unread) || 0); })
+      .catch(() => { /* badge keeps its last known count */ });
+    return () => { alive = false; };
+  }, [loc.district, device, syncTick, panelOpen]);
+
+  // Stale ?view=notifications deep links (and any other opener) raise this
+  // event; the panel is the one and only notifications home.
+  useEffect(() => {
+    const open = () => setPanelOpen(true);
+    window.addEventListener('wgpt:notifications-open', open);
+    return () => window.removeEventListener('wgpt:notifications-open', open);
+  }, []);
 
   useEffect(() => {
     const onToast = (e) => {
@@ -287,15 +311,22 @@ export default function Shell({ children }) {
               <span className="dot" aria-hidden="true" />
               <span className="pill-label">{connLabel}</span>
             </span>
+            {/* The bell OPENS the notifications side panel — it no longer
+                toggles push on/off directly. The enable/disable switch lives
+                inside the panel (store's toggleNotify). The badge is the
+                server's unread count for this device. */}
             <button
               type="button"
-              className={`btn-icon bell-btn${notifyOn ? ' is-on' : ''}`}
-              title={notifyOn ? t(lang, 'notifyOn') : t(lang, 'notifyOff')}
-              aria-label={notifyOn ? t(lang, 'notifyOn') : t(lang, 'notifyOff')}
-              aria-pressed={!!notifyOn}
-              onClick={toggleNotify}
+              className="btn-icon bell-btn"
+              title={t(lang, 'navNotifications')}
+              aria-label={unread > 0 ? t(lang, 'panelBellUnread').replace('{n}', String(unread)) : t(lang, 'navNotifications')}
+              aria-haspopup="dialog"
+              onClick={() => setPanelOpen(true)}
             >
               <Icon name="bell" size={20} />
+              {unread > 0 && (
+                <span className="bell-badge" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>
+              )}
             </button>
             <div className="segmented langseg" role="group" aria-label={t(lang, 'langLabel')}>
               {['en', 'hi', 'te'].map((l) => (
@@ -336,6 +367,7 @@ export default function Shell({ children }) {
 
       <MobileNav current={view} moreOpen={moreOpen} onPick={() => setMoreOpen(true)} />
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <NotificationsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onUnread={setUnread} />
       <InstallPrompt />
       <OnboardingTour />
 

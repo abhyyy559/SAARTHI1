@@ -24,7 +24,10 @@ const logicSrc = read('../src/components/inboxLogic.js');
 const logic = await import(`data:text/javascript;base64,${Buffer.from(logicSrc).toString('base64')}`);
 const { groupNotifications, transitionKey, groupTitle, relTime, mergeAlerts, KIND_ICON } = logic;
 
-const inboxSrc = read('../src/components/NotificationsInbox.jsx');
+// Worker 4 (2026-09-21): the grouped inbox page was superseded by the
+// notifications side panel — the Tamil/script check now targets the panel,
+// which refactored the inbox's logic in.
+const inboxSrc = read('../src/components/NotificationsPanel.jsx');
 const listSrc = read('../src/components/AlertsList.jsx');
 const stringsSrc = read('../src/strings/areas/inbox.js');
 
@@ -59,7 +62,7 @@ test('inbox strings: no Tamil script', () => {
 });
 
 test('inbox + list components: no Tamil script', () => {
-  assert.ok(!TAMIL.test(inboxSrc), 'NotificationsInbox.jsx must contain no Tamil script');
+  assert.ok(!TAMIL.test(inboxSrc), 'NotificationsPanel.jsx must contain no Tamil script');
   assert.ok(!TAMIL.test(listSrc), 'AlertsList.jsx must contain no Tamil script');
 });
 
