@@ -68,13 +68,19 @@ async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: st
                         language: str = "en", district: Optional[str] = None,
                         lat: Optional[float] = None, lon: Optional[float] = None,
                         rain_mm: Optional[float] = None, wind_kph: Optional[float] = None,
-                        temp_c: Optional[float] = None):
+                        temp_c: Optional[float] = None, humidity_pct: Optional[float] = None):
     from ..services.advisory_service import weather_advisories, weather_advisories_text
     # Rule layer (T2.1 S2.1.3): append-only weather-grounded lines; never softens the floor.
+    # When the client did not pass weather numbers, the server fetches the current
+    # observation for lat/lon itself (DEMO fixtures / live chain / UNAVAILABLE —
+    # same provenance semantics as /api/advisory/cards), so persona advice reflects
+    # real conditions, not alerts alone. Missing/unreachable weather yields no
+    # lines — never an invented calm, never a false all-clear.
+    _current, _weather_basis = await weather_mod.resolve_advisory_weather(
+        lat, lon, {"rain_mm": rain_mm, "wind_kph": wind_kph,
+                   "temp_c": temp_c, "humidity_pct": humidity_pct})
     _rule_extra = weather_advisories_text(
-        weather_advisories(
-            {"rain_mm": rain_mm, "wind_kph": wind_kph, "temp_c": temp_c},
-            None, user_type, language), language)
+        weather_advisories(_current, None, user_type, language), language)
     if district is not None:
         from ..services.advisory_service import advisory_for, caveat_for
         data = await weather_mod.warnings(district, lat, lon)
@@ -125,6 +131,7 @@ async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: st
                       f"are active in your state, but none is verified for {district} specifically.")
         return {
             "advisory": advice + _rule_extra,
+            "weather_basis": _weather_basis,
             "caveat": caveat_for(user_type, language),
             "user_type": user_type, "language": language,
             "official_instruction": False,
@@ -144,7 +151,8 @@ async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: st
                     "district warning data. Pass ?district=<name> or omit severity (GREEN)."),
         )
     r = await advisory_mod.advisory(severity, hazard, user_type, language,
-                                    rain_mm, wind_kph, temp_c)
+                                    rain_mm, wind_kph, temp_c,
+                                    humidity_pct=humidity_pct, lat=lat, lon=lon)
     return r
 
 

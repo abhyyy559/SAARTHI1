@@ -277,11 +277,23 @@ _RAIN_MOD_MM = 20.0
 _WIND_GALE_KPH = 60.0
 _HEAT_C = 42.0
 _COLD_C = 5.0
+# Heat-stress rule (humidity was named explicitly for the Advisory section):
+# fires only when BOTH heat and humidity are high together. Conservative on
+# purpose — below 35°C a humid day is a comfort issue, not a health risk worth
+# an advisory line, and the 42°C heatwave rule already covers dry extreme heat.
+_HEATSTRESS_TEMP_C = 35.0
+_HEATSTRESS_HUMIDITY_PCT = 60.0
 
 # Current-observation key aliases across IMD demo fixtures / Open-Meteo live.
-_RAIN_KEYS = ("rain_mm", "precip_mm", "precipitation_mm", "rainfall_mm", "precip")
+# "rainfall"/"rain" are the model_dump keys the adapters actually emit (same
+# extension advisory_cards_service documents); without them a fetched IMD
+# observation's rainfall never reaches the rules.
+_RAIN_KEYS = ("rain_mm", "precip_mm", "precipitation_mm", "rainfall_mm", "precip",
+              "rainfall", "rain")
 _WIND_KEYS = ("wind_kph", "wind_speed_kph", "windspeed_kph", "wind_ms", "wind_speed")
 _TEMP_KEYS = ("temp_c", "temperature_c", "temperature", "temp")
+_HUMIDITY_KEYS = ("humidity", "humidity_pct", "relative_humidity",
+                  "relative_humidity_2m", "rh")
 
 
 def _first_num(blob: dict | None, keys: tuple) -> float | None:
@@ -303,6 +315,7 @@ def _observed_weather(current: dict | None, forecast: dict | None) -> dict:
     rain = _first_num(current, _RAIN_KEYS)
     wind = _first_num(current, _WIND_KEYS)
     temp = _first_num(current, _TEMP_KEYS)
+    humidity = _first_num(current, _HUMIDITY_KEYS)
     temp_hi, temp_lo = temp, temp
     days = (forecast or {}).get("days") if isinstance(forecast, dict) else None
     if isinstance(days, list):
@@ -338,7 +351,8 @@ def _observed_weather(current: dict | None, forecast: dict | None) -> dict:
         temp_out = temp_hi
     elif temp_lo is not None and temp_lo <= _COLD_C:
         temp_out = temp_lo
-    return {"rain_mm": rain, "wind_kph": wind, "temp_c": temp_out}
+    return {"rain_mm": rain, "wind_kph": wind, "temp_c": temp_out,
+            "humidity_pct": humidity, "temp_hi": temp_hi}
 
 
 _RULE_TEXT = {
@@ -363,6 +377,13 @@ _RULE_TEXT = {
         "hi": "अत्यधिक गर्मी देखी/पूर्वानुमानित ({v}°C) — पानी पिएँ, दोपहर में बाहरी काम से बचें, बुज़ुर्गों और बच्चों का ध्यान रखें।",
         "te": "తీవ్ర వేడి నమోదు/అంచనా ({v}°C) — నీరు తాగండి, మధ్యాహ్నం బయటి పనిని నివారించండి, వృద్ధులు, పిల్లలను జాగ్రత్తగా చూసుకోండి.",
     },
+    # {t} is the peak temperature, {h} the observed humidity — both are cited
+    # because the rule only fires on their combination.
+    "heat_stress": {
+        "en": "Hot and humid conditions ({t}°C, {h}% humidity) — heat stress builds fast; drink water often, rest in shade, and avoid heavy exertion outdoors.",
+        "hi": "गर्म और आर्द्र परिस्थितियाँ ({t}°C, {h}% आर्द्रता) — हीट स्ट्रेस तेज़ी से बढ़ता है; बार-बार पानी पिएँ, छाँव में आराम करें, और बाहर भारी श्रम से बचें।",
+        "te": "వేడి మరియు తేమతో కూడిన పరిస్థితులు ({t}°C, {h}% తేమ) — హీట్ స్ట్రెస్ వేగంగా పెరుగుతుంది; తరచూ నీరు తాగండి, నీడలో విశ్రాంతి తీసుకోండి, బయట భారీ శ్రమను నివారించండి.",
+    },
     "cold": {
         "en": "Cold conditions observed/forecast ({v}°C) — dress warmly and allow extra time for morning travel; protect crops/livestock from frost.",
         "hi": "ठंड देखी/पूर्वानुमानित ({v}°C) — गर्म कपड़े पहनें, सुबह की यात्रा में अतिरिक्त समय रखें; फसल/पशुओं को पाले से बचाएँ।",
@@ -371,7 +392,7 @@ _RULE_TEXT = {
 }
 
 # Evaluation order: most dangerous first so the [:3] cap keeps severity order.
-_RULE_ORDER = ("heavy_rain", "gale", "heatwave", "cold", "moderate_rain")
+_RULE_ORDER = ("heavy_rain", "gale", "heatwave", "heat_stress", "cold", "moderate_rain")
 
 
 def weather_advisories(
@@ -383,7 +404,9 @@ def weather_advisories(
     """Rule-layer advisories grounded in observed/forecast numbers.
 
     Thresholds: rain_mm >= 50 heavy / >= 20 moderate, wind_kph >= 60 gale,
-    temp_c >= 42 heatwave / <= 5 cold. Each item cites its fact
+    temp_c >= 42 heatwave / <= 5 cold, and the heat-stress combination
+    temp >= 35 with humidity >= 60% (conservative: humid-but-not-hot days and
+    dry extreme heat are covered by the other rules). Each item cites its fact
     (``fact``) and carries EN/HI/TE text. At most 3 items, severity order.
 
     Never softens advisory_for(): callers APPEND these lines after the floor.
@@ -403,18 +426,33 @@ def weather_advisories(
         fired["heatwave"] = {"kind": "heatwave", "fact": f"temp {obs['temp_c']:g}C"}
     elif obs["temp_c"] is not None and obs["temp_c"] <= _COLD_C:
         fired["cold"] = {"kind": "cold", "fact": f"temp {obs['temp_c']:g}C"}
+    if (obs["humidity_pct"] is not None and obs["temp_hi"] is not None
+            and obs["temp_hi"] >= _HEATSTRESS_TEMP_C
+            and obs["humidity_pct"] >= _HEATSTRESS_HUMIDITY_PCT):
+        fired["heat_stress"] = {
+            "kind": "heat_stress",
+            "fact": f"temp {obs['temp_hi']:g}C, humidity {obs['humidity_pct']:g}%",
+        }
     items: list[dict] = []
     for kind in _RULE_ORDER:
         if kind in fired:
-            v = {"rain_mm": obs["rain_mm"], "wind_kph": obs["wind_kph"],
-                 "temp_c": obs["temp_c"]}
-            num = (v["rain_mm"] if "rain" in kind else v["wind_kph"] if kind == "gale"
-                   else v["temp_c"])
+            if kind == "heat_stress":
+                # Two cited facts: the peak temperature and the humidity.
+                text = {L: _RULE_TEXT[kind][L].format(t=f"{obs['temp_hi']:g}",
+                                                     h=f"{obs['humidity_pct']:g}")
+                        for L in ("en", "hi", "te")}
+            else:
+                v = {"rain_mm": obs["rain_mm"], "wind_kph": obs["wind_kph"],
+                     "temp_c": obs["temp_c"]}
+                num = (v["rain_mm"] if "rain" in kind else v["wind_kph"] if kind == "gale"
+                       else v["temp_c"])
+                text = {L: _RULE_TEXT[kind][L].format(v=f"{num:g}")
+                        for L in ("en", "hi", "te")}
             items.append({
                 "kind": kind,
                 "fact": fired[kind]["fact"],
                 "persona": _persona,
-                "text": {L: _RULE_TEXT[kind][L].format(v=f"{num:g}") for L in ("en", "hi", "te")},
+                "text": text,
             })
     _ = lang  # per-language selection happens in weather_advisories_text
     return items[:3]
@@ -427,6 +465,18 @@ def weather_advisories_text(items: list | None, language: str = "en") -> str:
     lang = _lang_of(language)
     return "".join("\n- " + str(it.get("text", {}).get(lang) or it.get("text", {}).get("en", ""))
                    for it in items if isinstance(it, dict))
+
+
+def observation_numbers(obs: dict | None) -> dict:
+    """Honest observed numbers from a fetched observation blob.
+
+    Same alias tables and wind_ms->kph convention as the rules engine;
+    returns rain_mm / wind_kph / temp_c / humidity_pct, None where unknown —
+    never invented. Used to build the advisory's "based on" basis block from
+    a server-side current-observation fetch.
+    """
+    o = _observed_weather(obs, None)
+    return {k: o[k] for k in ("rain_mm", "wind_kph", "temp_c", "humidity_pct")}
 
 
 def _inland(key: str, coastal: bool | None, district: str, lang: str) -> str:
