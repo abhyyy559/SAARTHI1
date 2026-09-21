@@ -38,9 +38,17 @@ def _iso(value: Any) -> str:
 
 def _mk_alert(*, source: str, identifier: str, hazard: str, severity: str,
               headline: str, message: str, instruction: str, area: str,
-              effective: str, expires: str, sent: str = "", circle: str = "") -> dict[str, Any]:
+              effective: str, expires: str, sent: str = "", circle: str = "",
+              official: bool = False) -> dict[str, Any]:
+    # Honest source filtering (Phase 1 Crew D): the Alerts page shows only
+    # official sources (SACHET / NDMA / IMD / admin-dashboard demo alerts).
+    # Third-party providers (WeatherAPI.com, GDACS) are useful context for the
+    # verdict engine but must never be presentable as official warnings — the
+    # `official` flag makes that a data property, never a downstream string
+    # match.
     return {
         "source": source,
+        "official": bool(official),
         "identifier": identifier,
         "sender": source,
         "sent": sent or effective,
@@ -120,6 +128,7 @@ async def _from_weatherintouch(lat: float, lon: float, district: str) -> list[di
         sev = _intouch_severity(a.get("severity"))
         alerts.append(_mk_alert(
             source=SOURCE_BY_NAME["weatherintouch"],
+            official=True,  # official IMD CAP — allowed on the Alerts page
             identifier=str(a.get("id") or a.get("identifier") or f"wit-{district}"),
             hazard=str(a.get("event") or a.get("hazard") or "Weather alert"),
             severity=sev,
@@ -148,6 +157,7 @@ async def _from_weatherapi(lat: float, lon: float, district: str) -> list[dict[s
         sev = _wapi_severity(a.get("severity"))
         alerts.append(_mk_alert(
             source=SOURCE_BY_NAME["weatherapi"],
+            official=False,  # third-party — verdict context only, never an official warning
             identifier=str(a.get("alertId") or a.get("headline") or "wapi"),
             hazard=str(a.get("event") or a.get("headline") or "Weather alert"),
             severity=sev,
@@ -197,6 +207,7 @@ async def _from_gdacs(lat: float, lon: float, district: str) -> list[dict[str, A
         radius_km = 100 if etype in ("FL", "TC") else 40
         alerts.append(_mk_alert(
             source=SOURCE_BY_NAME["gdacs"],
+            official=False,  # global disaster aggregator — verdict context only, never an official warning
             identifier=f"gdacs-{p.get('eventid')}-{p.get('episodeid')}",
             hazard=f"{etype} {name}".strip()[:80],
             severity=sev,

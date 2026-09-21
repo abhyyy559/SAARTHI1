@@ -26,6 +26,7 @@ const TAMIL = /[\u0B80-\u0BFF]/;
 const i18nSrc = read('../src/i18n.js');
 const listSrc = read('../src/components/AlertsList.jsx');
 const detailsSrc = read('../src/components/AlertDetails.jsx');
+const emgSrc = read('../src/components/Emergency.jsx');
 
 const NEW_KEYS = [
   'detLifecycle', 'detStarted', 'detEndedAt', 'detExpectedEnd', 'detIssuer',
@@ -79,19 +80,31 @@ test('alerts redesign: no Tamil script in touched files', () => {
   }
 });
 
-// --- emergency list is emergency-only ---------------------------------------
+// --- emergency list is official-sources-only --------------------------------
 
-test('alerts list: community items are filtered out of the main list', () => {
-  assert.match(listSrc, /isCommunityItem/, 'AlertsList must define the community guard');
-  assert.match(listSrc, /\.filter\(\(a\) => !isCommunityItem\(a\)\)/, 'the merged list must drop community items');
+test('alerts list: only official sources render — third-party feeds are filtered out', () => {
+  assert.match(listSrc, /export function isOfficialSource/, 'AlertsList must export the source guard');
+  assert.match(listSrc, /official === false/, 'an explicit backend opt-out always filters the alert');
+  // WeatherAPI.com and GDACS feed the verdict engine but must never render
+  // here as warnings; the guard names the admission set.
+  assert.match(listSrc, /WeatherAPI\.com|GDACS/, 'the guard documents the excluded third-party providers');
+  assert.match(listSrc, /SACHET/, 'SACHET is admitted');
+  assert.match(listSrc, /IMD/, 'IMD is admitted');
+  assert.match(listSrc, /\.filter\(isOfficialSource\)/, 'the merged list is filtered by the source guard');
 });
 
-test('alerts list: community renders in its own honestly-badged section', () => {
-  assert.match(listSrc, /commSecTitle/, 'AlertsList must render the community section title');
-  assert.match(listSrc, /commSecSub/, 'AlertsList must render the community honesty copy');
-  assert.match(listSrc, /community-sec/, 'the section must carry the separator class');
-  assert.match(listSrc, /prov COMMUNITY/, 'community rows must carry the machine-readable COMMUNITY badge');
-  assert.match(listSrc, /api\.reports\(/, 'the section is fed by the community reports API');
+test('alerts list: demo alerts are admitted but always labelled DEMO', () => {
+  assert.match(listSrc, /export function isDemoAlert/, 'AlertsList must export the demo guard');
+  assert.match(listSrc, /isDemoAlert\(a\) \? t\(lang, 'listDemoTag'\)/, 'demo alerts wear the DEMO chip, never the Official one');
+  // Demo-mode warnings payloads are simulated content: every fixture alert
+  // is badged DEMO instead of looking official.
+  assert.match(listSrc, /responseIsDemo/, 'demo-mode fixture alerts are stamped demo');
+});
+
+test('alerts list: community has no place on this page', () => {
+  assert.doesNotMatch(listSrc, /community-sec/, 'no community section');
+  assert.doesNotMatch(listSrc, /api\.reports\(/, 'community reports are not fetched');
+  assert.doesNotMatch(listSrc, /isCommunityItem|REPORT_WORD/, 'the old community plumbing is gone');
 });
 
 test('alerts list: main list is headed as emergency alerts', () => {
@@ -135,4 +148,25 @@ test('alert details: acknowledge and timeline keep working', () => {
   assert.match(detailsSrc, /detTimeline/, 'the existing timeline stays');
   assert.match(detailsSrc, /detValidity/, 'validity window stays');
   assert.match(detailsSrc, /detInstruction/, 'instruction stays');
+});
+
+test('alert details: no bolt-on widgets — title and full details only', () => {
+  // Phase 1 (2026-09-21): the demo P2P relay panel is stripped from alert
+  // details. The backend /api/demo/relay endpoint stays; the Alerts page
+  // shows title + complete details per alert, nothing more.
+  assert.doesNotMatch(detailsSrc, /p2p-panel/, 'no P2P relay panel in details');
+  assert.doesNotMatch(detailsSrc, /doRelay|relayState|relayTrace/, 'no relay state machine in details');
+  assert.doesNotMatch(detailsSrc, /demoAlertApi/, 'no demo-alerts API import left behind');
+});
+
+test('emergency: P2PDemo is gone, SOS arm-then-fire flow untouched', () => {
+  // Coordination (Phase 1 Crew H): P2PDemo.jsx is deleted in parallel, so
+  // Emergency.jsx must not import or render it — the build would break.
+  assert.doesNotMatch(emgSrc, /P2PDemo/, 'no P2PDemo import or render');
+  assert.doesNotMatch(emgSrc, /p2p-panel|simulateRelay|p2pState/, 'no relay logic left behind');
+  // The SOS send flow keeps working exactly as before.
+  assert.match(emgSrc, /is-armed/, 'ARM → SEND sequence intact');
+  assert.match(emgSrc, /api\.sos\(/, 'SOS still POSTs');
+  assert.match(emgSrc, /api\.inbox\(/, 'session-scoped inbox intact');
+  assert.match(emgSrc, /api\.syncEmergency\(/, 'sync button intact');
 });

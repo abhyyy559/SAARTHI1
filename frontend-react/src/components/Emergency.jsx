@@ -14,7 +14,6 @@ import { api, EMERGENCY_TYPES } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
-import P2PDemo from './P2PDemo';
 
 // One glyph and one short word per message type - the picture is the label.
 const EMG_ICON = {
@@ -82,13 +81,11 @@ export default function Emergency() {
   });
   const [inbox, setInbox] = useState([]);
   const [note, setNote] = useState('');
-  const [p2p, setP2p] = useState(null);
   // ARM → SEND: the SOS slab arms on first tap and sends on the second, so a
   // shaking hand or a curious jury finger cannot fire a mayday by accident.
   // It auto-disarms after a few seconds.
   const [armed, setArmed] = useState(false);
   const [sending, setSending] = useState(false);
-  const [p2pState, setP2pState] = useState('idle'); // idle | sending | done | failed
   const [hiddenIds, setHiddenIds] = useState(readHiddenIds);
   const armTimer = useRef(null);
 
@@ -151,26 +148,6 @@ export default function Emergency() {
       refresh();
     } catch {
       setNote(t(lang, 'emgSyncFailed'));
-    }
-  }
-
-  // Stage demo: A->B->C store-and-forward with SIMULATED provenance throughout.
-  async function simulate() {
-    if (p2pState === 'sending') return;
-    setP2pState('sending');
-    try {
-      const r = await api.simulateRelay({
-        sender_id: 'demo-A',
-        ...form,
-        people_count: Number(form.people_count) || 1,
-      });
-      setP2pState('done');
-      setNote(t(lang, 'emgSimNote').replace('{id}', r.message_id));
-      if (r.trace) setP2p({ trace: r.trace, properties: r.properties || {} });
-      refresh();
-    } catch {
-      setP2pState('failed');
-      setNote(t(lang, 'emgSimFailed'));
     }
   }
 
@@ -258,24 +235,8 @@ export default function Emergency() {
         <button className="btn btn-secondary sm" type="button" onClick={sync}>
           <Icon name="refresh" size={14} /> {t(lang, 'emgSync')}
         </button>
-        <button className="btn btn-secondary sm" type="button" onClick={simulate} disabled={p2pState === 'sending'}>
-          <Icon name="radio" size={14} /> {p2pState === 'sending' ? t(lang, 'p2pSending') : t(lang, 'emgSimulate')}
-        </button>
       </div>
-      {p2pState === 'done' ? <p role="status" className="mono">{t(lang, 'p2pRelayed')}</p> : null}
-      {p2pState === 'failed' ? <p role="alert">{t(lang, 'p2pFailed')}</p> : null}
       {note ? <p className="mono" role="status">{note}</p> : null}
-
-      {/* P2P is always on the board — stamped SIMULATED, never pretending to be
-          the real mesh. */}
-      <div className="p2p-panel" aria-label={t(lang, 'p2pTitle')}>
-        <div className="p2p-title">
-          <h3 className="display">{t(lang, 'p2pTitle')}</h3>
-          <span className="rubber-stamp" data-testid="p2p-simulated">{t(lang, 'p2pSimulated')}</span>
-        </div>
-        {p2p ? <P2PDemo trace={p2p.trace} properties={p2p.properties} lang={lang} />
-          : <p className="sub">{t(lang, 'p2pIdleHint')}</p>}
-      </div>
 
       <div className="emg-inbox-meta">
         <h3 className="display" style={{ fontSize: 22, margin: 0 }}>{t(lang, 'emgInboxTitle')}</h3>

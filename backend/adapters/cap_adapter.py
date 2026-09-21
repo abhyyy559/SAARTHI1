@@ -136,6 +136,10 @@ def _normalize(info: dict[str, Any]) -> dict[str, Any]:
     description = _expand_acronyms(str(info.get("description") or ""))
     return {
         "source": SOURCE,
+        # NDMA-Sachet CAP is an official warning source. Demo fixtures reuse
+        # this shape, but demo_fixture stamps them demo=True afterwards so the
+        # UI badges them DEMO — never presented as live official warnings.
+        "official": True,
         "identifier": info.get("identifier") or "",
         "sender": info.get("sender") or "",
         "sent": info.get("sent") or "",
@@ -314,6 +318,10 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
         preset_alerts = None
     if preset_alerts is not None:
         alerts = [_normalize(a) for a in preset_alerts]
+        # The raw preset marker ("demo": True) is dropped by _normalize —
+        # re-stamp it here so the honesty marker survives.
+        for a in alerts:
+            a["demo"] = True
         report("cap", DEMO, f"preset fixture (demo mode): {district}")
         return alerts, DEMO
     try:
@@ -344,4 +352,12 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
                 if isinstance(a.get(key), str) and "Hyderabad" in a[key]:
                     a[key] = a[key].replace("Hyderabad", district)
     report("cap", DEMO, "fixture (demo mode)")
+    # DEMO ONLY: everything this function returns is simulated content, even
+    # the official-looking fixture alerts. Stamp every one demo=True so no
+    # surface can present a simulated alert as a live official warning — the
+    # Alerts page badges these DEMO (the original fixture source stays in
+    # fixture_source for debugging).
+    for a in alerts:
+        a["fixture_source"] = a.get("source") or ""
+        a["demo"] = True
     return alerts, DEMO

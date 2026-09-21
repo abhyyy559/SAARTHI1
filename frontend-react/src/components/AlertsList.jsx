@@ -3,14 +3,12 @@
 // route. This kills the Alerts-vs-Alert-details duplicate: one route, one
 // component, expansion instead of navigation.
 //
-// The backend is authoritative: severity is rendered from the alert dict,
-// never re-derived here. Rows carry relative timestamps ("2 min ago") so the
-// board reads as live, not as a rumor mill.
-//
-// The main list is EMERGENCY alerts only. Community observations are fetched
-// too, but they render in a separate, clearly badged section BELOW the
-// emergency list (COMMUNITY provenance, never presented as official warnings)
-// — they must never sit in the main list, and never become warnings.
+// SOURCE HONESTY (Phase 1 Crew D): this page shows ONLY official sources —
+// the admin dashboard (demo alerts, always labelled DEMO), SACHET, NDMA, IMD.
+// Third-party providers (WeatherAPI.com, GDACS) feed the verdict engine but
+// never render here as warnings; community reports are a separate surface
+// entirely. `official === false` is an explicit backend opt-out and always
+// wins over name matching.
 import { useCallback, useEffect, useState } from 'react';
 import { api, demoAlertApi } from '../api';
 import { t } from '../i18n';
@@ -20,11 +18,23 @@ import { SevStamp } from './ui';
 import { relTime, mergeAlerts } from './inboxLogic';
 import AlertDetails from './AlertDetails';
 
-// Defensive: an item is community-provenance (not an emergency alert) and
-// must be kept out of the main list no matter which feed it arrived on.
-function isCommunityItem(a) {
-  const prov = String(a.provenance || a.source || '').toUpperCase();
-  return prov === 'COMMUNITY' || a._origin === 'community';
+// An alert is a demo/admin-dashboard alert: simulated content that must wear
+// the DEMO badge — never presented as a live official warning.
+export function isDemoAlert(a) {
+  if (!a) return false;
+  const src = String(a.source || '').toUpperCase();
+  return src.includes('DEMO') || a._origin === 'demo' || a.demo === true;
+}
+
+// The Alerts page admits only official sources. The admin dashboard's demo
+// alerts are admitted too, but isDemoAlert marks them DEMO on the row.
+export function isOfficialSource(a) {
+  if (!a) return false;
+  if (a.official === false) return false; // explicit backend opt-out (third-party)
+  if (isDemoAlert(a)) return true;
+  if (a.official === true) return true;
+  const src = String(a.source || '').toUpperCase();
+  return src.includes('SACHET') || src.includes('NDMA') || src.includes('IMD');
 }
 
 function alertKey(a) {
@@ -35,25 +45,11 @@ function alertTime(a) {
   return a.updated_at || a.issued_at || a.sent || a.created_at || '';
 }
 
-// Community report types -> translated word. This is the single place these
-// keys are defined, so every surface that renders a report type calls the
-// same word and can never disagree.
-const REPORT_WORD = {
-  flooding: 'rtFlooding',
-  road_blocked: 'rtRoadBlocked',
-  fallen_tree: 'rtFallenTree',
-  damage: 'rtDamage',
-  waterlogging: 'rtWaterlogging',
-};
-
 export default function AlertsList({ initialAlertId = null }) {
   const { lang, loc, syncTick, speak } = useApp();
   const [alerts, setAlerts] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
   const [openId, setOpenId] = useState(initialAlertId);
-  // Community observations: fetched alongside, rendered in their own honestly
-  // badged section below the emergency list — never in it.
-  const [reports, setReports] = useState([]);
   const [tick, setTick] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -80,9 +76,20 @@ export default function AlertsList({ initialAlertId = null }) {
         setAlerts([]);
         return;
       }
-      const official = [...(w?.cap_alerts || [])];
+      const official = [];
+      // In demo mode the whole warnings payload is simulated content: every
+      // fixture alert wears the DEMO badge, so the jury sees the simulation
+      // for what it is instead of an official-looking warning.
+      const responseIsDemo = String(w?.provenance || '').toUpperCase() === 'DEMO';
+      for (const a of (w?.cap_alerts || [])) {
+        official.push(responseIsDemo ? { ...a, demo: true } : a);
+      }
       if (w?.warning && (w.verified?.verified || w.verdict?.basis === 'unverified_warning')) {
-        official.unshift({ ...w.warning, headline: w.warning.message });
+        official.unshift({
+          ...w.warning,
+          headline: w.warning.message,
+          source: responseIsDemo ? 'DEMO' : (w.warning.source || 'IMD'),
+        });
       }
       // The backend can return the same warning twice: once as the headline
       // `warning` (verdict input) and once inside cap_alerts. Never render the
@@ -103,16 +110,11 @@ export default function AlertsList({ initialAlertId = null }) {
         return true;
       });
       const demo = [...(d?.alerts || [])];
-      // Emergency alerts only in the main list. Community items are shown in
-      // their own section below, so a stray community-provenance item is
-      // filtered here, not promoted to an emergency alert.
-      setAlerts(mergeAlerts(deduped, demo).filter((a) => !isCommunityItem(a)));
+      // Emergency alerts only, and only official sources: demo-store alerts
+      // are admin-dashboard alerts (admitted, DEMO-badged); third-party chain
+      // alerts (WeatherAPI.com, GDACS — official=false) never render here.
+      setAlerts(mergeAlerts(deduped, demo).filter(isOfficialSource));
     });
-    // Community observations render separately; their failure must never
-    // change the emergency list (or its empty states).
-    api.reports(loc.district)
-      .then((r) => { if (alive) setReports(r.reports || []); })
-      .catch(() => { /* offline - keep the reports we already have */ });
     return () => { alive = false; };
   }, [locKey, loc.district, loc.lat, loc.lon, syncTick, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -156,7 +158,7 @@ export default function AlertsList({ initialAlertId = null }) {
       const sev = a.severity || 'UNKNOWN';
       const head = (a.headline || a.title || a.message || a.hazard || a.event || '').trim();
       const district = a.district || a.areaDesc || a.area || loc.district;
-      const tag = a._origin === 'demo' ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
+      const tag = isDemoAlert(a) ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
       const state = String(a.lifecycle_state || a.state || '').toUpperCase();
       return (
         <div key={key} className={`alerts-row${open ? ' is-open' : ''}`} role="listitem" data-sev={sev}>
@@ -238,30 +240,6 @@ export default function AlertsList({ initialAlertId = null }) {
           </div>
         </>
       )}
-      {/* Community observations live here, never in the emergency list above.
-          COMMUNITY provenance is badged on the section and on every row, in
-          machine-readable form, so a community report can never be mistaken
-          for an official warning. */}
-      <section className="community-sec" aria-label={t(lang, 'commSecTitle')}>
-        <div className="alert-sec-title">
-          <span className="kicker">{t(lang, 'commSecTitle')}</span>
-          <span className="prov COMMUNITY">COMMUNITY</span>
-        </div>
-        <p className="sub">{t(lang, 'commSecSub')}</p>
-        {reports.length === 0 ? (
-          <p className="sub">{t(lang, 'commEmpty')}</p>
-        ) : (
-          reports.map((r) => (
-            <div className="evrow" key={r.report_id || r.id || r.text}>
-              <span className="k">
-                {r.report_type ? t(lang, REPORT_WORD[r.report_type] || 'commReportType') : t(lang, 'commReportType')}
-                {' · '}{r.district}
-              </span>
-              <span>{r.text} <span className="prov COMMUNITY">COMMUNITY</span></span>
-            </div>
-          ))
-        )}
-      </section>
     </>
   );
 }

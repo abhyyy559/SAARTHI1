@@ -12,7 +12,7 @@
 //   alert.history (fallback: lifecycle_state/state single entry).
 // - Ack button POSTs /api/ack via api.ack (falls back to fetch when offline-sim).
 import { useState } from 'react';
-import { api, demoAlertApi } from '../api';
+import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
@@ -84,20 +84,20 @@ function fmt(ts) {
 }
 
 export default function AlertDetails({ alert, onBack, onAck }) {
-  const { lang, device, setView } = useApp();
+  const { lang, device } = useApp();
   const [ackState, setAckState] = useState('idle'); // idle | sending | acked | failed
-  const [relayState, setRelayState] = useState('idle'); // idle | sending | done | failed
-  const [relayTrace, setRelayTrace] = useState(null);
   if (!alert) return null;
 
   const sev = alert.severity || 'UNKNOWN';
   const state = String(alert.lifecycle_state || alert.state || 'UPCOMING').toUpperCase();
   const district = alert.district || alert.areaDesc || alert.area || '';
-  const source = String(alert.source || alert.provenance || '').toUpperCase();
-  const sourceLabel = source.includes('DEMO') || source === 'DEMO'
-    ? 'DEMO'
-    : alertIdentifier(alert).startsWith('demo-') ? 'DEMO' : 'NDMA-SACHET CAP';
-  const isDemo = sourceLabel === 'DEMO';
+  // Provenance honesty: demo/admin content wears the DEMO badge; the official
+  // badge names the alert's real source (SACHET / NDMA / IMD), never a guess.
+  const src = String(alert.source || '').toLowerCase();
+  const ident = String(alert.id || alert.identifier || '').toLowerCase();
+  const isDemo = src.includes('demo') || ident.startsWith('demo-') || alert.demo === true;
+  const sourceLabel = isDemo ? 'DEMO'
+    : (String(alert.source || '').toUpperCase() || 'NDMA-SACHET CAP');
   const instruction = alert.instruction || '';
   const head = alert.title || alert.headline || alert.message || alert.hazard || alert.event || '';
   const history = Array.isArray(alert.history) ? alert.history
@@ -121,18 +121,6 @@ export default function AlertDetails({ alert, onBack, onAck }) {
       if (onAck) onAck(alert);
     } catch {
       setAckState('failed');
-    }
-  };
-
-  const doRelay = async () => {
-    if (relayState === 'sending') return;
-    setRelayState('sending');
-    try {
-      const r = await demoAlertApi.relay({ alert_id: alert.id || alert.identifier });
-      setRelayTrace(r.trace || []);
-      setRelayState('done');
-    } catch {
-      setRelayState('failed');
     }
   };
 
@@ -231,45 +219,6 @@ export default function AlertDetails({ alert, onBack, onAck }) {
         </button>
         {ackState === 'failed' && <span role="status" className="mono">{t(lang, 'detAckFailed')}</span>}
       </div>
-
-      {/* Demo propagation: relay this alert over the SIMULATED mesh. The hop
-          trace is shown here; a durable server notification lands in the
-          Notifications list (backend logs kind=p2p-relay, channel=p2p-simulated). */}
-      {isDemo && (
-        <div className="p2p-panel">
-          <div className="p2p-title">
-            <span className="kicker">{t(lang, 'p2pTitle')}</span>
-            <span className="rubber-stamp" data-testid="p2p-simulated">{t(lang, 'p2pSimulated')}</span>
-          </div>
-          {relayState === 'done' ? (
-            <p role="status" className="mono">
-              {t(lang, 'p2pRelayedAlert')} ·{' '}
-              <button type="button" className="btn btn-ghost sm" onClick={() => setView('notifications')}>
-                {t(lang, 'navNotifications')}
-              </button>
-            </p>
-          ) : (
-            <button
-              type="button" className="btn btn-secondary sm"
-              disabled={relayState === 'sending'}
-              onClick={doRelay}
-            >
-              <Icon name="radio" size={14} />{' '}
-              {relayState === 'sending' ? t(lang, 'p2pSending') : t(lang, 'p2pRelayAlert')}
-            </button>
-          )}
-          {relayState === 'failed' && <p role="alert" className="sub">{t(lang, 'p2pFailed')}</p>}
-          {relayTrace && (
-            <div className="p2p-log">
-              {relayTrace.map((h, i) => (
-                <div className="log-line" key={i}>
-                  <Icon name="radio" size={12} aria-hidden="true" /> {h.detail || h.state}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </section>
   );
 }
