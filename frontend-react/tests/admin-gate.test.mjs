@@ -66,6 +66,23 @@ test('gate honesty: comment states it is a demo gate, not authentication', () =>
   assert.match(code, /DEMO_MODE-gated/, 'gate must point at the real server-side protection');
 });
 
+test('PIN input accepts letters — the default PIN is SAARTHI', () => {
+  const code = read('../src/views.jsx');
+  assert.ok(
+    !/inputMode="numeric"/.test(code),
+    'PIN input must not request a numeric keyboard (the PIN contains letters)',
+  );
+  assert.ok(
+    !/\.replace\(\/\\D\/g/.test(code),
+    'PIN onChange must not strip non-digit characters',
+  );
+  assert.match(
+    code,
+    /replace\(\/\[\^A-Za-z0-9\]\/g/,
+    'PIN onChange must keep letters and digits',
+  );
+});
+
 // --- strings parity ----------------------------------------------------------
 test('admin gate strings exist in EN/HI/TE', () => {
   const code = read('../src/strings/areas/harboursignal.js');

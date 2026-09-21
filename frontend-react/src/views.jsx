@@ -60,10 +60,9 @@ function AdminGate({ children }) {
         <input
           id="admin-pin"
           type="password"
-          inputMode="numeric"
           autoComplete="off"
           value={pin}
-          onChange={(e) => { setPin(e.target.value.replace(/\D/g, '').slice(0, 12)); setWrong(false); }}
+          onChange={(e) => { setPin(e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 12)); setWrong(false); }}
           style={{ fontSize: 18, padding: '10px 12px', minHeight: 44 }}
           aria-invalid={wrong}
           aria-describedby={wrong ? 'admin-pin-err' : undefined}
