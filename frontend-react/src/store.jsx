@@ -147,7 +147,15 @@ export function AppProvider({ children }) {
   // The alert the citizen tapped to open in the Details view. Set by alert
   // cards (home bulletins, alert center); Details reads it, so the empty
   // state is honest when nothing was ever selected.
-  const [selectedAlert, setSelectedAlert] = useState(null);
+  // Push-notification tap deep link: SW opens `/?view=alerts&alert=<id>`.
+  // The id seeds selectedAlert so AlertsView expands that alert's detail on
+  // first paint. Unknown ids simply match nothing (AlertsList opens none).
+  const [selectedAlert, setSelectedAlert] = useState(() => {
+    try {
+      const id = new URLSearchParams(window.location.search).get('alert');
+      return id ? { id } : null;
+    } catch { return null; }
+  });
   const [disaster, setDisaster] = useState(false);
   const [simOffline, setSimOffline] = useState(false);
   const online = useOnline();
