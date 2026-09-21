@@ -115,7 +115,7 @@ function MobileNav({ current, onPick, moreOpen }) {
 }
 
 function MoreSheet({ open, onClose }) {
-  const { lang, setView } = useApp();
+  const { lang, setView, unreadCount } = useApp();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -137,6 +137,11 @@ function MoreSheet({ open, onClose }) {
           <button key={r.view} type="button" className="more-row" onClick={() => go(r.view)}>
             <span className="rail-icon"><Icon name={r.icon} size={20} /></span>
             <span>{t(lang, r.labelKey)}</span>
+            {r.view === 'notifications' && unreadCount > 0 && (
+              <span className="nav-badge" aria-label={`${unreadCount} unread`}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+            )}
             <span className="chev"><Icon name="chevron" size={18} /></span>
           </button>
         ))}
@@ -155,7 +160,7 @@ function MoreSheet({ open, onClose }) {
 }
 
 export default function Shell({ children }) {
-  const { view, setView, lang, setLang, loc, locReady, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState } = useApp();
+  const { view, setView, lang, setLang, loc, locReady, sourceMode, setBackendMode, notifyOn, toggleNotify, disaster, netState, unreadCount } = useApp();
   const online = netState !== 'offline';
   const [moreOpen, setMoreOpen] = useState(false);
   const [toast, setToast] = useState(null);
@@ -220,6 +225,11 @@ export default function Shell({ children }) {
               >
                 <span className="rail-icon"><Icon name={NAV_ICONS[n.id] || 'info'} size={20} /></span>
                 <span>{t(lang, n.label)}</span>
+                {n.id === 'notifications' && unreadCount > 0 && (
+                  <span className="nav-badge" aria-label={`${unreadCount} unread`}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -234,6 +244,11 @@ export default function Shell({ children }) {
             >
               <span className="rail-icon"><Icon name={r.icon} size={20} /></span>
               <span>{t(lang, r.labelKey)}</span>
+              {r.view === 'notifications' && unreadCount > 0 && (
+                <span className="nav-badge rail-sub-badge" aria-label={`${unreadCount} unread`}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>

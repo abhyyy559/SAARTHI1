@@ -58,7 +58,8 @@ test('idle states show no popup (auto-dismiss on end/error/denial)', () => {
 // i18n.js is Vite-resolved (directory import) so node cannot import it; parse
 // the EXTRA source block instead — the same keys the popup renders via t().
 function extraStrings() {
-  const lines = readFileSync(new URL('../src/i18n.js', import.meta.url), 'utf8').split('\n');
+  // Strip \r so the parses below work on Windows (CRLF) and Linux (LF) alike.
+  const lines = readFileSync(new URL('../src/i18n.js', import.meta.url), 'utf8').split('\n').map((l) => l.replace(/\r$/, ''));
   const start = lines.findIndex((l) => l.startsWith('const EXTRA = {'));
   const langs = {};
   for (let i = start; i < start + 12 && Object.keys(langs).length < 3; i++) {

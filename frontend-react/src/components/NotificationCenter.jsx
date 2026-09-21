@@ -13,6 +13,7 @@ import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import { saveNotificationSnapshot, readNotificationSnapshot } from '../offline';
+import { groupNotificationsByDay, filterNotifications, deliveryRatio, NOTIFICATION_FILTERS } from '../notificationUtils';
 import Icon from './icons';
 import { Card, SevStamp } from './ui';
 
@@ -43,6 +44,21 @@ function when(iso) {
   } catch { return ''; }
 }
 
+/** Visual push-delivery ratio (e.g. 12/15) — a bar, not a number to decode. */
+function DeliveryBar({ n }) {
+  const r = deliveryRatio(n);
+  if (!r.has) return null;
+  const tone = r.pct >= 90 ? 'good' : r.pct >= 60 ? 'mid' : 'low';
+  return (
+    <span className="ntf-delivery" title={`${r.delivered}/${r.targeted}`}>
+      <span className={`ntf-delivery-track tone-${tone}`} aria-hidden="true">
+        <span className="ntf-delivery-fill" style={{ width: `${r.pct}%` }} />
+      </span>
+      <span className="mono">{r.delivered}/{r.targeted}</span>
+    </span>
+  );
+}
+
 function NotificationRow({ n, onRead, onAck, acked, saving, savedTag }) {
   const { lang, speak } = useApp();
   const meta = KIND_META[n.kind] || KIND_META.info;
@@ -62,6 +78,7 @@ function NotificationRow({ n, onRead, onAck, acked, saving, savedTag }) {
           {n.district && <span>{n.district}</span>}
           {' · '}{when(n.at)}
           {n.severity && <> · <SevStamp lang={lang} level={sev} /></>}
+          <DeliveryBar n={n} />
         </div>
         {isSimulated && <p className="ntf-sim">{t(lang, 'ntfSimulatedTag')}</p>}
         <p className="sub">{n.body}</p>
@@ -96,6 +113,7 @@ export default function NotificationCenter() {
   const [savedAt, setSavedAt] = useState(null);
   const [tick, setTick] = useState(0);
   const [saving, setSaving] = useState({}); // id -> true while a write is in flight
+  const [filter, setFilter] = useState('all');
   const [acked, setAcked] = useState(() => {
     try { return JSON.parse(localStorage.getItem('wgpt.acked') || '{}'); } catch { return {}; }
   });
@@ -157,21 +175,10 @@ export default function NotificationCenter() {
 
   const unread = (items || []).filter((n) => !n.read).length;
 
-  // Timeline grouping: pure presentational derivation over the fetched items;
-  // no data-flow or ordering change.
-  const groups = [];
-  for (const n of items || []) {
-    const day = new Date(n.at).toDateString();
-    const last = groups[groups.length - 1];
-    if (last && last[0] === day) last[1].push(n);
-    else groups.push([day, [n]]);
-  }
-  const dayLabel = (iso) => {
-    const d = new Date(iso);
-    return d.toDateString() === new Date().toDateString()
-      ? t(lang, 'ntfToday')
-      : d.toLocaleDateString([], { day: 'numeric', month: 'short' });
-  };
+  // Filters + Today/Yesterday/Earlier grouping: pure derivations over the
+  // fetched items (notificationUtils.js), no data-flow or ordering change.
+  const visible = filterNotifications(items || [], filter);
+  const groups = groupNotificationsByDay(visible, (k) => t(lang, k));
 
   const savedTag = offline ? `${t(lang, 'ntfSavedTag')}${savedAt ? ` · ${when(savedAt)}` : ''}` : '';
 
@@ -179,15 +186,29 @@ export default function NotificationCenter() {
     // The view head (ViewHead in views.jsx) already carries the title and
     // subtitle, so the card must not repeat them.
     <Card
-      actions={unread > 0 && (
-        <button
-          type="button" className="btn btn-ghost sm"
-          onClick={() => api.notificationsRead({ all: true, district: loc.district, device })
-            .then(reload)
-            .catch(() => { showToast(t(lang, 'ntfActionFailed')); })}
-        >
-          {t(lang, 'ntfReadAll')} ({unread})
-        </button>
+      actions={(
+        <>
+          <div className="ntf-filters" role="group" aria-label={t(lang, 'ntfFilterAll')}>
+            {NOTIFICATION_FILTERS.map((f) => (
+              <button
+                key={f.id} type="button" className={`btn btn-ghost sm${filter === f.id ? ' is-active' : ''}`}
+                aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}
+              >
+                {t(lang, f.key)}
+              </button>
+            ))}
+          </div>
+          {unread > 0 && (
+            <button
+              type="button" className="btn btn-ghost sm"
+              onClick={() => api.notificationsRead({ all: true, district: loc.district, device })
+                .then(reload)
+                .catch(() => { showToast(t(lang, 'ntfActionFailed')); })}
+            >
+              {t(lang, 'ntfReadAll')} ({unread})
+            </button>
+          )}
+        </>
       )}
     >
       {!items ? <p className="mono" role="status">{t(lang, 'checking')}</p>
@@ -213,12 +234,12 @@ export default function NotificationCenter() {
         )
           : items.length === 0 ? <p className="sub">{t(lang, 'ntfEmpty')}</p>
             : <div className="ntf-list">
-              {groups.map(([day, list]) => (
-                <section key={day} aria-label={dayLabel(list[0].at)}>
+              {groups.map((g) => (
+                <section key={g.key} aria-label={g.label}>
                   <div className="alert-sec-title">
-                    <span className="kicker">{dayLabel(list[0].at)}</span>
+                    <span className="kicker">{g.label}</span>
                   </div>
-                  {list.map((n) => (
+                  {g.items.map((n) => (
                     <NotificationRow
                       key={n.id} n={n} onRead={markRead} onAck={ack}
                       acked={!!acked[n.alert_id]} saving={!!saving[n.id] || !!saving[n.alert_id]}

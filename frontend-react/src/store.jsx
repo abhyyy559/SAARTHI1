@@ -145,6 +145,19 @@ export function AppProvider({ children }) {
   const [syncTick, setSyncTick] = useState(0);
   const [toast, setToast] = useState('');
   const toastTimer = useRef(null);
+  // Unread badge: polls the existing /api/notifications/unread endpoint.
+  // Lives in the store so the sidebar badge, the mobile tab and the
+  // Notification Center itself all agree on one number.
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () => api.notificationsUnread(loc.district, device)
+      .then((d) => { if (alive) setUnreadCount(Number(d.unread) || 0); })
+      .catch(() => { /* offline: keep the last known count; never fake zero */ });
+    load();
+    const id = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(id); };
+  }, [loc.district, device, syncTick]);
   const showToast = useCallback((msg) => {
     setToast(msg);
     clearTimeout(toastTimer.current);
@@ -685,12 +698,13 @@ export function AppProvider({ children }) {
     netState, lastSync, syncTick, toast, showToast,
     publishVerdict,
     notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush,
+    unreadCount,
   }), [view, lang, persona, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
     simOffline, pipe, result, handleResult, selectedAlert,
     disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, listenState, setListenState, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,
     netState, lastSync, syncTick, toast, showToast,
-    publishVerdict, notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush, device]);
+    publishVerdict, notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush, device, unreadCount]);
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
