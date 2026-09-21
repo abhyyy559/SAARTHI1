@@ -15,7 +15,8 @@
 //     official, source, path:[...], alert:{...sanitized alert...} }
 //
 // Honesty rules:
-// - `official` is carried from the sender's data and NEVER derived here.
+// - `official` is carried ONLY from an explicit `official: true` flag in the
+//   sender's data and is NEVER derived here (fail closed: ambiguous -> community).
 // - hop count travels in the payload; canRelay()/nextHop() enforce the limit.
 // - Oversized alerts are sanitized to essential fields (never silently
 //   dropped, never truncated mid-field).
@@ -87,10 +88,12 @@ export function sanitizeAlert(alert) {
 }
 
 export function isOfficialAlert(alert) {
+  // Fail closed: ONLY an explicit `official: true` flag on the sender's own
+  // data counts. Source-name sniffing ("CAP" substring etc.) is a
+  // false-positive factory — "CAP volunteer team" must never badge Official.
+  // Missing/ambiguous -> community.
   if (!alert || typeof alert !== 'object') return false;
-  if (alert.official === true) return true;
-  const src = String(alert.source || '').toUpperCase();
-  return src.includes('SACHET') || src.includes('NDMA') || src.includes('IMD') || src.includes('CAP');
+  return alert.official === true;
 }
 
 // Build the envelope for one alert. `hops` lets a phone that RECEIVED the

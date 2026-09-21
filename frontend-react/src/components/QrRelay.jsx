@@ -27,7 +27,7 @@ function alertId(a) {
   return String((a && (a.id || a.alert_id)) || '');
 }
 
-export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', initialHops = 0, relayEnvelope = null }) {
+export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', initialHops = 0, relayEnvelope = null, bare = false }) {
   const [alertKey, setAlertKey] = useState('');
   const [frameIdx, setFrameIdx] = useState(0);
   const [qrUrl, setQrUrl] = useState('');
@@ -95,11 +95,10 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
   const fill = (s, o) => t(lang, s).replace('{i}', String(o.i)).replace('{n}', String(o.n))
     .replace('{r}', String(o.r)).replace('{hops}', String(o.hops)).replace('{limit}', String(o.limit));
 
-  return (
-    <Card
-      title={t(lang, 'qrTitle')}
-      sub={t(lang, 'qrSub')}
-    >
+  // `bare`: when embedded inside another titled Card (OfflineP2P), skip our
+  // own Card so the title/sub don't render twice.
+  const body = (
+    <>
       {pickable.length === 0 && !relayEnvelope ? (
         <p className="sub">{t(lang, 'qrNoAlerts')}</p>
       ) : (
@@ -175,6 +174,16 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
           )}
         </>
       )}
+    </>
+  );
+
+  if (bare) return body;
+  return (
+    <Card
+      title={t(lang, 'qrTitle')}
+      sub={t(lang, 'qrSub')}
+    >
+      {body}
     </Card>
   );
 }

@@ -7,7 +7,8 @@ rotating QR codes, the other scans them with its camera.
 **You need:** 3 phones, all with the app open (install/open once while online
 so the app shell is saved for offline). Phones 2 and 3 will go offline during
 the demo. Camera needs `https` (the production URL) — it will not work over
-plain `http` on a LAN IP.
+plain `http` on a LAN IP. **Demo on Android:** camera access via the browser
+is unreliable inside iOS web views, so keep the scanning phones on Android.
 
 **Where in the app:** More → **Offline & nearby** → **QR relay — zero
 internet needed** → tabs **Show QR** / **Scan QR**.
@@ -52,10 +53,12 @@ internet needed** → tabs **Show QR** / **Scan QR**.
    order, so a shaky hand doesn't matter.
 9. **Phone 3:** the alert appears, badged **"Via P2P relay · Hop 0 of 5"** and
    *"Phone-to-phone — could not verify with the server."*
-   - If the alert is official (NDMA-SACHET), the **Official** badge is kept.
-   - A community alert is **never** shown as official.
-10. **Phone 3:** tap **Acknowledge** — note *"Acknowledgement queued — it will
-    send when this phone is back online."*
+   - A demo alert shows the **Community** badge — honest, because demo data is
+     not an official CAP feed. (A real alert carrying the official flag keeps
+     its **Official** badge through the relay; the flag is never invented.)
+10. **Phone 3:** the acknowledgement is **queued automatically** — note
+    *"Acknowledgement queued — it will send when this phone is back online."*
+    No tap needed; the queue survives the phone staying offline.
 
 ### Act 4 — Relay it further (hop limit)
 

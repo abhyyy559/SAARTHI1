@@ -13,7 +13,6 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import {
-  FRAME_CHARS,
   HOP_LIMIT_CRITICAL,
   HOP_LIMIT_NORMAL,
   buildEnvelope,
@@ -50,6 +49,7 @@ const ALERT = {
   description: 'Stay indoors.',
   instruction: 'Unplug appliances.',
   source: 'NDMA-SACHET CAP',
+  official: true, // explicit flag on the sender's data — the ONLY thing that badges Official
   starts_at: '2026-09-21T14:00:00+05:30',
   ends_at: '2026-09-21T19:00:00+05:30',
 };
@@ -71,13 +71,21 @@ test('hopLimitFor: normal alerts get 5, RED/critical get 10', () => {
   assert.equal(hopLimitFor({ level: 'EXTREME' }), HOP_LIMIT_CRITICAL);
 });
 
-test('isOfficialAlert keeps official sources official, community stays community', () => {
-  assert.equal(isOfficialAlert({ source: 'NDMA-SACHET CAP' }), true);
-  assert.equal(isOfficialAlert({ source: 'IMD' }), true);
+test('isOfficialAlert is fail-closed: ONLY an explicit official:true flag counts', () => {
   assert.equal(isOfficialAlert({ official: true, source: 'x' }), true);
+  // Source-name sniffing must NOT badge Official — these are all community.
+  assert.equal(isOfficialAlert({ source: 'NDMA-SACHET CAP' }), false);
+  assert.equal(isOfficialAlert({ source: 'IMD' }), false);
+  assert.equal(isOfficialAlert({ source: 'CAP volunteer team' }), false);
   assert.equal(isOfficialAlert({ source: 'community' }), false);
+  assert.equal(isOfficialAlert({ official: false, source: 'NDMA-SACHET CAP' }), false);
   assert.equal(isOfficialAlert({}), false);
   assert.equal(isOfficialAlert(null), false);
+});
+
+test('official:false is never upgraded by a source name in the envelope', () => {
+  const env = envelopeOf({ ...ALERT, official: false });
+  assert.equal(env.official, false);
 });
 
 // --- sanitize ----------------------------------------------------------------
@@ -232,12 +240,18 @@ test('canRelay rejects malformed envelopes instead of relaying blindly', () => {
 
 test('buildEnvelope refuses oversized alerts instead of emitting 40 QR codes', () => {
   const huge = { ...ALERT, description: 'x'.repeat(20000) };
-  // sanitize caps the description at 1200 chars, so this stays fittable…
+  // sanitize caps each string field at 1200 chars, so this stays fittable…
   const r = buildEnvelope(huge);
   assert.equal(r.ok, true);
-  // …but a truly pathological envelope is refused, not truncated mid-field.
-  const fake = { kind: 'saarthi-p2p-alert', v: 1, blob: 'y'.repeat(20000) };
-  assert.ok(JSON.stringify(fake).length > 12000);
+  // …but a genuinely oversized envelope is refused, not truncated mid-field.
+  const fat = { id: 'fat' };
+  for (const f of ['title', 'headline', 'description', 'instruction', 'area', 'district', 'event', 'urgency', 'certainty', 'source']) {
+    fat[f] = 'x'.repeat(1200);
+  }
+  const r2 = buildEnvelope(fat);
+  assert.equal(r2.ok, false);
+  assert.equal(r2.error, 'too-large');
+  assert.ok(r2.size > 12000);
 });
 
 // --- ack queue -----------------------------------------------------------------
@@ -281,6 +295,13 @@ test('QrScan.jsx: the only network call is the queued ack via the api prop', () 
   assert.ok(!src.includes('XMLHttpRequest'), 'scanner must never XHR');
   // The ack sync goes through the injected api client, never a raw call.
   assert.ok(src.includes('syncP2PAcks(api'), 'acks sync via the api prop');
+});
+
+test('QrRelay.jsx: bare mode avoids duplicate card titles when embedded', () => {
+  const src = read('../src/components/QrRelay.jsx');
+  assert.ok(src.includes('bare'), 'bare prop exists for embedding');
+  const panel = read('../src/components/OfflineP2P.jsx');
+  assert.ok(/<QrRelay[\s\S]*?bare/.test(panel), 'panel embeds QrRelay bare (no double title)');
 });
 
 test('the real QR path never wears the SIMULATED stamp', () => {

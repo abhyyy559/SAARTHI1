@@ -43,6 +43,8 @@ export default function QrScan({
   const ridRef = useRef(null);
   const qrRef = useRef(null);
   const doneRef = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
   const stopCam = useCallback(async () => {
     try {
@@ -134,6 +136,7 @@ export default function QrScan({
       );
     } catch (e) {
       const name = (e && e.name) || '';
+      if (!mountedRef.current) return;
       setCamErr(t(lang, name === 'NotAllowedError' ? 'qrCamDenied' : 'qrNoCamera'));
       setScanning(false);
       qrRef.current = null;
@@ -146,13 +149,18 @@ export default function QrScan({
     setSyncNote('');
     try {
       const { sent } = await syncP2PAcks(api, deviceId || deviceLabel || 'phone');
+      if (!mountedRef.current) return;
       setAcks(readP2PAcks());
       if (sent > 0) setSyncNote(t(lang, 'qrAckSynced'));
     } catch { /* keep them queued */ }
-    setSyncing(false);
+    if (mountedRef.current) setSyncing(false);
   }, [api, online, syncing, deviceId, deviceLabel, lang]);
 
   const alert = received ? received.alert : null;
+  // "Relay this further": compute the next-hop envelope ONCE — nextHop mints
+  // a fresh relay_id per call, so calling it twice would forward a different
+  // envelope than the one the button label was checked against.
+  const forwardEnv = received ? nextHop(received, deviceLabel) : null;
 
   return (
     <Card title={t(lang, 'qrScanTitle')} sub={t(lang, 'qrScanSub')}>
@@ -255,10 +263,10 @@ export default function QrScan({
               </button>
             )}
             {syncNote && <span className="sub" role="status">{syncNote}</span>}
-            {onRelayFurther && nextHop(received, deviceLabel) && (
+            {onRelayFurther && forwardEnv && (
               <button
                 type="button" className="btn btn-signal" style={{ minHeight: 44 }}
-                onClick={() => onRelayFurther(nextHop(received, deviceLabel))}
+                onClick={() => onRelayFurther(forwardEnv)}
               >
                 <Icon name="radio" size={16} /> <span>{t(lang, 'qrRelayAgain')}</span>
               </button>

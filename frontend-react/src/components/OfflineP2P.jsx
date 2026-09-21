@@ -503,6 +503,7 @@ export default function OfflineP2P({
             lang={lang}
             deviceLabel={t(lang, 'op2pThisPhone')}
             relayEnvelope={qrForward}
+            bare
           />
         ) : (
           <QrScan
