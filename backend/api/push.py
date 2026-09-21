@@ -64,7 +64,9 @@ async def test_push(payload: dict | None = None) -> dict:
             "severity": "YELLOW",
             "district": sub.get("district", ""),
             "kind": "test",
-            "url": "/",
+            # A tap on the test notification opens the app on the alerts view,
+            # like a real alert notification does.
+            "url": "/?view=alerts",
         })
         return {"status": "sent" if ok else "failed", "reason": reason, "generated_at": iso_now()}
 
@@ -77,7 +79,7 @@ async def test_push(payload: dict | None = None) -> dict:
         "severity": "YELLOW",
         "district": district,
         "kind": "test",
-        "url": "/",
+        "url": "/?view=alerts",
     }, district=district)
     return {"status": "sent", **result, "generated_at": iso_now()}
 

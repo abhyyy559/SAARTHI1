@@ -1,5 +1,5 @@
 // Spotlight onboarding: points AT the real control, not a popup about it.
-// Four icon-led steps, one short line each, built for low-literacy users —
+// Five icon-led steps, one short line each, built for low-literacy users —
 // the icon carries the meaning, the text only confirms.
 //
 // SELECTOR CONTRACTS (Agent 4 / anyone touching IA — read before renaming):
@@ -13,6 +13,13 @@
 //      rail on desktop + tab bar on mobile — whichever is rendered wins).
 //   4. offline -> '[data-tour="conn"]' with '.conn-pill' fallback, the topbar
 //      connectivity pill (components/Shell.jsx, always rendered).
+//   5. notify -> '[data-tour="notify-bell"]' on the topbar bell (components/Shell.jsx,
+//      preferred hook — Shell owner: please add data-tour="notify-bell" to the
+//      bell button) with '.bell-btn' fallback, which matches today. Unlike the
+//      other steps this one carries its own "Allow notifications" button wired
+//      to enableNotify() — the SAME enable flow as the bell — so the permission
+//      ask works even before the preferred hook exists. The spotlight only
+//      points; the dialog asks.
 //
 // A step whose selector never appears (missing hook, display:none) is SKIPPED,
 // never ringed on empty space. The deep-link guard stands: a launch URL naming
@@ -31,15 +38,28 @@ const STEPS = [
   { view: 'home', sels: ['[data-tour="home-chat"]'], icon: 'chat', title: 'ot2t', body: 'ot2b' },
   { view: 'home', sels: ['[data-tour="nav-alerts"]'], icon: 'bell', title: 'ot3t', body: 'ot3b' },
   { view: 'home', sels: ['[data-tour="conn"]', '.conn-pill'], icon: 'offline', title: 'ot4t', body: 'ot4b' },
+  // Last: the notifications permission ask. Wired to the same enable flow as
+  // the bell (enableNotify), retry-safe — tapping it when already enabled is
+  // a no-op, never a toggle-off.
+  { view: 'home', sels: ['[data-tour="notify-bell"]', '.bell-btn'], icon: 'radio', title: 'ot5t', body: 'ot5b', action: 'notify' },
 ];
 
 export default function OnboardingTour() {
-  const { lang, setView } = useApp();
+  const { lang, setView, enableNotify, pushMode } = useApp();
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState(null);
+  const [ctaBusy, setCtaBusy] = useState(false);
   const stepRef = useRef(0);
   const dialogRef = useRef(null);
+
+  // The notifications CTA: the same enable flow as the bell, but retry-safe —
+  // it only ever enables, so a tap can never switch alerts back off.
+  const onNotifyCta = useCallback(async () => {
+    if (ctaBusy || pushMode === 'background') return;
+    setCtaBusy(true);
+    try { await enableNotify(); } finally { setCtaBusy(false); }
+  }, [ctaBusy, pushMode, enableNotify]);
 
   // The tour is closed deliberately (Skip/Escape/finish) or never opened;
   // defined before measure because a skipped step may need to close the tour.
@@ -196,6 +216,17 @@ export default function OnboardingTour() {
         <span className="tour-icon" aria-hidden="true"><Icon name={s.icon} size={30} /></span>
         <div className="display">{t(lang, s.title)}</div>
         <p>{t(lang, s.body)}</p>
+        {s.action === 'notify' && (
+          <button
+            type="button"
+            className="btn btn-signal"
+            style={{ marginTop: 4, alignSelf: 'flex-start' }}
+            disabled={ctaBusy || pushMode === 'background'}
+            onClick={onNotifyCta}
+          >
+            {pushMode === 'background' ? t(lang, 'ot5on') : pushMode === 'inapp' ? t(lang, 'ot5inapp') : t(lang, 'ot5cta')}
+          </button>
+        )}
         <div className="tour-actions">
           {step > 0 && (
             <button type="button" className="btn btn-ghost" onClick={() => goStep(step - 1)}>{t(lang, 'obBack')}</button>

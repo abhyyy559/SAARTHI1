@@ -33,7 +33,23 @@ function Row({ icon, title, children }) {
 }
 
 export default function SettingsPanel() {
-  const { lang, setLang, persona, setPersona, loc, setDistrict, requestLocation, locStatus, notifyOn, toggleNotify } = useApp();
+  const { lang, setLang, persona, setPersona, loc, setDistrict, requestLocation, locStatus, notifyOn, toggleNotify, pushMode, pushReason } = useApp();
+  // Honest push state under the switch: background-ready vs in-app-only (with
+  // the reason) vs off. icon+word, never colour alone.
+  const pushNote = pushMode === 'background'
+    ? { icon: 'bell', text: t(lang, 'setPushBg') }
+    : pushMode === 'inapp'
+      ? {
+          icon: 'info',
+          text: t(lang, 'setPushInAppWhy').replace('{reason}', t(lang, {
+            'unsupported': 'rsnUnsupported',
+            'server-unavailable': 'rsnServer',
+            'denied': 'rsnDenied',
+            'sw-unavailable': 'rsnSw',
+            'server-rejected': 'rsnRejected',
+          }[pushReason] || 'rsnFailed')),
+        }
+      : null;
   return (
     <div className="set-stack">
       <Row icon="user" title={t(lang, 'setRole')}>
@@ -91,6 +107,12 @@ export default function SettingsPanel() {
             <span className="switch-track"><span className="switch-thumb" /></span>
           </span>
         </button>
+        {pushNote && (
+          <div className="sub" role="status" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+            <Icon name={pushNote.icon} size={14} aria-hidden="true" />
+            <span>{pushNote.text}</span>
+          </div>
+        )}
       </Row>
     </div>
   );

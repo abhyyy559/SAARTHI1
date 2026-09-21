@@ -44,7 +44,14 @@ self.addEventListener('push', (event) => {
       tag: `${payload.kind || 'alert'}:${payload.district || ''}`,
       renotify: true,
       requireInteraction: severity === 'RED',
-      data: { url: payload.url || '/', severity, district: payload.district || '' },
+      data: {
+        url: payload.url || '/',
+        severity,
+        district: payload.district || '',
+        // Carried so the tap can be attributed to the alert (opened event)
+        // and so the app can deep-link to it.
+        alert_id: payload.alert_id || '',
+      },
     }),
   );
 });

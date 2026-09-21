@@ -26,6 +26,7 @@ import logging
 import time
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote
 
 from .. import config
 from . import alert_service, push_service
@@ -89,12 +90,28 @@ def decide(prev: dict[str, Any] | None, nxt: dict[str, Any]) -> str | None:
     return None
 
 
-def message_for(kind: str, verdict: dict[str, Any], district: str) -> dict[str, Any]:
+def _alert_url(alert_id: str | None) -> str:
+    """Where a tap on the OS notification lands: the alerts view, deep-linked
+    to the alert when its id is known. The app reads ?view=alerts on launch;
+    &alert= is the per-alert deep link the SW passes through on notification
+    tap (payload.alert_id travels alongside in the notification data)."""
+    url = "/?view=alerts"
+    if alert_id:
+        url += "&alert=" + quote(str(alert_id), safe="")
+    return url
+
+
+def message_for(kind: str, verdict: dict[str, Any], district: str,
+                alert_id: str | None = None) -> dict[str, Any]:
     """The push payload. Short: it is read on a lock screen.
 
     Kinds `pre-alert` / `active` / `ended` are the demo-alert lifecycle kinds
     (explicit Admin-panel actions); they reuse the same shape so the client
     needs no second code path.
+
+    Every payload carries the alert id and a deep link to the alert, so a tap
+    on the OS notification opens the app ON the alert — the whole point of a
+    notification that arrives with the app closed.
     """
     severity = verdict.get("severity") or verdict.get("level") or ""
     hazard = verdict.get("hazard") or ""
@@ -131,9 +148,10 @@ def message_for(kind: str, verdict: dict[str, Any], district: str) -> dict[str, 
         "hazard": hazard,
         "district": district,
         "kind": kind,
-        # Tapping the OS notification lands on the Notification Center, where
-        # the full lifecycle trail is readable even hours later.
-        "url": "/?view=notifications",
+        "alert_id": str(alert_id) if alert_id is not None else "",
+        # Tapping the OS notification opens the app ON THE ALERT: the alerts
+        # view, deep-linked to this alert id when one is known.
+        "url": _alert_url(alert_id),
     }
 
 
@@ -199,8 +217,7 @@ def demo_message_for(alert: dict[str, Any], kind: str) -> dict[str, Any]:
         "severity": alert.get("severity") or "",
         "level": alert.get("severity") or "",
         "hazard": alert.get("hazard") or alert.get("title") or "",
-    }, str(alert.get("district") or ""))
-    payload["alert_id"] = alert.get("id")
+    }, str(alert.get("district") or ""), alert_id=alert.get("id"))
     payload["tag"] = f"demo-{alert.get('id')}-{kind}"
     payload["demo"] = True
     return payload
@@ -242,7 +259,6 @@ def check_demo_alerts() -> list[dict[str, Any]]:
         if key in seen:
             continue
         payload = demo_message_for(alert, kind)
-        payload["alert_id"] = alert.get("id")
         district = str(alert.get("district") or "")
         try:
             result = push_service.broadcast(payload, district=district)
@@ -404,7 +420,7 @@ async def check_district(district: str) -> dict[str, Any]:
     if not kind:
         return {"district": district, "level": verdict.get("level"), "notified": None}
 
-    payload = message_for(kind, verdict, district)
+    payload = message_for(kind, verdict, district, alert_id=_official_alert_key(district, gathered, verdict))
     result = push_service.broadcast(payload, district=district)
     # The push happened (or was attempted): record it in the history the user
     # scrolls. This was the missing link — official-chain transitions pushed
@@ -413,7 +429,7 @@ async def check_district(district: str) -> dict[str, Any]:
         notification_service.log(
             kind, payload.get("title", ""), payload.get("body", ""),
             district=district,
-            alert_id=_official_alert_key(district, gathered, verdict),
+            alert_id=payload.get("alert_id") or "",
             severity=str(payload.get("severity") or ""),
             push={k: result.get(k) for k in ("targeted", "delivered", "failed", "pruned")},
         )

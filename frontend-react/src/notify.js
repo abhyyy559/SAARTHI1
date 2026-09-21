@@ -28,6 +28,60 @@ export function pushSupported() {
     && 'Notification' in window;
 }
 
+/**
+ * Machine-readable reasons subscribeToPush() can report. The UI maps each to
+ * user-visible text — the reason is part of the honest enable state, never
+ * swallowed into a generic toast.
+ */
+export const PUSH_REASONS = {
+  UNSUPPORTED: 'unsupported', // browser has no push capability at all
+  SERVER_DOWN: 'server-unavailable', // /api/push/vapid unreachable, or push unavailable server-side
+  DENIED: 'denied', // the user denied the permission prompt
+  SW_MISSING: 'sw-unavailable', // no service worker could be provided
+  REJECTED: 'server-rejected', // the server refused the subscription
+  FAILED: 'failed', // anything else (network, unexpected)
+};
+
+// navigator.serviceWorker.ready NEVER settles when no worker is registered —
+// main.jsx only registers /sw.js in production builds, and even there the
+// registration waits for window load. Awaiting it bare is how the "Allow
+// notifications" button came to do nothing at all: the tap hung forever with
+// no toast and no state change. Every service-worker wait below is bounded.
+const SW_READY_TIMEOUT_MS = 8000;
+
+function timeoutError(ms) {
+  const err = new Error(`service worker not ready after ${ms}ms`);
+  err.name = 'SWTimeoutError';
+  return err;
+}
+
+function withTimeout(promise, ms) {
+  let id = 0;
+  const gate = new Promise((_, reject) => {
+    id = setTimeout(() => reject(timeoutError(ms)), ms);
+  });
+  return Promise.race([promise, gate]).finally(() => clearTimeout(id));
+}
+
+/**
+ * The registration able to receive push, or null when the browser cannot
+ * provide one. Prefers the existing registration; registers /sw.js on demand
+ * when a fast tap beats main.jsx's window-load registration; gives up
+ * honestly (dev server serves no worker, insecure context, registration
+ * failure) instead of hanging the enable flow forever.
+ */
+async function pushRegistration() {
+  try {
+    const existing = await navigator.serviceWorker.getRegistration();
+    if (existing) return existing;
+  } catch { /* fall through to on-demand registration */ }
+  try {
+    return await navigator.serviceWorker.register('/sw.js');
+  } catch {
+    return null;
+  }
+}
+
 function urlBase64ToUint8Array(base64) {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
@@ -39,17 +93,21 @@ function urlBase64ToUint8Array(base64) {
  *
  * Returns { ok, reason, endpoint }. Every failure is reported rather than
  * swallowed: "notifications are on" must never be shown when the device cannot
- * actually be reached while the app is closed.
+ * actually be reached while the app is closed. Never hangs: every
+ * service-worker wait is bounded (see SW_READY_TIMEOUT_MS).
+ *
+ * opts.readyTimeoutMs overrides the bound (tests, very slow devices).
  */
-export async function subscribeToPush({ api, district, language, persona }) {
-  if (!pushSupported()) return { ok: false, reason: 'unsupported' };
+export async function subscribeToPush({ api, district, language, persona }, opts = {}) {
+  if (!pushSupported()) return { ok: false, reason: PUSH_REASONS.UNSUPPORTED };
+  const readyMs = Number(opts.readyTimeoutMs) > 0 ? Number(opts.readyTimeoutMs) : SW_READY_TIMEOUT_MS;
 
   try {
     const { public_key: publicKey, available } = await api.pushVapid();
-    if (!available || !publicKey) return { ok: false, reason: 'server-unavailable' };
+    if (!available || !publicKey) return { ok: false, reason: PUSH_REASONS.SERVER_DOWN };
 
-    const reg = await navigator.serviceWorker.ready;
-    if (!reg.pushManager) return { ok: false, reason: 'unsupported' };
+    const reg = await withTimeout(pushRegistration(), readyMs);
+    if (!reg || !reg.pushManager) return { ok: false, reason: PUSH_REASONS.SW_MISSING };
 
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
@@ -65,11 +123,13 @@ export async function subscribeToPush({ api, district, language, persona }) {
       district, language, persona,
     });
     if (r && r.status === 'subscribed') return { ok: true, endpoint: sub.endpoint };
-    return { ok: false, reason: (r && r.reason) || 'server-rejected' };
+    return { ok: false, reason: (r && r.reason) || PUSH_REASONS.REJECTED };
   } catch (err) {
     // A denied permission lands here as NotAllowedError; so does a network
     // failure. Either way the caller shows the honest reason, not a false "on".
-    return { ok: false, reason: err?.name === 'NotAllowedError' ? 'denied' : 'failed' };
+    if (err?.name === 'NotAllowedError') return { ok: false, reason: PUSH_REASONS.DENIED };
+    if (err?.name === 'SWTimeoutError') return { ok: false, reason: PUSH_REASONS.SW_MISSING };
+    return { ok: false, reason: PUSH_REASONS.FAILED };
   }
 }
 
@@ -77,8 +137,8 @@ export async function subscribeToPush({ api, district, language, persona }) {
 export async function unsubscribeFromPush(api) {
   if (!pushSupported()) return { ok: false, reason: 'unsupported' };
   try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
+    const reg = await withTimeout(pushRegistration(), SW_READY_TIMEOUT_MS);
+    const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
     if (!sub) return { ok: true, reason: 'none' };
     const endpoint = sub.endpoint;
     await sub.unsubscribe().catch(() => { /* server cleanup still worth trying */ });
@@ -89,11 +149,14 @@ export async function unsubscribeFromPush(api) {
   }
 }
 
-/** Whether this device currently holds a push subscription. */
+/** Whether this device currently holds a push subscription. Never hangs: the
+ *  registration wait is bounded, so the app-load check cannot dangle forever
+ *  on a page whose worker never registers (e.g. the dev server). */
 export async function hasPushSubscription() {
   if (!pushSupported()) return false;
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await withTimeout(pushRegistration(), SW_READY_TIMEOUT_MS);
+    if (!reg || !reg.pushManager) return false;
     return !!(await reg.pushManager.getSubscription());
   } catch {
     return false;
@@ -149,8 +212,11 @@ export function forgetNotified() {
  * Prefers the service-worker path: it is the only one that works on Android
  * Chrome, and it keeps the notification visible when the tab is backgrounded.
  * The constructor fallback covers desktop browsers with no SW registered.
+ *
+ * `url` is where a tap lands (the SW notificationclick handler navigates to
+ * it): alert notifications deep-link to the alerts view.
  */
-export async function notify({ title, body, tag, severity = 'UNKNOWN', silent = false }) {
+export async function notify({ title, body, tag, severity = 'UNKNOWN', silent = false, url = '/' }) {
   if (notifySupport() !== 'granted') return false;
   if (tag && hasNotified(tag)) return false;
 
@@ -162,7 +228,7 @@ export async function notify({ title, body, tag, severity = 'UNKNOWN', silent = 
     // Colour and icon carry the meaning, so the text can stay short.
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    data: { severity, url: '/' },
+    data: { severity, url },
     vibrate: severity === 'RED' ? [200, 100, 200] : undefined,
   };
 
@@ -197,42 +263,46 @@ export async function requestPermission() {
 
 /**
  * Show a PRE-ALERT notification.
- * Warning tone, message: "Pre-alert issued for {district}"
+ * English defaults; pass translated title/body for other languages.
+ * Tapping it opens the app on the alerts view.
  */
-export async function showPreAlert({ district, title = 'Pre-alert', severity = 'YELLOW' }) {
+export async function showPreAlert({ district, title, body, severity = 'YELLOW' }) {
   return notify({
-    title: t('ntfPreAlert', { district }) || `Pre-alert issued for ${district}`,
-    body: t('ntfPreAlertBody', { district }) || `A pre-alert has been issued for ${district}. Please stay alert.`,
+    title: title || `Pre-alert issued for ${district}`,
+    body: body || `A pre-alert has been issued for ${district}. Stay ready.`,
     tag: `pre-alert:${district}`,
     severity,
     silent: false,
+    url: '/?view=alerts',
   });
 }
 
 /**
  * Show an ACTIVE warning notification.
- * Urgent tone, message: "Active warning for {district}: {hazard}"
+ * English defaults; pass translated title/body for other languages.
  */
-export async function showActive({ district, hazard, title = 'Active Warning', severity = 'RED' }) {
+export async function showActive({ district, hazard, title, body, severity = 'RED' }) {
   return notify({
-    title: t('ntfActive', { district, hazard }) || `Active warning for ${district}: ${hazard}`,
-    body: t('ntfActiveBody', { district, hazard }) || `An active ${hazard} warning is in effect for ${district}. Take precautions.`,
+    title: title || `Active warning for ${district}: ${hazard}`,
+    body: body || `An active ${hazard} warning is in effect for ${district}. Take precautions.`,
     tag: `active:${district}:${hazard}`,
     severity,
     silent: false,
+    url: '/?view=alerts',
   });
 }
 
 /**
  * Show an ENDED (all-clear) notification.
- * Calm tone, message: "Warning ended for {district}"
+ * English defaults; pass translated title/body for other languages.
  */
-export async function showEnded({ district, title = 'All Clear', severity = 'GREEN' }) {
+export async function showEnded({ district, title, body, severity = 'GREEN' }) {
   return notify({
-    title: t('ntfEnded', { district }) || `Warning ended for ${district}`,
-    body: t('ntfEndedBody', { district }) || `The warning for ${district} has ended. Normal conditions restored.`,
+    title: title || `Warning ended for ${district}`,
+    body: body || `The warning for ${district} has ended.`,
     tag: `ended:${district}`,
     severity,
     silent: true,
+    url: '/?view=alerts',
   });
 }

@@ -84,6 +84,19 @@ const readDevice = () => {
   } catch { return 'anonymous'; }
 };
 
+// Machine reason from subscribeToPush() -> user-visible i18n key. The reason
+// is part of the honest enable state: "background unavailable" without a why
+// is a shrug, not an explanation. Module scope: the mapping never changes.
+const PUSH_REASON_KEYS = {
+  'unsupported': 'rsnUnsupported',
+  'server-unavailable': 'rsnServer',
+  'denied': 'rsnDenied',
+  'sw-unavailable': 'rsnSw',
+  'server-rejected': 'rsnRejected',
+  'failed': 'rsnFailed',
+};
+const pushReasonKey = (r) => PUSH_REASON_KEYS[r] || 'rsnFailed';
+
 export function AppProvider({ children }) {
   // One-way deep link. IA dedup (2026-09-20): the only public views are
   // home · alerts · advisory + the More sheet's notifications · offline ·
@@ -523,12 +536,19 @@ export function AppProvider({ children }) {
   // for CHANGES only — a user opening the app must not be buzzed about a warning
   // that is already on screen, so the first verdict is recorded and stays quiet.
   // ---------------------------------------------------------------------
+
   const [notifyOn, setNotifyOn] = useState(() => readPref('wgpt.notify', '0') === '1');
   const [notifyPerm, setNotifyPerm] = useState(() => notifySupport());
-  // Whether THIS device actually holds a push subscription. Distinct from
-  // notifyOn (a preference): the preference can say yes while the device has
-  // been unsubscribed from browser settings, and only one of those is true.
-  const [pushReady, setPushReady] = useState(false);
+  // Honest push state, three ways — never a bare on/off that cannot say WHY:
+  //   'off'        — alerts are not enabled.
+  //   'background' — this device holds a push subscription: the server can
+  //                  reach it with the app closed. The only true "alerts on".
+  //   'inapp'      — alerts fire while the app is open, but background push
+  //                  failed; pushReason names the reason (shown, not swallowed).
+  // pushReady is derived inline in the context value (pushMode === 'background');
+  // other views keep reading it as before.
+  const [pushMode, setPushMode] = useState('off');
+  const [pushReason, setPushReason] = useState(null);
   const prevVerdict = useRef(null);
 
   const fireNotification = useCallback((change, district) => {
@@ -549,6 +569,8 @@ export function AppProvider({ children }) {
           : fill('notifyClearBodyPlain'),
         tag: tagFor(change),
         severity: 'GREEN',
+        // Tapping the OS notification opens the app on the alert.
+        url: '/?view=alerts',
       });
       return;
     }
@@ -563,6 +585,7 @@ export function AppProvider({ children }) {
       tag: tagFor(change),
       severity: change.severity || change.level,
       silent: !upgraded && change.level === 'MODERATE',
+      url: '/?view=alerts',
     });
   }, [lang]);
 
@@ -573,16 +596,10 @@ export function AppProvider({ children }) {
     if (change && notifyOn && notifySupport() === 'granted') fireNotification(change, district);
   }, [notifyOn, fireNotification]);
 
-  const toggleNotify = useCallback(async () => {
-    if (notifyOn) {
-      setNotifyOn(false);
-      writePref('wgpt.notify', '0');
-      setPushReady(false);
-      await unsubscribeFromPush(api);
-      showToast(t(lang, 'notifyOff'));
-      return false;
-    }
-
+  // The enable half of the flow, retry-safe: enabling when alerts are already
+  // on retries the background-push registration instead of toggling off. The
+  // onboarding tour's notifications step calls this directly.
+  const enableNotify = useCallback(async () => {
     const perm = await askNotifyPermission();
     setNotifyPerm(perm);
     if (perm !== 'granted') {
@@ -593,25 +610,50 @@ export function AppProvider({ children }) {
     // Permission alone only buys in-app notifications. Registering with the push
     // service is what reaches the device when the app is CLOSED — which is the
     // entire point — so it is part of turning this on, not a separate step.
+    // A failure here no longer hangs (notify.js bounds every wait) and no
+    // longer lies: the mode records background vs in-app-only, with the reason.
     const res = await subscribeToPush({ api, district: loc.district, language: lang, persona: persona || 'general' });
-    setPushReady(!!res.ok);
     setNotifyOn(true);
     writePref('wgpt.notify', '1');
     if (res.ok) {
+      setPushMode('background');
+      setPushReason(null);
       showToast(t(lang, 'notifyOnBackground'));
     } else {
-      // Honest: in-app notifications still work, background ones do not.
-      showToast(t(lang, res.reason === 'unsupported' ? 'notifyNoPush' : 'notifyPushFailed'));
+      // Honest: in-app notifications still work, background ones do not, and
+      // the toast names the reason instead of swallowing it.
+      setPushMode('inapp');
+      setPushReason(res.reason);
+      showToast(t(lang, 'notifyInAppOnly').replace('{reason}', t(lang, pushReasonKey(res.reason))));
     }
     return true;
-  }, [notifyOn, lang, loc.district, persona, showToast]);
+  }, [lang, loc.district, persona, showToast]);
+
+  const toggleNotify = useCallback(async () => {
+    if (notifyOn) {
+      setNotifyOn(false);
+      writePref('wgpt.notify', '0');
+      setPushMode('off');
+      setPushReason(null);
+      await unsubscribeFromPush(api);
+      showToast(t(lang, 'notifyOff'));
+      return false;
+    }
+    return enableNotify();
+  }, [notifyOn, lang, showToast, enableNotify]);
 
   // On load, believe the device rather than the stored preference: a
   // subscription can be revoked from browser settings, and claiming "alerts on"
   // when the device cannot be reached is the one lie this feature must not tell.
+  // A stored "on" with no subscription reads as in-app-only, honestly.
   useEffect(() => {
     let alive = true;
-    hasPushSubscription().then((has) => { if (alive) setPushReady(has); }).catch(() => {});
+    hasPushSubscription().then((has) => {
+      if (!alive) return;
+      if (has) setPushMode('background');
+      else if (readPref('wgpt.notify', '0') === '1') setPushMode('inapp');
+      else setPushMode('off');
+    }).catch(() => {});
     return () => { alive = false; };
   }, []);
 
@@ -684,13 +726,13 @@ export function AppProvider({ children }) {
     device,
     netState, lastSync, syncTick, toast, showToast,
     publishVerdict,
-    notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush,
+    notifyOn, notifyPerm, pushReady: pushMode === 'background', pushMode, pushReason, toggleNotify, enableNotify, simulateAlert, simulateClear, sendTestPush,
   }), [view, lang, persona, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
     simOffline, pipe, result, handleResult, selectedAlert,
     disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, listenState, setListenState, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,
     netState, lastSync, syncTick, toast, showToast,
-    publishVerdict, notifyOn, notifyPerm, pushReady, toggleNotify, simulateAlert, simulateClear, sendTestPush, device]);
+    publishVerdict, notifyOn, notifyPerm, pushMode, pushReason, toggleNotify, enableNotify, simulateAlert, simulateClear, sendTestPush, device]);
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
