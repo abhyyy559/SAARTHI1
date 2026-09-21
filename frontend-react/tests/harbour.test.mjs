@@ -16,6 +16,8 @@ test('every P2P occurrence carries the exact simulated label', () => {
   // assert the key exists in the components AND resolves to the exact label
   // in all three languages (checked in alerts.js), plus the verbatim usage
   // in NotificationCenter / P2PDemo.
+  // (Worker 4: NotificationCenter was superseded by the notifications side
+  // panel — the verbatim usage now lives in NotificationsPanel.)
   for (const f of ['../src/components/Emergency.jsx', '../src/components/AlertDetails.jsx']) {
     const code = read(f);
     assert.match(code, /p2pSimulated/, `${f} must render the translated simulated label`);
@@ -24,7 +26,7 @@ test('every P2P occurrence carries the exact simulated label', () => {
   const alerts = read('../src/strings/areas/alerts.js');
   const hits = alerts.match(/p2pSimulated: 'SIMULATED — FOR DEMO ONLY',/g) || [];
   assert.equal(hits.length, 3, 'p2pSimulated must be the exact label in EN/HI/TE');
-  const ntf = read('../src/components/NotificationCenter.jsx');
+  const ntf = read('../src/components/NotificationsPanel.jsx');
   assert.match(ntf, /ntfSimulatedTag/, 'notification rows must stamp simulated P2P');
   const hs = read('../src/strings/areas/harboursignal.js');
   assert.match(hs, /ntfSimulatedTag: 'SIMULATED — FOR DEMO ONLY'/);
@@ -51,7 +53,7 @@ test('notification fetch has a 5-second timeout and caches the list', () => {
   const api = read('../src/api.js');
   assert.match(api, /FETCH_TIMEOUT_MS\s*=\s*5000/);
   assert.match(api, /AbortSignal\.timeout|AbortController/, 'j() must actually enforce the timeout');
-  const ntf = read('../src/components/NotificationCenter.jsx');
+  const ntf = read('../src/components/NotificationsPanel.jsx');
   assert.match(ntf, /saveNotificationSnapshot/);
   assert.match(ntf, /readNotificationSnapshot/);
   assert.match(ntf, /ntfRetry/, 'failed fetch must offer a translated Retry');

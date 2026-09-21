@@ -1,10 +1,11 @@
 // IA dedup + 360px regression tests (2026-09-20).
 //
-// The public IA is Home · Alerts · Advisory · More (Notifications, Offline &
-// P2P, Trust & sources, Settings, tour replay). Ask / Advisor / Details /
-// Sources routes are gone; their content was folded in. Aviation is a
-// PROFILE, not a menu row — its briefing renders on Home for the aviation
-// persona. Everything must render without horizontal overflow at 320–360px.
+// The public IA is Home · Alerts · Advisory · the bell (notifications panel)
+// · More (Offline & P2P, Trust & sources, Settings, tour replay). Ask /
+// Advisor / Details / Sources routes are gone; their content was folded in.
+// Aviation is a PROFILE, not a menu row — its briefing renders on Home for
+// the aviation persona. Everything must render without horizontal overflow at
+// 320–360px.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -27,13 +28,26 @@ test('public IA is exactly Home · Alerts · Advisory · More', () => {
   assert.match(shell, /menuMore/);
 });
 
-test('More sheet lists the five deduped destinations; aviation is a profile, not a row', () => {
-  for (const v of ['notifications', 'offline', 'trust', 'settings'])
+test('More sheet lists the deduped destinations; notifications moved to the bell panel', () => {
+  // Notifications left the More sheet: the topbar bell opens the side panel,
+  // which is the one and only notifications home.
+  for (const v of ['offline', 'trust', 'settings'])
     assert.match(shell, new RegExp(`\\{ view: '${v}'`), `More sheet must list ${v}`);
-  // Tour replay is the fifth row.
+  assert.doesNotMatch(shell, /\{ view: 'notifications'/, 'notifications must not be a More-sheet/rail row');
+  // Tour replay is the last row.
   assert.match(shell, /sbTakeTour/);
   // Aviation left the menu: it is a profile now, never a More-sheet row.
   assert.doesNotMatch(shell, /\{ view: 'aviation'/, 'aviation must not be a More-sheet row');
+});
+
+test('the topbar bell opens the notifications panel and carries the unread badge', () => {
+  assert.match(shell, /import NotificationsPanel from '.\/NotificationsPanel'/, 'Shell must mount the panel');
+  assert.match(shell, /<NotificationsPanel open=\{panelOpen\}/, 'panel is driven by Shell state');
+  assert.match(shell, /aria-haspopup="dialog"/, 'bell announces the dialog it opens');
+  assert.doesNotMatch(shell, /onClick=\{toggleNotify\}/, 'bell must not toggle push directly any more');
+  assert.match(shell, /bell-badge/, 'bell keeps the unread badge');
+  assert.match(shell, /notificationsApi\.unread/, 'badge is fed by the server unread count');
+  assert.match(shell, /wgpt:notifications-open/, 'stale deep links can still open the panel');
 });
 
 test('aviation is a persona: briefing renders on Home for the aviation profile', () => {

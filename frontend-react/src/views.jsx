@@ -1,11 +1,11 @@
-// SIGNAL BOARD view set — IA dedup (2026-09-20).
+// SIGNAL BOARD view set — IA dedup (2026-09-20), notifications panel (2026-09-21).
 // Public IA: Home (hero + chat) · Alerts (inline detail) · Advisory (merged)
-// · More sheet → Notifications · Offline & P2P · Aviation · Trust & sources ·
+// · topbar bell → notifications side panel (the one and only notifications
+// home) · More sheet → Offline & P2P · Aviation · Trust & sources ·
 // Settings · Tour replay. Admin is hidden, PIN-gated, direct URL only.
 import Home from './components/Home';
 import Emergency from './components/Emergency';
 import AlertsList from './components/AlertsList';
-import NotificationCenter from './components/NotificationCenter';
 import Advisor from './components/Advisor';
 import AdviceCards from './components/AdviceCards';
 import ViewHead from './components/ViewHead';
@@ -19,7 +19,7 @@ import HowItWorks from './components/HowItWorks';
 import SettingsPanel from './components/SettingsPanel';
 import { useApp } from './store';
 import { t } from './i18n';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from './components/ui';
 import Icon from './components/icons';
 
@@ -113,12 +113,16 @@ export function AlertsView() {
 }
 
 export function NotificationsView() {
-  return (
-    <>
-      <ViewHead titleKey="ntfTitle" subKey="ntfSub" />
-      <NotificationCenter />
-    </>
-  );
+  // Notifications no longer has a full route: the side panel opened from the
+  // topbar bell is the one and only notifications home. This export stays so
+  // a stale ?view=notifications deep link opens the panel instead of landing
+  // on a dead page; Shell listens for the event.
+  const { setView } = useApp();
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('wgpt:notifications-open'));
+    setView('home');
+  }, [setView]);
+  return null;
 }
 
 // Advisory: ONE route. The persona grid on top (pick your world by picture),
