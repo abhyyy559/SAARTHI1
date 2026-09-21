@@ -14,6 +14,18 @@ export default {
     panelPushOn: 'On',
     panelPushOff: 'Off',
     panelOpenAlert: 'Open alert',
+    // Filter chips + clear control (Crew E, Phase 1): the panel owns the
+    // list, so it owns the filter; clearing dismisses on this device only.
+    panelFilterLabel: 'Filter',
+    panelFilterAll: 'All',
+    panelFilterUnread: 'Unread',
+    panelFilterAlerts: 'Alerts',
+    panelFilterInfo: 'Info',
+    panelClear: 'Clear all',
+    panelCleared: 'Notifications cleared',
+    // Permission-denied guidance links to Settings (Crew G owns the panel
+    // itself; this only navigates there).
+    panelOpenSettings: 'Open settings',
   },
   hi: {
     panelClose: 'बंद करें',
@@ -24,6 +36,14 @@ export default {
     panelPushOn: 'चालू',
     panelPushOff: 'बंद',
     panelOpenAlert: 'अलर्ट खोलें',
+    panelFilterLabel: 'फ़िल्टर',
+    panelFilterAll: 'सभी',
+    panelFilterUnread: 'अपठित',
+    panelFilterAlerts: 'अलर्ट',
+    panelFilterInfo: 'जानकारी',
+    panelClear: 'सभी साफ़ करें',
+    panelCleared: 'सूचनाएँ साफ़ हो गईं',
+    panelOpenSettings: 'सेटिंग खोलें',
   },
   te: {
     panelClose: 'మూసివేయండి',
@@ -34,5 +54,13 @@ export default {
     panelPushOn: 'ఆన్',
     panelPushOff: 'ఆఫ్',
     panelOpenAlert: 'అలర్ట్ తెరవండి',
+    panelFilterLabel: 'ఫిల్టర్',
+    panelFilterAll: 'అన్నీ',
+    panelFilterUnread: 'చదవనివి',
+    panelFilterAlerts: 'అలర్ట్‌లు',
+    panelFilterInfo: 'సమాచారం',
+    panelClear: 'అన్నీ తొలగించు',
+    panelCleared: 'నోటిఫికేషన్లు తొలగించబడ్డాయి',
+    panelOpenSettings: 'సెట్టింగ్‌లు తెరవండి',
   },
 };

@@ -107,3 +107,56 @@ test('panel styles: slide-in right on desktop, near-full sheet on mobile', () =>
   assert.match(panelCss, /\.bell-badge/, 'bell badge styles exist');
   assert.match(panelCss, /\.npanel \{[\s\S]*?background: var\(--paper\)/, 'panel uses the --paper token');
 });
+
+// --- filters + clear + denied guidance (Crew E, Phase 1) --------------------
+// Spec: the panel keeps user controls for mark read, clear notifications and
+// filter options (unread / alert-linked / info); permission denied gets clear
+// guidance with a link to Settings.
+
+test('filter control: four segmented options, client-side, aria-pressed', () => {
+  assert.match(panelSrc, /FILTERS = \['all', 'unread', 'alerts', 'info'\]/, 'four filters');
+  assert.match(panelSrc, /className="segmented"[^>]*role="group"/, 'segmented group');
+  assert.match(panelSrc, /aria-label=\{t\(lang, 'panelFilterLabel'\)\}/, 'group is labelled');
+  assert.match(panelSrc, /aria-pressed=\{filter === f\}/, 'active filter is announced');
+  // The filter reads the row shape only — never the backend severity.
+  assert.match(panelSrc, /filter === 'unread' \? !n\.read/, 'unread filter');
+  assert.match(panelSrc, /filter === 'alerts' \? !!n\.alert_id/, 'alert-linked filter');
+  assert.match(panelSrc, /filter === 'info' \? !n\.alert_id/, 'info filter');
+  assert.match(panelSrc, /className=\{`seg-opt\$\{filter === f \? ' is-active' : ''\}`\}/,
+    'reuses the shared segmented styles, no new CSS');
+});
+
+test('clear all: server-confirmed mark-read, then local dismissal that persists', () => {
+  assert.match(panelSrc, /const clearAll = \(\) =>/, 'clearAll handler exists');
+  assert.match(panelSrc, /markRead\(\{ all: true, district: loc\.district, device \}\)/,
+    'clear marks everything read on the server first');
+  // Dismissal happens only in the POST success branch — a failed clear
+  // changes nothing, matching the mark-read honesty rule.
+  assert.match(panelSrc, /wgpt\.notifications-cleared/, 'dismissals persist per device');
+  assert.match(panelSrc, /saveCleared\(next\)/, 'cleared ids are saved');
+  assert.match(panelSrc, /panelCleared/, 'success is confirmed, not silent');
+  // Cleared rows stay hidden across refetches (but live in the server log for
+  // other devices — the panel never deletes shared history).
+  assert.match(panelSrc, /!loadCleared\(\)\.has\(n\.id\)/, 'refetch filters cleared ids');
+});
+
+test('clear uses only existing strings/APIs, no new backend contract', () => {
+  assert.match(panelSrc, /notificationsApi\.markRead/, 'clear reuses mark-read');
+  assert.doesNotMatch(panelSrc, /notificationsApi\.clear/, 'no new clear endpoint invented');
+  assert.doesNotMatch(panelSrc, /ntfDelete|ntfRemove/, 'no deletion vocabulary');
+});
+
+test('permission denied gets guidance with a link to Settings', () => {
+  assert.match(panelSrc, /notifyOn && notifyPerm === 'denied'/, 'denied state is named');
+  assert.match(panelSrc, /setView\('settings'\)/, 'link navigates to the settings view');
+  assert.match(panelSrc, /onClose\(\); setView\('settings'\)/, 'the panel closes before navigating');
+  assert.match(panelSrc, /panelOpenSettings/, 'the link has a trilingual string');
+  assert.doesNotMatch(panelSrc, /import SettingsPanel/, 'SettingsPanel itself is not touched');
+});
+
+test('push-reason map is not reintroduced in the panel', () => {
+  // push-enable.test.mjs pins the cross-file invariant; the panel also names
+  // the single import it renders through.
+  assert.match(panelSrc, /import \{ pushReasonKey \} from '\.\.\/notify'/, 'single import');
+  assert.doesNotMatch(panelSrc, /'rsnUnsupported'/, 'no local copy of the map');
+});

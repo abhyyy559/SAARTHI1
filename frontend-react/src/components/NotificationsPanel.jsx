@@ -29,6 +29,30 @@ import Icon from './icons';
 import { SevStamp } from './ui';
 import { KIND_ICON } from './inboxLogic';
 
+const CLEARED_KEY = 'wgpt.notifications-cleared';
+// Notifications the user explicitly cleared on THIS device. Dismissal is
+// local: the server log is the shared honest record, so clearing here must
+// not delete anything for another device — it only hides rows on this one.
+function loadCleared() {
+  try { return new Set(JSON.parse(localStorage.getItem(CLEARED_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function saveCleared(set) {
+  try { localStorage.setItem(CLEARED_KEY, JSON.stringify([...set].slice(-500))); }
+  catch { /* storage unavailable — worst case the list reappears */ }
+}
+
+// Client-side filters. "alerts" = carries an alert id (tap opens the alert);
+// "info" = everything else. The server log stays the source of truth; the
+// filter only decides what this view shows.
+const FILTERS = ['all', 'unread', 'alerts', 'info'];
+const FILTER_KEYS = {
+  all: 'panelFilterAll',
+  unread: 'panelFilterUnread',
+  alerts: 'panelFilterAlerts',
+  info: 'panelFilterInfo',
+};
+
 function stamp(iso) {
   try {
     const d = new Date(iso);
@@ -108,6 +132,8 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
   const [offline, setOffline] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
   const [tick, setTick] = useState(0);
+  const [filter, setFilter] = useState('all');
+  const [cleared, setCleared] = useState(loadCleared);
   const [saving, setSaving] = useState({}); // id -> true while a write is in flight
   const [acked, setAcked] = useState(() => {
     try { return JSON.parse(localStorage.getItem('wgpt.acked') || '{}'); } catch { return {}; }
@@ -122,7 +148,7 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
     notificationsApi.list(loc.district, device)
       .then((d) => {
         if (!alive) return;
-        const list = d.notifications || [];
+        const list = (d.notifications || []).filter((n) => !loadCleared().has(n.id));
         setItems(list);
         setOffline(false);
         setSavedAt(null);
@@ -134,7 +160,8 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
         // Server unreachable: say so in plain words and fall back to what
         // this phone saved — never an infinite spinner.
         const snap = readNotificationSnapshot();
-        setItems(snap ? snap.items : []);
+        const snapItems = (snap ? snap.items : []).filter((n) => !loadCleared().has(n.id));
+        setItems(snapItems);
         setSavedAt(snap ? snap.at : null);
         setOffline(true);
         if (onUnread) onUnread(0);
@@ -187,6 +214,27 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
       .catch(() => { showToast(t(lang, 'ntfActionFailed')); });
   };
 
+  // Clear = mark everything read on the server, then dismiss the rows on this
+  // device. The server only flips after the POST succeeds (same honesty rule
+  // as mark-read); the dismissal itself is local, so another device keeps its
+  // own log. A failed POST changes nothing — no silent partial clear.
+  const clearAll = () => {
+    const ids = (items || []).map((n) => n.id);
+    if (ids.length === 0) return;
+    notificationsApi.markRead({ all: true, district: loc.district, device })
+      .then(() => {
+        setCleared((old) => {
+          const next = new Set(old);
+          ids.forEach((id) => next.add(id));
+          saveCleared(next);
+          return next;
+        });
+        if (onUnread) onUnread(0);
+        showToast(t(lang, 'panelCleared'));
+      })
+      .catch(() => { showToast(t(lang, 'ntfActionFailed')); });
+  };
+
   const ack = (n) => {
     setSaving((s) => ({ ...s, [n.alert_id]: true }));
     notificationsApi.ack({ alert_id: n.alert_id, device })
@@ -214,9 +262,16 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
     onClose();
   };
 
-  const sorted = [...(items || [])]
+  const visible = (items || []).filter((n) => !cleared.has(n.id));
+  const filtered = visible.filter((n) => (
+    filter === 'unread' ? !n.read
+      : filter === 'alerts' ? !!n.alert_id
+        : filter === 'info' ? !n.alert_id
+          : true
+  ));
+  const sorted = [...filtered]
     .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
-  const unread = (items || []).filter((n) => !n.read).length;
+  const unread = visible.filter((n) => !n.read).length;
 
   // Honest push-state line under the switch: permission alone is not push.
   // In-app-only names the reason (same mapping as SettingsPanel, via the
@@ -264,6 +319,18 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
           <div className="np-push-text">
             <span className="np-push-title">{t(lang, 'panelPushTitle')}</span>
             <span className="sub">{pushHint}</span>
+            {/* Permission denied is the one push state the user can fix, but
+                only in browser/app settings — say so and take them there.
+                SettingsPanel itself is Crew G's; this only navigates. */}
+            {notifyOn && notifyPerm === 'denied' && (
+              <button
+                type="button"
+                className="btn btn-ghost sm"
+                onClick={() => { onClose(); setView('settings'); }}
+              >
+                {t(lang, 'panelOpenSettings')}
+              </button>
+            )}
           </div>
           <button
             type="button"
@@ -294,13 +361,29 @@ export default function NotificationsPanel({ open, onClose, onUnread }) {
               : sorted.length === 0 ? <p className="sub">{t(lang, 'ntfEmpty')}</p>
                 : (
                   <>
-                    {unread > 0 && (
-                      <div className="np-actions">
+                    <div className="np-actions">
+                      <div className="segmented" role="group" aria-label={t(lang, 'panelFilterLabel')}>
+                        {FILTERS.map((f) => (
+                          <button
+                            key={f}
+                            type="button"
+                            className={`seg-opt${filter === f ? ' is-active' : ''}`}
+                            aria-pressed={filter === f}
+                            onClick={() => setFilter(f)}
+                          >
+                            {t(lang, FILTER_KEYS[f])}
+                          </button>
+                        ))}
+                      </div>
+                      {unread > 0 && (
                         <button type="button" className="btn btn-ghost sm" onClick={markAllRead}>
                           {t(lang, 'ntfReadAll')} ({unread})
                         </button>
-                      </div>
-                    )}
+                      )}
+                      <button type="button" className="btn btn-ghost sm" onClick={clearAll}>
+                        {t(lang, 'panelClear')}
+                      </button>
+                    </div>
                     {offline && (
                       <p className="warn-chip">
                         {t(lang, 'ntfSavedTag')}{savedAt ? ` · ${stamp(savedAt)}` : ''}
