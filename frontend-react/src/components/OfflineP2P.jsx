@@ -17,6 +17,8 @@ import { t } from '../i18n';
 import Icon from './icons';
 import { Card, SevStamp } from './ui';
 import { readCache, readQueue, useOnline, probeOfflineShell, saveDemoAlertsSnapshot } from '../offline';
+import QrRelay from './QrRelay';
+import QrScan from './QrScan';
 import {
   checkedAgo,
   drainQueue,
@@ -68,6 +70,10 @@ export default function OfflineP2P({
   const [demoAlerts, setDemoAlerts] = useState([]);
   const [relayNote, setRelayNote] = useState('');
   const bcRef = useRef(null);
+  // QR relay (real device-to-device): 'show' | 'scan'. `qrForward` holds a
+  // next-hop envelope when the receiver chooses "relay this further".
+  const [qrTab, setQrTab] = useState('show');
+  const [qrForward, setQrForward] = useState(null);
 
   useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
@@ -454,6 +460,60 @@ export default function OfflineP2P({
               ))}
             </div>
           </>
+        )}
+      </Card>
+
+      {/* 5 — QR relay (REAL device-to-device) ---------------------------------
+          Unlike the simulated relay above, this needs no internet at all: one
+          phone shows the alert as rotating QR frames, the other scans them
+          with its camera. No SIMULATED stamp here — this path is real. */}
+      <Card
+        title={t(lang, 'qrTitle')}
+        sub={t(lang, 'qrSub')}
+        actions={(
+          <span className="chip" role="status">
+            <Icon name="offline" size={14} />
+            <span>{t(lang, online ? 'op2pConnOnline' : 'op2pConnOffline')}</span>
+          </span>
+        )}
+      >
+        <div className="chip-row" role="tablist" aria-label={t(lang, 'qrTitle')} style={{ marginBottom: 12 }}>
+          {['show', 'scan'].map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={qrTab === tab}
+              className="chip"
+              style={{
+                cursor: 'pointer', minHeight: 44,
+                fontWeight: qrTab === tab ? 700 : 400,
+                borderWidth: qrTab === tab ? 2 : 1,
+              }}
+              onClick={() => { setQrTab(tab); setQrForward(null); }}
+            >
+              <Icon name={tab === 'show' ? 'eye' : 'search'} size={14} />
+              <span>{t(lang, tab === 'show' ? 'qrShowTab' : 'qrScanTab')}</span>
+            </button>
+          ))}
+        </div>
+        {qrTab === 'show' ? (
+          <QrRelay
+            alerts={allAlerts}
+            lang={lang}
+            deviceLabel={t(lang, 'op2pThisPhone')}
+            relayEnvelope={qrForward}
+          />
+        ) : (
+          <QrScan
+            api={api}
+            lang={lang}
+            district={district}
+            deviceId={deviceId}
+            online={online}
+            deviceLabel={t(lang, 'op2pThisPhone')}
+            onRelayFurther={(env) => { setQrForward(env); setQrTab('show'); }}
+          />
         )}
       </Card>
     </div>
