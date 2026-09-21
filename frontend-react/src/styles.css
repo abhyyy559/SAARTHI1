@@ -346,6 +346,14 @@ button.chip:active { transform: translateY(1px); }
 .ac-meta svg { vertical-align: -2px; }
 .alert-card.is-expired { opacity: 0.65; }
 
+/* Alerts redesign (Worker 2): community observations live BELOW the emergency
+   list, visually separated by a dashed rule and honestly badged — they can
+   never be mistaken for official warnings. */
+.community-sec { border-top: 2px dashed var(--ink); margin-top: 24px; padding-top: 6px; }
+.community-sec .alert-sec-title { margin-top: 12px; }
+/* "Not available" is a fact, not a failure — quieter than real values. */
+.det-na { color: var(--ink-soft); font-style: italic; }
+
 /* Lifecycle stepper */
 .stepper { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--card); }

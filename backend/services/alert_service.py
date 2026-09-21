@@ -148,6 +148,94 @@ def timeline(alert: dict[str, Any] | None) -> list[dict[str, Any]]:
     return list(history) if isinstance(history, list) else []
 
 
+# ---------------------------------------------------------------------------
+# Full lifecycle detail (alerts redesign).
+#
+# The Alerts detail view shows, per alert: when it started, when it completed
+# or is expected to end, effects, who issued it, and why. This helper reads
+# ONLY fields the backend actually has — a missing field stays None and the
+# frontend says "not available" honestly. Nothing is invented here.
+#
+# Mapping (pure, no network, no severity math):
+#   started_at      demo: the store's own stamp on activate; CAP: the feed's
+#                         `onset` (or `effective`). An UPCOMING demo alert has
+#                         none — it has not started.
+#   expected_end_at demo: `ends_at`; CAP: the feed's `expires`.
+#   completed_at    demo: the store's own stamp on ENDED/CANCELLED. Official
+#                         feeds that expire silently leave it None — the UI
+#                         says "not available" rather than guessing.
+#   issuer          demo: the alert's `issuer`, default DEMO; CAP: the feed's
+#                         `sender`, default NDMA-Sachet-CAP.
+#   reason          demo: the alert's `reason`; CAP: urgency/certainty as the
+#                         feed sent them (untranslated source values).
+#   effects         demo: the alert's `effects`; CAP: the feed's description
+#                         (the feed's own wording, shown as-is).
+# ---------------------------------------------------------------------------
+
+_EMPTY_LIFECYCLE = {
+    "started_at": None,
+    "expected_end_at": None,
+    "completed_at": None,
+    "issuer": None,
+    "reason": None,
+    "effects": None,
+}
+
+
+def _lifecycle_is_demo(alert: dict[str, Any]) -> bool:
+    src = str(alert.get("source") or "").lower()
+    ident = str(alert.get("id") or alert.get("identifier") or "").lower()
+    return "demo" in src or ident.startswith("demo-")
+
+
+def _lifecycle_reason(alert: dict[str, Any], demo: bool) -> str | None:
+    if demo:
+        reason = str(alert.get("reason") or "").strip()
+        return reason or None
+    parts = [
+        str(alert.get("urgency") or "").strip(),
+        str(alert.get("certainty") or "").strip(),
+    ]
+    joined = ", ".join(p for p in parts if p)
+    return joined or None
+
+
+def lifecycle_detail(alert: dict[str, Any] | None) -> dict[str, Any | None]:
+    """Canonical full-lifecycle fields for the Alerts detail view (pure)."""
+    if not isinstance(alert, dict):
+        return dict(_EMPTY_LIFECYCLE)
+    demo = _lifecycle_is_demo(alert)
+    effects = str(alert.get("effects") or "").strip() or None
+    if not effects and not demo:
+        effects = str(alert.get("description") or "").strip() or None
+    sender = str(alert.get("sender") or "").strip()
+    issuer_field = str(alert.get("issuer") or "").strip()
+    issuer = issuer_field or sender or ("DEMO" if demo else CAP_SOURCE)
+    return {
+        "started_at": (
+            alert.get("started_at") or None
+            if demo
+            else (alert.get("onset") or alert.get("effective") or None)
+        ),
+        "expected_end_at": (
+            alert.get("ends_at") or None
+            if demo
+            else (alert.get("expires") or alert.get("valid_until") or None)
+        ),
+        "completed_at": alert.get("completed_at") or None,
+        "issuer": issuer,
+        "reason": _lifecycle_reason(alert, demo),
+        "effects": effects,
+    }
+
+
+def attach_lifecycle_detail(alert: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Set `alert["lifecycle_detail"]` in place (the API-served shape)."""
+    if isinstance(alert, dict):
+        alert["lifecycle_detail"] = lifecycle_detail(alert)
+    return alert
+
+
 def official_only() -> bool:
     """True in `imd` mode: IMD facts or nothing, so the commercial chain is
     skipped entirely (docs/SOURCE-MODES.md)."""
@@ -193,9 +281,11 @@ def _merge(bucket: dict[str, list[dict]], alert: dict, *, lat: float, lon: float
     kind = classify_alert(alert, lat=lat, lon=lon, district=district, state_name=state_name)
     if kind == "relevant":
         bucket["relevant"].append(alert)
+        attach_lifecycle_detail(alert)
         return True
     if kind == "nearby":
         bucket["nearby"].append(alert)
+        attach_lifecycle_detail(alert)
         return True
     return False
 

@@ -6,6 +6,11 @@
 // The backend is authoritative: severity is rendered from the alert dict,
 // never re-derived here. Rows carry relative timestamps ("2 min ago") so the
 // board reads as live, not as a rumor mill.
+//
+// The main list is EMERGENCY alerts only. Community observations are fetched
+// too, but they render in a separate, clearly badged section BELOW the
+// emergency list (COMMUNITY provenance, never presented as official warnings)
+// — they must never sit in the main list, and never become warnings.
 import { useCallback, useEffect, useState } from 'react';
 import { api, demoAlertApi } from '../api';
 import { t } from '../i18n';
@@ -15,6 +20,13 @@ import { SevStamp } from './ui';
 import { relTime, mergeAlerts } from './inboxLogic';
 import AlertDetails from './AlertDetails';
 
+// Defensive: an item is community-provenance (not an emergency alert) and
+// must be kept out of the main list no matter which feed it arrived on.
+function isCommunityItem(a) {
+  const prov = String(a.provenance || a.source || '').toUpperCase();
+  return prov === 'COMMUNITY' || a._origin === 'community';
+}
+
 function alertKey(a) {
   return String(a.id || a.identifier || a.headline || Math.random());
 }
@@ -23,11 +35,24 @@ function alertTime(a) {
   return a.updated_at || a.issued_at || a.sent || a.created_at || '';
 }
 
+// Community report types -> translated word. Same keys AlertCenter uses, so
+// the two surfaces can never disagree on what a report type is called.
+const REPORT_WORD = {
+  flooding: 'rtFlooding',
+  road_blocked: 'rtRoadBlocked',
+  fallen_tree: 'rtFallenTree',
+  damage: 'rtDamage',
+  waterlogging: 'rtWaterlogging',
+};
+
 export default function AlertsList({ initialAlertId = null }) {
   const { lang, loc, syncTick, speak } = useApp();
   const [alerts, setAlerts] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
   const [openId, setOpenId] = useState(initialAlertId);
+  // Community observations: fetched alongside, rendered in their own honestly
+  // badged section below the emergency list — never in it.
+  const [reports, setReports] = useState([]);
   const [tick, setTick] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -59,8 +84,16 @@ export default function AlertsList({ initialAlertId = null }) {
         official.unshift({ ...w.warning, headline: w.warning.message });
       }
       const demo = [...(d?.alerts || [])];
-      setAlerts(mergeAlerts(official, demo));
+      // Emergency alerts only in the main list. Community items are shown in
+      // their own section below, so a stray community-provenance item is
+      // filtered here, not promoted to an emergency alert.
+      setAlerts(mergeAlerts(official, demo).filter((a) => !isCommunityItem(a)));
     });
+    // Community observations render separately; their failure must never
+    // change the emergency list (or its empty states).
+    api.reports(loc.district)
+      .then((r) => { if (alive) setReports(r.reports || []); })
+      .catch(() => { /* offline - keep the reports we already have */ });
     return () => { alive = false; };
   }, [locKey, loc.district, loc.lat, loc.lon, syncTick, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -94,7 +127,11 @@ export default function AlertsList({ initialAlertId = null }) {
   }
 
   return (
-    <div className="alerts-list" role="list">
+    <>
+      <div className="alert-sec-title">
+        <span className="kicker">{t(lang, 'alertsEmergencyTitle')}</span>
+      </div>
+      <div className="alerts-list" role="list">
       {alerts.map((a) => {
         const key = alertKey(a);
         const open = openId === key;
@@ -158,6 +195,31 @@ export default function AlertsList({ initialAlertId = null }) {
           </div>
         );
       })}
-    </div>
+      </div>
+      {/* Community observations live here, never in the emergency list above.
+          COMMUNITY provenance is badged on the section and on every row, in
+          machine-readable form, so a community report can never be mistaken
+          for an official warning. */}
+      <section className="community-sec" aria-label={t(lang, 'commSecTitle')}>
+        <div className="alert-sec-title">
+          <span className="kicker">{t(lang, 'commSecTitle')}</span>
+          <span className="prov COMMUNITY">COMMUNITY</span>
+        </div>
+        <p className="sub">{t(lang, 'commSecSub')}</p>
+        {reports.length === 0 ? (
+          <p className="sub">{t(lang, 'commEmpty')}</p>
+        ) : (
+          reports.map((r) => (
+            <div className="evrow" key={r.report_id || r.id || r.text}>
+              <span className="k">
+                {r.report_type ? t(lang, REPORT_WORD[r.report_type] || 'commReportType') : t(lang, 'commReportType')}
+                {' · '}{r.district}
+              </span>
+              <span>{r.text} <span className="prov COMMUNITY">COMMUNITY</span></span>
+            </div>
+          ))
+        )}
+      </section>
+    </>
   );
 }

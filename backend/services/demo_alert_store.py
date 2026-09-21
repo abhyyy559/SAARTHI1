@@ -7,6 +7,12 @@ bridge in `store_bridge.py` moves data to whichever backend is configured.
 
 Each alert: title, hazard, severity (RED/ORANGE/YELLOW), district, area,
 instruction, pre_alert_at, starts_at, ends_at, state, history[].
+Full-lifecycle detail (alerts redesign): issuer, reason, effects are set at
+creation (or patched later); started_at is stamped when the alert is
+activated; completed_at is stamped when it reaches a terminal state
+(ENDED/CANCELLED). `alert["lifecycle_detail"]` is attached on every read via
+`alert_service.lifecycle_detail` — it only ever reflects fields the store
+actually has.
 State moves only via `alert_service.set_lifecycle` — never invented here.
 """
 from __future__ import annotations
@@ -78,17 +84,28 @@ def create(fields: dict[str, Any]) -> dict[str, Any]:
         "pre_alert_at": fields.get("pre_alert_at"),
         "starts_at": fields.get("starts_at"),
         "ends_at": fields.get("ends_at"),
+        # Full-lifecycle detail (alerts redesign): who issued it, why, effects.
+        # Never invented: empty means the admin did not provide it.
+        "issuer": str(fields.get("issuer") or "").strip(),
+        "reason": str(fields.get("reason") or "").strip(),
+        "effects": str(fields.get("effects") or "").strip(),
+        "started_at": None,
+        "completed_at": None,
         "state": "UPCOMING",
         "history": [{"at": now, "action": "create", "state": "UPCOMING"}],
         "created_at": now,
         "updated_at": now,
     }
+    alert["lifecycle_detail"] = alert_service.lifecycle_detail(alert)
     run(db.doc_put(_NS, alert["id"], alert))
     return alert
 
 
 def get(alert_id: str) -> dict[str, Any] | None:
-    return run(db.doc_get(_NS, alert_id))
+    alert = run(db.doc_get(_NS, alert_id))
+    if alert is not None:
+        alert["lifecycle_detail"] = alert_service.lifecycle_detail(alert)
+    return alert
 
 
 def list_all(district: str = "") -> list[dict[str, Any]]:
@@ -98,6 +115,9 @@ def list_all(district: str = "") -> list[dict[str, Any]]:
     items = list(alerts.values())
     if district:
         items = [a for a in items if str(a.get("district") or "").lower() == district.lower()]
+    for a in items:
+        if isinstance(a, dict):
+            a["lifecycle_detail"] = alert_service.lifecycle_detail(a)
     return sorted(items, key=lambda a: str(a.get("created_at") or ""))
 
 
@@ -113,7 +133,23 @@ def apply_action(alert_id: str, action: str, patch: dict[str, Any] | None = None
         return None, "not-found"
     patch = dict(patch or {})
     for key in ("title", "hazard", "district", "area", "instruction",
-                "pre_alert_at", "starts_at", "ends_at"):
+                "pre_alert_at", "starts_at", "ends_at",
+                # Full-lifecycle detail (alerts redesign): editable like the
+                # other content fields.
+                "issuer", "reason", "effects"):
+        if key in patch and patch[key] is not None:
+            alert[key] = patch[key]
+    if "severity" in patch and patch["severity"] is not None:
+        sev = str(patch["severity"]).upper()
+        if sev not in SEVERITIES:
+            return alert, f"bad-severity: {patch['severity']!r}"
+        alert["severity"] = sev
+    patch = dict(patch or {})
+    for key in ("title", "hazard", "district", "area", "instruction",
+                "pre_alert_at", "starts_at", "ends_at",
+                # Full-lifecycle detail (alerts redesign): editable like the
+                # other content fields.
+                "issuer", "reason", "effects"):
         if key in patch and patch[key] is not None:
             alert[key] = patch[key]
     if "severity" in patch and patch["severity"] is not None:
@@ -123,12 +159,21 @@ def apply_action(alert_id: str, action: str, patch: dict[str, Any] | None = None
         alert["severity"] = sev
     new_state, error = alert_service.set_lifecycle(alert, action)
     if error:
+        alert["lifecycle_detail"] = alert_service.lifecycle_detail(alert)
         return alert, error
     now = iso_now()
     alert["updated_at"] = now
+    # Full-lifecycle timestamps (alerts redesign): stamp when it actually
+    # started, and when it reached a terminal state. Never backfilled or
+    # guessed — an existing stamp is kept.
+    if new_state == "ACTIVE" and not alert.get("started_at"):
+        alert["started_at"] = now
+    if new_state in alert_service.TERMINAL_STATES and not alert.get("completed_at"):
+        alert["completed_at"] = now
     alert.setdefault("history", []).append(
         {"at": now, "action": alert_service.normalise_action(action), "state": new_state}
     )
+    alert["lifecycle_detail"] = alert_service.lifecycle_detail(alert)
     run(db.doc_put(_NS, alert_id, alert))
     return alert, None
 
