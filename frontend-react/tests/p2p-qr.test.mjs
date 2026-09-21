@@ -4,10 +4,9 @@
 //  1. Real unit tests over frontend-react/src/p2pqr.js (dependency-free, so
 //     it imports cleanly in plain node): framing, chunking, reassembly,
 //     checksums, hop limits, provenance.
-//  2. Source-level contracts over QrRelay.jsx / QrScan.jsx in the style of
-//     offlinep2p.test.mjs: the sender path makes ZERO network calls, the real
-//     QR path never carries the SIMULATED stamp, and the P2P provenance badge
-//     is unconditional.
+//  2. Source-level contracts over QrRelay.jsx / QrScan.jsx: the sender path
+//     makes ZERO network calls, the real QR path never carries the SIMULATED
+//     stamp, and the P2P provenance badge is unconditional.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -297,11 +296,12 @@ test('QrScan.jsx: the only network call is the queued ack via the api prop', () 
   assert.ok(src.includes('syncP2PAcks(api'), 'acks sync via the api prop');
 });
 
+// The separate P2P page was removed in Phase 1 (the QR relay is a background
+// capability only), so embedding is a prop contract now, not a panel check.
 test('QrRelay.jsx: bare mode avoids duplicate card titles when embedded', () => {
   const src = read('../src/components/QrRelay.jsx');
   assert.ok(src.includes('bare'), 'bare prop exists for embedding');
-  const panel = read('../src/components/OfflineP2P.jsx');
-  assert.ok(/<QrRelay[\s\S]*?bare/.test(panel), 'panel embeds QrRelay bare (no double title)');
+  assert.ok(/bare[\s\S]*?Card/.test(src), 'bare mode renders via Card');
 });
 
 test('the real QR path never wears the SIMULATED stamp', () => {
@@ -328,10 +328,6 @@ test('p2pqr strings exist in all three languages', () => {
   }
 });
 
-test('OfflineP2P.jsx mounts the QR card without touching the simulated relay', () => {
-  const src = read('../src/components/OfflineP2P.jsx');
-  assert.ok(src.includes('QrRelay'), 'sender mounted');
-  assert.ok(src.includes('QrScan'), 'receiver mounted');
-  // The existing simulated relay card and its stamp are untouched.
-  assert.ok(src.includes('p2pSimulated'), 'simulated relay keeps its stamp');
-});
+// (The old 'OfflineP2P.jsx mounts the QR card' test was removed with the
+// P2P page in Phase 1; QrRelay/QrScan import coverage above still holds.)
+

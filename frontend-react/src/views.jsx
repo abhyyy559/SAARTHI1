@@ -136,10 +136,8 @@ export function AdvisoryView() {
   );
 }
 
-// Offline & P2P: the game-changer lives on its own More-sheet route.
-// NOTE (Agent 2): their OfflineP2P panel owns this route (mounted per the
-// agent2-integration contract); OfflineView.jsx is the thin route shell.
-export { default as OfflineView } from './components/OfflineView';
+// Offline & P2P: no separate page or nav section (Phase 1). The QR relay
+// (QrRelay/QrScan over src/p2pqr.js) remains a background capability only.
 
 // Aviation is a PROFILE, not a route: the briefing renders on Home for the
 // aviation persona (see Home.jsx). There is no public aviation view.

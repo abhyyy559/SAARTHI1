@@ -28,7 +28,6 @@ const NAV_ICONS = {
 // Notifications are NOT a More-sheet row: the topbar bell opens the
 // notifications side panel, which is the one and only notifications home.
 const MORE_ROWS = [
-  { view: 'offline', labelKey: 'navOffline', icon: 'offline' },
   { view: 'trust', labelKey: 'navTrustSources', icon: 'shield' },
   { view: 'settings', labelKey: 'navSettings', icon: 'list' },
 ];
