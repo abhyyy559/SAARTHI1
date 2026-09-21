@@ -15,6 +15,10 @@
 //   store's setDistrict — the hero only reads the location surface.
 // - The ask entry below still submits through the store's ask() (Phase 0
 //   behaviour) and scrolls to the chat composer; HomeChat itself is untouched.
+// - Lens icon chips are tinted from the SKY weather palette (one per lens
+//   type) — a weather cue, never a severity cue. The verdict stamp below the
+//   dial is the only loud colour on this screen: solid priority colour with
+//   icon + word, matching the SeverityDial's four arcs.
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { t, DISTRICTS } from '../i18n';
@@ -53,6 +57,11 @@ const SKY = {
   heat:  { bg: 'linear-gradient(135deg,#F7B26E 0%,#E57E35 100%)', fg: '#2E1D0E' },
 };
 const SKY_NONE = { bg: 'linear-gradient(135deg,#F6F1E7 0%,#E9E1D2 100%)', fg: '#2A2419' };
+
+// Lens icon chips: each safety lens carries its own condition tint — the sky
+// treatment for that lens type (weather colour, never severity colour — the
+// honesty contract above). One visual cue per box, 2px ink borders retained.
+const LENS_TONE = { heat: SKY.heat, rain: SKY.rain, wind: SKY.wind };
 
 const fmt1 = (v) => {
   const n = Number(v);
@@ -126,13 +135,18 @@ const PROV_CHIP = {
   letterSpacing: '.05em',
 };
 
-function Lens({ icon, label, value, unit, note, missing, lang }) {
+function Lens({ icon, label, value, unit, note, missing, lang, tone }) {
+  const chip = LENS_TONE[tone];
   return (
     <div role="listitem" style={{
       display: 'flex', gap: 12, alignItems: 'flex-start', background: '#fff',
       border: '2px solid var(--ink)', borderRadius: 12, padding: '10px 12px', flex: '1 1 0', minWidth: 150,
     }}>
-      <span aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }}><Icon name={icon} size={26} /></span>
+      <span aria-hidden="true" style={{
+        flexShrink: 0, marginTop: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 42, height: 42, borderRadius: 10, border: '2px solid var(--ink)',
+        background: chip ? chip.bg : '#fff', color: chip ? chip.fg : 'var(--ink)',
+      }}><Icon name={icon} size={24} /></span>
       <span style={{ minWidth: 0 }}>
         <span style={{ display: 'block', fontSize: 12, fontWeight: 700, opacity: 0.75 }}>{label}</span>
         {missing ? (
@@ -253,9 +267,9 @@ export default function HomeHero() {
   // plain description of what the air is doing. Missing → lensNA.
   const heatNote = [heatWord(temp, lang), hum != null ? `${hum}% ${t(lang, 'humidity')}` : null].filter(Boolean).join(' · ');
   const lenses = [
-    { icon: 'thermometer', label: t(lang, 'lensHeat'), value: temp != null ? `${temp}°` : null, unit: null, note: heatNote || null, missing: temp == null },
-    { icon: 'rain', label: t(lang, 'lensRain'), value: rain != null ? fmt1(rain) : null, unit: rain != null ? t(lang, 'rainMm') : null, note: rainWord(rain, lang), missing: rain == null },
-    { icon: 'wind', label: t(lang, 'lensWind'), value: wind != null ? String(Math.round(wind)) : null, unit: wind != null ? t(lang, 'windKmh') : null, note: windWord(wind, lang), missing: wind == null },
+    { icon: 'thermometer', tone: 'heat', label: t(lang, 'lensHeat'), value: temp != null ? `${temp}°` : null, unit: null, note: heatNote || null, missing: temp == null },
+    { icon: 'rain', tone: 'rain', label: t(lang, 'lensRain'), value: rain != null ? fmt1(rain) : null, unit: rain != null ? t(lang, 'rainMm') : null, note: rainWord(rain, lang), missing: rain == null },
+    { icon: 'wind', tone: 'wind', label: t(lang, 'lensWind'), value: wind != null ? String(Math.round(wind)) : null, unit: wind != null ? t(lang, 'windKmh') : null, note: windWord(wind, lang), missing: wind == null },
   ];
 
   const generatedAt = (warn && (warn.generated_at || warn.snapshotAt)) || null;
@@ -349,7 +363,7 @@ export default function HomeHero() {
       <p style={{ fontSize: 13, fontWeight: 800, margin: '0 0 8px' }}>{t(lang, 'lensTitle')}</p>
       <div role="list" aria-label={t(lang, 'lensTitle')} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {lenses.map((l) => (
-          <Lens key={l.icon} icon={l.icon} label={l.label} value={l.value} unit={l.unit} note={l.note} missing={l.missing} lang={lang} />
+          <Lens key={l.icon} icon={l.icon} tone={l.tone} label={l.label} value={l.value} unit={l.unit} note={l.note} missing={l.missing} lang={lang} />
         ))}
       </div>
 

@@ -16,7 +16,9 @@ import { splitAdvisory } from '../format';
 
 // Every user type the product serves — the pitch's "one platform, many users".
 // Keep in sync with advisory_service._NO_WARN keys (backend decides wording).
-const USER_TYPES = [
+// Exported: the picker grid now lives in SettingsPanel (your profile); this
+// module keeps AdviceCard for Advisory itself.
+export const USER_TYPES = [
   { id: 'general', icon: 'user', key: 'utGeneral' },
   { id: 'farmer', icon: 'crop', key: 'utFarmer' },
   { id: 'driver', icon: 'truck', key: 'utDriver' },
@@ -29,6 +31,27 @@ const USER_TYPES = [
   { id: 'researcher', icon: 'chart', key: 'utResearch' },
   { id: 'disaster_manager', icon: 'shield', key: 'utDisaster' },
 ];
+
+// The picker card itself: a tap calls onPick(ut.id), and the Settings grid
+// wires onPick to the store's setPersona — "a card tap sets the role for the
+// whole app". Exported so SettingsPanel can render the identical picker
+// without duplicating it. The advice body below belongs to AdviceCard.
+export function RoleCard({ ut, active, onPick }) {
+  const { lang } = useApp();
+  return (
+    <button
+      type="button"
+      className={`role-card${active ? ' is-active' : ''}`}
+      data-user={ut.id}
+      onClick={() => onPick(ut.id)}
+      aria-pressed={active}
+    >
+      <span className="tile-icon" aria-hidden="true"><Icon name={ut.icon} size={22} /></span>
+      <span className="rc-label">{t(lang, ut.key)}</span>
+      {active && <span className="rc-you">{t(lang, 'utYou')}</span>}
+    </button>
+  );
+}
 
 function AdviceCard({ ut, active, onPick }) {
   const { lang, loc, speak, setView, setPendingAsk, syncTick } = useApp();
@@ -48,17 +71,7 @@ function AdviceCard({ ut, active, onPick }) {
   const split = data && !err ? splitAdvisory(data.advisory) : null;
   return (
     <>
-      <button
-        type="button"
-        className={`role-card${active ? ' is-active' : ''}`}
-        data-user={ut.id}
-        onClick={() => onPick(ut.id)}
-        aria-pressed={active}
-      >
-        <span className="tile-icon" aria-hidden="true"><Icon name={ut.icon} size={22} /></span>
-        <span className="rc-label">{t(lang, ut.key)}</span>
-        {active && <span className="rc-you">{t(lang, 'utYou')}</span>}
-      </button>
+      <RoleCard ut={ut} active={active} onPick={onPick} />
       {active && (
         <div className="adv-body" role="status">
           {!data && !err ? <span className="mono">{t(lang, 'checking')}</span>
@@ -94,29 +107,29 @@ function AdviceCard({ ut, active, onPick }) {
 }
 
 export default function Advisor() {
-  const { lang, persona, setPersona } = useApp();
+  const { lang, persona, setPersona, setView } = useApp();
   // The open card IS the profile — never a private copy of it. Holding it in
   // local state (`useState(persona)`) meant a profile switch from the top bar
   // left the previous card open, so its advice stayed on screen and no fetch
   // ran for the new profile. A reload re-initialised that state from `persona`,
   // which is exactly why a manual refresh appeared to "fix" it.
+  //
+  // The picker grid moved to Settings (your profile). Advisory reads the
+  // stored persona and renders its advice; when unset it says so plainly and
+  // links to Settings — never picks a role silently.
+  const activeType = USER_TYPES.find((ut) => ut.id === persona);
   return (
     <Card title={t(lang, 'advTitle')} sub={t(lang, 'advSub')}>
-      {/* The consequence, stated once: a card tap sets the role for the whole
-          app — Home, Ask and My advice all follow it. */}
-      <p className="consequence"><Icon name="user" size={14} /> {t(lang, 'advSwitchNote')}</p>
-      {/* M1: the role starts unset — say so in plain words, never pick one
-          silently. */}
-      {!persona && (
+      {activeType ? (
+        <AdviceCard key={activeType.id} ut={activeType} active onPick={setPersona} />
+      ) : (
         <div className="honesty-note" role="note" style={{ marginBottom: 10 }}>
-          {t(lang, 'roleNotSet')}
+          <p style={{ margin: '0 0 8px' }}>{t(lang, 'roleNotSet')}</p>
+          <button type="button" className="btn btn-ghost sm" onClick={() => setView('settings')}>
+            {t(lang, 'locOpenSettings')}
+          </button>
         </div>
       )}
-      <div className="role-grid" data-tour="persona-grid">
-        {USER_TYPES.map((ut) => (
-          <AdviceCard key={ut.id} ut={ut} active={persona === ut.id} onPick={setPersona} />
-        ))}
-      </div>
       <p className="sub" style={{ marginTop: 8 }}>{t(lang, 'advNote')}</p>
     </Card>
   );

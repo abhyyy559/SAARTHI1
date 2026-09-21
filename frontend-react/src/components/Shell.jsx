@@ -24,11 +24,12 @@ const NAV_ICONS = {
   admin: 'layers',
 };
 
-// IA dedup: three primary tabs; everything else lives in the More sheet.
+// IA dedup: three primary tabs; the rest live in the More sheet —
+// EXCEPT Trust & sources, which moved out of nav into the quiet app
+// footer below the main content (and stays reachable via ?view=trust).
 // Notifications are NOT a More-sheet row: the topbar bell opens the
 // notifications side panel, which is the one and only notifications home.
 const MORE_ROWS = [
-  { view: 'trust', labelKey: 'navTrustSources', icon: 'shield' },
   { view: 'settings', labelKey: 'navSettings', icon: 'list' },
 ];
 // NOTE: the old admin row was removed from MORE_ROWS on purpose — admin
@@ -44,8 +45,8 @@ const MORE_ROWS = [
 // or the user taps it away.
 // final transcript, error, timeout, or permission denial.
 function VoicePopups() {
-  const { lang, speechState, stopSpeaking, listenState } = useApp();
-  const model = resolveVoicePopup({ speechState, listenState });
+  const { lang, speechState, speechNote, stopSpeaking, listenState } = useApp();
+  const model = resolveVoicePopup({ speechState, listenState, speechNote });
   if (!model) return null;
   return (
     <div className="voice-popup" role="status" aria-live="polite">
@@ -395,6 +396,20 @@ export default function Shell({ children }) {
         <main id="main" tabIndex={-1}>
           {children}
         </main>
+
+        {/* Quiet app footer — Trust & sources demoted out of the nav menu.
+            Small, muted, no loud button. The view stays a first-class
+            standalone view (footer tap or ?view=trust deep link). */}
+        <footer className="app-foot">
+          <button
+            type="button"
+            className="app-foot-link"
+            onClick={() => setView('trust')}
+            aria-current={view === 'trust' ? 'page' : undefined}
+          >
+            {t(lang, 'navTrustSources')}
+          </button>
+        </footer>
       </div>
 
       <MobileNav current={view} moreOpen={moreOpen} onPick={() => setMoreOpen(true)} />

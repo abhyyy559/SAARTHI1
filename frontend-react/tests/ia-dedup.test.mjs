@@ -1,9 +1,11 @@
 // IA dedup + 360px regression tests (2026-09-20).
 //
 // The public IA is Home · Alerts · Advisory · the bell (notifications panel)
-// · More (Trust & sources, Settings, tour replay). Ask / Advisor / Details /
-// Sources / Offline-P2P routes are gone; their content was folded in (P2P's QR
-// relay remains a background capability with no page).
+// · More (Settings, tour replay) · the quiet app footer (Trust & sources).
+// Ask / Advisor / Details / Sources / Offline-P2P routes are gone; their
+// content was folded in (P2P's QR relay remains a background capability with
+// no page). Trust left the nav menu for the footer and stays reachable via
+// ?view=trust.
 // Aviation is a PROFILE, not a menu row — its briefing renders on Home for
 // the aviation persona. Everything must render without horizontal overflow at
 // 320–360px.
@@ -34,8 +36,14 @@ test('More sheet lists the deduped destinations; notifications moved to the bell
   // which is the one and only notifications home. The offline/P2P page left
   // the sheet too (conversational-first rebuild): the QR relay is a background
   // capability with no screen.
-  for (const v of ['trust', 'settings'])
+  for (const v of ['settings'])
     assert.match(shell, new RegExp(`\\{ view: '${v}'`), `More sheet must list ${v}`);
+  // Trust & sources left the nav menu for the quiet app footer (2026-09-21):
+  // it must not be a More-sheet row, but the footer link must navigate to it.
+  assert.doesNotMatch(shell, /\{ view: 'trust'/, 'trust must not be a More-sheet/rail row anymore');
+  assert.match(shell, /<footer className="app-foot">/, 'the quiet app footer must exist');
+  assert.match(shell, /setView\('trust'\)/, 'the footer link must navigate to the trust view');
+  assert.match(shell, /navTrustSources/, 'the footer link must reuse the navTrustSources label');
   assert.doesNotMatch(shell, /\{ view: 'offline'/, 'offline/P2P must not be a More-sheet row anymore');
   assert.doesNotMatch(shell, /\{ view: 'notifications'/, 'notifications must not be a More-sheet/rail row');
   // Tour replay is the last row.

@@ -59,12 +59,17 @@ export function encodeMicFrame(float32, fromRate) {
   return base64FromBytes(new Uint8Array(pcm.buffer));
 }
 
-// Maps (speechState, listenState) to the single voice popup to show, or null.
-// TTS wins when both are active (the mic and the speaker rarely overlap).
-// Label keys resolve via t(lang, key) in en/hi/te — no new i18n keys needed.
-export function resolveVoicePopup({ speechState, listenState } = {}) {
+// Maps (speechState, listenState, speechNote) to the single voice popup to
+// show, or null. TTS wins when both are active (the mic and the speaker
+// rarely overlap). A transient muted note renders only while TTS is idle,
+// so it flashes briefly without ever colliding with the Speaking card.
+// Label keys resolve via t(lang, key) in en/hi/te.
+export function resolveVoicePopup({ speechState, listenState, speechNote } = {}) {
   if (speechState === 'loading' || speechState === 'playing') {
     return { kind: 'tts', labelKey: 'speaking', subKey: null, visual: 'pulse' };
+  }
+  if (speechState === 'idle' && speechNote === 'voiceMuted') {
+    return { kind: 'note', labelKey: 'voiceMuted', subKey: null, visual: 'dot' };
   }
   if (listenState === 'recording') {
     return { kind: 'stt', labelKey: 'voiceListening', subKey: 'voiceTapFinish', visual: 'bars' };

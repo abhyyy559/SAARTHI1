@@ -26,14 +26,19 @@ def test_store_exposes_persona_and_district():
 
 
 def test_persona_role_grid_writes_to_store():
-    # Persona selection moved out of the topbar into the Advisor role grid
-    # (signal-board redesign: a role-card grid, no dropdown). Pin the new
-    # wiring so a persona tap can never silently become cosmetic again.
+    # Persona selection moved out of Advisory into Settings (the profile row).
+    # Pin the new wiring so a persona tap can never silently become cosmetic
+    # again.
+    settings = _read(os.path.join('components', 'SettingsPanel.jsx'))
+    assert re.search(r"onPick=\{setPersona\}", settings), \
+        "Settings role grid must wire onPick to the store's setPersona"
+    assert re.search(r"className=\"role-grid\"", settings), \
+        "the persona role grid must render inside SettingsPanel"
     advisor = _read(os.path.join('components', 'Advisor.jsx'))
+    assert "className=\"role-grid\"" not in advisor, \
+        "Advisor must no longer render the persona role grid"
     assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*onPick\(ut\.id\)", advisor), \
         "role card tap must call onPick with the user type"
-    assert re.search(r"onPick=\{setPersona\}", advisor), \
-        "role grid must wire onPick to the store's setPersona"
     # District selection likewise moved out of the topbar — it now lives in
     # the location prompt's manual district chips.
     loc = _read(os.path.join('components', 'LocationPrompt.jsx'))

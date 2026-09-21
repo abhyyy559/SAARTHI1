@@ -18,15 +18,21 @@ const apiSrc = src('api.js');
 
 // --- the reported bug: profile switch did not refresh the advice ------------
 
-test('Advisor derives the open card from the live profile, never a snapshot', () => {
-  // `const [open, setOpen] = useState(persona)` froze the open card at mount, so
-  // switching profile in the top bar left the old card (and its advice) open and
-  // fired no fetch. Reloading re-initialised it from the persisted persona, which
-  // is why a manual refresh appeared to fix it.
+test('role grid lives in Settings; Advisor renders the stored persona', () => {
+  // Phase 1 (2026-09-21): the persona picker moved out of Advisory into the
+  // Settings profile row. Advisor reads the stored persona and renders its
+  // advice; when unset it says so and links to Settings.
+  const settings = src('components/SettingsPanel.jsx');
+  assert.match(settings, /className="role-grid"/, 'the persona grid must render in Settings');
+  assert.match(settings, /data-tour="persona-grid"/, 'the tour hook moves with the grid to Settings');
+  assert.match(settings, /onPick=\{setPersona\}/, 'grid taps must write the profile to the store');
+  assert.doesNotMatch(advisor, /className="role-grid"/, 'Advisor must not render the persona grid');
+  assert.doesNotMatch(advisor, /data-tour="persona-grid"/, 'Advisor must not carry the grid hook');
   assert.doesNotMatch(advisor, /const \[open, setOpen\] = useState\(persona\)/, 'open card must not be snapshotted from persona');
   assert.doesNotMatch(advisor, /const pick =/, 'there must be no separate picker state');
-  assert.match(advisor, /active=\{persona === ut\.id\}/, 'the open card must follow persona');
-  assert.match(advisor, /onPick=\{setPersona\}/, 'picking a card must set the profile');
+  assert.match(advisor, /USER_TYPES\.find\(\(ut\) => ut\.id === persona\)/, 'Advisor must derive its card from the stored persona');
+  assert.match(advisor, /setView\('settings'\)/, 'unset persona must link to Settings');
+  assert.match(advisor, /onPick=\{setPersona\}/, 'picking the card must set the profile');
 });
 
 test('a persona change is in the fetch dependency list of the advice card', () => {

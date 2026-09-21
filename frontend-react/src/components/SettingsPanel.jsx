@@ -32,6 +32,9 @@ import {
 } from '../permGuide';
 import Icon from './icons';
 import { Card } from './ui';
+// The persona picker (card tap → store setPersona) lives here now — it moved
+// out of Advisory; the data-tour hook moved with it.
+import { USER_TYPES, RoleCard } from './Advisor';
 
 function Row({ icon, title, children }) {
   return (
@@ -118,7 +121,7 @@ function PermRow({
 
 export default function SettingsPanel() {
   const {
-    lang, setLang, setView, persona, setPersona, loc, setDistrict, requestLocation,
+    lang, setLang, persona, setPersona, loc, setDistrict, requestLocation,
     locStatus, notifyOn, toggleNotify, pushMode, pushReason, notifyPerm, enableNotify,
   } = useApp();
 
@@ -266,10 +269,14 @@ export default function SettingsPanel() {
 
 =======
       <Row icon="user" title={t(lang, 'setRole')}>
+        {/* The consequence, stated once: a card tap sets the role for the whole
+            app (store setPersona) — Home, chat and advice all follow it. */}
         <p className="sub" style={{ margin: '0 0 8px' }}>{t(lang, 'setRoleNote')}</p>
-        <button type="button" className="btn btn-ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setView('advisory')}>
-          {t(lang, 'setRoleGo')} <Icon name="chevron" size={14} aria-hidden="true" />
-        </button>
+        <div className="role-grid" data-tour="persona-grid">
+          {USER_TYPES.map((ut) => (
+            <RoleCard key={ut.id} ut={ut} active={persona === ut.id} onPick={setPersona} />
+          ))}
+        </div>
       </Row>
 
       <Row icon="pin" title={t(lang, 'setPlace')}>

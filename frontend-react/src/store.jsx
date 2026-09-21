@@ -286,6 +286,9 @@ export function AppProvider({ children }) {
   const speechId = useRef(0);
   const [speechState, setSpeechState] = useState('idle');
   const [speechNote, setSpeechNote] = useState('');
+  // Transient-note timer: a muted-press note flashes in the global voice
+  // popup, then clears itself so it never sticks around as a stale banner.
+  const noteTimer = useRef(0);
   // Global STT phase mirror: HomeChat reports its useVoiceInput
   // state here so Shell can render one unmissable Listening popup.
   const [listenState, setListenState] = useState('idle');
@@ -305,7 +308,7 @@ export function AppProvider({ children }) {
     document.documentElement.lang = lang;
     // A language/profile/place switch must never strand the Speaking popup:
     // stop audio AND reset the indicator state together.
-    return () => { cancelAudio(); setSpeechState('idle'); };
+    return () => { cancelAudio(); setSpeechState('idle'); window.clearTimeout(noteTimer.current); };
   }, [lang, persona, loc.district, cancelAudio]);
   // Browser-native speech, started instantly when the server has no TTS
   // provider (or when server TTS fails). The voiceFallback note stays honest.
@@ -392,8 +395,19 @@ export function AppProvider({ children }) {
   }, [lang]);
   const speak = useCallback(async (text) => {
     if (!text) return;
-    // Crew G sound toggle: user-muted sound suppresses all TTS.
-    try { if (localStorage.getItem('wgpt.sound') === '0') return; } catch { /* ignore */ }
+    // Crew G sound toggle: user-muted sound suppresses all TTS — but never
+    // silently. Surface a transient note so every Listen tap gets observable
+    // feedback (the global voice popup renders it; see resolveVoicePopup).
+    try {
+      if (localStorage.getItem('wgpt.sound') === '0') {
+        stopSpeaking();
+        setSpeechNote('voiceMuted');
+        setSpeechState('idle');
+        window.clearTimeout(noteTimer.current);
+        noteTimer.current = window.setTimeout(() => { setSpeechNote(''); }, 2600);
+        return;
+      }
+    } catch { /* ignore */ }
     stopSpeaking();
     const id = speechId.current;
     // Optimistic: the indicator renders on the next frame, within 100ms of the tap.

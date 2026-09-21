@@ -54,6 +54,16 @@ test('idle states show no popup (auto-dismiss on end/error/denial)', () => {
   assert.equal(resolveVoicePopup(), null);
 });
 
+test('muted TTS shows a transient note popup while speech is idle', () => {
+  const m = resolveVoicePopup({ speechState: 'idle', listenState: 'idle', speechNote: 'voiceMuted' });
+  assert.deepEqual(m, { kind: 'note', labelKey: 'voiceMuted', subKey: null, visual: 'dot' });
+});
+
+test('active TTS wins over the muted note (no collision with the Speaking card)', () => {
+  const m = resolveVoicePopup({ speechState: 'playing', listenState: 'idle', speechNote: 'voiceMuted' });
+  assert.equal(m.kind, 'tts');
+});
+
 // --- i18n: every popup label exists in EN/HI/TE, no Tamil script -----------
 // i18n.js is Vite-resolved (directory import) so node cannot import it; parse
 // the EXTRA source block instead — the same keys the popup renders via t().
@@ -73,7 +83,7 @@ function extraStrings() {
   return langs;
 }
 
-const POPUP_KEYS = ['speaking', 'stop', 'voiceListening', 'voiceTapFinish', 'processing'];
+const POPUP_KEYS = ['speaking', 'stop', 'voiceListening', 'voiceTapFinish', 'processing', 'voiceMuted'];
 
 test('popup labels exist and are non-empty in en, hi and te', () => {
   const langs = extraStrings();
