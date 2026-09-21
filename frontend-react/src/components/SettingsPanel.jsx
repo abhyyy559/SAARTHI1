@@ -1,24 +1,11 @@
-// Settings — one screen, four things, all icon-led. A non-reader can set
-// their world by tapping pictures: role (livelihood icons), place (pin +
-// district chips), language (script chips), alerts (bell switch).
-import { t, DISTRICTS } from '../i18n';
+// Settings — one screen, four things, all icon-led. Role and place rows
+// POINT at their single homes (Advisory grid / Home hero chips) instead of
+// duplicating those pickers here; GPS re-detect, language and the alerts
+// toggle stay unique to this screen.
+import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import { Card } from './ui';
-
-const ROLES = [
-  { id: 'general', icon: 'user', key: 'utGeneral' },
-  { id: 'farmer', icon: 'crop', key: 'utFarmer' },
-  { id: 'driver', icon: 'truck', key: 'utDriver' },
-  { id: 'fisherman', icon: 'fish', key: 'utFisherman' },
-  { id: 'aviation', icon: 'send', key: 'utAviation' },
-  { id: 'commuter', icon: 'route', key: 'utCommuter' },
-  { id: 'employee', icon: 'monitor', key: 'utEmployee' },
-  { id: 'outdoor-worker', icon: 'sun', key: 'utOutdoor' },
-  { id: 'student', icon: 'file', key: 'utStudent' },
-  { id: 'researcher', icon: 'chart', key: 'utResearch' },
-  { id: 'disaster_manager', icon: 'shield', key: 'utDisaster' },
-];
 
 function Row({ icon, title, children }) {
   return (
@@ -33,24 +20,18 @@ function Row({ icon, title, children }) {
 }
 
 export default function SettingsPanel() {
-  const { lang, setLang, persona, setPersona, loc, setDistrict, requestLocation, locStatus, notifyOn, toggleNotify } = useApp();
+  const { lang, setLang, setView, requestLocation, locStatus, notifyOn, toggleNotify } = useApp();
   return (
     <div className="set-stack">
+      {/* One-picker rule (IA dedup): the role grid lives in Advisory and the
+          district chips live on the Home hero. Settings used to duplicate
+          both, so the same control appeared in three places. Each row now
+          points at its single home instead of repeating the picker. */}
       <Row icon="user" title={t(lang, 'setRole')}>
-        <div className="chip-grid" role="group" aria-label={t(lang, 'setRole')}>
-          {ROLES.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              className={`role-chip${persona === r.id ? ' is-active' : ''}`}
-              aria-pressed={persona === r.id}
-              onClick={() => setPersona(persona === r.id ? null : r.id)}
-            >
-              <Icon name={r.icon} size={24} aria-hidden="true" />
-              <span>{t(lang, r.key)}</span>
-            </button>
-          ))}
-        </div>
+        <p className="sub" style={{ margin: '0 0 8px' }}>{t(lang, 'setRoleNote')}</p>
+        <button type="button" className="btn btn-ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setView('advisory')}>
+          {t(lang, 'setRoleGo')} <Icon name="chevron" size={14} aria-hidden="true" />
+        </button>
       </Row>
 
       <Row icon="pin" title={t(lang, 'setPlace')}>
@@ -59,19 +40,8 @@ export default function SettingsPanel() {
             <Icon name="search" size={24} aria-hidden="true" />
             <span>{t(lang, 'useMyLocation')}</span>
           </button>
-          {DISTRICTS.map((d) => (
-            <button
-              key={d.district}
-              type="button"
-              className={`role-chip${loc.district === d.district ? ' is-active' : ''}`}
-              aria-pressed={loc.district === d.district}
-              onClick={() => setDistrict(d)}
-            >
-              <Icon name="pin" size={24} aria-hidden="true" />
-              <span>{d.district}</span>
-            </button>
-          ))}
         </div>
+        <p className="sub" style={{ margin: '6px 0 0' }}>{t(lang, 'setPlaceNote')}</p>
       </Row>
 
       <Row icon="translate" title={t(lang, 'setLanguage')}>

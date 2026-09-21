@@ -2,6 +2,7 @@ import { Component, Suspense } from 'react';
 import { AppProvider, useApp } from './store';
 import { t } from './i18n';
 import Shell from './components/Shell';
+import FirstRunOnboarding from './components/FirstRunOnboarding';
 import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, OfflineView, SettingsView } from './views';
 import { Loading } from './components/ui';
 
@@ -53,6 +54,9 @@ function Console() {
   const Active = VIEWS[view] || HomeView;
   return (
     <Shell>
+      {/* First-run welcome + permission flow. One-time; the spotlight tour
+          launches from its finish step, so they never overlap. */}
+      <FirstRunOnboarding />
       {/* Keyed by view: without this, one view that threw kept the boundary
           in its failed state for the whole session, so every other view —
           which was working — appeared broken too. A new view must get a

@@ -13,7 +13,6 @@ import { api } from '../api';
 import { useApp } from '../store';
 import { minutesSince, isExpired } from '../format';
 import Icon from './icons';
-import LocationPrompt from './LocationPrompt';
 import HomeHero from './HomeHero';
 import HomeChat from './HomeChat';
 import AviationBriefing from './AviationBriefing';
@@ -92,10 +91,12 @@ function WarningTeasers() {
 }
 
 export default function Home() {
-  const { lang, persona, loc, locReady, speak, stopSpeaking, speechState, netState, setView, setListenState } = useApp();
+  const { lang, persona, loc, speak, stopSpeaking, speechState, netState, setView, setListenState } = useApp();
   return (
     <div className="home-stack">
-      {!locReady && <LocationPrompt />}
+      {/* NOTE: the location prompt renders ONCE, inside HomeHero (next to the
+          place row). It used to be duplicated here as well, so the permission
+          card appeared twice on first run. */}
       <HomeHero />
       {/* Aviation is a profile, not a menu: the briefing lives on the
           dashboard itself when the aviation profile is active. */}

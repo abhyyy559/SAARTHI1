@@ -1048,3 +1048,45 @@ button.chip:active { transform: translateY(1px); }
 }
 .more-row .nav-badge { margin-left: auto; }
 .rail-sub .nav-badge { margin-left: auto; }
+
+/* --------------------------------------------------------------------------
+   First-run onboarding (welcome → location → notifications → tour)
+   -------------------------------------------------------------------------- */
+.obw-scrim {
+  position: fixed; inset: 0; z-index: 240;
+  background: rgba(12, 14, 13, 0.55);
+}
+.obw-card {
+  position: fixed; z-index: 241; left: 50%; transform: translateX(-50%);
+  bottom: 24px; width: min(480px, calc(100vw - 32px));
+  background: var(--paper, #fff); border: 2px solid var(--ink);
+  border-radius: 14px; padding: 22px 22px 18px;
+  box-shadow: 0 18px 48px rgba(12, 14, 13, 0.35);
+  outline: none;
+}
+.obw-progress { display: flex; gap: 6px; margin-bottom: 14px; }
+.obw-dot {
+  width: 22px; height: 5px; border-radius: 999px; background: var(--line);
+}
+.obw-dot.is-now { background: var(--brand); }
+.obw-dot.is-done { background: var(--sev-green); }
+.obw-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 10px; margin-bottom: 10px;
+  background: var(--brand); color: var(--on-brand); font-weight: 800; font-size: 22px;
+}
+.obw-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 10px; margin-bottom: 10px;
+  background: var(--bg-soft, var(--paper)); border: 2px solid var(--line);
+}
+.obw-lead { margin: 6px 0 12px; color: var(--ink-soft); line-height: 1.5; }
+.obw-points { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+.obw-points li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.obw-points svg { flex: 0 0 auto; margin-top: 2px; color: var(--brand); }
+.obw-note {
+  margin: 4px 0 10px; padding: 8px 10px; border-left: 3px solid var(--sev-amber);
+  background: var(--bg-soft, transparent); font-size: 13px; border-radius: 6px;
+}
+.obw-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.obw-actions .btn-signal { min-height: var(--tap, 44px); }
