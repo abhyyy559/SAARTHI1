@@ -1,0 +1,88 @@
+/* WeatherCard — Harbour Signal current-conditions card.
+   Paper card, 2px ink borders, system font stack (inherited), sentence case.
+   Never color alone: the provenance chip is a labeled pill, not a bare dot. */
+
+.wx-card {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.wx-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wx-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.wx-pending {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.wx-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.wx-cell {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.wx-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: inline-flex;
+  color: var(--ink);
+}
+
+.wx-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wx-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.wx-value {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.wx-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 380px) {
+  .wx-value { font-size: 18px; }
+  .wx-card { padding: 12px; }
+}

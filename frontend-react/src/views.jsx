@@ -4,7 +4,6 @@
 // home) · More sheet → Offline & P2P · Aviation · Trust & sources ·
 // Settings · Tour replay. Admin is hidden, PIN-gated, direct URL only.
 import Home from './components/Home';
-import Emergency from './components/Emergency';
 import AlertsList from './components/AlertsList';
 import Advisor from './components/Advisor';
 import AdviceCards from './components/AdviceCards';
@@ -23,16 +22,19 @@ import { useEffect, useState } from 'react';
 import { Card } from './components/ui';
 import Icon from './components/icons';
 
-// Team-only gate for the admin console. This is a DEMO gate, not
-// authentication: it keeps the backstage controls out of the normal user's
-// path (?view=admin is in no nav). The real protection is server-side —
-// demo/management endpoints are DEMO_MODE-gated in the API.
+// Authorities-only gate for the admin console. This is a DEMO gate, not
+// authentication: it keeps the official-alert publishing controls out of the
+// normal user's path (?view=admin is in no nav). The real protection is
+// server-side — demo/management endpoints are DEMO_MODE-gated in the API.
+// Unlocking records nothing about identity: the session flag wgpt-admin-ok
+// is the entire record of the unlock event — a demo PIN matched in this tab.
+// Closing the tab re-locks.
 // PIN override: VITE_ADMIN_PIN. Session-scoped: closing the tab re-locks.
 const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || 'SAARTHI';
 const ADMIN_OK_KEY = 'wgpt-admin-ok';
 
 function AdminGate({ children }) {
-  const { lang } = useApp();
+  const { lang, setView } = useApp();
   const [ok, setOk] = useState(() => {
     try { return sessionStorage.getItem(ADMIN_OK_KEY) === '1'; } catch { return false; }
   });
@@ -43,6 +45,7 @@ function AdminGate({ children }) {
     e.preventDefault();
     if (pin === ADMIN_PIN) {
       try { sessionStorage.setItem(ADMIN_OK_KEY, '1'); } catch { /* private mode: unlock lasts this view only */ }
+      console.info('[admin] gate unlocked with demo PIN — not authentication, no identity recorded');
       setOk(true);
     } else {
       setWrong(true);
@@ -51,7 +54,10 @@ function AdminGate({ children }) {
   };
   return (
     <Card>
-      <h2 style={{ marginTop: 0 }}>{t(lang, 'adminGateTitle')}</h2>
+      <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Icon name="lock" size={22} />
+        {t(lang, 'adminGateTitle')}
+      </h2>
       <p>{t(lang, 'adminGateBody')}</p>
       <form onSubmit={submit}>
         <label htmlFor="admin-pin" style={{ display: 'block', marginBottom: 8 }}>
@@ -72,12 +78,16 @@ function AdminGate({ children }) {
             {t(lang, 'adminGateWrong')}
           </p>
         )}
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
           <button type="submit" className="btn" disabled={!pin}>
             {t(lang, 'adminGateUnlock')}
           </button>
+          <button type="button" className="btn btn-ghost" onClick={() => setView('home')}>
+            {t(lang, 'adminGateBack')}
+          </button>
         </div>
       </form>
+      <p style={{ marginTop: 12, fontSize: 13, opacity: 0.75 }}>{t(lang, 'adminGateDemoNote')}</p>
     </Card>
   );
 }
@@ -91,8 +101,9 @@ export function HomeView() {
   return <Home />;
 }
 
-// Alerts: one route. SOS first (shaking hands), then the bulletin list with
-// inline detail — no separate Details route.
+// Alerts: one route. The SOS console left this view (2026-09-23) — it now
+// floats above every view via the shell's SOS button, so it is never buried.
+// The bulletin list keeps inline detail — no separate Details route.
 // NOTE (Agent 1): AlertsList IS the alerts surface (list + inline expansion).
 // A warning tapped on Home arrives via the store's selectedAlert.
 export function AlertsView() {
@@ -101,7 +112,6 @@ export function AlertsView() {
   return (
     <>
       <ViewHead titleKey="viewAlerts" subKey="viewAlertsSub" />
-      <Emergency />
       <AlertsList key={initialId || 'all'} initialAlertId={initialId} />
       <p className="sub mono" style={{ marginTop: 8 }}>
         <Icon name="info" size={14} /> {t(lang, 'alertsInlineHint')}

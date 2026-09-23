@@ -750,6 +750,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .hc-hero-badge {
@@ -767,6 +768,7 @@
 
 .hc-hero-titles {
   min-width: 0;
+  flex: 1 1 220px; /* lets the voice-mode button wrap below on narrow phones */
 }
 
 .hc-hero-title {

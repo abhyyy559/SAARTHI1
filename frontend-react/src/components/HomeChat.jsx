@@ -18,6 +18,7 @@ import { useVoiceInput } from '../useVoiceInput';
 import Icon from './icons';
 import { sanitizeForTTS } from '../chatText';
 import ChatMessage from './ChatMessage';
+import VoiceMode from './VoiceMode';
 import './HomeChat.css';
 
 // Streaming reveal: characters added per tick. A cheap phone animates
@@ -44,6 +45,9 @@ export default function HomeChat({
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [popOpen, setPopOpen] = useState(false);
+  // Hands-free voice mode overlay (Workstream D). The only HomeChat change:
+  // an entry button in the hero header; everything else lives in VoiceMode.
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const [streamId, setStreamId] = useState(null);
   const [shown, setShown] = useState(0);
   // True token streaming (default backend path): the id of the bot message
@@ -389,6 +393,16 @@ export default function HomeChat({
           <h1 className="hc-hero-title">{t(lang, 'askHeroTitle')}</h1>
           <p className="hc-hero-sub">{t(lang, 'askHeroSub')}</p>
         </div>
+        {/* Voice mode entry (Workstream D): hands-free STT → ask → TTS loop. */}
+        <button
+          type="button"
+          className="hc-vm-btn"
+          onClick={() => setVoiceModeOpen(true)}
+          aria-label={t(lang, 'vmEntry')}
+        >
+          <Icon name="mic" size={20} />
+          <span>{t(lang, 'vmEntry')}</span>
+        </button>
       </header>
       {/* Facts-only strip: the boundary, stated before the first message. */}
       <div className="hc-facts">
@@ -580,6 +594,24 @@ export default function HomeChat({
           ))}
         </ul>
       </div>
+
+      {/* Hands-free voice mode overlay (Workstream D). It reuses HomeChat's
+          ask path via the same props: loc/lang/persona context, the injected
+          onAsk, and the api client (apiClient). */}
+      {voiceModeOpen && (
+        <VoiceMode
+          lang={lang}
+          persona={persona}
+          loc={loc}
+          netState={netState}
+          onAsk={onAsk}
+          api={apiClient}
+          speak={speak}
+          stopSpeaking={stopSpeaking}
+          speechState={speechState}
+          onClose={() => setVoiceModeOpen(false)}
+        />
+      )}
     </section>
   );
 }

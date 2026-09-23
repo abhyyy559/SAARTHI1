@@ -1307,12 +1307,22 @@ button.chip:active { transform: translateY(1px); }
   color: var(--ink-soft);
 }
 @media (min-width: 861px) {
-  /* Desktop: dock bottom-right instead of floating center. */
+  /* Desktop: dock bottom-right instead of floating center. Lifted above the
+     floating SOS button (2026-09-23) so the two never overlap. */
   .alert-overlay {
     left: auto;
     right: 24px;
     transform: none;
-    bottom: 24px;
+    bottom: 96px;
+  }
+}
+@media (max-width: 860px) {
+  /* Mobile: the SOS FAB owns the bottom-right band, so the alert overlay
+     pill left-aligns with clearance instead of centering under it. */
+  .alert-overlay {
+    left: 12px;
+    transform: none;
+    max-width: calc(100vw - 170px);
   }
 }
 
@@ -1327,4 +1337,58 @@ button.chip:active { transform: translateY(1px); }
 }
 .adv-bullets li::marker {
   color: var(--ink-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Floating SOS (2026-09-23): the mayday console left the Alerts route and now
+   floats above every view. Harbour Signal: red slab, 3px ink border, icon +
+   the word SOS (never color alone). The sheet reuses the app's dialog
+   contract — scrim + Escape + close button dismiss; focus moves into the
+   sheet on open and back to the FAB on close.
+   -------------------------------------------------------------------------- */
+.sos-fab {
+  position: fixed; right: 16px; bottom: 24px; z-index: 80;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 56px; padding: 12px 20px;
+  background: var(--sev-red); color: #fff;
+  border: 3px solid var(--ink); border-radius: 999px;
+  font-size: 18px; font-weight: 800; letter-spacing: 0.04em;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(22, 19, 12, 0.28);
+}
+.sos-fab:active { transform: scale(0.96); }
+.sos-fab:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.sos-scrim {
+  position: fixed; inset: 0; z-index: 128;
+  background: rgba(22, 19, 12, 0.55); border: 0; width: 100%;
+  cursor: default; padding: 0;
+}
+.sos-sheet {
+  position: fixed; z-index: 130;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(600px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  display: flex; flex-direction: column;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 16px;
+  box-shadow: 0 18px 48px rgba(22, 19, 12, 0.35);
+  animation: sos-sheet-in 0.2s ease-out;
+}
+@keyframes sos-sheet-in { from { opacity: 0; transform: translate(-50%, -48%); } }
+.sos-sheet-head {
+  position: relative; display: flex; justify-content: center;
+  padding: 10px 12px 0; flex: 0 0 auto;
+}
+.sos-sheet-head .sheet-handle {
+  width: 48px; height: 6px; border-radius: 3px; background: var(--line);
+}
+.sos-sheet-head .btn-icon { position: absolute; right: 10px; top: 8px; }
+.sos-sheet-body { overflow-y: auto; padding: 4px 16px 20px; }
+@media (max-width: 860px) {
+  /* Clear the mobile bottom nav, like the alert overlay does. */
+  .sos-fab { bottom: calc(env(safe-area-inset-bottom) + 84px); }
+  .sos-sheet {
+    left: 0; right: 0; top: auto; bottom: 0; transform: none;
+    width: auto; max-width: 100vw; max-height: 92dvh;
+    border-radius: 16px 16px 0 0; border-bottom: 0;
+  }
+  @keyframes sos-sheet-in { from { opacity: 0; transform: translateY(24px); } }
 }

@@ -1,4 +1,5 @@
 """Central configuration. All secrets via env, safe defaults for demo."""
+import json
 import os
 from pathlib import Path
 
@@ -37,6 +38,31 @@ IMD_PATH_CURRENT = _get("IMD_PATH_CURRENT", "current_wx")
 IMD_PATH_FORECAST = _get("IMD_PATH_FORECAST", "cityforecastloc")
 IMD_PATH_WARNING = _get("IMD_PATH_WARNING", "districtwarning")
 IMD_PATH_NOWCAST = _get("IMD_PATH_NOWCAST", "districtnowcast")
+
+# IMD request tuning — all env-driven so key day needs no code edit.
+# Auth scheme IMD never documented publicly: "bearer" (default) sends
+# `Authorization: Bearer <key>`; "header" sends the key under IMD_AUTH_HEADER
+# verbatim; "query" appends it as the IMD_AUTH_PARAM query parameter.
+IMD_AUTH_SCHEME = _get("IMD_AUTH_SCHEME", "bearer").strip().lower()
+IMD_AUTH_HEADER = _get("IMD_AUTH_HEADER", "Authorization")
+IMD_AUTH_PARAM = _get("IMD_AUTH_PARAM", "api_key")
+IMD_TIMEOUT = float(_get("IMD_TIMEOUT", "10") or 10)
+# Station/city the live current/forecast calls ask for when the caller passes
+# no district (the /api/weather live paths only have lat/lon). Callers that
+# know the district pass it and it wins over this default.
+IMD_DEFAULT_STATION = _get("IMD_DEFAULT_STATION", "Hyderabad")
+
+# IMD response field names are as provisional as the paths — the fixtures use
+# our assumed schema ("temp", "humidity", ...). IMD_FIELD_MAP is a JSON object
+# mapping our normalized name -> the provider's actual name, applied in the
+# live branches only, e.g. '{"temp": "temperature_c", "windspeed": "wind_kph"}'.
+# Unknown on key day: set the key, hit one endpoint, read the real names, and
+# paste the map here. Demo fixtures keep the assumed schema untouched.
+_IMD_FIELD_MAP_RAW = _get("IMD_FIELD_MAP", "").strip()
+try:
+    IMD_FIELD_MAP: dict = json.loads(_IMD_FIELD_MAP_RAW) if _IMD_FIELD_MAP_RAW else {}
+except (json.JSONDecodeError, ValueError):
+    IMD_FIELD_MAP = {}
 
 # --- Web Push (background notifications) ------------------------------------
 # A VAPID pair identifies this server to the browser push services. Left unset,

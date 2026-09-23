@@ -13,6 +13,8 @@ import AlertOverlay from './AlertOverlay';
 import InstallPrompt from './InstallPrompt';
 import NotificationsPanel from './NotificationsPanel';
 import OnboardingTour from './OnboardingTour';
+import SosSheet, { SosFab } from './SosSheet';
+import QuickActions from './QuickActions';
 
 const NAV_ICONS = {
   home: 'home',
@@ -168,6 +170,7 @@ export default function Shell({ children }) {
   const online = netState !== 'offline';
   const [moreOpen, setMoreOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [sosOpen, setSosOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -232,8 +235,9 @@ export default function Shell({ children }) {
 
   const demoLive = sourceMode === 'demo';
   // The demo-data banner only belongs where demo/sample content can appear:
-  // never on Admin or Trust chrome. SOS carries its own
-  // "SIMULATED — FOR DEMO ONLY" stamp and lives inside the alerts view.
+  // never on Admin or Trust chrome. The SOS console carries its own
+  // "SIMULATED — FOR DEMO ONLY" stamp and now floats above every view —
+  // the shell's SOS button opens it in a modal sheet.
   const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'trust']);
   const showDemoBanner = demoLive && demoBannerViews.has(view);
 
@@ -424,6 +428,12 @@ export default function Shell({ children }) {
           {toast.text}
         </div>
       )}
+      {/* Floating SOS: safety-critical, so it is never buried in a view.
+          The button floats above every route; tapping it opens the full
+          mayday console in a modal sheet. */}
+      <SosFab onOpen={() => setSosOpen(true)} />
+      <QuickActions />
+      <SosSheet open={sosOpen} onClose={() => setSosOpen(false)} />
       {/* One alert mention for the whole app: a slim overlay on top of every
           page, visible only while alerts are active. The Alerts view stays
           the single full home; per-page alert blocks were removed. */}

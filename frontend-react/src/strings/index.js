@@ -27,7 +27,19 @@ const areaStrings = { en: {}, hi: {}, te: {} };
 // Sorted so the merge is deterministic regardless of filesystem ordering: the
 // last file to contribute a duplicate key always wins the same way in dev, in a
 // production build and in a fresh checkout.
-for (const path of Object.keys(modules).sort()) {
+//
+// Exception: admin.js owns the admin-gate strings (workstream F) and redefines
+// keys first written in harboursignal.js. './areas/admin.js' sorts BEFORE
+// './areas/harboursignal.js', so a plain sorted merge would silently let the
+// older "Team access only" copy win and the override would never take effect.
+// Applying admin.js last changes precedence ONLY for keys it defines — every
+// other stream keeps its sorted-order precedence.
+const APPLY_LAST = ['./areas/admin.js'];
+const orderedPaths = Object.keys(modules)
+  .sort()
+  .filter((p) => !APPLY_LAST.includes(p));
+for (const p of APPLY_LAST) if (modules[p]) orderedPaths.push(p);
+for (const path of orderedPaths) {
   const dict = modules[path]?.default;
   if (!dict || typeof dict !== 'object') continue;
   for (const lang of ['en', 'hi', 'te']) {

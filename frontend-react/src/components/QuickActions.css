@@ -1,0 +1,61 @@
+/* --------------------------------------------------------------------------
+   Quick actions (Workstream C, 2026-09-23): two round floating shortcuts on
+   the right side, ABOVE the SOS FAB, rendered on every view by Shell.
+
+   Geometry (verified against .sos-fab and .alert-overlay in styles.css):
+   - SOS FAB is min-height 56px: mobile top edge sits at
+     safe-area + 84 + 56 = safe-area + 140px; desktop top edge at 80px.
+   - Mobile (<=860px): bottom: calc(safe-area + 152px) clears the SOS FAB by
+     12px. The alert pill is left-aligned (max-width calc(100vw - 170px)),
+     so it never reaches this stack's x-band.
+   - Desktop: the alert pill docks at bottom:96px right:24px, occupying
+     roughly the 96..136px band. The stack starts at 152px — 16px clear
+     above the pill — so the two never overlap. The spec's bottom:96px
+     would have collided with the pill; verified, lifted.
+   - z-index 80: same layer as the SOS FAB, below scrims (128) and sheets.
+   -------------------------------------------------------------------------- */
+.quick-actions {
+  position: fixed;
+  right: 16px;
+  bottom: 152px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 860px) {
+  .quick-actions {
+    bottom: calc(env(safe-area-inset-bottom) + 152px);
+  }
+}
+
+.qa-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Harbour Signal: paper card, 2px ink border, icon + word (word on
+     aria-label/title since the button is icon-only at render size). */
+  background: var(--card);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 0 4px 14px rgba(22, 19, 12, 0.22);
+  cursor: pointer;
+}
+
+.qa-btn:hover {
+  background: var(--brand);
+}
+
+.qa-btn:active {
+  transform: scale(0.94);
+}
+
+.qa-btn:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}

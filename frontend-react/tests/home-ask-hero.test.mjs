@@ -27,10 +27,11 @@ test('Ask mounts above HomeHero on Home', () => {
   assert.ok(chatAt < heroAt, 'Ask must render before the verdict card');
 });
 
-test('Home carries no per-page alert block; the aviation briefing keeps its behavior', () => {
+test('Home has no legacy alert teasers (active alerts live in HomeAlerts); the aviation briefing keeps its behavior', () => {
   const h = home();
-  // The alert is mentioned exactly once app-wide: the global AlertOverlay.
-  // Home must not repeat it with its own teasers section.
+  // The old WarningTeasers section stays gone. Home's compact active-alerts
+  // list (HomeAlerts, active-only, tap → Alerts view) is the sanctioned
+  // per-page surface — not a repeat of the overlay.
   assert.doesNotMatch(h, /<WarningTeasers/, 'per-page alert teasers are gone from Home');
   assert.doesNotMatch(h, /teaser-list|className="teasers"/, 'no teasers section markup on Home');
   assert.match(h, /persona === 'aviation'/, 'briefing stays gated on the aviation profile');

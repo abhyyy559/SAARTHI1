@@ -25,9 +25,6 @@ export default {
     p2pOutbox: 'Store-and-forward outbox',
     // --- settings: profile + permissions control center (Crew G) ---
     setProfile: 'Your profile',
-    setName: 'Name',
-    setNamePh: 'Your name',
-    setNameSub: 'Saved on this device. Shown across the app as your name.',
     setRoleNote: 'Pick your role once — Home, chat and advice all follow it.',
     setRoleGo: 'Choose your role in Advisory',
     setPlaceNote: 'Type your district on the Home hero, or use GPS here.',
@@ -92,9 +89,6 @@ export default {
     p2pOutbox: 'भेजने के लिए रखे संदेश',
     // --- settings: profile + permissions control center (Crew G) ---
     setProfile: 'आपकी प्रोफ़ाइल',
-    setName: 'नाम',
-    setNamePh: 'आपका नाम',
-    setNameSub: 'इस डिवाइस पर सहेजा गया। ऐप में आपका नाम यही दिखेगा।',
     setRoleNote: 'अपनी भूमिका एक बार चुनें — होम, चैट और सलाह सब उसी के अनुसार बदलेंगे।',
     setRoleGo: 'Advisory में भूमिका चुनें',
     setPlaceNote: 'होम हीरो पर अपना जिला लिखें, या यहाँ GPS इस्तेमाल करें।',
@@ -159,9 +153,6 @@ export default {
     p2pOutbox: 'పంపడానికి ఉన్న సందేశాలు',
     // --- settings: profile + permissions control center (Crew G) ---
     setProfile: 'మీ ప్రొఫైల్',
-    setName: 'పేరు',
-    setNamePh: 'మీ పేరు',
-    setNameSub: 'ఈ పరికరంలో భద్రపరచబడింది. యాప్ అంతటా మీ పేరు ఇదే చూపుతుంది.',
     setRoleNote: 'మీ పాత్రను ఒకసారి ఎంచుకోండి — హోమ్, చాట్, సలహా అన్నీ దాని ప్రకారం మారతాయి.',
     setRoleGo: 'Advisoryలో పాత్రను ఎంచుకోండి',
     setPlaceNote: 'హోమ్ హీరోపై మీ జిల్లాను టైప్ చేయండి, లేదా ఇక్కడ GPS వాడండి.',

@@ -65,8 +65,9 @@ test('alert rows: DOM ids are unique across the active and ended sections', () =
   assert.match(list, /renderRows\(endedAlerts, 'ended'\)/, 'ended section passes its prefix');
 });
 
-test('no per-page alert repeats remain', () => {
+test('no legacy alert teaser markup remains on Home', () => {
   const home = read('../src/components/Home.jsx');
+  // WarningTeasers stays gone; the sanctioned active-alerts surface is HomeAlerts.
   assert.doesNotMatch(home, /<WarningTeasers/, 'Home renders no alert teaser component');
   assert.doesNotMatch(home, /teaser-list|className="teasers"/, 'Home has no alert teaser markup');
 });

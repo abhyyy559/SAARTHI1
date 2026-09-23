@@ -5,13 +5,9 @@ import { test } from 'node:test';
 // permGuide.js has no imports and no Vite-only syntax: imported directly.
 import {
   SOUND_KEY,
-  PROFILE_KEY,
-  PROFILE_NAME_MAX,
   detectPlatform,
   readSoundPref,
   writeSoundPref,
-  readProfileName,
-  writeProfileName,
   locPermInfo,
   micPermInfo,
   ntfPermInfo,
@@ -137,20 +133,6 @@ test('sound pref defaults on, persists off, survives missing storage', () => {
   assert.equal(readSoundPref(undefined), true); // node: no localStorage
 });
 
-// --- profile name ----------------------------------------------------
-test('profile name trims, collapses spaces, caps length, unsets honestly', () => {
-  const s = fakeStorage();
-  assert.equal(readProfileName(s), '');
-  assert.equal(writeProfileName('  Abhi   ram  ', s), 'Abhi ram');
-  assert.equal(readProfileName(s), 'Abhi ram');
-  assert.equal(JSON.parse(s.getItem(PROFILE_KEY)).name, 'Abhi ram');
-  const long = 'x'.repeat(PROFILE_NAME_MAX + 20);
-  assert.equal(writeProfileName(long, s).length, PROFILE_NAME_MAX);
-  writeProfileName('   ', s);
-  assert.equal(s.getItem(PROFILE_KEY), null); // empty = key removed, not blank
-  assert.equal(readProfileName(s), '');
-});
-
 // --- guidance coverage ----------------------------------------------------
 test('every permission x platform has guidance keys, and all keys exist in chrome.js', () => {
   for (const perm of Object.keys(GUIDE_STEPS)) {
@@ -201,5 +183,4 @@ test('SettingsPanel wires the Crew B deep-focus contract', () => {
   const src = readFileSync(new URL('../src/components/SettingsPanel.jsx', import.meta.url), 'utf8');
   assert.ok(src.includes("window.addEventListener('wgpt:perm'"), 'listens for wgpt:perm');
   assert.ok(src.includes('`perm-${guidePerm}`'), 'mic row has a deep-focus anchor id');
-  assert.ok(src.includes("window.dispatchEvent(new CustomEvent('wgpt:profile'"), 'broadcasts profile changes');
 });

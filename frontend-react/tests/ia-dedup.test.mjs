@@ -18,6 +18,7 @@ const views = read('../src/views.jsx');
 const shell = read('../src/components/Shell.jsx');
 const home = read('../src/components/Home.jsx');
 const hero = read('../src/components/HomeHero.jsx');
+const weatherCard = read('../src/components/WeatherCard.jsx');
 const css = read('../src/styles.css');
 const app = read('../src/App.jsx');
 const tour = read('../src/components/OnboardingTour.jsx');
@@ -79,7 +80,9 @@ test('removed routes have no registration, no public entry', () => {
 test('alerts fold detail inline; advisory folds the advisor', () => {
   // Agent 1's AlertsList is the one alerts surface: list + inline expansion.
   assert.match(views, /<AlertsList[\s\S]*?initialAlertId=\{initialId\}/);
-  assert.match(views, /<Emergency \/>/, 'SOS stays first on the Alerts route');
+  assert.doesNotMatch(views, /<Emergency/, 'SOS left the Alerts route — it floats from the shell');
+  assert.match(shell, /SosFab/, 'the shell renders the floating SOS button on every view');
+  assert.match(shell, /SosSheet/, 'the FAB opens the mayday console in a modal sheet');
   assert.doesNotMatch(views, /DetailsView/, 'no separate Details route');
   assert.match(views, /<Advisor \/>/);
   assert.match(views, /<AdviceCards \/>/);
@@ -159,9 +162,31 @@ test('admin is absent from tabs, More sheet, and tour', () => {
 });
 
 // --- home assembly -------------------------------------------------------------
-test('home is hero + chat, no dispatch strip, no per-page alert block', () => {
-  assert.match(home, /<HomeHero \/>/);
+// 2026-09-23: Abhiram overrode the old IA-dedup "no alerts on Home" rule —
+// alerts belong on home as a compact active-only section. The new contract:
+// about-you strip + Ask hero + weather card + active-alerts (top 3), where a
+// tapped row hands the alert to the Alerts view via selectedAlert.
+test('home is about-you + chat hero + weather + active-alerts, no dispatch strip', () => {
+  assert.match(home, /<HomeHero \/>/, 'the verdict hero stays on Home');
   assert.match(home, /<HomeChat[\s\S]*?key=\{`chat:/, 'Agent 3 HomeChat mounts with the identity key');
   assert.doesNotMatch(home, /ActionTiles|DispatchStrip/, 'old action tiles and dispatch strip are gone');
-  assert.doesNotMatch(home, /<WarningTeasers|teaser-list|className="teasers"/, 'alert mentions live only in the global overlay, not on Home');
+  // About-you: the compact role echo, linking to settings — never the full picker.
+  assert.match(home, /<AboutYou \/>/, 'the about-you strip mounts first on Home');
+  assert.match(home, /USER_TYPES\.find/, 'the strip reflects the same USER_TYPES the picker uses');
+  assert.match(home, /setView\('settings'\)/, 'the change affordance goes to Settings');
+  // Weather card: real current conditions with a provenance chip, honest UNAVAILABLE.
+  assert.match(home, /<WeatherCard \/>/, 'the weather card mounts on Home');
+  assert.match(weatherCard, /api\.current\(loc\.lat, loc\.lon\)/, 'the card reads the same api.current source as HomeHero');
+  assert.match(weatherCard, /<Prov value=\{prov\}/, 'the card carries the source provenance chip');
+  // Active alerts: compact top-3 of active only; each row taps into the Alerts view.
+  assert.match(home, /<HomeAlerts \/>/, 'the active-alerts section mounts on Home');
+  assert.match(home, /api\.warnings\(loc\.district/, 'home alerts read the official warnings feed');
+  assert.match(home, /demoAlertApi\.list/, 'home alerts include the labelled demo alerts');
+  assert.match(home, /isOfficialSource/, 'home alerts admit only official sources');
+  assert.match(home, /endedState\(a\)/, 'home alerts exclude ended alerts');
+  assert.match(home, /\.slice\(0, 3\)/, 'home shows at most the top 3 active alerts');
+  assert.match(home, /setSelectedAlert\(a\)/, 'tapping a row selects the alert');
+  assert.match(home, /setView\('alerts'\)/, 'tapping a row opens the Alerts view');
+  // The old per-page teaser block is still gone — the compact section replaced it.
+  assert.doesNotMatch(home, /<WarningTeasers|teaser-list|className="teasers"/, 'the old teaser block is gone, replaced by the active-alerts section');
 });

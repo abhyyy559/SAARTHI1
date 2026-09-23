@@ -14,7 +14,7 @@
 // 'microphone'|'location'|'notifications'|'sound' } })) opens that permission's
 // guidance and scrolls it into view.
 import { useEffect, useRef, useState } from 'react';
-import { t, DISTRICTS } from '../i18n';
+import { t } from '../i18n';
 import { useApp } from '../store';
 import { pushReasonKey } from '../notify';
 import {
@@ -25,8 +25,6 @@ import {
   ntfPermInfo,
   queryMicPermission,
   requestMicPermission,
-  readProfileName,
-  writeProfileName,
   readSoundPref,
   writeSoundPref,
 } from '../permGuide';
@@ -121,20 +119,11 @@ function PermRow({
 
 export default function SettingsPanel() {
   const {
-    lang, setLang, persona, setPersona, loc, setDistrict, requestLocation,
+    lang, setLang, persona, setPersona, requestLocation,
     locStatus, notifyOn, toggleNotify, pushMode, pushReason, notifyPerm, enableNotify,
   } = useApp();
 
   const [platform] = useState(() => detectPlatform());
-
-  // --- editable profile: name -------------------------------------------
-  const [name, setName] = useState(() => readProfileName());
-  const saveName = () => {
-    const clean = writeProfileName(name);
-    setName(clean);
-    // Other crews read localStorage 'wgpt.profile' ({ name }) or listen here.
-    try { window.dispatchEvent(new CustomEvent('wgpt:profile', { detail: { name: clean } })); } catch { /* ignore */ }
-  };
 
   // --- in-app sound toggle -------------------------------------------------
   const [soundOn, setSoundOn] = useState(() => readSoundPref());
@@ -248,26 +237,6 @@ export default function SettingsPanel() {
 
   return (
     <div className="set-stack">
-      <Row icon="user" title={t(lang, 'setProfile')}>
-        <label className="sub" htmlFor="set-name" style={{ display: 'block', marginBottom: 6 }}>{t(lang, 'setName')}</label>
-        <div className="row">
-          <input
-            id="set-name"
-            className="input"
-            value={name}
-            maxLength={40}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={saveName}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
-            placeholder={t(lang, 'setNamePh')}
-            autoComplete="name"
-            style={{ flex: '1 1 auto', minWidth: 0 }}
-          />
-        </div>
-        <p className="sub" style={{ marginTop: 6, marginBottom: 0 }}>{t(lang, 'setNameSub')}</p>
-      </Row>
-
-=======
       <Row icon="user" title={t(lang, 'setRole')}>
         {/* The consequence, stated once: a card tap sets the role for the whole
             app (store setPersona) — Home, chat and advice all follow it. */}

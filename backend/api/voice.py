@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from ..adapters import stt_provider, tts_provider
 from ..adapters.registry import AdapterUnavailable
-from ..utils.speak_sanitize import sanitize_for_tts
+from ..utils.speak_sanitize import expand_spoken_forms, sanitize_for_tts
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,23 @@ def _ttfb_headers(ms: float) -> dict:
 
 def _log_ttfb(endpoint: str, ms: float, provider: str) -> None:
     logger.info("voice_ttfb_ms=%.1f endpoint=%s provider=%s", ms, endpoint, provider)
+
+
+def _spoken_fallback_text(text: str, language: str) -> str:
+    """Sanitized + spoken-form-expanded text for the browser speechSynthesis path.
+
+    The frontend speaks `text` itself when no provider is configured, so it
+    gets the same number/unit expansion Sarvam-bound text gets. An
+    unsupported language falls back to English expansion — never a 500,
+    never Tamil.
+    """
+    clean = sanitize_for_tts(text)
+    try:
+        return expand_spoken_forms(clean, language)
+    except ValueError:
+        logger.warning("unsupported TTS language %r in voice fallback; expanding as en",
+                       language)
+        return expand_spoken_forms(clean, "en")
 
 
 @router.post("/api/voice/transcribe")
@@ -95,7 +112,8 @@ async def synthesize(payload: dict) -> JSONResponse:
         ms = (time.perf_counter() - t0) * 1000
         _log_ttfb("synthesize", ms, "browser-fallback")
         return JSONResponse(
-            {"text": text, "audio_url": None, "provider": "browser-fallback", "client_speech": True},
+            {"text": _spoken_fallback_text(text, language), "audio_url": None,
+             "provider": "browser-fallback", "client_speech": True},
             headers=_ttfb_headers(ms),
         )
 
@@ -133,7 +151,7 @@ async def synthesize_stream(payload: dict):
         ms = (time.perf_counter() - t0) * 1000
         _log_ttfb("synthesize-stream", ms, "browser-fallback")
         return JSONResponse(
-            {"text": sanitize_for_tts(text), "audio_url": None,
+            {"text": _spoken_fallback_text(text, language), "audio_url": None,
              "provider": "browser-fallback", "client_speech": True},
             headers=_ttfb_headers(ms),
         )

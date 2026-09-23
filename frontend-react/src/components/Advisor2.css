@@ -1,0 +1,48 @@
+/* Advisor2 — structured advice card: the prominent whole-advisory read-aloud
+   button plus the labelled "What's happening / Do this now / Avoid" sections.
+   Co-located with Advisor.jsx (it imports this file); styles.css is untouched.
+   Harbour Signal: icon + word labels, 2px ink borders, sentence case. */
+
+/* The prominent read-aloud: full-width primary button at the top of the
+   advice body — never a ghost. Becomes "Stop" while speaking. */
+.adv2-readaloud {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+/* Labelled advice sections: each leads with its own icon + word label. */
+.adv2-sec {
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.adv2-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: none; /* sentence case, per Harbour Signal */
+}
+
+/* Avoidance is signal-flagged like a warning: alert icon + red accent edge —
+   never colour alone (the icon and the word carry the meaning). */
+.adv2-avoid {
+  border-left: 6px solid var(--sev-red);
+}
+
+.adv2-avoid .adv2-label {
+  color: var(--sev-red);
+}
+
+/* The bullets inside sections don't need a second indent. */
+.adv2-sec .adv-bullets {
+  margin: 0;
+}

@@ -10,8 +10,6 @@
 // can inject a fake store.
 
 export const SOUND_KEY = 'wgpt.sound';
-export const PROFILE_KEY = 'wgpt.profile';
-export const PROFILE_NAME_MAX = 40;
 
 // --- platform ------------------------------------------------------------
 export function detectPlatform(ua) {
@@ -48,36 +46,6 @@ export function writeSoundPref(on, storage) {
     if (s) s.setItem(SOUND_KEY, on ? '1' : '0');
   } catch { /* storage unavailable — the toggle still works for this session */ }
   return !!on;
-}
-
-// --- profile name ------------------------------------------------------------
-// Stored as JSON { name } so a future profile object can grow without a
-// migration. Returns the cleaned name that was actually stored.
-export function readProfileName(storage) {
-  try {
-    const s = prefStorage(storage);
-    if (!s) return '';
-    const raw = s.getItem(PROFILE_KEY);
-    if (!raw) return '';
-    try {
-      const parsed = JSON.parse(raw);
-      return String((parsed && parsed.name) || '');
-    } catch {
-      return String(raw || ''); // tolerate a bare string from an older write
-    }
-  } catch { return ''; }
-}
-
-export function writeProfileName(name, storage) {
-  const clean = String(name || '').trim().replace(/\s+/g, ' ').slice(0, PROFILE_NAME_MAX);
-  try {
-    const s = prefStorage(storage);
-    if (s) {
-      if (clean) s.setItem(PROFILE_KEY, JSON.stringify({ name: clean }));
-      else s.removeItem(PROFILE_KEY); // empty = unset, must survive a reload honestly
-    }
-  } catch { /* ignore */ }
-  return clean;
 }
 
 // --- location state -----------------------------------------------------------

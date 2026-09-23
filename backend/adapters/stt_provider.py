@@ -77,7 +77,7 @@ async def transcribe(audio_bytes: bytes, filename: str, language: str = "en-IN")
         report(NAME, UNCONFIGURED, "SARVAM_API_KEY not set — browser fallback")
         raise AdapterUnavailable("browser-fallback")
     # Sarvam language codes: en-IN, hi-IN, te-IN, ...
-    lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, language)
+    lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, "en-IN")
     # Batch API latency audit (2026-09-21): the request carries only model +
     # language_code. No diarization flag (defaults off — good, diarization adds
     # seconds), no VAD/silence knobs exist on the batch endpoint, multipart is
@@ -270,7 +270,7 @@ class SttStreamSession:
         self._reader = asyncio.ensure_future(self._pump())
 
     def _lang_code(self, language: str) -> str:
-        return {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, language)
+        return {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, "en-IN")
 
     async def _pump(self) -> None:
         try:
@@ -357,7 +357,7 @@ async def open_stream(language: str = "en") -> SttStreamSession:
     if not key:
         report(NAME, UNCONFIGURED, "SARVAM_API_KEY not set — streaming unavailable")
         raise AdapterUnavailable("browser-fallback")
-    lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, language)
+    lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, "en-IN")
     # Low-latency VAD config: high sensitivity ends speech sooner, flush_signal
     # lets us finalize on demand, 16 kHz PCM keeps frames small. Param names
     # mirror the official SDK (language-code hyphenated, sample_rate underscored).
