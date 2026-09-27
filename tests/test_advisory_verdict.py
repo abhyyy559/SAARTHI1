@@ -81,6 +81,7 @@ def _warning(district="Hyderabad", severity="YELLOW"):
 
 def _install_chat_live(monkeypatch, *, imd_raises=False, imd_warning=None, caps=(), weather=False):
     """Force the chat live branch with deterministic, offline sources."""
+    monkeypatch.setattr(config, "DEMO_MODE", False)
 
     async def fake_warning(self, district):
         if imd_raises:
@@ -88,7 +89,6 @@ def _install_chat_live(monkeypatch, *, imd_raises=False, imd_warning=None, caps=
         return imd_warning
 
     monkeypatch.setattr(IMDService, "get_district_warning", fake_warning)
-    monkeypatch.setattr(config, "IMD_API_KEY", "test-key")  # IMD keyed -> attempt runs
 
     async def fake_current(lat, lon):
         if not weather:
@@ -269,10 +269,10 @@ def test_warning_status_unavailable_forces_unreachable_text():
 
 
 # --------------------------------------------------------------------------
-# The ChatResponse verdict field is populated on every branch.
+# The ChatResponse verdict field is populated on every branch, demo included.
 # --------------------------------------------------------------------------
 def test_chat_response_always_carries_a_verdict(monkeypatch):
-    _install_chat_live(monkeypatch, imd_warning=_warning(severity="YELLOW"), weather=True)
+    monkeypatch.setattr(config, "DEMO_MODE", True)
     body = _ask()
     assert set(body["verdict"]) == VERDICT_KEYS, body["verdict"]
     assert body["verdict"]["level"] == "MODERATE", body["verdict"]

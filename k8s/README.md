@@ -72,17 +72,15 @@ Validate first with `kubectl apply --dry-run=client -f k8s/`.
   8003 everywhere.)
 - **Env names** come straight from `backend/config.py`
   (`os.environ.get("<NAME>", ...)`):
-  `FRONTEND_ORIGINS`,
+  `DEMO_MODE`, `SOURCE_MODE`, `IMD_ADAPTER`, `FRONTEND_ORIGINS`,
   `IMD_API_KEY`, `IMD_BASE_URL`, `IMD_PATH_*`, `LLM_API_KEY`,
   `DATABASE_URL`, `REDIS_URL`, `STT_API_KEY`, `TTS_API_KEY`,
   `SARVAM_API_KEY`, `SARVAM_STT_URL/MODEL`, `SARVAM_TTS_URL/MODEL`,
   `CAP_FEED_URL`, `CAP_FEED_URLS`, `OWM_API_KEY`, `DATAGOV_API_KEY`,
   `DATAGOV_RESOURCE_ID`, `WEATHERAPI_KEY`, `WEATHERUNION_KEY`,
   `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`,
-  `ALERT_WATCH_INTERVAL`, `CACHE_FILE`, `WIS2_BROKER`
+  `ALERT_WATCH_INTERVAL`, `DEMO_TICK`, `CACHE_FILE`, `WIS2_BROKER`
   (the adapter reads `config.WIS2_BROKER`; it is optional and defaults empty).
-  The old `SOURCE_MODE` / `DEMO_MODE` / `IMD_ADAPTER` / `DEMO_TICK` env vars
-  were removed with the demo/admin cleanup (2026-09-27).
 - **`FRONTEND_ORIGINS`** is read by `backend/main.py` for CORS `allow_origins`;
   the ConfigMap sets it to the Ingress host `https://saarthi.example.com`.
 - **`CACHE_FILE=/app/data/weathergpt_cache.json`** mirrors the Dockerfile's

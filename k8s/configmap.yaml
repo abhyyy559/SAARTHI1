@@ -12,6 +12,12 @@ data:
   PORT: "8003"
   # backend/run.py equivalent: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8003
 
+  # --- Source modes (docs/SOURCE-MODES.md) --------------------------------
+  # demo | imd | hybrid. SOURCE_MODE wins; DEMO_MODE is re-derived from it.
+  SOURCE_MODE: "hybrid"
+  DEMO_MODE: "false"
+  IMD_ADAPTER: "live"
+
   # --- CORS -----------------------------------------------------------------
   # backend/main.py reads config.FRONTEND_ORIGINS for CORSMiddleware
   # allow_origins. Must include the Ingress host (with scheme).
@@ -33,6 +39,7 @@ data:
 
   # --- Alert watch cadence ---------------------------------------------------
   ALERT_WATCH_INTERVAL: "300"   # seconds between network source re-checks
+  DEMO_TICK: "10"               # seconds between local demo lifecycle ticks
 
   # --- Writable runtime stores ----------------------------------------------
   # Dockerfile declares VOLUME /app/data and sets CACHE_FILE there; the

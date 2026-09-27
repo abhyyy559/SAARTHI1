@@ -58,6 +58,15 @@ spec:
               valueFrom:
                 configMapKeyRef: { name: saarthi-backend-config, key: CACHE_FILE }
             # --- non-secret config (names from backend/config.py) -----------
+            - name: SOURCE_MODE
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: SOURCE_MODE }
+            - name: DEMO_MODE
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: DEMO_MODE }
+            - name: IMD_ADAPTER
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: IMD_ADAPTER }
             - name: FRONTEND_ORIGINS
               valueFrom:
                 configMapKeyRef: { name: saarthi-backend-config, key: FRONTEND_ORIGINS }
@@ -91,6 +100,9 @@ spec:
             - name: ALERT_WATCH_INTERVAL
               valueFrom:
                 configMapKeyRef: { name: saarthi-backend-config, key: ALERT_WATCH_INTERVAL }
+            - name: DEMO_TICK
+              valueFrom:
+                configMapKeyRef: { name: saarthi-backend-config, key: DEMO_TICK }
             - name: WIS2_BROKER
               valueFrom:
                 configMapKeyRef: { name: saarthi-backend-config, key: WIS2_BROKER }

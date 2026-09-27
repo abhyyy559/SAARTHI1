@@ -14,7 +14,7 @@ from .utils.time import iso_now
 
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
-                  push, notifications, aviation)
+                  push, demo_alerts, notifications, aviation)
 from .utils.logging import RequestLoggingMiddleware
 
 log = logging.getLogger("weathergpt.main")
@@ -22,39 +22,34 @@ log = logging.getLogger("weathergpt.main")
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start the background alert watcher and warm the SACHET CAP cache.
+    """Restore the persisted source mode, then start the background alert watcher.
 
     Push notifications only reach a user who is NOT looking at the app, so the
     decision to notify cannot live in the browser. This task evaluates the
     verdict for every subscribed district on a timer and pushes on a change —
     the same `build_verdict` the UI renders, so the two cannot disagree.
     """
-    from .services import alert_watcher
+    from .services import alert_watcher, mode_persistence
+
+    # MUST live here, not in an @app.on_event("startup") handler. This app passes
+    # a custom `lifespan=`, and that replaces Starlette's default lifespan — the
+    # one that invokes on_startup handlers. A restore registered as a startup
+    # event was therefore never called: every restart silently re-read .env,
+    # reverted DEMO to hybrid, and left the demo panel and coverage dashboard
+    # polling /api/demo/* into a wall of 403s.
+    try:
+        await mode_persistence.restore_async()
+        log.info("source mode at startup: %s", config.current_source_mode())
+    except Exception as exc:  # noqa: BLE001 - a bad row must not stop the app booting
+        log.warning("mode restore skipped: %s", exc)
 
     interval = int(getattr(config, "ALERT_WATCH_INTERVAL", alert_watcher.DEFAULT_INTERVAL))
-    tick = int(getattr(config, "WATCH_TICK", alert_watcher.WATCH_TICK_DEFAULT))
+    tick = int(getattr(config, "DEMO_TICK", alert_watcher.DEMO_TICK_DEFAULT))
     task = asyncio.create_task(alert_watcher.run_forever(interval, tick))
     log.info("alert watcher task started (lifecycle=%ss, network=%ss)", tick, interval)
-
-    # Warm the SACHET CAP cache in the background: a cold fetch fans out to
-    # ~30 linked CAP documents and can take tens of seconds, so the first
-    # visitor after a deploy must not pay for it. fetch_alerts caches on
-    # success; until the warmup lands, requests fetch live (slow once).
-    async def _warm_cap_cache() -> None:
-        try:
-            from .adapters import cap_adapter
-            await cap_adapter.fetch_alerts()
-            log.info("CAP cache warmed")
-        except Exception as exc:  # noqa: BLE001 - warmup is best-effort
-            log.info("CAP cache warmup skipped: %s", exc)
-
-    warmup = asyncio.create_task(_warm_cap_cache())
     try:
         yield
     finally:
-        warmup.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await warmup
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
@@ -124,6 +119,7 @@ app.include_router(climate.router)
 app.include_router(advisory.router)
 app.include_router(v1.router)
 app.include_router(push.router)
+app.include_router(demo_alerts.router)
 app.include_router(notifications.router)
 app.include_router(aviation.router)
 
@@ -136,12 +132,71 @@ except Exception:  # noqa: BLE001 - telemetry must never break alerts
     log.warning("ack router unavailable; /api/ack and /api/coverage disabled")
 
 
+# NOTE: the DEMO/HYBRID/IMD mode restore deliberately lives in `lifespan()`
+# above. It must NOT be re-added as an @app.on_event("startup") handler: this
+# app passes a custom `lifespan=`, which replaces the default lifespan that
+# invokes those handlers, so such a handler is never called (that is exactly
+# how the persisted mode was silently lost on every restart).
+
+
+def _mode_payload() -> dict:
+    """The mode object GET/POST /api/mode share (docs/SOURCE-MODES.md).
+
+    `mode` mirrors `source_mode`; `demo_mode` stays for the call sites and tests
+    that already read the boolean. The source strings state which chain actually
+    answers, so the banner can name sources, not just the mode.
+    """
+    mode = config.current_source_mode()
+    chains = config.MODE_SOURCES[mode]
+    return {
+        "mode": mode,
+        "source_mode": mode,
+        "demo_mode": config.DEMO_MODE,
+        "weather_source": chains["weather"],
+        "warnings_source": chains["warnings"],
+        "available": {"demo": True, "imd": True, "hybrid": True},
+    }
+
+
+# Legacy client compatibility: an old client only knows "live".
+_LEGACY_MODE_ALIASES = {"live": "hybrid"}
+
+
 @app.get("/api/health")
 async def health() -> dict:
     return {
         "status": "ok",
-        "source_mode": "imd",
+        "imd_adapter": config.IMD_ADAPTER,
+        "demo_mode": config.DEMO_MODE,
+        "source_mode": config.current_source_mode(),
     }
+
+
+@app.get("/api/mode")
+async def get_mode() -> dict:
+    return _mode_payload()
+
+
+@app.post("/api/mode")
+async def set_mode(payload: dict) -> dict:
+    """Runtime DEMO/IMD/HYBRID switch (in-memory). Demo fixtures stay labelled;
+    `imd` runs official-only and reports UNAVAILABLE rather than backfilling;
+    `hybrid` runs the full multi-source chain. Restart re-reads .env."""
+    raw = (payload or {}).get("mode")
+    mode = _LEGACY_MODE_ALIASES.get(raw, raw) if isinstance(raw, str) else None
+    if mode not in config.MODE_SOURCES:
+        return {"ok": False,
+                "error": "mode must be 'demo', 'imd' or 'hybrid' (legacy 'live' = 'hybrid')"}
+    config.SOURCE_MODE = mode
+    config.DEMO_MODE = mode == "demo"  # derived, kept in sync
+    config.IMD_ADAPTER = "demo" if mode == "demo" else "live"
+    # Persist so restarts/redeploys keep the mode (kv row via the db layer).
+    try:
+        from .services.mode_persistence import persist_async
+        await persist_async(mode)
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning("mode persist failed: %s", exc)
+    return {"ok": True, **_mode_payload()}
 
 
 @app.websocket("/ws/warnings")

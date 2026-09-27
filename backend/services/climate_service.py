@@ -1,6 +1,7 @@
 """Climate analytics — real ERA5 historical series via Open-Meteo archive API.
 
 No invented statistics: every number derives from the fetched daily series.
+Demo mode uses a deterministic, clearly-labelled DEMO series (§56/§62).
 """
 from __future__ import annotations
 
@@ -8,7 +9,7 @@ from datetime import date, timedelta
 
 import httpx
 
-from ..adapters.registry import ERROR, LIVE, AdapterUnavailable, report
+from ..adapters.registry import DEMO, ERROR, LIVE, AdapterUnavailable, report
 from ..utils.time import IST, now_ist
 
 SOURCE = "ERA5 (Open-Meteo archive)"
@@ -84,3 +85,28 @@ async def trends(latitude: float, longitude: float, years: int = 20) -> tuple[di
     out["provenance"] = LIVE
     report("climate", LIVE, f"{len(out['yearly'])} years analysed")
     return out, LIVE
+
+
+def demo_series() -> tuple[dict, str]:
+    """DEMO ONLY — deterministic labelled series, never presented as observed history."""
+    import math
+    yearly = [
+        {"year": y, "tmean_c": round(27.0 + 0.02 * (y - 2005) + 0.3 * math.sin(y), 2),
+         "rain_mm": round(850 + 40 * math.sin(y * 1.7), 1)}
+        for y in range(2005, 2026)
+    ]
+    temps = [p["tmean_c"] for p in yearly]
+    rains = [p["rain_mm"] for p in yearly]
+    out = {
+        "source": f"{SOURCE} (DEMO series)", "yearly": yearly,
+        "temp_trend_c_per_year": round(_slope(list(range(len(temps))), temps), 4),
+        "rain_trend_mm_per_year": round(_slope(list(range(len(rains))), rains), 2),
+        "baseline_temp_c": round(sum(temps[:-5]) / len(temps[:-5]), 2),
+        "baseline_rain_mm": round(sum(rains[:-5]) / len(rains[:-5]), 1),
+        "latest_temp_c": temps[-1], "latest_rain_mm": rains[-1],
+        "temp_anomaly_c": round(temps[-1] - sum(temps[:-5]) / len(temps[:-5]), 2),
+        "rain_anomaly_mm": round(rains[-1] - sum(rains[:-5]) / len(rains[:-5]), 1),
+        "provenance": DEMO,
+    }
+    report("climate", DEMO, "demo series (demo mode)")
+    return out, DEMO

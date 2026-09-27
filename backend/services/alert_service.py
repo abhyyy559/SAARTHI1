@@ -14,7 +14,6 @@ inputs to that decision are gathered once too. If you need alerts, call
 from __future__ import annotations
 
 import asyncio
-import time
 from typing import Any
 
 from .. import config
@@ -237,6 +236,15 @@ def attach_lifecycle_detail(alert: dict[str, Any] | None) -> dict[str, Any] | No
     return alert
 
 
+def official_only() -> bool:
+    """True in `imd` mode: IMD facts or nothing, so the commercial chain is
+    skipped entirely (docs/SOURCE-MODES.md)."""
+    try:
+        return config.current_source_mode() == "imd"
+    except Exception:  # noqa: BLE001 - never let a mode lookup break alerting
+        return False
+
+
 def classify_alert(alert: dict, *, lat: float, lon: float, district: str, state_name: str) -> str:
     """Tag the alert in place; return 'relevant' | 'nearby' | 'drop'.
 
@@ -245,7 +253,8 @@ def classify_alert(alert: dict, *, lat: float, lon: float, district: str, state_
     NOT a calm: it never lowers a verdict, it just stops the console claiming a
     silent all-clear on the strength of an alert it cannot read.
 
-    Public because `api/weather.py` needs the same tagging; it must not grow a second, subtly different copy of these rules.
+    Public because the demo-fixture path in `api/weather.py` needs the same
+    tagging; it must not grow a second, subtly different copy of these rules.
     """
     # Aliases, because the feed writes "Ranga Reddy" where the user's district is
     # "Rangareddy" — and a spelling difference must not hide an official alert.
@@ -299,42 +308,13 @@ async def _fetch_cap() -> tuple[list[dict], str]:
         return [], "UNAVAILABLE"
 
 
-# The commercial-chain result cache, keyed by (lat, lon, district). See
-# _fetch_chain for the contract. Module-level like _inflight: one process,
-# no cross-request leakage beyond the 5-minute TTL.
-_CHAIN_TTL_S = 300
-_CHAIN_CACHE: dict[tuple[float, float, str], tuple[list[dict], str, float]] = {}
-
-
 async def _fetch_chain(lat: float, lon: float, district: str) -> tuple[list[dict], str]:
-    """The commercial/global chain, best-effort. Never raises.
-
-    LATENCY: the chain fans out to three upstreams and cost ~1.4s per chat
-    turn even when nothing had changed — it was the entire warm-path TTFB of
-    /api/chat. Alerts evolve on the order of minutes, so a fresh answer is
-    served from a 5-minute TTL cache (mirroring the CAP serve-fresh cache).
-    Only a POSITIVE answer is cached — the chain's only positive label is
-    LIVE-with-alerts; a failure or an empty answer is never cached, so recovery
-    is never delayed. Served copies carry provenance CACHED, so the per-alert
-    label in the evidence panel stays honest, exactly like CAP.
-    """
-    key = (round(float(lat or 0.0), 3), round(float(lon or 0.0), 3),
-           (district or "").lower())
-    hit = _CHAIN_CACHE.get(key)
-    if hit is not None:
-        alerts, _prov, fetched_at = hit
-        if time.monotonic() - fetched_at < _CHAIN_TTL_S:
-            return [dict(a) for a in alerts], "CACHED"
-        _CHAIN_CACHE.pop(key, None)
+    """The commercial/global chain, best-effort. Never raises."""
     try:
         from ..adapters.alert_sources import get_alerts as chain_get_alerts
 
         chained, prov = await chain_get_alerts(lat, lon, district)
-        alerts = list(chained or [])
-        prov = prov or ""
-        if prov == "LIVE" and alerts:
-            _CHAIN_CACHE[key] = ([dict(a) for a in alerts], prov, time.monotonic())
-        return alerts, prov
+        return list(chained or []), prov or ""
     except Exception:  # noqa: BLE001 - the chain is best-effort
         return [], ""
 
@@ -355,7 +335,7 @@ async def gather_alerts(*, lat: float, lon: float, district: str, state: str = "
     key = (
         round(float(lat or 0.0), 3), round(float(lon or 0.0), 3),
         (district or "").lower(), (state or "").lower(),
-        bool(force_official_only),
+        official_only() if force_official_only is None else bool(force_official_only),
     )
     pending = _inflight.get(key)
     if pending is None:
@@ -404,7 +384,7 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
     provenance = "UNCONFIGURED"
     feeds: list[str] = []
 
-    only_official = bool(force_official_only)
+    only_official = official_only() if force_official_only is None else force_official_only
     if only_official:
         cap_alerts, cap_prov = await _fetch_cap()
         chain_alerts, chain_prov = [], ""
@@ -424,10 +404,7 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
     # answer. "It answered and had nothing" and "we could not reach it" are
     # different facts (see verdict_service); only the first may be a calm.
     _NEGATIVE = ("", "UNAVAILABLE", "UNCONFIGURED")
-    # A CACHED chain counts as answered: the cache only ever holds a
-    # LIVE-with-alerts answer (see _fetch_chain), so CACHED implies the chain
-    # spoke — the same way CAP's serve-fresh CACHED counts above.
-    feeds_answered = (cap_prov not in _NEGATIVE) or chain_prov in ("LIVE", "CACHED")
+    feeds_answered = (cap_prov not in _NEGATIVE) or chain_prov == LIVE
 
     # The overall provenance names where the shown alerts came from — or, when
     # nothing is shown, why. A configured feed that failed is UNAVAILABLE, not

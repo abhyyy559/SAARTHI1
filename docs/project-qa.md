@@ -95,7 +95,7 @@ expired-warning-greyed.
 |---|---|
 | **Accuracy & Relevance** | Single-source-of-truth `verdict_service`; provenance per fact (LIVE/CACHED/DEMO/UNAVAILABLE); response_validator re-checks LLM output against evidence. |
 | **Response Latency** | `X-Resp-Ms` header on `/api/chat`; `max_tokens=400`; streaming TTS (Sarvam + browser fallback); offline cached answers instant. |
-| **Multilingual Capability** | EN/HI/TE in advisory, chat answers, TTS (Sarvam `saaras:v3` STT / `bulbul:v3` TTS); language enforced server-side via `LANG_DIRECTIVE`. |
+| **Multilingual Capability** | EN/HI/TE in advisory, chat answers, TTS (Sarvam `saarika:v2.5` STT / `bulbul:v3` TTS); language enforced server-side via `LANG_DIRECTIVE`. |
 | **UI & Accessibility** | ARIA labels on all interactive elements; focus order preserved; colour-blind-safe severity palette (GREEN/YELLOW/ORANGE/RED); offline cached viewing with CACHED chip + stale/expired grey-out; text resizing respected. |
 | **Scalability & Innovation** | Demo alert state machine (UPCOMING→PRE-ALERT→ACTIVE→UPDATED/EXTENDED→ENDED); P2P SIMULATED relay with store-and-forward + hop-limit; delivery ledger (DELIVERED/OPENED/ACKNOWLEDGED/PENDING/OFFLINE/UNREACHABLE/P2P_RELAYED); Authority Coverage Dashboard with zone map. |
 | **Real-Time Meteorological Integration** | Open-Meteo live forecast/observations; SACHET NDMA CAP official alerts (Telangana/Andhra/National feeds); WIS 2.0 MQTT ingestion stub (UNCONFIGURED, architecture documented); IMD adapter attempted live, reports UNAVAILABLE honestly when down. |

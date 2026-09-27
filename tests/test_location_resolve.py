@@ -101,32 +101,3 @@ if __name__ == "__main__":
     test_exact_search_not_flagged_as_suggestion()
     test_garbage_query_falls_back_to_coords()
     print("\nAll location resolve tests passed.")
-
-
-def test_kanpur_coords_resolve_uttar_pradesh_not_delhi():
-    # Regression: Kanpur (26.4499, 80.3319) once resolved to New Delhi, 391 km
-    # away, and inherited Delhi's alerts.
-    loc = LocationService().resolve(26.4499, 80.3319)
-    assert loc["state"] == "Uttar Pradesh", loc
-    assert loc["district"] == "Kanpur Nagar", loc
-    print("PASS: test_kanpur_coords_resolve_uttar_pradesh_not_delhi")
-
-
-def test_far_fix_returns_unknown_not_wrong_district():
-    # Mid-Arabian Sea: nearest known district is hundreds of km away.
-    # Unknown is honest; a wrong district is not.
-    loc = LocationService().resolve(15.0, 60.0)
-    assert loc["district"] is None, loc
-    assert loc["state"] is None, loc
-    assert loc["coastal"] is None, loc  # never call an unknown district inland
-    assert loc.get("unknown") is True, loc
-    # Real GPS is preserved for weather fetching.
-    assert loc["latitude"] == 15.0 and loc["longitude"] == 60.0, loc
-    print("PASS: test_far_fix_returns_unknown_not_wrong_district")
-
-
-def test_pune_coords_resolve_maharashtra():
-    loc = LocationService().resolve(18.53, 73.86)
-    assert loc["district"] == "Pune", loc
-    assert loc["state"] == "Maharashtra", loc
-    print("PASS: test_pune_coords_resolve_maharashtra")

@@ -10,6 +10,7 @@ UI = {
     "risk": {"en": "Risk Interpretation", "hi": "जोखिम व्याख्या", "te": "ప్రమాద అంచనా"},
     "official": {"en": "Official warning", "hi": "आधिकारिक चेतावनी", "te": "అధికారిక హెచ్చరిక"},
     "ask": {"en": "Ask WeatherGPT...", "hi": "WeatherGPT से पूछें...", "te": "WeatherGPT ను అడగండి..."},
+    "demo_mode": {"en": "DEMO MODE — Simulated IMD-like scenario. Not live official data.", "hi": "डेमो मोड — सिम्युलेटेड डेटा। लाइव डेटा नहीं।", "te": "డెమో మోడ్ — సిమ్యులేటెడ్ డేటా. లైవ్ డేటా కాదు."},
     "limited_connectivity": {"en": "Limited Connectivity", "hi": "सीमित कनेक्टिविटी", "te": "పరిమిత కనెక్టివిటీ"},
 }
 

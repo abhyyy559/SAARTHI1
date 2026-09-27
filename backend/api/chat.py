@@ -1,7 +1,7 @@
 """Chat endpoint — full pipeline: parse -> resolve -> retrieve -> validate -> risk -> advisory -> LLM.
 
-Single IMD-first mode: IMD-live + Open-Meteo backfill + CAP (provenance per
-fact). The pipeline refuses to invent (§54/§59). Spec alias: POST /api/chat/query.
+Demo mode: IMD fixtures (DEMO). Live mode: Open-Meteo + IMD-live + CAP (provenance
+per fact). Both modes refuse to invent (§54/§59). Spec alias: POST /api/chat/query.
 Token streaming: POST /api/chat/stream (NDJSON: meta, token*, final?, done).
 """
 import asyncio
@@ -214,10 +214,7 @@ def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answe
         caveat=caveat_for(user_type, language),
         evidence=[
             {"source": e["source"], "type": e["type"], "issued_at": e.get("issued_at"),
-             "valid_until": e.get("valid_until"),
-             # Honest default: an item with no recorded provenance is UNKNOWN,
-             # never DEMO (demo mode was removed; mislabeling erodes trust).
-             "provenance": e.get("provenance") or "UNKNOWN"}
+             "valid_until": e.get("valid_until"), "provenance": e.get("provenance", "DEMO")}
             for e in provenance_map
         ],
         language=language,
@@ -226,6 +223,27 @@ def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answe
         generated_at=iso_now(),
         response_time_ms=response_time_ms,
     )
+
+
+async def _retrieve_demo(loc) -> tuple[dict, dict, dict, list, dict]:
+    imd = IMDService(adapter="demo")
+    current, forecast, warning = await asyncio.gather(
+        imd.get_current_weather(loc["latitude"], loc["longitude"]),
+        imd.get_forecast(loc["latitude"], loc["longitude"]),
+        imd.get_district_warning(loc["district"]),
+    )
+    val = ValidationService(imd)
+    verified = val.validate_warning(warning, loc["district"]) if warning else None
+    verified_dict = verified.model_dump(mode="json") if verified else {"verified": False, "severity": "GREEN", "hazard": None}
+    current_dict = current.model_dump(mode="json")
+    forecast_dict = forecast.model_dump(mode="json")
+    ev = [
+        {"source": "IMD", "type": "district_warning", "issued_at": verified_dict.get("source_timestamp"),
+         "valid_until": verified_dict.get("valid_until"), "provenance": "DEMO"},
+        {"source": "IMD", "type": "city_forecast", "issued_at": forecast_dict.get("issued_at"), "provenance": "DEMO"},
+        {"source": "IMD", "type": "current_observation", "issued_at": current_dict.get("observed_at"), "provenance": "DEMO"},
+    ]
+    return current_dict, forecast_dict, verified_dict, ev, {"source_name": "IMD"}
 
 
 async def _fetch_current_safe(lat: float, lon: float) -> tuple[dict | None, str]:
@@ -251,12 +269,6 @@ async def _fetch_warning_safe(imd, district: str) -> tuple[object | None, dict, 
     semantics to the old sequential code, just fetchable concurrently.
     """
     verified_dict = {"verified": False, "severity": "GREEN", "hazard": None, "source": "IMD"}
-    if not config.IMD_API_KEY:
-        # IMD without a key always fails closed after a ~2s doomed request.
-        # Skip the attempt (same outcome, no latency); the service is honestly
-        # reported as unavailable below, exactly as the AdapterUnavailable path.
-        verified_dict["warning_service"] = "unavailable"
-        return None, verified_dict, False
     try:
         warning = await imd.get_district_warning(district)
         # The service ANSWERED. "Nothing to report" and "we could not check" are
@@ -270,7 +282,6 @@ async def _fetch_warning_safe(imd, district: str) -> tuple[object | None, dict, 
         # reports "no active warning" while we actually could not check.
         verified_dict["warning_service"] = "unavailable"
         return None, verified_dict, False
-
 
 
 async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict, list, dict]:
@@ -321,13 +332,9 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
                    "issued_at": a.get("sent"), "valid_until": a.get("expires"),
                    "provenance": a.get("provenance") or gathered["provenance"]})
 
-    # Single IMD-first mode: name the source that actually supplied the facts
-    # (the observation payload's own `source` field), never a mode-derived
-    # label — the phrasing layer must not name Open-Meteo as the source of an
-    # IMD observation, nor IMD as the source of a fallback number.
-    source_name = ((current_dict or {}).get("source")
-                   or (forecast_dict or {}).get("source")
-                   or "Open-Meteo")
+    # imd mode serves IMD facts or nothing, so the phrasing layer must not name
+    # Open-Meteo as the source of an IMD observation (docs/SOURCE-MODES.md).
+    source_name = "IMD" if config.current_source_mode() == "imd" else "Open-Meteo"
     notes = {"source_name": source_name, **prov_notes,
              "cap_alerts": cap_alerts, "nearby_alerts": nearby_alerts,
              "warning_raw": warning_d,
@@ -350,7 +357,10 @@ async def _prepare(req: ChatRequest) -> dict:
     loc = LocationService().resolve(req.latitude, req.longitude)
     lat, lon = loc["latitude"], loc["longitude"]
 
-    current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_live(loc, lat, lon)
+    if config.DEMO_MODE:
+        current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_demo(loc)
+    else:
+        current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_live(loc, lat, lon)
     # Severity is decided once, here, by verdict_service — the same call the
     # Alerts page makes, so one payload can never carry two verdicts.
     verdict = _chat_verdict(verified_dict, notes)
@@ -462,7 +472,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
         # startup already shouted about it on stderr.
         model_error = str(exc)
-        answer, fallback = _template_answer(ctx["evidence"], ctx["language"], ctx["message"]), True
+        answer, fallback = _template_answer(ctx["evidence"], ctx["language"]), True
 
     # Post-LLM response validation (§10, §43): the gate before delivery.
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
@@ -533,7 +543,7 @@ async def chat_stream(req: ChatRequest):
         if truncated or not raw.strip():
             # The live answer broke mid-flight: substitute the grounded template,
             # flagged as fallback — never deliver a half answer as if complete.
-            raw = _template_answer(ctx["evidence"], ctx["language"], ctx["message"])
+            raw = _template_answer(ctx["evidence"], ctx["language"])
             fallback = True
         answer, validated_fallback = _finalize_answer(ctx, raw)
         fallback = fallback or validated_fallback

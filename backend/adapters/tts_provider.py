@@ -1,7 +1,7 @@
 """TTS provider — Sarvam-compatible HTTP with honest browser fallback.
 
 Env: SARVAM_API_KEY, SARVAM_TTS_URL (default https://api.sarvam.ai/text-to-speech),
-SARVAM_TTS_MODEL (default bulbul:v3). Without a key -> BROWSER_FALLBACK marker
+SARVAM_TTS_MODEL (default bulbul:v2). Without a key -> BROWSER_FALLBACK marker
 and the frontend speaks via speechSynthesis.
 """
 from __future__ import annotations
@@ -12,13 +12,8 @@ import logging
 import httpx
 
 from .. import config
-from ..utils.speak_sanitize import (
-    expand_spoken_forms,
-    resolve_tts_language,
-    sanitize_for_tts,
-    split_sentences,
-)
-from .registry import LIVE, UNCONFIGURED, AdapterUnavailable, make_client, report
+from ..utils.speak_sanitize import sanitize_for_tts, split_sentences
+from .registry import LIVE, UNCONFIGURED, AdapterUnavailable, report
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +36,7 @@ _client: httpx.AsyncClient | None = None
 def _http() -> httpx.AsyncClient:
     global _client
     if _client is None:
-        _client = make_client(timeout=30.0)
+        _client = httpx.AsyncClient(timeout=30.0)
     return _client
 
 
@@ -52,24 +47,12 @@ async def synthesize(text: str, language: str = "en-IN") -> tuple[str, str]:
     text = sanitize_for_tts(text)
     if len(original_text) > len(text) * 1.1:  # >10% reduction
         logger.info(f"TTS sanitized: {len(original_text)} -> {len(text)} chars ({int((1 - len(text)/len(original_text))*100)}% reduction)")
-
-    # EN/HI/TE only — anything else (notably "ta") degrades honestly to the
-    # browser fallback instead of synthesizing an unsupported language.
-    try:
-        lang = resolve_tts_language(language)
-    except ValueError:
-        report(NAME, UNCONFIGURED, f"unsupported TTS language {language!r} — browser fallback")
-        raise AdapterUnavailable(f"unsupported TTS language: {language}") from None
-
-    # Expand numbers/units into speakable words: Sarvam mangles bare numerals
-    # ("234" read digit-by-digit, "26°C" garbled). synthesize_chunked() calls
-    # this per chunk, so it inherits the expansion automatically.
-    text = expand_spoken_forms(text, lang)
-
+    
     key = config.SARVAM_API_KEY
     if not key:
         report(NAME, UNCONFIGURED, "SARVAM_API_KEY not set — browser fallback")
         raise AdapterUnavailable("browser-fallback")
+    lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, language)
     try:
         # TTS latency audit (2026-09-21): the bulbul request carries no padding
         # or quality knobs that inflate latency — inputs, language, model,

@@ -22,8 +22,6 @@ store. Two separate leaks existed here.
 import os
 import tempfile
 
-import pytest
-
 _TMP = tempfile.mkdtemp(prefix="wgpt_test_stores_")
 
 # Relocate the ENTIRE JSON store (kv rows, docs, logs) for this process.
@@ -35,19 +33,3 @@ os.environ["EMERGENCY_STORE_FILE"] = os.path.join(_TMP, "emergency_store.json")
 # Keep the real store out of reach even if something resolves a path before
 # SAARTHI_STORE_DIR is consulted.
 os.environ.pop("DATABASE_URL", None)
-
-
-@pytest.fixture(autouse=True)
-def _clear_alert_chain_cache():
-    """Per-test isolation for the commercial-chain TTL cache.
-
-    alert_service._CHAIN_CACHE is module-level (one process, like _inflight).
-    A test that seeds it with mocked alerts must not leak them into the next
-    test's gather — the next test would see CACHED alerts instead of calling
-    its own mock. Cleared before each test; tests that exercise the cache
-    itself manage it explicitly.
-    """
-    from backend.services import alert_service
-    alert_service._CHAIN_CACHE.clear()
-    yield
-    alert_service._CHAIN_CACHE.clear()

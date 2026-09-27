@@ -5,6 +5,7 @@ services:
     env_file:
       - .env
     environment:
+      DEMO_MODE: ${DEMO_MODE:-false}
       PORT: 8000
     ports:
       # host port selectable via WGPT_PORT (default 8000) so it can dodge

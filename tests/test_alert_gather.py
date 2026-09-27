@@ -99,8 +99,8 @@ def test_every_alert_carries_its_own_provenance(monkeypatch):
     print("PASS: test_every_alert_carries_its_own_provenance")
 
 
-def test_force_official_only_skips_the_commercial_chain_entirely(monkeypatch):
-    # An explicit force_official_only=True means IMD + SACHET/CAP, nothing
+def test_imd_mode_skips_the_commercial_chain_entirely(monkeypatch):
+    # imd mode is official-only (docs/SOURCE-MODES.md): IMD + SACHET/CAP, nothing
     # commercial. The chain must not even be called.
     called = []
 
@@ -115,32 +115,10 @@ def test_force_official_only_skips_the_commercial_chain_entirely(monkeypatch):
     monkeypatch.setattr(asc, "get_alerts", fake_chain)
 
     got = asyncio.run(alert_service.gather_alerts(force_official_only=True, **HYD))
-    assert called == [], "the commercial chain must not run with force_official_only=True"
+    assert called == [], "the commercial chain must not run in imd mode"
     assert [a["identifier"] for a in got["relevant"]] == ["cap-1"]
     assert alert_service.CHAIN_SOURCE not in got["feeds"]
-    print("PASS: test_force_official_only_skips_the_commercial_chain_entirely")
-
-
-def test_default_gather_runs_the_full_chain(monkeypatch):
-    # Single IMD-first mode: the default gather consults the commercial chain
-    # too (no mode switch needed).
-    called = []
-
-    async def fake_cap():
-        return [_alert("cap-1", "Hyderabad")], "LIVE"
-
-    async def fake_chain(lat, lon, district):
-        called.append(True)
-        return [_alert("chain-1", "Hyderabad")], "LIVE"
-
-    monkeypatch.setattr(alert_service.cap_adapter, "fetch_alerts", fake_cap)
-    monkeypatch.setattr(asc, "get_alerts", fake_chain)
-
-    got = asyncio.run(alert_service.gather_alerts(**HYD))
-    assert called != [], "the commercial chain must run by default"
-    ids = {a["identifier"] for a in got["relevant"]}
-    assert ids == {"cap-1", "chain-1"}, ids
-    print("PASS: test_default_gather_runs_the_full_chain")
+    print("PASS: test_imd_mode_skips_the_commercial_chain_entirely")
 
 
 def test_a_failing_chain_never_blocks_the_official_feed(monkeypatch):

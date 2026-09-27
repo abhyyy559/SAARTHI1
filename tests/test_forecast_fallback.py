@@ -1,11 +1,10 @@
-"""Forecast fallback chain tests — single IMD-first mode (2026-09-27).
+"""Forecast fallback chain tests (per docs/SOURCE-MODES.md).
 
-The contract:
-  forecast chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
+Closes the known gap: `_live_forecast` previously had no OpenWeatherMap leg,
+while `_live_current` did. The contract after the fix:
 
-There is no mode switcher: the chain always falls back with honest
-provenance (the payload's `source` names the actual source), never
-fabricating data and never presenting a fallback number as official.
+  hybrid forecast chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
+  imd mode:              IMD only; OWM is never called and cache is never served.
 
 All network calls are monkeypatched; the runtime cache is isolated to tmp_path.
 """
@@ -34,6 +33,14 @@ def _isolate_runtime(monkeypatch, tmp_path):
     cache_file = str(tmp_path / "weathergpt_cache.json")
     monkeypatch.setattr(config, "CACHE_FILE", cache_file)
     monkeypatch.setattr(weather_mod, "cache", CacheService(cache_file))
+    monkeypatch.setattr(config, "SOURCE_MODE", config.SOURCE_MODE)
+    monkeypatch.setattr(config, "DEMO_MODE", config.DEMO_MODE)
+    monkeypatch.setattr(config, "IMD_ADAPTER", config.IMD_ADAPTER)
+
+
+def _set_mode(monkeypatch, mode: str) -> None:
+    monkeypatch.setattr(config, "SOURCE_MODE", mode)
+    monkeypatch.setattr(config, "DEMO_MODE", mode == "demo")
 
 
 def _fc(source: str = "IMD") -> WeatherForecast:
@@ -70,11 +77,12 @@ def _owm_down(monkeypatch) -> None:
 
 
 # ----------------------------------------------------------------------------
-# Single-mode chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
+# hybrid chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
 # ----------------------------------------------------------------------------
 
-async def test_forecast_falls_back_to_owm(monkeypatch):
+async def test_hybrid_forecast_falls_back_to_owm(monkeypatch):
     """IMD down AND Open-Meteo down -> OpenWeatherMap forecast leg answers."""
+    _set_mode(monkeypatch, "hybrid")
     _imd_down(monkeypatch)
     _openmeteo_down(monkeypatch)
     calls: list = []
@@ -87,8 +95,9 @@ async def test_forecast_falls_back_to_owm(monkeypatch):
     assert cached and cached["source"] == "OpenWeatherMap"
 
 
-async def test_forecast_falls_back_to_cache_after_owm(monkeypatch):
+async def test_hybrid_forecast_falls_back_to_cache_after_owm(monkeypatch):
     """All three sources down -> cached forecast served with stale_note, CACHED."""
+    _set_mode(monkeypatch, "hybrid")
     _imd_down(monkeypatch)
     _openmeteo_down(monkeypatch)
     _owm_down(monkeypatch)
@@ -103,8 +112,9 @@ async def test_forecast_falls_back_to_cache_after_owm(monkeypatch):
     assert data["stale_note"] == "Showing last retrieved information; may be outdated."
 
 
-async def test_forecast_honest_unavailable(monkeypatch):
+async def test_hybrid_forecast_honest_unavailable(monkeypatch):
     """All sources down, no cache -> AdapterUnavailable, never fabricated."""
+    _set_mode(monkeypatch, "hybrid")
     _imd_down(monkeypatch)
     _openmeteo_down(monkeypatch)
     _owm_down(monkeypatch)
@@ -112,14 +122,14 @@ async def test_forecast_honest_unavailable(monkeypatch):
         await weather_mod._live_forecast(LAT, LON)
 
 
-async def test_forecast_first_source_wins(monkeypatch):
+async def test_hybrid_forecast_first_source_wins(monkeypatch):
     """IMD reachable -> OWM must not be called (priority preserved)."""
+    _set_mode(monkeypatch, "hybrid")
 
     async def imd_fc(self, lat, lon):
         return _fc("IMD")
 
     monkeypatch.setattr(IMDService, "get_forecast", imd_fc)
-    monkeypatch.setattr(config, "IMD_API_KEY", "test-key")  # IMD keyed -> attempt runs
     calls: list = []
     _owm_ok(monkeypatch, calls)
     data, prov = await weather_mod._live_forecast(LAT, LON)
@@ -128,20 +138,23 @@ async def test_forecast_first_source_wins(monkeypatch):
 
 
 # ----------------------------------------------------------------------------
-# The chain always falls back: an unreachable IMD never blocks the
-# Open-Meteo / OWM / cache legs (no official-only mode exists any more).
+# imd mode: no OWM, no cache
 # ----------------------------------------------------------------------------
 
-async def test_unreachable_imd_still_falls_back_to_openmeteo(monkeypatch):
-    """IMD down -> Open-Meteo answers; the chain does not stop at IMD."""
+async def test_imd_mode_forecast_never_calls_owm(monkeypatch):
+    """IMD down in imd mode -> raises before Open-Meteo, OWM, or cache."""
+    _set_mode(monkeypatch, "imd")
     _imd_down(monkeypatch)
-
-    async def om_fc(lat, lon):
-        return _fc("Open-Meteo"), "LIVE"
-
-    monkeypatch.setattr(openmeteo_adapter, "get_forecast", om_fc)
-    data, prov = await weather_mod._live_forecast(LAT, LON)
-    assert data["source"] == "Open-Meteo" and prov == "LIVE"
+    calls: list = []
+    _owm_ok(monkeypatch, calls)
+    weather_mod.cache.set(
+        weather_mod._key("forecast", LAT, LON),
+        {"source": "Open-Meteo", "days": []},
+        weather_mod.TTLS["forecast"],
+    )
+    with pytest.raises(AdapterUnavailable):
+        await weather_mod._live_forecast(LAT, LON)
+    assert calls == []  # OWM untouched, cache untouched
 
 
 # ----------------------------------------------------------------------------
@@ -185,15 +198,11 @@ def test_owm_forecast_aggregates_daily(monkeypatch):
     """3-hourly entries become one ForecastDay per local calendar date."""
     monkeypatch.setattr(config, "OWM_API_KEY", "test-key")
     # 19800s = +5:30. ts=1690000000 -> UTC 2023-07-22 04:26:40 -> IST 09:56:40 (same date)
-    FakeClient = _fake_forecast_response([
+    monkeypatch.setattr(owm_adapter.httpx, "AsyncClient", _fake_forecast_response([
         _entry(1690000000, 30.0, "clear sky"),
         _entry(1690010800, 33.0, "few clouds", rain=1.5),   # same local date
         _entry(1690086400, 28.0, "light rain", rain=2.0),    # next local date
-    ])
-    # Seam moved 2026-09-23: adapters build clients via registry.make_client
-    # (proxy-safe), not httpx.AsyncClient directly.
-    monkeypatch.setattr(owm_adapter, "make_client",
-                        lambda timeout=12.0: FakeClient(timeout=timeout))
+    ]))
     import asyncio
     fc, prov = asyncio.run(owm_adapter.get_forecast(17.385, 78.4867))
     assert prov == "LIVE"
@@ -229,8 +238,7 @@ def test_owm_forecast_fetch_failure_raises(monkeypatch):
         async def get(self, *a, **k):
             raise RuntimeError("connection reset")
 
-    monkeypatch.setattr(owm_adapter, "make_client",
-                        lambda timeout=12.0: BoomClient())
+    monkeypatch.setattr(owm_adapter.httpx, "AsyncClient", BoomClient)
     import asyncio
     with pytest.raises(AdapterUnavailable):
         asyncio.run(owm_adapter.get_forecast(17.385, 78.4867))

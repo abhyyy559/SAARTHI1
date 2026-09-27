@@ -54,27 +54,24 @@ def test_weatherapi_unreadable_severity_is_unknown_not_yellow():
 
 # 2. IMD warning without a severity ------------------------------------------
 def test_imd_warning_missing_severity_is_unknown_not_green(monkeypatch):
-    # Documented IMD schema (api.imd.gov.in/public/api_docs.php): the Day1_Color
-    # carries the severity. A missing Day1_Color must surface as UNKNOWN —
-    # never as GREEN (a false calm) and never as None (a false all-clear).
+    from datetime import timedelta
     raw = {
-        "District": "Hyderabad",
-        "Day_1": "4",  # Thunderstorm & Lightning
-        # no "Day1_Color" key at all
-        "Date": now_ist().date().isoformat(),
+        "warnings": [{
+            "type": "Thunderstorm",
+            # no "severity" key at all
+            "message": "Thunderstorm likely.",
+            "issued_at": now_ist().isoformat(),
+            "valid_until": (now_ist() + timedelta(hours=4)).isoformat(),
+        }],
     }
 
-    async def fake_get(self, path, imd_id):
-        assert imd_id == "DIST-W-1"
+    async def fake_get(self, path, params):
         return raw
 
     monkeypatch.setattr(IMDService, "_get", fake_get)
-    monkeypatch.setattr(config, "IMD_STATION_IDS",
-                        {"Hyderabad": {"warning": "DIST-W-1"}})
     w = asyncio.run(IMDService(adapter="live").get_district_warning("Hyderabad"))
     assert w is not None
     assert w.severity == "UNKNOWN", w.severity
-    assert w.hazard == "Thunderstorm & Lightning", w.hazard
 
 
 # 3. Unreadable-severity CAP alert must not become a calm ---------------------

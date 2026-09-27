@@ -1,9 +1,5 @@
 """Demo alert store — CRUD + schedule + lifecycle state machine (Round2).
 
-NOTE (2026-09-23): demo mode was removed, but this module stays — the name is
-legacy. It is now the plain alert-store implementation used by tests and any
-remaining in-process callers; no demo-only behavior remains in it.
-
 Demo-mode only. Persistence now goes through `services/db.py`: PostgreSQL when
 DATABASE_URL is set (survives deploys/restarts/multi-worker), JSON files
 otherwise. The API is unchanged — callers keep the sync functions below; the

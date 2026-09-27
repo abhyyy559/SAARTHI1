@@ -9,9 +9,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import httpx
 
 from .. import config
-from .registry import DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, make_client, report
+from .registry import DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
 
 SOURCE = "data.gov.in"
 _FIXTURE = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures" / "govdata_rainfall.json"
@@ -25,7 +26,7 @@ async def fetch_records(limit: int = 10) -> tuple[list[dict], str]:
         raise AdapterUnavailable("data.gov.in unconfigured (needs API key + resource id)")
     url = f"https://api.data.gov.in/resource/{resource}"
     try:
-        async with make_client(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=12.0) as client:
             resp = await client.get(url, params={"api-key": key, "format": "json", "limit": limit})
             resp.raise_for_status()
             payload = resp.json()

@@ -23,7 +23,6 @@ _norm = norm_name
 # is used from a landlocked district (e.g. fisherman in Hyderabad).
 _CITIES = [
     {"city": "Hyderabad", "district": "Hyderabad", "state": "Telangana", "latitude": 17.385, "longitude": 78.4867, "coastal": False},
-    {"city": "Medchal", "district": "Medchal Malkajgiri", "state": "Telangana", "latitude": 17.52, "longitude": 78.53, "coastal": False},
     {"city": "Warangal", "district": "Warangal", "state": "Telangana", "latitude": 18.0, "longitude": 79.58, "coastal": False},
     {"city": "Nizamabad", "district": "Nizamabad", "state": "Telangana", "latitude": 18.67, "longitude": 78.09, "coastal": False},
     {"city": "Mumbai", "district": "Mumbai", "state": "Maharashtra", "latitude": 19.076, "longitude": 72.8777, "coastal": True},
@@ -37,45 +36,7 @@ _CITIES = [
     {"city": "Kochi", "district": "Kerala", "state": "Kerala", "latitude": 9.9312, "longitude": 76.2673, "coastal": True},
     {"city": "Panaji", "district": "North Goa", "state": "Goa", "latitude": 15.4909, "longitude": 73.8278, "coastal": True},
     {"city": "Veraval", "district": "Gir Somnath", "state": "Gujarat", "latitude": 20.9067, "longitude": 70.3683, "coastal": True},
-    # Major districts beyond Telangana/Andhra + the metros above. Without
-    # these, a GPS fix in (say) Kanpur resolved to New Delhi — 391 km away —
-    # and the user inherited Delhi's alerts. Coordinates are city centres,
-    # good to ~5 km for nearest-district matching.
-    {"city": "Lucknow", "district": "Lucknow", "state": "Uttar Pradesh", "latitude": 26.85, "longitude": 80.95, "coastal": False},
-    {"city": "Kanpur", "district": "Kanpur Nagar", "state": "Uttar Pradesh", "latitude": 26.4499, "longitude": 80.3319, "coastal": False},
-    {"city": "Varanasi", "district": "Varanasi", "state": "Uttar Pradesh", "latitude": 25.3176, "longitude": 82.9739, "coastal": False},
-    {"city": "Agra", "district": "Agra", "state": "Uttar Pradesh", "latitude": 27.1767, "longitude": 78.0081, "coastal": False},
-    {"city": "Prayagraj", "district": "Prayagraj", "state": "Uttar Pradesh", "latitude": 25.4358, "longitude": 81.8463, "coastal": False},
-    {"city": "Meerut", "district": "Meerut", "state": "Uttar Pradesh", "latitude": 28.9845, "longitude": 77.7064, "coastal": False},
-    {"city": "Patna", "district": "Patna", "state": "Bihar", "latitude": 25.5941, "longitude": 85.1376, "coastal": False},
-    {"city": "Bhopal", "district": "Bhopal", "state": "Madhya Pradesh", "latitude": 23.2599, "longitude": 77.4126, "coastal": False},
-    {"city": "Indore", "district": "Indore", "state": "Madhya Pradesh", "latitude": 22.7196, "longitude": 75.8577, "coastal": False},
-    {"city": "Jaipur", "district": "Jaipur", "state": "Rajasthan", "latitude": 26.9124, "longitude": 75.7873, "coastal": False},
-    {"city": "Jodhpur", "district": "Jodhpur", "state": "Rajasthan", "latitude": 26.2389, "longitude": 73.0243, "coastal": False},
-    {"city": "Pune", "district": "Pune", "state": "Maharashtra", "latitude": 18.5204, "longitude": 73.8567, "coastal": False},
-    {"city": "Nagpur", "district": "Nagpur", "state": "Maharashtra", "latitude": 21.1458, "longitude": 79.0882, "coastal": False},
-    {"city": "Ahmedabad", "district": "Ahmedabad", "state": "Gujarat", "latitude": 23.0225, "longitude": 72.5714, "coastal": False},
-    {"city": "Surat", "district": "Surat", "state": "Gujarat", "latitude": 21.1702, "longitude": 72.8311, "coastal": True},
-    {"city": "Kolkata", "district": "Kolkata", "state": "West Bengal", "latitude": 22.5726, "longitude": 88.3639, "coastal": False},
-    {"city": "Bhubaneswar", "district": "Khordha", "state": "Odisha", "latitude": 20.2961, "longitude": 85.8245, "coastal": False},
-    {"city": "Mysuru", "district": "Mysuru", "state": "Karnataka", "latitude": 12.2958, "longitude": 76.6394, "coastal": False},
-    {"city": "Coimbatore", "district": "Coimbatore", "state": "Tamil Nadu", "latitude": 11.0168, "longitude": 76.9558, "coastal": False},
-    {"city": "Madurai", "district": "Madurai", "state": "Tamil Nadu", "latitude": 9.9252, "longitude": 78.1198, "coastal": False},
-    {"city": "Thiruvananthapuram", "district": "Thiruvananthapuram", "state": "Kerala", "latitude": 8.5241, "longitude": 76.9366, "coastal": True},
-    {"city": "Ludhiana", "district": "Ludhiana", "state": "Punjab", "latitude": 30.901, "longitude": 75.8573, "coastal": False},
-    {"city": "Amritsar", "district": "Amritsar", "state": "Punjab", "latitude": 31.634, "longitude": 74.8723, "coastal": False},
-    {"city": "Gurugram", "district": "Gurugram", "state": "Haryana", "latitude": 28.4595, "longitude": 77.0266, "coastal": False},
-    {"city": "Shimla", "district": "Shimla", "state": "Himachal Pradesh", "latitude": 31.1048, "longitude": 77.1734, "coastal": False},
-    {"city": "Dehradun", "district": "Dehradun", "state": "Uttarakhand", "latitude": 30.3165, "longitude": 78.0322, "coastal": False},
-    {"city": "Ranchi", "district": "Ranchi", "state": "Jharkhand", "latitude": 23.3441, "longitude": 85.3096, "coastal": False},
-    {"city": "Raipur", "district": "Raipur", "state": "Chhattisgarh", "latitude": 21.2514, "longitude": 81.6296, "coastal": False},
-    {"city": "Guwahati", "district": "Kamrup Metropolitan", "state": "Assam", "latitude": 26.1445, "longitude": 91.7362, "coastal": False},
-    {"city": "Srinagar", "district": "Srinagar", "state": "Jammu and Kashmir", "latitude": 34.0837, "longitude": 74.7973, "coastal": False},
 ]
-
-
-# Beyond this distance the "nearest district" is a guess, not a location.
-_MAX_NEAREST_KM = 150.0
 
 
 def _build_gazetteer() -> list[dict]:
@@ -164,40 +125,24 @@ def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
-def _name_tokens(entry: dict) -> list[str]:
-    """City/district/alias tokens only — no state words. A typo'd place name
-    must match the PLACE, not a state that happens to share letters
-    ('bangalre' once suggested Kolkata because 'bengal' from 'West Bengal'
-    outscored 'bengaluru')."""
-    words: list[str] = []
-    for key in ("city", "district"):
-        words.extend(_norm(entry.get(key, "")).split())
-    words.append(_norm(entry.get("city", "")))
-    words.append(_norm(entry.get("district", "")))
-    for alias in entry.get("aliases") or []:
-        words.append(_norm(alias))
-    return [w for w in words if w]
-
-
 def _fuzzy_candidates(query: str, limit: int = 5, cutoff: float = 0.6) -> list[dict]:
     """Closest gazetteer entries to a mistyped name, best first. Empty when the
     input is too far from anything (no confident guess = no suggestion)."""
     q = _norm(query)
     if not q:
         return []
-    scored: list[tuple[float, float, str, dict]] = []
+    scored: list[tuple[float, str, dict]] = []
     for entry in GAZETTEER:
-        name_best = max((_similarity(q, tok) for tok in _name_tokens(entry)), default=0.0)
-        state_best = max((_similarity(q, tok) for tok in _norm(entry.get("state", "")).split()), default=0.0)
-        scored.append((name_best, state_best, entry["district"], entry))
-    scored.sort(key=lambda x: (-x[0], -x[1]))
+        best = max(_similarity(q, tok) for tok in _tokens(entry))
+        scored.append((best, entry["district"], entry))
+    scored.sort(key=lambda x: -x[0])
     out = []
-    for name_best, state_best, _name, entry in scored[:limit]:
-        if max(name_best, state_best) < cutoff:
+    for score, _name, entry in scored[:limit]:
+        if score < cutoff:
             break
         hit = dict(entry)
         hit["suggested"] = True
-        hit["match_score"] = round(max(name_best, state_best), 3)
+        hit["match_score"] = round(score, 3)
         out.append(hit)
     return out
 
@@ -242,18 +187,6 @@ class LocationService:
         if not (math.isfinite(lat) and math.isfinite(lon)):
             lat, lon = cfg.DEFAULT_LAT, cfg.DEFAULT_LON
         entry = min(GAZETTEER, key=lambda e: haversine_km(lat, lon, e["latitude"], e["longitude"]))
-        dist_km = haversine_km(lat, lon, entry["latitude"], entry["longitude"])
-        if dist_km > _MAX_NEAREST_KM:
-            # Beyond this distance the "nearest district" is a guess, not a
-            # location: Kanpur once resolved to New Delhi (391 km) and inherited
-            # Delhi's alerts. Unknown is honest; a wrong district is not.
-            # coastal=None (never False): an unknown district must never be
-            # called inland — the advisory layer keeps its neutral wording.
-            report("gis-location", LIVE,
-                   f"GPS fix {dist_km:.0f} km from nearest known district — unknown")
-            return {"city": None, "district": None, "state": None,
-                    "latitude": lat, "longitude": lon, "coastal": None,
-                    "unknown": True, "nearest_km": round(dist_km, 1)}
         # GIS Job 1 "Where am I?" just ran for real — refresh its source status.
         report("gis-location", LIVE, f"nearest district to GPS fix: {entry.get('district')}")
         return dict(entry)

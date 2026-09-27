@@ -64,35 +64,44 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
     advisory_cards_service rules engine (trilingual templates, no LLM).
 
     Reuses weather.py's _live_current/_live_forecast helpers, preserving
-    provenance: an unreachable source yields UNAVAILABLE, never a fabricated
-    number.
+    provenance and the imd-mode official-only rule: imd mode raises rather than
+    backfilling with non-official sources, and surfaces as UNAVAILABLE.
     """
     district = (LocationService().resolve(lat, lon) or {}).get("district") or ""
-    async def _safe_current():
-        try:
-            return await weather_mod._live_current(lat, lon)
-        except AdapterUnavailable:
-            return None, "UNAVAILABLE"
+    if config.DEMO_MODE:
+        # Demo branches read fixtures even when IMD_ADAPTER=live (same rule as
+        # weather.py::_services).
+        imd = weather_mod._services()["imd"]
+        cur_d = (await imd.get_current_weather(lat, lon)).model_dump(mode="json")
+        fc_d = (await imd.get_forecast(lat, lon)).model_dump(mode="json")
+        prov_c = prov_f = "DEMO"
+        alerts_d = await weather_mod.warnings(district, lat, lon)
+    else:
+        async def _safe_current():
+            try:
+                return await weather_mod._live_current(lat, lon)
+            except AdapterUnavailable:
+                return None, "UNAVAILABLE"
 
-    async def _safe_forecast():
-        try:
-            return await weather_mod._live_forecast(lat, lon)
-        except AdapterUnavailable:
-            return None, "UNAVAILABLE"
+        async def _safe_forecast():
+            try:
+                return await weather_mod._live_forecast(lat, lon)
+            except AdapterUnavailable:
+                return None, "UNAVAILABLE"
 
-    async def _safe_warnings():
-        # warnings() is internally honest; an unexpected failure must not
-        # take the whole cards response down with it.
-        try:
-            return await weather_mod.warnings(district, lat, lon)
-        except Exception:
-            return {}
+        async def _safe_warnings():
+            # warnings() is internally honest; an unexpected failure must not
+            # take the whole cards response down with it.
+            try:
+                return await weather_mod.warnings(district, lat, lon)
+            except Exception:
+                return {}
 
-    # LATENCY: current + forecast + alerts are independent, so they run
-    # together (same pattern as weather.py::current_wx). Provenance
-    # semantics are unchanged.
-    (cur_d, prov_c), (fc_d, prov_f), alerts_d = await asyncio.gather(
-        _safe_current(), _safe_forecast(), _safe_warnings())
+        # LATENCY: current + forecast + alerts are independent, so they run
+        # together (same pattern as weather.py::current_wx). Provenance
+        # semantics are unchanged.
+        (cur_d, prov_c), (fc_d, prov_f), alerts_d = await asyncio.gather(
+            _safe_current(), _safe_forecast(), _safe_warnings())
     alerts_d = alerts_d if isinstance(alerts_d, dict) else {}
     verdict = alerts_d.get("verdict") or {}
     alerts = alerts_d.get("cap_alerts") or []
@@ -125,19 +134,11 @@ async def advisory(severity: str = "GREEN", hazard: str = "", user_type: str = "
                    lat: Optional[float] = None, lon: Optional[float] = None) -> dict:
     sev = (severity or "GREEN").upper()
     verified = {"verified": sev not in ("GREEN", "NONE", ""), "severity": sev, "hazard": hazard}
-    # Coastal awareness for sea-going personas: resolve the GPS fix so a
-    # fisherman in an inland district is told plainly that sea guidance does
-    # not apply, instead of receiving the generic coastal template. No
-    # location passed means we do not know — coastal=None keeps the normal
-    # wording; an unknown district must never be called inland.
-    loc = (LocationService().resolve(lat, lon)
-           if lat is not None and lon is not None else {})
-    floor = advisory_for(verified, user_type, language,
-                         coastal=loc.get("coastal"), district=loc.get("district") or "")
+    floor = advisory_for(verified, user_type, language)
     # Rule layer (T2.1 S2.1.3): append-only, never softens the floor above.
     # When the client did not pass weather numbers but did pass a location,
-    # the server fetches the current observation itself (live chain /
-    # UNAVAILABLE — same provenance semantics as /api/advisory/cards)
+    # the server fetches the current observation itself (DEMO fixtures / live
+    # chain / UNAVAILABLE — same provenance semantics as /api/advisory/cards)
     # so persona advice reflects real conditions, not alerts alone.
     # Missing/unreachable weather yields no weather lines — never an invented
     # calm, never a false all-clear.
@@ -150,6 +151,6 @@ async def advisory(severity: str = "GREEN", hazard: str = "", user_type: str = "
         "weather_basis": weather_basis,
         "user_type": user_type,
         "official_instruction": False,
-        "note": "SAARTHI contextual recommendation — not an official government instruction.",
+        "note": "WeatherGPT contextual recommendation — not an official government instruction.",
         "generated_at": iso_now(),
     }

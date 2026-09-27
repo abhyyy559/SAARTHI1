@@ -86,6 +86,14 @@ def test_official_transition_payload_carries_alert_id_and_deep_link(monkeypatch)
     assert payload["url"] == "/?view=alerts&alert=cap-999"
 
 
+def test_demo_payload_carries_alert_id_and_deep_link():
+    alert = {"id": "demo-42", "district": DISTRICT, "severity": "RED",
+             "hazard": "Cyclone", "title": "Test cyclone"}
+    payload = alert_watcher.demo_message_for(alert, "active")
+    assert payload["alert_id"] == "demo-42"
+    assert payload["url"] == "/?view=alerts&alert=demo-42"
+
+
 def test_message_for_without_id_links_to_alerts_view():
     payload = alert_watcher.message_for(
         "active", {"severity": "ORANGE", "hazard": "Heavy rain"}, DISTRICT)

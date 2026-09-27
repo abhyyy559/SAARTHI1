@@ -29,7 +29,3 @@ docker-build.err.log
 _tmp_districts.json
 _qa/
 vapid_keys.json
-
-# local python virtualenv (never commit)
-.venv/
-imd_mapping_cache.json

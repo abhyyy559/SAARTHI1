@@ -1,19 +1,10 @@
 """WIS2 / MQTT ingestion layer — conceptual architecture (§24–25), honest status.
 
-INVESTIGATION 2026-09-23: public WIS2 global brokers DO exist and need no
-private credentials — mqtts://everyone:everyone@globalbroker.meteo.fr:8883
-(also wss on :443/mqtt), NOAA and CMA equivalents; subscribe topic
-`origin/a/wis2/#`. A live subscription from this sandbox could NOT be
-verified: the egress proxy answers the TCP connection but breaks the TLS
-handshake (SSL WRONG_VERSION_NUMBER on both 8883 and 443), so no MQTT
-session could be established here. On an open network (e.g. Render) the
-same credentials should work — but until a subscription is actually
-verified end-to-end, this layer stays UNCONFIGURED/STUB.
-
-Set WIS2_BROKER=mqtts://everyone:everyone@globalbroker.meteo.fr:8883 and
-WIS2_TOPICS=origin/a/wis2/# to document intent; the live subscriber itself
-is not implemented in the MVP. CAP polling remains the official-warning
-path and the system is fully functional without WIS2.
+Without a configured broker (WIS2_BROKER env / MQTT deps) this layer reports
+UNCONFIGURED. A clearly-labelled SIMULATED event generator exists so the
+architecture (publisher -> MQTT -> ingestion -> event processor -> warning
+engine) can be demonstrated without pretending to a live feed. The system
+remains fully functional without it.
 """
 from __future__ import annotations
 
@@ -38,14 +29,10 @@ _counter = itertools.count(1)
 def status() -> dict:
     broker = getattr(config, "WIS2_BROKER", "") or ""
     if broker:
-        report(NAME, UNCONFIGURED,
-               "broker set but live subscription not verified — CAP polling used instead")
-        return {"name": NAME, "status": UNCONFIGURED,
-                "detail": "broker set; live MQTT subscription not implemented/verified in MVP — CAP polling used instead"}
-    report(NAME, UNCONFIGURED,
-           "WIS2_BROKER not set — public brokers exist (everyone/everyone) but unverified here; CAP polling used instead")
-    return {"name": NAME, "status": UNCONFIGURED,
-            "detail": "optional layer; public WIS2 brokers exist but live subscription unverified — system works without it"}
+        report(NAME, UNCONFIGURED, "broker configured but live subscription not implemented in MVP")
+        return {"name": NAME, "status": UNCONFIGURED, "detail": "broker set; subscription planned"}
+    report(NAME, UNCONFIGURED, "WIS2_BROKER not set — layer documented, optional")
+    return {"name": NAME, "status": UNCONFIGURED, "detail": "optional layer; system works without it"}
 
 
 def simulated_event() -> dict:

@@ -50,23 +50,6 @@ def get_status(name: str) -> SourceStatus:
     return _STATUSES.get(name) or SourceStatus(name=name)
 
 
-def make_client(timeout: float = 12.0):
-    """Build an httpx AsyncClient that survives malformed proxy env vars.
-
-    httpx parses proxy settings from the environment when trust_env=True
-    (the default). A value like NO_PROXY='[::1]' makes client construction
-    raise ('Invalid port'), which would take down every live adapter on
-    affected hosts. Prefer the environment's proxies, but fall back to a
-    proxy-free client instead of failing outright.
-    """
-    import httpx
-
-    try:
-        return httpx.AsyncClient(timeout=timeout, trust_env=True)
-    except Exception:
-        return httpx.AsyncClient(timeout=timeout, trust_env=False)
-
-
 def _initial_state(name: str) -> tuple[str, str]:
     """Truthful state for an adapter that has not run yet in this process.
 
@@ -86,9 +69,9 @@ def _initial_state(name: str) -> tuple[str, str]:
             return (READY, "configured (data.gov.in) — verified on first use")
         return (UNCONFIGURED, "needs DATAGOV_API_KEY + DATAGOV_RESOURCE_ID (data.gov.in)")
     if name == "cap":
-        if config.CAP_FEED_URLS or config.CAP_FEED_URL:
-            return (READY, "SACHET CAP feeds configured — verified on first use")
-        return (UNCONFIGURED, "needs CAP_FEED_URLS (NDMA-Sachet CAP RSS feeds)")
+        if config.CAP_FEED_URL:
+            return (READY, "CAP feed configured — verified on first use")
+        return (UNCONFIGURED, "needs CAP_FEED_URL (NDMA-Sachet / IMD CAP feed)")
     if name == "owm":
         if config.OWM_API_KEY:
             return (READY, "configured (OpenWeatherMap) — verified on first use")
@@ -96,25 +79,24 @@ def _initial_state(name: str) -> tuple[str, str]:
     if name == "imd":
         if config.IMD_API_KEY:
             return (READY, "IMD credentials present — verified on first use")
-        return (UNCONFIGURED, "no IMD_API_KEY — IMD platform is credential-gated; Open-Meteo carries current weather meanwhile")
+        if config.IMD_ADAPTER == "demo":
+            return (READY, "demo adapter: IMD-grade fixtures (stamped DEMO) until IMD API access is issued")
+        return (UNCONFIGURED, "no IMD_API_KEY — IMD platform is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
     if name == "wis2":
-        # Mirrors wis2_adapter.status() honesty: public WIS2 global brokers
-        # exist (everyone/everyone, e.g. globalbroker.meteo.fr:8883) but a live
-        # subscription has not been verified end-to-end, and the MQTT
-        # subscriber is not implemented in the MVP — CAP polling does the work.
+        # Mirrors wis2_adapter.status() honesty: even with a broker set, the live
+        # subscription is not implemented in the MVP — CAP polling does the work.
         if getattr(config, "WIS2_BROKER", ""):
-            return (UNCONFIGURED, "broker set but live MQTT subscription not implemented/verified — CAP polling used instead")
-        return (UNCONFIGURED, "WIS2_BROKER not set — public brokers exist but unverified; CAP polling used instead")
+            return (UNCONFIGURED, "broker set but live subscription not implemented in MVP — CAP polling used instead")
+        return (UNCONFIGURED, "WIS2_BROKER not set — CAP polling used instead")
     if name == "gis-location":
         # GIS Job 1 "Where am I?": pure haversine nearest-district math — no key,
         # no network, nothing that can be unconfigured. Always live-capable.
         return (LIVE, "haversine nearest-district from GPS — local math, no key needed")
     if name == "gis-polygon":
-        # GIS Job 2 "Am I inside the warning area?": district-name matching
-        # (with district aliases) is the live working path — polygon/circle
-        # geometry matching activates only when a CAP bulletin actually
-        # carries geometry, which the live SACHET feeds currently do not.
-        return (LIVE, "district-name matching live; polygon/circle matching activates when CAP geometry is supplied")
+        # GIS Job 2 "Am I inside the warning polygon?": the code path exists, but
+        # live CAP feeds carry no polygon/circle geometry, so it stays idle and
+        # district-name matching does the work instead.
+        return (UNCONFIGURED, "live CAP feeds carry no polygon geometry — district-name matching does the work")
     if name == "gis-hazard":
         # GIS Job 3 "Hazard distance": pure haversine route math — always live.
         return (LIVE, "haversine route-to-hazard distance — local math, no key needed")

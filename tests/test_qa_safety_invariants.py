@@ -30,6 +30,8 @@ VERDICT_KEYS = {"level", "basis", "confirmed", "severity", "hazard", "source",
 @pytest.fixture()
 def outage(monkeypatch):
     """Every upstream fails; the app must still answer honestly."""
+    monkeypatch.setattr(config, "DEMO_MODE", False)
+    monkeypatch.setattr(config, "SOURCE_MODE", "hybrid")
 
     async def _raise(*a, **k):
         raise AdapterUnavailable("simulated outage")
@@ -94,7 +96,7 @@ def test_no_endpoint_500s_during_a_full_outage(outage):
     for path in ("/api/weather/warnings?district=Hyderabad",
                  "/api/v1/warnings?district=Hyderabad",
                  "/api/v1/advisories?district=Hyderabad&user_type=driver",
-                 "/api/health", "/api/sources", "/api/coverage"):
+                 "/api/health", "/api/mode", "/api/sources", "/api/coverage"):
         assert outage.get(path).status_code < 500, path
 
 

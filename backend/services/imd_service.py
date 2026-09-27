@@ -1,19 +1,5 @@
-"""IMD adapter — the ONLY place that talks to IMD. Everything else uses normalized models.
-
-Live contract (verified 2026-09-27 against IMD's logged-in API docs,
-api.imd.gov.in/public/api_docs.php):
-  base   https://api.imd.gov.in/api/v1
-  auth   X-API-KEY: <key> + Authorization: Bearer <JWT> on EVERY call
-  token  POST https://api.imd.gov.in/api/oauth/token.php {"email","password"}
-         -> {"access_token": ..., "token_type": "Bearer", "expires_in": 3600}
-  ids    every endpoint takes ?id=<IMD numeric station/district ID>
-The API key is bound to the server IP registered on the portal: a dev key
-bound to a laptop IP only answers from that IP. Field names below follow the
-documented schema ("Temperature", "Day1_Color", ...); the old assumed names
-("temp", ...) survive only as defensive fallbacks.
-"""
+"""IMD adapter — the ONLY place that talks to IMD. Everything else uses normalized models."""
 import json
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -21,11 +7,10 @@ from typing import Optional
 import httpx
 
 from .. import config
-from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, make_client, report
+from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, report
 from ..models.weather import WeatherObservation, WeatherForecast, WeatherWarning
 from ..utils.time import IST, now_ist
 from . import district_demo
-from .imd_mapping import get_resolver
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures"
 
@@ -42,67 +27,9 @@ def _report_failure(what: str, exc: Exception) -> None:
     """
     if not config.IMD_API_KEY:
         report("imd", UNCONFIGURED,
-               "no IMD_API_KEY — IMD is credential-gated; set IMD_API_KEY, "
-               "IMD_API_EMAIL and IMD_API_PASSWORD to enable official data")
+               "no IMD_API_KEY — IMD is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
     else:
         report("imd", OFFLINE, f"live {what} failed: {type(exc).__name__}")
-
-
-def _pick(raw: dict, *names):
-    """First non-None value under any of the given field names. IMD's
-    documented names come first; older assumed names trail as fallbacks."""
-    for name in names:
-        value = raw.get(name)
-        if value is not None:
-            return value
-    return None
-
-
-def _num_or_none(value):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-
-# IMD day-color -> severity (documented: 1 Green, 2 Yellow, 3 Orange, 4 Red).
-_IMD_COLOR_SEVERITY = {"1": "GREEN", "2": "YELLOW", "3": "ORANGE", "4": "RED"}
-
-# IMD warning codes documented in the API reference; anything else is
-# surfaced as its raw code, never invented.
-_IMD_WARNING_CODES = {
-    "2": "Heavy Rain",
-    "4": "Thunderstorm & Lightning",
-    "9": "Heat Wave",
-}
-
-
-def _day_window_ist(day) -> tuple[datetime, Optional[datetime]]:
-    """Validity window for an IMD day-N warning: that calendar day in IST.
-    Unparseable -> issued now, no claimed end (active=False)."""
-    now = now_ist()
-    if day:
-        try:
-            d = datetime.fromisoformat(str(day)).date()
-            start = datetime(d.year, d.month, d.day, tzinfo=IST)
-            return start, start + timedelta(days=1)
-        except ValueError:
-            pass
-    return now, None
-
-
-def _obs_time(raw: dict) -> Optional[datetime]:
-    """Combine IMD's 'Date of Observation' + 'Time of Observation' (UTC)."""
-    date = _pick(raw, "Date of Observation", "date", "obs_date")
-    clock = _pick(raw, "Time of Observation", "time", "obs_time")
-    if date and clock:
-        try:
-            return datetime.fromisoformat(
-                f"{date}T{clock}+00:00").astimezone(IST)
-        except ValueError:
-            return None
-    return _parse_ts(_pick(raw, "obs_time"))
 
 
 def _load_fixture(name: str) -> dict:
@@ -119,6 +46,13 @@ def _parse_ts(value: Optional[str]) -> Optional[datetime]:
         return None
 
 
+def _aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """Naive datetimes are IMD-local (IST); make everything comparable."""
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=IST)
+
+
 def _relative_ts(hours_ago: int = 1, hours_ahead: int | None = None) -> Optional[datetime]:
     """Demo-mode timestamps relative to now → warnings always appear active (§51)."""
     base = datetime.now(IST) - timedelta(hours=hours_ago)
@@ -129,94 +63,25 @@ def _relative_ts(hours_ago: int = 1, hours_ahead: int | None = None) -> Optional
 
 class IMDService:
     def __init__(self, adapter: Optional[str] = None) -> None:
-        # Single mode: the live adapter is the only one. Demo mode was removed.
-        self.adapter = adapter or "live"
-        self._jwt: Optional[str] = None
-        self._jwt_expires_at: float = 0.0
+        self.adapter = adapter or config.IMD_ADAPTER
 
     @property
     def capability(self) -> str:
         return "live" if self.adapter == "live" else "degraded"
 
-    async def _jwt_token(self) -> str:
-        """Mint (and cache) the IMD JWT.
-
-        Cached until ~60s before expiry so a request burst mints once. The
-        portal email+password come from IMD_API_EMAIL / IMD_API_PASSWORD.
-        """
-        if self._jwt and time.time() < self._jwt_expires_at - 60:
-            return self._jwt
-        if not (config.IMD_API_EMAIL and config.IMD_API_PASSWORD):
-            raise AdapterUnavailable(
-                "IMD JWT unavailable — set IMD_API_EMAIL and IMD_API_PASSWORD "
-                "(the api.imd.gov.in portal login)")
-        # make_client: survives malformed proxy env vars (which make plain
-        # httpx.AsyncClient construction raise) — the same factory every
-        # other adapter uses.
-        async with make_client(timeout=config.IMD_TIMEOUT) as client:
-            resp = await client.post(
-                config.IMD_TOKEN_URL,
-                json={"email": config.IMD_API_EMAIL,
-                      "password": config.IMD_API_PASSWORD})
+    async def _get(self, path: str, params: dict | None = None) -> dict:
+        headers = {"Authorization": f"Bearer {config.IMD_API_KEY}"} if config.IMD_API_KEY else {}
+        url = f"{config.IMD_BASE_URL}/{path}"
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, params=params, headers=headers)
             resp.raise_for_status()
-            data = resp.json()
-        token = data.get("access_token")
-        if not token:
-            raise AdapterUnavailable(
-                "IMD token endpoint returned no access_token: "
-                f"{str(data)[:120]}")
-        try:
-            ttl = int(data.get("expires_in", 3600))
-        except (TypeError, ValueError):
-            ttl = 3600
-        self._jwt = token
-        self._jwt_expires_at = time.time() + ttl
-        return token
-
-    async def _live_id(self, kind: str, lat: Optional[float] = None,
-                       lng: Optional[float] = None,
-                       district: str | None = None) -> str:
-        """Resolve an endpoint kind to an IMD numeric ID for any location.
-
-        Order: IMD_STATION_IDS manual override -> IMD mapping tables
-        (nearest station / district lookup) -> AdapterUnavailable (fail closed
-        to Open-Meteo). IDs are never guessed.
-        """
-        return await get_resolver(self._jwt_token).resolve(
-            kind, lat=lat, lng=lng, district=district)
-
-    async def _get(self, path: str, imd_id: str) -> dict:
-        """GET {base}/{path}?id=... with the documented dual-header auth.
-
-        On a 401 the cached JWT is discarded, minted once more, and the
-        request retried a single time. Failures propagate to the caller,
-        which reports them via _report_failure — this helper never reports.
-        """
-        if not config.IMD_API_KEY:
-            # Fail before any network: without a key the platform 401s however
-            # healthy the network is, and the registry must say UNCONFIGURED.
-            raise AdapterUnavailable("IMD live unavailable — set IMD_API_KEY")
-
-        async def _once(jwt: str) -> httpx.Response:
-            headers = {"X-API-KEY": config.IMD_API_KEY,
-                       "Authorization": f"Bearer {jwt}"}
-            async with make_client(timeout=config.IMD_TIMEOUT) as client:
-                return await client.get(f"{config.IMD_BASE_URL}/{path}",
-                                        params={"id": imd_id}, headers=headers)
-
-        resp = await _once(await self._jwt_token())
-        if resp.status_code == 401:
-            self._jwt = None  # force a fresh mint, then one retry
-            resp = await _once(await self._jwt_token())
-        resp.raise_for_status()
-        return resp.json()
+            return resp.json()
 
     async def get_current_weather(self, latitude: float, longitude: float,
                                 district: str | None = None) -> WeatherObservation:
-        """`district` picks the IMD station via IMD_STATION_IDS override or the
-        mapping tables (live) or the demo preset table (demo). Live mode
-        resolves the nearest IMD station from lat/lon via the mapping tables,
-        so any Indian location works — not just hand-mapped districts."""
+        """`district` is demo-only: the location switcher names the district so
+        each preset gets its own sample weather (Visakhapatnam rain, Chennai
+        clear). Live mode ignores it — real coords, real station."""
         if self.adapter == "demo":
             raw = _load_fixture("current_hyderabad.json")["raw"]
             preset = district_demo.demo_current(district)
@@ -229,28 +94,18 @@ class IMDService:
                        "station": name}
         else:
             try:
-                raw = await self._get(config.IMD_PATH_CURRENT,
-                                      await self._live_id("current", lat=latitude,
-                                                          lng=longitude,
-                                                          district=district))
+                raw = await self._get(config.IMD_PATH_CURRENT, {"lat": latitude, "lng": longitude, "station": "Hyderabad"})
             except Exception as exc:
                 _report_failure("current_wx", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
-        if self.adapter == "demo":
-            observed_at = _relative_ts()
-        else:
-            observed_at = _obs_time(raw)
         return WeatherObservation(
             source="IMD",
-            # _num_or_none (not _num): a garbled IMD field must surface as
-            # "unavailable", never as a measured 0.0 — the model, the Home
-            # brief and the advisory basis all treat None as unknown.
-            temperature=_num_or_none(_pick(raw, "Temperature", "temp")),
-            humidity=_num_or_none(_pick(raw, "Humidity", "humidity")),
-            rainfall=_num_or_none(_pick(raw, "Last 24 hrs Rainfall", "rainfall")),
-            wind_speed=_num_or_none(_pick(raw, "Wind Speed", "windspeed")),
-            condition=_pick(raw, "Weather", "Condition", "Weather Code", "condition"),
-            observed_at=observed_at,
+            temperature=float(raw.get("temp") or 0),
+            humidity=float(raw.get("humidity") or 0),
+            rainfall=float(raw.get("rainfall") or 0),
+            wind_speed=float(raw.get("windspeed") or 0),
+            condition=raw.get("condition"),
+            observed_at=_parse_ts(raw.get("obs_time")) if self.adapter == "live" else _relative_ts(),
         )
 
     async def get_forecast(self, latitude: float, longitude: float,
@@ -269,55 +124,23 @@ class IMDService:
                      "max": d["max"], "rain": d["rain"]}
                     for i, d in enumerate(preset_days)
                 ]}
-            days = [
-                {
-                    "date": d.get("date"),
-                    "condition": d.get("condition"),
-                    "min_temperature": d.get("min"),
-                    "max_temperature": d.get("max"),
-                    "rainfall": d.get("rain"),
-                }
-                for d in raw.get("forecast", [])
-            ]
-            return WeatherForecast(
-                source="IMD", location=raw.get("city"),
-                issued_at=_relative_ts(), days=days)
-        try:
-            raw = await self._get(config.IMD_PATH_FORECAST,
-                                  await self._live_id("forecast", lat=latitude,
-                                                      lng=longitude,
-                                                      district=district))
-        except Exception as exc:
-            _report_failure("cityforecast", exc)
-            raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
-        # Documented schema: Todays_Forecast_* then Day_2_* .. Day_7_*.
-        # Day numbers are relative to fetch time, so dates are anchored today.
-        today = now_ist().date()
-        days = []
-        for i in range(7):
-            if i == 0:
-                mx = _pick(raw, "Todays_Forecast_Max_Temp")
-                mn = _pick(raw, "Todays_Forecast_Min_temp")
-                cond = _pick(raw, "Todays_Forecast")
-                rain = _pick(raw, "Past_24_hrs_Rainfall")
-            else:
-                n = i + 1
-                mx = _pick(raw, f"Day_{n}_Max_Temp")
-                mn = _pick(raw, f"Day_{n}_Min_Temp")
-                cond = _pick(raw, f"Day_{n}_Forecast")
-                rain = None
-            days.append({
-                "date": (today + timedelta(days=i)).isoformat(),
-                "condition": cond,
-                "min_temperature": _num_or_none(mn),
-                "max_temperature": _num_or_none(mx),
-                "rainfall": _num_or_none(rain),
-            })
-        return WeatherForecast(
-            source="IMD",
-            location=_pick(raw, "Station_Name", "city"),
-            issued_at=_parse_ts(_pick(raw, "Issued", "issued_at", "Date")) or now_ist(),
-            days=days)
+        else:
+            try:
+                raw = await self._get(config.IMD_PATH_FORECAST, {"lat": latitude, "lng": longitude, "city": "Hyderabad"})
+            except Exception as exc:
+                _report_failure("cityforecast", exc)
+                raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
+        days = [
+            {
+                "date": d.get("date"),
+                "condition": d.get("condition"),
+                "min_temperature": d.get("min"),
+                "max_temperature": d.get("max"),
+                "rainfall": d.get("rain"),
+            }
+            for d in raw.get("forecast", [])
+        ]
+        return WeatherForecast(source="IMD", location=raw.get("city"), issued_at=_parse_ts(raw.get("issued_at")) if self.adapter == "live" else _relative_ts(), days=days)
 
     async def get_district_warning(self, district: str) -> WeatherWarning | None:
         if self.adapter == "demo":
@@ -340,45 +163,23 @@ class IMDService:
                     "message": entry["message"]}]}  # type: ignore[index]
         else:
             try:
-                raw = await self._get(config.IMD_PATH_WARNING,
-                                      await self._live_id("warning",
-                                                          district=district))
+                raw = await self._get(config.IMD_PATH_WARNING, {"district": district})
             except Exception as exc:
                 _report_failure("districtwarning", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
-            # Documented schema: Day_1..Day_5 warning codes + Day1_Color..Day5_Color
-            # (1 Green, 2 Yellow, 3 Orange, 4 Red). Green day-1 = all-clear.
-            color = _pick(raw, "Day1_Color")
-            code = _pick(raw, "Day_1")
-            severity = _IMD_COLOR_SEVERITY.get(str(color)) if color is not None else None
-            if severity == "GREEN":
-                return None
-            code_str = str(code) if code is not None else ""
-            hazard = _IMD_WARNING_CODES.get(
-                code_str, f"IMD warning code {code_str}" if code_str else "Unknown")
-            severity = severity or "UNKNOWN"
-            name = _pick(raw, "District") or district
-            issued_at, valid_until = _day_window_ist(_pick(raw, "Date"))
-            now = datetime.now(IST)
-            active = bool(valid_until) and issued_at <= now <= valid_until
-            return WeatherWarning(
-                source="IMD",
-                hazard=hazard,
-                severity=severity,
-                district=name,
-                message=f"{hazard}: {severity} alert for {name} (IMD day-1 district warning)",
-                issued_at=issued_at,
-                valid_until=valid_until,
-                verified=False,
-                active=active,
-            )
         warnings = raw.get("warnings") or []
         if not warnings:
             return None
         w = warnings[0]
-        issued_at = _relative_ts(hours_ago=1)
-        valid_until = _relative_ts(hours_ago=1, hours_ahead=4)
+        if self.adapter == "demo":
+            issued = _relative_ts(hours_ago=1)
+            valid_until = _relative_ts(hours_ago=1, hours_ahead=4)
+        else:
+            issued = _parse_ts(w.get("issued_at"))
+            valid_until = _parse_ts(w.get("valid_until"))
         now = datetime.now(IST)
+        issued_at = _aware(issued) or now
+        valid_until = _aware(valid_until)
         # Validity-window based, like the chat path: the same fixture must not
         # report active=false here while /api/chat reports active=true from its
         # verified flag (validation_service._validity uses this same window).
@@ -404,15 +205,8 @@ class IMDService:
             return text
         else:
             try:
-                raw = await self._get(config.IMD_PATH_NOWCAST,
-                                      await self._live_id("nowcast",
-                                                          district=district))
+                raw = await self._get(config.IMD_PATH_NOWCAST, {"district": district})
             except Exception as exc:
-                _report_failure("nowcast", exc)
+                _report_failure("districtnowcast", exc)
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
-        # Documented schema carries a top-level "message" (plus color/Cat*
-        # fields); fall back to the old assumed nesting defensively.
-        text = _pick(raw, "message", "Message")
-        if not text and isinstance(raw.get("nowcast"), dict):
-            text = raw["nowcast"].get("phenomenon")
-        return text or ""
+        return raw.get("nowcast", {}).get("phenomenon", "")

@@ -12,7 +12,7 @@ language), [jury-questions.md](jury-questions.md) (defense script).
   tokens, `ui.jsx` primitives), `vite-plugin-pwa` (generateSW),
   Leaflet (installed, currently unused — map views deleted).
 - **AI/Voice:** Groq (OpenAI-compatible chat completions) for grounded
-  answers; Sarvam AI for STT (`saaras:v3`) and TTS (`bulbul:v3`);
+  answers; Sarvam AI for STT (`saarika:v2.5`) and TTS (`bulbul:v3`);
   browser SpeechRecognition/SpeechSynthesis as offline-capable fallback.
 - **Deploy:** Render (backend, `render.yaml`), Vercel or FastAPI-served
   `dist/` (frontend). Local: backend `:8003`, frontend `:5173`

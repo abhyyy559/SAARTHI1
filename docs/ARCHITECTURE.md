@@ -217,23 +217,20 @@ Single `AppProvider`: `view`, `lang` (en/hi/te), `persona`
 
 ## 8. Deployment & environments
 
-- **Backend:** Render (or any FastAPI host). Single IMD-first mode — no
-  demo, no mode switcher; `FRONTEND_ORIGINS` must include the frontend URL
-  (CORS is restricted); per-IP rate limiting on public POST; `CAP_FEED_URL`
-  for live SACHET.
+- **Backend:** Render (or any FastAPI host). `DEMO_MODE=true` for the demo;
+  `FRONTEND_ORIGINS` must include the frontend URL (CORS is restricted);
+  per-IP rate limiting on public POST; `CAP_FEED_URL` for live SACHET.
 - **Frontend:** Vercel. `VITE_API_URL` must point at the deployed backend.
 - **Push:** VAPID keys — the committed key was exposed and must be rotated;
   `vapid_keys.json` is git-ignored and never tracked.
-- **Modes:** removed 2026-09-27. The app runs one IMD-first mode; no
-  `POST /api/mode` endpoint exists.
+- **Modes:** `POST /api/mode` switches demo/imd/hybrid live.
 
 ---
 
 ## 9. Test map
 
-- **Backend:** `pytest tests/` — adapters, services, alert
-  lifecycle, risk assessment, QA safety invariants, single-mode fallback
-  chain, inland-fisherman advisory.
+- **Backend:** `pytest tests/` (272 tests) — adapters, services, alert
+  lifecycle, risk assessment, QA safety invariants, source modes.
 - **Frontend:** `npm test` (`node:test`, ~40 tests) — source-level contracts:
   verdict ownership, chat identity keys, view registry, i18n fallbacks.
 - **Behavioural:** scripted checks (22/22) against the running app.

@@ -38,7 +38,7 @@ to the frontend). After adding a key, restart the server and check
 | `LLM_API_KEY` | https://console.groq.com → **API Keys** → Create key | Paste into `.env` (model defaults to `qwen/qwen3.8-27b`; override with `LLM_MODEL`) | Real conversational answers in EN/HI/TE — without it the app uses the rule-based template |
 | `DATAGOV_API_KEY` | https://data.gov.in → **Register/Login** | **My Account → API** → Generate token | Official records |
 | `DATAGOV_RESOURCE_ID` | same site | Search dataset (e.g. “IMD rainfall district”) → open it → **API** tab → copy the `resource_id` from the sample URL (`…/resource/<id>`) | Pairs with the key above |
-| `SARVAM_API_KEY` | https://dashboard.sarvam.ai → **Sign up** | **API Keys** → create subscription key (check current free credits on the site) | Server Telugu/Hindi/English STT (`saaras`) + TTS (`bulbul`); without it the app uses browser voice + shows the fallback badge |
+| `SARVAM_API_KEY` | https://dashboard.sarvam.ai → **Sign up** | **API Keys** → create subscription key (check current free credits on the site) | Server Telugu/Hindi/English STT (`saarika`) + TTS (`bulbul`); without it the app uses browser voice + shows the fallback badge |
 | `CAP_FEED_URL` | NDMA-Sachet ops centre / state emergency cell / IMD WIS2 discovery | Paste the CAP XML/JSON feed URL when issued | Live emergency alerts → GIS intersection |
 | `EMERGENCY_KEY` | **already generated** in `.env` | Rotate anytime: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` | E2E encryption of emergency packets |
 

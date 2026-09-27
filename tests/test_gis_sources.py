@@ -20,15 +20,11 @@ def test_gis_jobs_present_with_honest_status():
     assert snap["gis-location"]["status"] == "LIVE"
     # Job 3 "Hazard distance" — pure local haversine math, always live-capable.
     assert snap["gis-hazard"]["status"] == "LIVE"
-    # Job 2 "Am I inside the warning polygon?" — district-name matching is the
-    # live working path; polygon/circle geometry matching activates only when
-    # a CAP bulletin actually carries geometry, which live SACHET feeds
-    # currently do not. The status is LIVE for the working path, with the
-    # detail saying exactly which half is idle — never an inflated claim that
-    # geometry matching is verified.
-    assert snap["gis-polygon"]["status"] == "LIVE"
-    assert "district-name matching live" in snap["gis-polygon"]["detail"]
-    assert "geometry" in snap["gis-polygon"]["detail"]
+    # Job 2 "Am I inside the warning polygon?" — code exists but live CAP feeds
+    # carry no geometry, so the geometry path is idle; district-name matching
+    # does the work. Must NOT be relabelled upward.
+    assert snap["gis-polygon"]["status"] == "UNCONFIGURED"
+    assert "no polygon geometry" in snap["gis-polygon"]["detail"]
     # WIS 2.0 — MQTT broker/deps not set; CAP polling used instead.
     assert snap["wis2"]["status"] == "UNCONFIGURED"
     assert "CAP polling" in snap["wis2"]["detail"]

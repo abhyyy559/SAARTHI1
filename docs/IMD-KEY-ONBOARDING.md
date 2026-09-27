@@ -1,39 +1,28 @@
-# IMD API key onboarding
+# When the IMD key arrives
 
-SAARTHI runs in a single IMD-first mode (see `docs/SOURCE-MODES.md`): IMD is
-the primary source, with Open-Meteo / OpenWeatherMap / SACHET-CAP backfill and
-cache. There is no mode switch and no `IMD_ADAPTER` toggle — the only thing
-that turns IMD on is a real key.
+Everything except the endpoint paths is already built and exercised. This is the
+whole change.
 
-## 1. Generate the key
+## 1. Paste the key
 
-Request API access at the IMD portal (the API is credential-gated; without a
-key the IMD adapter reports `UNCONFIGURED` and the app runs on backfill +
-cache, honestly labelled).
+`weathergpt/.env`:
 
-## 2. Set the credentials
+```ini
+IMD_API_KEY=<the key>
+IMD_ADAPTER=live
+```
 
-IMD needs three values (verified 2026-09-27 against the portal's logged-in
-API docs — the old "just the key" setup was wrong):
+`IMD_ADAPTER=live` is what stops the fixture adapter answering. With the key set
+and `IMD_ADAPTER=demo` you still get fixtures (stamped DEMO) — deliberately, so a
+key can be added without silently switching the demo to live data.
 
-- **Production (Render):** set them in the Render dashboard (Environment tab
-  of the backend service). Redeploy after saving.
-- **Local:** add them to your `.env`:
-  ```ini
-  IMD_API_KEY=<redacted>
-  IMD_API_EMAIL=<redacted>
-  IMD_API_PASSWORD=<your-portal-password>
-  ```
+## 2. Restart the backend
 
-Why three: every IMD API call sends **two** headers —
-`X-API-KEY: <key>` (bound to the server IP registered on the portal) **and**
-`Authorization: Bearer <JWT>` (your portal-user identity, expires after 1
-hour). The backend mints the JWT itself by POSTing your portal email+password
-to `https://api.imd.gov.in/api/oauth/token.php` and caches it until shortly
-before expiry. The JWT must belong to the same portal user as the API key.
+```bash
+cd SAARTHI && PYTHONPATH=weathergpt python -m uvicorn backend.main:app --port 8003
+```
 
-That is the whole change — no code change, no mode to flip. Restart the
-backend and check the source actually took:
+Then check the switch actually took:
 
 ```bash
 curl -s localhost:8003/api/sources | python -m json.tool | grep -A2 '"imd"'
@@ -41,70 +30,61 @@ curl -s localhost:8003/api/sources | python -m json.tool | grep -A2 '"imd"'
 
 Expected: `"status": "READY"`, `"detail": "IMD credentials present — verified on first use"`.
 
-## 3. Any-location resolution (no hand-typed district list)
+## 3. If the paths are wrong
 
-IMD endpoints take a numeric ID (`?id=...`), not a city name or coordinates —
-so serving arbitrary user locations needs IMD's own station/district tables.
-The backend fetches them once with the same dual-header auth and caches them
-on disk (`backend/data/imd_mapping_cache.json`, 7-day TTL):
-
-- **Current / forecast:** nearest IMD station to the user's GPS (haversine).
-- **Warning / nowcast:** district name → IMD district ID.
-- A "nearest" station more than 150 km away fails closed to Open-Meteo —
-  that is outside IMD coverage, not the user's weather.
-
-Nothing to configure for this except the two endpoint names:
+**This is the only unverified part.** The auth header
+(`Authorization: Bearer <IMD_API_KEY>`) and the request/response handling are
+tested and working, but IMD's real path list has never been seen — the platform
+is credential-gated. The paths are therefore env vars:
 
 ```ini
-IMD_PATH_STATION_MAPPING=stationmapping
-IMD_PATH_DISTRICT_MAPPING=districtmapping
+IMD_BASE_URL=https://mausam.imd.gov.in/api/v1
+IMD_PATH_CURRENT=current_wx        # current observation
+IMD_PATH_FORECAST=cityforecastloc  # city forecast
+IMD_PATH_WARNING=districtwarning   # district warning  <- the one alerts depend on
+IMD_PATH_NOWCAST=districtnowcast   # nowcast
 ```
 
-**These names are best-effort guesses** — the API docs sit behind the portal
-login, so they could not be verified from outside. If the fetch 404s, the
-error names the exact URL tried: open
-`https://api.imd.gov.in/public/api_docs.php`, copy the real mapping endpoint
-names, and paste them into these two vars. No code change needed.
+If the key returns `400 Bad Request` or `401`, that is the wiring working and the
+path or the auth scheme being wrong — not a broken integration. Adjust the
+`IMD_PATH_*` line (or `IMD_BASE_URL`) and restart. No code change needed.
 
-`IMD_STATION_IDS` still exists as a **manual override** (exact district name
-→ IDs) for pinning a wrong auto-match without touching code:
+To see the exact URL being attempted:
 
-```ini
-IMD_STATION_IDS={"Hyderabad": {"current": "<station-id>", "forecast": "<station-code>", "warning": "<district-id>", "nowcast": "<district-id>"}}
+```bash
+cd weathergpt && IMD_API_KEY=<key> IMD_ADAPTER=live python -c "
+import sys, asyncio; sys.path.insert(0,'.')
+import backend.services.imd_service as m
+orig = m.httpx.AsyncClient
+class Spy(orig):
+    async def get(self, url, **kw):
+        print('GET', url); return await super().get(url, **kw)
+m.httpx.AsyncClient = Spy
+from backend.services import imd_service
+asyncio.run(imd_service.IMDService().get_district_warning('Hyderabad'))
+"
 ```
 
-When callers pass no district (the `/api/weather` live paths only have
-lat/lon), the GPS position drives resolution; `IMD_DEFAULT_DISTRICT`
-(default `Hyderabad`) is only the last-resort name for warning/nowcast calls
-that arrive with no district at all. IDs are never guessed: an unresolvable
-location raises and the chain falls through to Open-Meteo, honestly labelled.
+## 4. What changes for the user
 
-## 4. IP binding — read this before testing
+Nothing in the UI has to change — that is the point of the source-mode design:
 
-`X-API-KEY` is **bound to the server IP** registered on the portal
-(`api.imd.gov.in/public/ip.php`). A dev key bound to your laptop IP answers
-**only from your laptop** — calls from anywhere else get rejected even with
-perfect wiring. Consequences:
+| | now (`demo`) | after the key (`live`) |
+|---|---|---|
+| Weather | IMD-grade fixtures, stamped DEMO | real IMD, stamped LIVE |
+| Warnings | fixtures | real district warnings |
+| Alerts page | demo alerts | live official alerts |
+| Push | works | works, now driven by real alerts |
 
-- The sandbox / CI can never validate the live path with a laptop-bound key.
-  The wiring is covered by mocked tests (`tests/test_imd_live_auth.py`); the
-  real handshake must be verified from the bound IP.
-- For Render (production), generate the **Prod key** against the deployment's
-  static outbound IP. Render free/shared plans have dynamic outbound IPs —
-  confirm a static egress IP before generating the Prod key.
-
-## 5. What changes for the user
-
-Nothing in the UI has to change — that is the point of the single-mode design.
-Before the key, IMD cards read `UNCONFIGURED` and answers ride the backfill
-chain; after the key, the same cards read real IMD data, stamped `LIVE`. The
-provenance chips always name the actual source.
+Switch modes at runtime from the top bar or `POST /api/mode {"mode":"hybrid"}`.
+`hybrid` keeps the multi-source fallback chain (IMD → SACHET/CAP → Open-Meteo),
+so one IMD failure does not blank the screen. The chosen mode is persisted and
+survives a restart.
 
 ## Still not covered by the key
 
-- **CAP / SACHET** — separate feed. The official SACHET RSS URLs are now the
-  built-in default (`backend/config.py`), so alerts work with zero config;
-  override with `CAP_FEED_URLS` only if you need different state feeds.
+- **CAP / SACHET** — separate feed, needs `CAP_FEED_URL`. It is the path that
+  actually carries the NDMA alerts, and it is what is serving alerts today.
 - **WIS 2.0** — the MQTT push-ingest path is a documented stub
   (`wis2_adapter.py`); it needs a broker and the MQTT dependency. The app polls
   CAP instead. Shown honestly on the Trust view as `STUB / UNCONFIGURED`.
