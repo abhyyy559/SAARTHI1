@@ -190,6 +190,39 @@ def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str, lan
     return f"{line}\n\n{answer}"
 
 
+# Sea/coast words — a "can I go to sea / is sailing safe" question from an
+# inland district must lead with the plain fact that there is no coast here,
+# not with an unrelated thunderstorm warning. Mirrors _ensure_rain_lead.
+_SEA_WORDS = ("sea", "ocean", "sailing", "sail", "boat", "ship", "beach",
+              "coast", "samudra", "समुद्र", "समुंदर", "సముద్రం", "नाव")
+
+_SEA_INLAND_LEAD = {
+    "en": "{district} is not a coastal district, so sea and marine warnings do not apply here.",
+    "hi": "{district} एक तटीय जिला नहीं है, इसलिए समुद्री चेतावनियाँ यहाँ लागू नहीं होतीं।",
+    "te": "{district} తీర ప్రాంత జిల్లా కాదు, కాబట్టి సముద్ర హెచ్చరికలు ఇక్కడ వర్తించవు.",
+}
+
+
+def _ensure_sea_lead(message: str, loc: dict | None, answer: str, language: str = "en") -> str:
+    """Prepend the inland lead for sea questions asked from an inland district.
+
+    Only fires when we KNOW the district is inland (coastal is False). An
+    unknown district (coastal=None) keeps the normal answer rather than a
+    guess. Exactly-once: skipped when the answer already carries the lead.
+    """
+    msg = (message or "").lower()
+    if not any(w in msg for w in _SEA_WORDS):
+        return answer
+    loc = loc or {}
+    if loc.get("coastal") is not False:
+        return answer
+    district = loc.get("district") or loc.get("city") or ""
+    lead = _SEA_INLAND_LEAD.get(language, _SEA_INLAND_LEAD["en"]).format(district=district)
+    if lead in answer:
+        return answer
+    return f"{lead}\n\n{answer}"
+
+
 def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answer,
                     advisory, language, weather_block, provenance_map, fallback=False, user_type="general",
                     verdict=None, response_time_ms=0, model_error="") -> ChatResponse:
@@ -453,6 +486,8 @@ def _finalize_answer(ctx: dict, raw: str, fallback: bool = False) -> tuple[str, 
     # here compared the exact line text instead, so "Yes — rain likely tomorrow
     # (22.0 mm)." was prepended straight above "**Yes**, it will rain tomorrow."
     answer = _ensure_rain_lead(ctx["message"], ctx["forecast_dict"], answer, ctx["language"])
+    # Sea questions from an inland district lead with the no-coast fact.
+    answer = _ensure_sea_lead(ctx["message"], ctx.get("loc"), answer, ctx["language"])
     return answer, fallback
 
 
