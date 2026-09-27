@@ -507,7 +507,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
         # startup already shouted about it on stderr.
         model_error = str(exc)
-        answer, fallback = _template_answer(ctx["evidence"], ctx["language"]), True
+        answer, fallback = _template_answer(ctx["evidence"], ctx["message"], ctx["language"]), True
 
     # Post-LLM response validation (§10, §43): the gate before delivery.
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
@@ -578,7 +578,7 @@ async def chat_stream(req: ChatRequest):
         if truncated or not raw.strip():
             # The live answer broke mid-flight: substitute the grounded template,
             # flagged as fallback — never deliver a half answer as if complete.
-            raw = _template_answer(ctx["evidence"], ctx["language"])
+            raw = _template_answer(ctx["evidence"], ctx["message"], ctx["language"])
             fallback = True
         answer, validated_fallback = _finalize_answer(ctx, raw)
         fallback = fallback or validated_fallback

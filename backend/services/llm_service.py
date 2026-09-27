@@ -164,17 +164,101 @@ _TEMPLATE_PHRASES = {
 }
 
 
+# Intent words for the question-aware template. Checked in priority order:
+# sea > warning > rain > wind > temp — so "is it safe to go to sea" hits sea,
+# not the "safe" warning word.
+_INTENT_WORDS = {
+    "sea": ("sea", "ocean", "sailing", "sail", "boat", "ship", "beach", "coast",
+            "samudra", "समुद्र", "समुंदर", "సముద్రం", "नाव", "fishing", "fisherman",
+            "मछली", "చేప"),
+    "warning": ("warning", "alert", "चेतावनी", "హెచ్చరిక", "danger", "खतरा", "ప్రమాదం"),
+    "rain": ("rain", "barish", "बारिश", "वर्षा", "వర్షం", "umbrella", "छाता", "గొడుగు"),
+    "wind": ("wind", "hawa", "हवा", "గాలి", "breeze", "storm", "तूफान", "తుఫాను"),
+    "temp": ("temperature", "temp", "hot", "cold", "heat", "तापमान", "गर्म", "ठंड",
+             "ఉష్ణోగ్రత", "వేడి", "చలి"),
+}
+
+# "safe" alone is a warning question — but only when it is NOT about the sea
+# (sea intent is checked first).
+_SAFE_WORDS = ("safe", "सुरक्षित", "సురక్షిత")
+
+
+def _detect_intent(question: str) -> str:
+    q = (question or "").lower()
+    for intent, words in _INTENT_WORDS.items():
+        if any(w in q for w in words):
+            return intent
+    if any(w in q for w in _SAFE_WORDS):
+        return "warning"
+    return "general"
+
+
+# Direct-answer leads per intent and language. These OPEN the answer so the
+# user gets their question answered first — the old template dumped the same
+# warning+rain+temp block for every question.
+_TEMPLATE_LEADS = {
+    "en": {
+        "sea_inland": "{district} is not a coastal district, so sea and marine warnings do not apply here.",
+        "sea_ok": "No marine warnings are active for {loc} right now.",
+        "now": "Right now in {loc}: {temp}°C, {condition}.",
+        "wind_now": "Wind in {loc} is {speed} km/h right now.",
+        "rain_yes": "Yes — rain likely tomorrow in {loc} ({rain} mm expected).",
+        "rain_no": "No rain expected tomorrow in {loc}.",
+        "warn_yes": "{severity} {hazard} warning is active for {loc}.",
+        "warn_no": "No active weather warnings for {loc}.",
+        "warn_unknown": "The warning service could not be reached, so I cannot confirm warnings for {loc} right now.",
+    },
+    "hi": {
+        "sea_inland": "{district} एक तटीय जिला नहीं है, इसलिए समुद्री चेतावनियाँ यहाँ लागू नहीं होतीं।",
+        "sea_ok": "अभी {loc} के लिए कोई समुद्री चेतावनी सक्रिय नहीं है।",
+        "now": "अभी {loc} में: {temp}°C, {condition}।",
+        "wind_now": "अभी {loc} में हवा की गति {speed} किमी/घंटा है।",
+        "rain_yes": "हाँ — कल {loc} में बारिश की संभावना है ({rain} मिमी अनुमानित)।",
+        "rain_no": "कल {loc} में बारिश की उम्मीद नहीं है।",
+        "warn_yes": "{loc} के लिए {severity} {hazard} चेतावनी सक्रिय है।",
+        "warn_no": "{loc} के लिए कोई सक्रिय मौसम चेतावनी नहीं है।",
+        "warn_unknown": "चेतावनी सेवा से संपर्क नहीं हो सका, इसलिए अभी {loc} की चेतावनियों की पुष्टि नहीं कर सकता।",
+    },
+    "te": {
+        "sea_inland": "{district} తీర ప్రాంత జిల్లా కాదు, కాబట్టి సముద్ర హెచ్చరికలు ఇక్కడ వర్తించవు.",
+        "sea_ok": "ప్రస్తుతం {loc} కోసం ఎటువంటి సముద్ర హెచ్చరికలు అమలులో లేవు.",
+        "now": "ప్రస్తుతం {loc}లో: {temp}°C, {condition}.",
+        "wind_now": "ప్రస్తుతం {loc}లో గాలి వేగం {speed} కిమీ/గం.",
+        "rain_yes": "అవును — రేపు {loc}లో వర్షం పడే అవకాశం ఉంది ({rain} మిమీ అంచనా).",
+        "rain_no": "రేపు {loc}లో వర్షం అంచనా లేదు.",
+        "warn_yes": "{loc} కోసం {severity} {hazard} హెచ్చరిక అమలులో ఉంది.",
+        "warn_no": "{loc} కోసం ఎటువంటి వాతావరణ హెచ్చరికలు లేవు.",
+        "warn_unknown": "హెచ్చరిక సేవను చేరుకోలేకపోయాం, కాబట్టి ప్రస్తుతం {loc} హెచ్చరికలను నిర్ధారించలేను.",
+    },
+}
+
+
 def _phrases(language: str) -> dict:
     return _TEMPLATE_PHRASES.get(language, _TEMPLATE_PHRASES["en"])
 
 
-def _template_answer(evidence: dict, language: str = "en") -> str:
-    """Rule-based grounded answer. Used when the LLM is disabled or unreachable."""
+def _leads(language: str) -> dict:
+    return _TEMPLATE_LEADS.get(language, _TEMPLATE_LEADS["en"])
+
+
+def _template_answer(evidence: dict, question: str = "", language: str = "en") -> str:
+    """Question-aware rule-based answer. Used when the LLM is disabled/unreachable.
+
+    Detects the question intent (sea / warning / rain / wind / temp / general)
+    and OPENS with a direct answer to that question from the evidence — the old
+    shape dumped the same warning+rain+temp block for every question.
+    Honesty rules are unchanged: an unreachable warning service is never
+    reported as "no warning".
+    """
     verified = evidence.get("verified_warning", {})
     forecast = evidence.get("forecast", {})
+    current = evidence.get("current_weather", {}) or {}
     risk = evidence.get("weathergpt_risk", "LOW")
-    location_name = evidence.get("location", {}).get("city") or evidence.get("location", {}).get("district")
+    loc_ev = evidence.get("location", {}) or {}
+    location_name = loc_ev.get("city") or loc_ev.get("district")
     loc = location_name or "your area"
+    district = loc_ev.get("district") or location_name or "your area"
+    coastal = loc_ev.get("coastal")
     user_type = evidence.get("user_type", "general")
     src = evidence.get("source_name", evidence.get("source", "IMD"))
 
@@ -184,40 +268,83 @@ def _template_answer(evidence: dict, language: str = "en") -> str:
     fc_min = tomorrow.get("min_temperature")
     fc_max = tomorrow.get("max_temperature")
 
-    lines = []
     warn = verified.get("verified", False)
-    P = _phrases(language)
-    # Honesty: "we could not check" is a different statement from "there is no
-    # warning". Saying "no warning was found" while the warning service is down
-    # is a false all-clear — the one thing this product must never emit.
     service_unreachable = verified.get("warning_service") == "unavailable"
+    valid_until = verified.get("valid_until")
 
-    if warn:
-        lines.append(
-            P["active_warning"].format(loc=loc, severity=verified.get('severity'), hazard=verified.get('hazard'))
-        )
-        if verified.get("valid_until"):
-            lines.append(P["valid_until"].format(valid_until=verified.get('valid_until')))
-    elif service_unreachable:
-        lines.append(P["unreachable"].format(loc=loc))
-    else:
-        lines.append(P["no_warning"].format(loc=loc))
+    L = _leads(language)
+    P = _phrases(language)
+    intent = _detect_intent(question)
 
-    if fc_rain is not None and fc_rain > 0:
-        lines.append(P["rain_yes"].format(loc=loc, src=src, rain=fc_rain))
-    elif fc_rain == 0:
-        lines.append(P["rain_no"].format(src=src))
-    else:
-        lines.append(P["rain_na"])
+    def warn_line() -> str:
+        if warn:
+            s = L["warn_yes"].format(loc=loc, severity=verified.get("severity"),
+                                    hazard=verified.get("hazard"))
+            if valid_until:
+                s += " " + P["valid_until"].format(valid_until=valid_until)
+            return s
+        if service_unreachable:
+            return L["warn_unknown"].format(loc=loc)
+        return L["warn_no"].format(loc=loc)
 
-    if fc_min is not None and fc_max is not None:
-        lines.append(P["temp"].format(tmin=fc_min, tmax=fc_max))
+    def rain_line() -> str:
+        if fc_rain is not None and fc_rain > 0:
+            return L["rain_yes"].format(loc=loc, rain=fc_rain)
+        if fc_rain == 0:
+            return L["rain_no"].format(loc=loc)
+        return P["rain_na"]
 
-    lines.append(P["risk"].format(user_type=user_type, risk=risk))
-    lines.append(P["risk_note"])
-    # Facts only on the chat surface: no advice here — guidance lives in the Advisory tab.
-    lines.append(P["advisory_note"])
-    return " ".join(lines)
+    lead, support = "", ""
+    if intent == "sea":
+        if coastal is False:
+            lead = L["sea_inland"].format(district=district)
+            # Still mention the weather if it matters for travel.
+            if warn:
+                support = warn_line()
+            elif fc_rain:
+                support = rain_line()
+        else:
+            lead = warn_line() if warn else L["sea_ok"].format(loc=loc)
+    elif intent == "warning":
+        lead = warn_line()
+        if fc_rain:
+            support = rain_line()
+    elif intent == "rain":
+        lead = rain_line()
+        if warn:
+            support = warn_line()
+    elif intent == "wind":
+        ws = current.get("wind_speed")
+        lead = (L["wind_now"].format(loc=loc, speed=ws)
+                if ws is not None else P["rain_na"])
+        if warn:
+            support = warn_line()
+    elif intent == "temp":
+        t = current.get("temperature")
+        cond = current.get("condition") or ""
+        if t is not None:
+            lead = L["now"].format(loc=loc, temp=t, condition=cond).rstrip(" ,.")
+            if fc_min is not None and fc_max is not None:
+                lead += " " + P["temp"].format(tmin=fc_min, tmax=fc_max)
+        else:
+            lead = P["temp"].format(tmin=fc_min, tmax=fc_max) if fc_min else P["rain_na"]
+        if warn:
+            support = warn_line()
+    else:  # general: current conditions first, then the warning status —
+        # the answer must never go silent on warnings (a missing warning line
+        # reads as "no warning", the one false statement this product forbids).
+        t = current.get("temperature")
+        cond = current.get("condition") or ""
+        lead = (L["now"].format(loc=loc, temp=t, condition=cond).rstrip(" ,.")
+                if t is not None else "")
+        support = warn_line()
+        if not lead:
+            lead, support = support, (rain_line() if fc_rain is not None else "")
+
+    parts = [p for p in (lead, support) if p]
+    parts.append(P["risk"].format(user_type=user_type, risk=risk))
+    parts.append(P["risk_note"])
+    return " ".join(parts)
 
 
 class LLMService:
@@ -235,7 +362,7 @@ class LLMService:
         rule-based template — the user still gets a grounded answer.
         """
         if not self.enabled:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, question, language), True
 
         if not config.LLM_MODEL_KNOWN:
             # FAIL LOUD: a misconfigured model name used to degrade silently into the
@@ -278,11 +405,11 @@ class LLMService:
                 resp.raise_for_status()
                 content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
         except Exception:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, question, language), True
 
         content = _strip_think_blocks(content)
         if not content:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, question, language), True
         return content, False
 
     async def generate_stream(self, evidence: dict, question: str, language: str):
@@ -297,7 +424,7 @@ class LLMService:
         can never leak into the visible stream.
         """
         if not self.enabled:
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, question, language)}
             yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             return
         if not config.LLM_MODEL_KNOWN:
@@ -306,7 +433,7 @@ class LLMService:
                 "configured endpoint. Fix LLM_MODEL (default: 'openai/gpt-oss-120b') "
                 "or unset it to use the default."
             )
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, question, language)}
             yield {"type": "end", "fallback": True, "model_error": model_error, "truncated": False}
             return
 
@@ -394,13 +521,13 @@ class LLMService:
                         yield {"type": "token", "text": buf}
         except Exception:
             if not sent_any:
-                yield {"type": "token", "text": _template_answer(evidence, language)}
+                yield {"type": "token", "text": _template_answer(evidence, question, language)}
                 yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             else:
                 yield {"type": "end", "fallback": True, "model_error": "", "truncated": True}
             return
         if not sent_any:
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, question, language)}
             yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             return
         yield {"type": "end", "fallback": False, "model_error": "", "truncated": False}
