@@ -63,45 +63,36 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
     alert verdict, fetched concurrently and composed by the deterministic
     advisory_cards_service rules engine (trilingual templates, no LLM).
 
-    Reuses weather.py's _live_current/_live_forecast helpers, preserving
-    provenance and the imd-mode official-only rule: imd mode raises rather than
-    backfilling with non-official sources, and surfaces as UNAVAILABLE.
+    Single IMD-first mode (2026-09-27): IMD live -> Open-Meteo -> OWM ->
+    file cache, then honest UNAVAILABLE. Provenance always names the actual
+    source.
     """
     district = (LocationService().resolve(lat, lon) or {}).get("district") or ""
-    if config.DEMO_MODE:
-        # Demo branches read fixtures even when IMD_ADAPTER=live (same rule as
-        # weather.py::_services).
-        imd = weather_mod._services()["imd"]
-        cur_d = (await imd.get_current_weather(lat, lon)).model_dump(mode="json")
-        fc_d = (await imd.get_forecast(lat, lon)).model_dump(mode="json")
-        prov_c = prov_f = "DEMO"
-        alerts_d = await weather_mod.warnings(district, lat, lon)
-    else:
-        async def _safe_current():
-            try:
-                return await weather_mod._live_current(lat, lon)
-            except AdapterUnavailable:
-                return None, "UNAVAILABLE"
+    async def _safe_current():
+        try:
+            return await weather_mod._live_current(lat, lon)
+        except AdapterUnavailable:
+            return None, "UNAVAILABLE"
 
-        async def _safe_forecast():
-            try:
-                return await weather_mod._live_forecast(lat, lon)
-            except AdapterUnavailable:
-                return None, "UNAVAILABLE"
+    async def _safe_forecast():
+        try:
+            return await weather_mod._live_forecast(lat, lon)
+        except AdapterUnavailable:
+            return None, "UNAVAILABLE"
 
-        async def _safe_warnings():
-            # warnings() is internally honest; an unexpected failure must not
-            # take the whole cards response down with it.
-            try:
-                return await weather_mod.warnings(district, lat, lon)
-            except Exception:
-                return {}
+    async def _safe_warnings():
+        # warnings() is internally honest; an unexpected failure must not
+        # take the whole cards response down with it.
+        try:
+            return await weather_mod.warnings(district, lat, lon)
+        except Exception:
+            return {}
 
-        # LATENCY: current + forecast + alerts are independent, so they run
-        # together (same pattern as weather.py::current_wx). Provenance
-        # semantics are unchanged.
-        (cur_d, prov_c), (fc_d, prov_f), alerts_d = await asyncio.gather(
-            _safe_current(), _safe_forecast(), _safe_warnings())
+    # LATENCY: current + forecast + alerts are independent, so they run
+    # together (same pattern as weather.py::current_wx). Provenance
+    # semantics are unchanged.
+    (cur_d, prov_c), (fc_d, prov_f), alerts_d = await asyncio.gather(
+        _safe_current(), _safe_forecast(), _safe_warnings())
     alerts_d = alerts_d if isinstance(alerts_d, dict) else {}
     verdict = alerts_d.get("verdict") or {}
     alerts = alerts_d.get("cap_alerts") or []

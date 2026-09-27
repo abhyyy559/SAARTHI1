@@ -10,7 +10,7 @@
 // entirely. `official === false` is an explicit backend opt-out and always
 // wins over name matching.
 import { useCallback, useEffect, useState } from 'react';
-import { api, demoAlertApi } from '../api';
+import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
@@ -18,16 +18,17 @@ import { SevStamp } from './ui';
 import { relTime, mergeAlerts } from './inboxLogic';
 import AlertDetails from './AlertDetails';
 
-// An alert is a demo/admin-dashboard alert: simulated content that must wear
-// the DEMO badge — never presented as a live official warning.
+// Defensive provenance guard: anything that looks like simulated content must
+// wear the DEMO badge — never presented as a live official warning. Demo mode
+// is gone (single IMD-first mode), but this stays as a safety net.
 export function isDemoAlert(a) {
   if (!a) return false;
   const src = String(a.source || '').toUpperCase();
   return src.includes('DEMO') || a._origin === 'demo' || a.demo === true;
 }
 
-// The Alerts page admits only official sources. The admin dashboard's demo
-// alerts are admitted too, but isDemoAlert marks them DEMO on the row.
+// The Alerts page admits only official sources. isDemoAlert marks anything
+// demo-like DEMO on the row as a safety net.
 export function isOfficialSource(a) {
   if (!a) return false;
   if (a.official === false) return false; // explicit backend opt-out (third-party)
@@ -62,16 +63,13 @@ export default function AlertsList({ initialAlertId = null }) {
 
   useEffect(() => {
     let alive = true;
-    // Reset on location/mode change so stale alerts never flash as current.
+    // Reset on location change so stale alerts never flash as current.
     setAlerts(null);
     setUnavailable(false);
-    Promise.all([
-      api.warnings(loc.district, loc.lat, loc.lon).catch(() => null),
-      demoAlertApi.list(loc.district).catch(() => null),
-    ]).then(([w, d]) => {
+    api.warnings(loc.district, loc.lat, loc.lon).then((w) => {
       if (!alive) return;
-      if (!w && !d) {
-        // Both sources unreachable: say so honestly, never a fake all-clear.
+      if (!w) {
+        // Source unreachable: say so honestly, never a fake all-clear.
         setUnavailable(true);
         setAlerts([]);
         return;
@@ -109,11 +107,9 @@ export default function AlertsList({ initialAlertId = null }) {
         seenIds.add(key);
         return true;
       });
-      const demo = [...(d?.alerts || [])];
-      // Emergency alerts only, and only official sources: demo-store alerts
-      // are admin-dashboard alerts (admitted, DEMO-badged); third-party chain
+      // Emergency alerts only, and only official sources: third-party chain
       // alerts (WeatherAPI.com, GDACS — official=false) never render here.
-      setAlerts(mergeAlerts(deduped, demo).filter(isOfficialSource));
+      setAlerts(mergeAlerts(deduped, []).filter(isOfficialSource));
     });
     return () => { alive = false; };
   }, [locKey, loc.district, loc.lat, loc.lon, syncTick, tick]); // eslint-disable-line react-hooks/exhaustive-deps

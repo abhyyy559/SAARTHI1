@@ -81,7 +81,7 @@ def _initial_state(name: str) -> tuple[str, str]:
             return (READY, "IMD credentials present — verified on first use")
         if config.IMD_ADAPTER == "demo":
             return (READY, "demo adapter: IMD-grade fixtures (stamped DEMO) until IMD API access is issued")
-        return (UNCONFIGURED, "no IMD_API_KEY — IMD platform is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
+        return (UNCONFIGURED, "no IMD_API_KEY — IMD platform is credential-gated (key is IP-bound); set IMD_API_KEY to enable live IMD")
     if name == "wis2":
         # Mirrors wis2_adapter.status() honesty: even with a broker set, the live
         # subscription is not implemented in the MVP — CAP polling does the work.

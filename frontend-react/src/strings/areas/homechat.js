@@ -5,7 +5,7 @@
 // to guidance is the "Open My advice" pill, which navigates to Advisory.
 export default {
   en: {
-    hcRegion: 'Ask SAARTHI',
+    hcRegion: 'Ask WeatherGPT',
     hcFactsTitle: 'Facts only',
     hcFactsBody: 'Answers come from official bulletins. I never guess, and I never give advice here.',
     hcFactsEscape: 'Need guidance instead? Open My advice',
@@ -47,7 +47,7 @@ export default {
     askHeroSub: 'Answers from official data — type or speak.',
   },
   hi: {
-    hcRegion: 'SAARTHI से पूछें',
+    hcRegion: 'WeatherGPT से पूछें',
     hcFactsTitle: 'केवल तथ्य',
     hcFactsBody: 'उत्तर आधिकारिक बुलेटिनों से आते हैं। मैं अंदाज़ा नहीं लगाता, और यहाँ सलाह नहीं देता।',
     hcFactsEscape: 'मार्गदर्शन चाहिए? मेरी सलाह खोलें',
@@ -86,7 +86,7 @@ export default {
     askHeroSub: 'आधिकारिक आंकड़ों पर आधारित उत्तर — टाइप करें या बोलें।',
   },
   te: {
-    hcRegion: 'SAARTHIని అడగండి',
+    hcRegion: 'WeatherGPTని అడగండి',
     hcFactsTitle: 'వాస్తవాలు మాత్రమే',
     hcFactsBody: 'సమాధానాలు అధికారిక బులెటిన్ల నుండే వస్తాయి. నేను ఊహించను, ఇక్కడ సలహా ఇవ్వను.',
     hcFactsEscape: 'మార్గదర్శనం కావాలా? నా సలహా తెరవండి',

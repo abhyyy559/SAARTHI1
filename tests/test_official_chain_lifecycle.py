@@ -1,126 +1,35 @@
-"""Alert lifecycle -> notifications: every transition fires exactly once.
+"""Official warning lifecycle -> notifications (non-demo).
 
-The user requirement: an alert's FULL lifecycle must reach the in-app
-Notification Center — issued -> active -> extended/updated -> ended — for BOTH
-chains:
-
-* demo alerts (Admin-panel actions in demo mode): the HTTP action notifies
-  immediately via `_notify_alert`, and the watcher loop never double-sends.
-* the official SACHET/IMD chain (hybrid/IMD modes): `check_district` pushes
-  AND logs every detected transition, including `updated` when a bulletin
-  changes without moving the verdict level.
-
-A missed transition is the failure under test: simulate the whole lifecycle
-and assert the notification count and kinds match exactly.
+Restored from the deleted test_alert_lifecycle_notifications.py: the demo-only
+tests are gone with the demo store, but the official SACHET/IMD chain
+transition coverage (start -> escalate -> clear, updated bulletins, and the
+never-clear-on-unreachable-feed honesty rule) is mode-independent and must
+stay green in the single IMD-first mode.
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from fastapi.testclient import TestClient
 
-from backend import config
-from backend.services import alert_watcher, demo_alert_store, notification_service
+from backend.services import alert_watcher, notification_service
 from backend.services import alert_service as alert_service_mod
 from backend.services import push_service
 
 DISTRICT = "LifecycleDistrict"
 
 
-@pytest.fixture
-def demo_mode(monkeypatch):
-    """Demo-only routes; force demo mode on, restore afterwards."""
-    monkeypatch.setattr(config, "DEMO_MODE", True, raising=False)
-    yield
-
-
-@pytest.fixture
-def client():
-    from backend.main import app
-    with TestClient(app) as c:
-        yield c
-
-
 @pytest.fixture(autouse=True)
 def clean_stores():
     notification_service.reset_store()
-    demo_alert_store.reset_store()
     alert_watcher._save_state({})
     yield
     notification_service.reset_store()
-    demo_alert_store.reset_store()
     alert_watcher._save_state({})
-
-
-def _create_demo(client, **over):
-    fields = {
-        "title": "Lifecycle test storm",
-        "hazard": "Thunderstorm",
-        "severity": "ORANGE",
-        "district": DISTRICT,
-        "instruction": "Stay indoors.",
-    }
-    fields.update(over)
-    r = client.post("/api/demo/alerts", json=fields)
-    assert r.status_code == 200, r.text
-    return r.json()["alert"]["id"]
-
-
-def _kinds_newest_first():
-    return [n["kind"] for n in notification_service.list_all()]
-
-
-def test_demo_full_lifecycle_fires_exactly_four_notifications(client, demo_mode):
-    """issue -> active -> extend -> end = exactly 4 notifications, in order."""
-    aid = _create_demo(client)
-    # UPCOMING does not notify: creation alone must stay silent.
-    assert notification_service.list_all() == []
-
-    plan = [("pre-alert", "pre-alert"), ("activate", "active"),
-            ("extend", "extended"), ("end", "ended")]
-    for action, expected_kind in plan:
-        r = client.post(f"/api/demo/alerts/{aid}/{action}")
-        assert r.status_code == 200, f"{action}: {r.text}"
-        assert r.json().get("notified") == expected_kind
-
-    kinds = list(reversed(_kinds_newest_first()))
-    assert kinds == ["pre-alert", "active", "extended", "ended"], kinds
-    assert len(notification_service.list_all()) == 4
-
-    for n in notification_service.list_all():
-        # Every notification carries the contract the inbox needs: alert id,
-        # district, server-set severity, transition label and timestamp.
-        assert n["alert_id"] == aid
-        assert n["district"] == DISTRICT
-        assert n["severity"] == "ORANGE"
-        assert n["kind"] in ("pre-alert", "active", "extended", "ended")
-        assert n["at"], "notification must carry a timestamp"
-        assert n["title"] and n["body"]
-
-    # The watcher loop must not double-send what the actions already sent.
-    assert alert_watcher.check_demo_alerts() == []
-    assert len(notification_service.list_all()) == 4
-
-
-def test_demo_update_fires_updated_notification(client, demo_mode):
-    """An in-flight content update is its own transition, not silence."""
-    aid = _create_demo(client)
-    client.post(f"/api/demo/alerts/{aid}/activate")
-    r = client.post(f"/api/demo/alerts/{aid}/update",
-                    json={"instruction": "Updated: avoid the riverbank."})
-    assert r.status_code == 200, r.text
-    assert r.json().get("notified") == "updated"
-    kinds = list(reversed(_kinds_newest_first()))
-    assert kinds == ["active", "updated"], kinds
 
 
 def _cap_alert(aid, severity="ORANGE", sent="2026-09-20T10:00:00+05:30"):
     # `expires` must always be in the future: these tests exercise the
-    # transition logic, not the clock. A hardcoded expiry date silently
-    # passed its own date (2026-09-21) and the verdict engine — correctly —
-    # treated every warning as over, turning the chain tests false-red.
-    # `sent` stays fixed on purpose: the fingerprint (id@sent) and the
-    # `updated` test's bulletin ordering depend on it.
+    # transition logic, not the clock.
     now = datetime.now(timezone.utc)
     return {
         "id": aid,
@@ -176,7 +85,7 @@ def test_official_chain_logs_start_escalate_clear(official_chain):
     assert len(notes) == 1
     n = notes[0]
     assert n["kind"] == "start"
-    assert n["alert_id"] == "cap:cap-a"
+    assert n["alert_id"] == "cap-a"
     assert n["district"] == DISTRICT
     assert n["severity"] == "ORANGE"
     assert n["at"]
@@ -226,7 +135,7 @@ def test_official_chain_same_level_new_bulletin_fires_updated(official_chain):
     assert len(notes) == 2
     newest = notes[0]
     assert newest["kind"] == "updated"
-    assert newest["alert_id"] == "cap:cap-b"
+    assert newest["alert_id"] == "cap-b"
     assert newest["severity"] == "ORANGE"
     assert "update" in newest["title"].lower()
 

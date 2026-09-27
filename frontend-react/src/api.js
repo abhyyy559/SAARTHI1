@@ -1,7 +1,7 @@
 // Backend client — v1 versioned API.
 // The API base is env-driven: set VITE_API_URL (preferred; VITE_API_BASE is
 // kept as a legacy alias) at build time to point at a separately-hosted
-// backend (e.g. https://saarthi-api.onrender.com). Default '' = same origin,
+// backend (e.g. https://weathergpt-api.onrender.com). Default '' = same origin,
 // which works both when the Vite dev proxy forwards /api to the FastAPI
 // backend (127.0.0.1:8000) and when the built dist is served by FastAPI itself.
 const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
@@ -9,14 +9,6 @@ const full = (p) => (p.startsWith('/api') ? `${BASE}${p}` : p);
 
 let offlineSim = false;
 export const setOfflineSim = (v) => { offlineSim = v; };
-
-// A 403 on /api/demo/* means the backend is NOT in demo mode while the UI
-// thinks it is (backend restarted, .env default, mode flipped elsewhere).
-// The store registers a handler to re-sync the mode; throttled so a polling
-// page can't turn one mismatch into a request storm.
-let demoForbiddenHandler = null;
-let lastDemo403 = 0;
-export const onDemoForbidden = (fn) => { demoForbiddenHandler = fn; };
 
 /** Max time for any server round-trip: 5 seconds, never infinite (B3). */
 export const FETCH_TIMEOUT_MS = 5000;
@@ -51,13 +43,6 @@ async function j(url, opts, timeoutMs) {
     clearTimeout(id);
   }
   if (!r.ok) {
-    if (r.status === 403 && /\/api\/demo\//.test(url) && demoForbiddenHandler) {
-      const now = Date.now();
-      if (now - lastDemo403 > 10000) {
-        lastDemo403 = now;
-        demoForbiddenHandler();
-      }
-    }
     throw new Error(`HTTP ${r.status} on ${url}`);
   }
   return r.json();
@@ -160,7 +145,6 @@ const V = '/api/v1';
 export const api = {
   health: () => j('/api/health'),
   mode: () => j('/api/mode'),
-  setMode: (mode) => post('/api/mode', { mode }),
   sources: () => j('/api/sources'),
   status: () => j(`${V}/system/status`),
   resolveLocation: (lat, lon) => j(`${V}/location/resolve?lat=${lat}&lon=${lon}`).then((d) => d.location || d),
@@ -203,24 +187,12 @@ export const api = {
   notificationsRead: (payload) => post('/api/notifications/read', payload),
   notificationsOpened: (payload) => post('/api/notifications/opened', payload),
   notificationsAck: (payload) => post('/api/notifications/ack', payload),
-  notificationsReset: () => post('/api/notifications/reset', {}),
-  // Demo/Admin panel + authority coverage (demo mode only on the backend).
-  demoAlerts: (district = '') => j(`/api/demo/alerts?district=${encodeURIComponent(district)}`),
-  demoCreate: (payload) => post('/api/demo/alerts', payload),
-  demoAction: (id, action, patch) => post(`/api/demo/alerts/${id}/${action}`, patch || {}),
-  demoScenario: (name) => post('/api/demo/alerts/scenario', { name }),
-  demoNotify: (id) => post('/api/demo/alerts/notify', { alert_id: id }),
-  demoReset: () => post('/api/demo/alerts/reset', {}),
-  demoRelay: (payload) => post('/api/demo/relay', payload),
-  coverageSeed: (alertId, total) => post('/api/demo/coverage/seed', { alert_id: alertId, total }),
-  coverage: (alertId) => j(`/api/demo/coverage/${encodeURIComponent(alertId)}`),
   // Ack telemetry + district coverage (Round2 T3.3: POST /api/ack,
-  // GET /api/coverage?district=). Additive — demo/ack client for S1.2.5.
+  // GET /api/coverage?district=).
   ack: (payload) => post('/api/ack', payload),
   coverageByDistrict: (district = '') => j(`/api/coverage?district=${encodeURIComponent(district)}`),
   // Alias: SourceStatus calls api.sourceStatus(); api.sources() stays intact.
   sourceStatus: () => j('/api/sources'),
-  demoAlert: (id) => j(`/api/demo/alerts/${encodeURIComponent(id)}`),
   voiceStatus: () => j('/api/voice/status'),
   // Background push. Registering a subscription is what lets the backend reach
   // this device while the app is closed.
@@ -245,25 +217,11 @@ export const api = {
 };
 
 export const HYD = { lat: 17.385, lon: 78.4867, district: 'Hyderabad' };
-// Round2 S1.2.5 aliases: same endpoints, grouped by domain so Admin/AlertDetails/
-// Coverage views import intent-revealing names. All hit the identical routes.
-export const demoAlertApi = {
-  list: (district = '') => api.demoAlerts(district),
-  get: (id) => api.demoAlert(id),
-  create: (payload) => api.demoCreate(payload),
-  action: (id, action, patch) => api.demoAction(id, action, patch),
-  scenario: (name) => api.demoScenario(name),
-  notify: (id) => api.demoNotify(id),
-  reset: () => api.demoReset(),
-  relay: (payload) => api.demoRelay(payload),
-};
 export const ackApi = {
   send: (payload) => api.ack(payload),
 };
 export const coverageApi = {
   byDistrict: (district = '') => api.coverageByDistrict(district),
-  byAlert: (alertId) => api.coverage(alertId),
-  seed: (alertId, total) => api.coverageSeed(alertId, total),
 };
 export const notificationsApi = {
   list: (district, device) => api.notifications(district, device),
@@ -271,7 +229,6 @@ export const notificationsApi = {
   markRead: (payload) => api.notificationsRead(payload),
   markOpened: (payload) => api.notificationsOpened(payload),
   ack: (payload) => api.notificationsAck(payload),
-  reset: () => api.notificationsReset(),
 };
 export const EMERGENCY_TYPES = [
   'NEED_HELP', 'IM_HERE', 'MEDICAL_HELP', 'NEED_WATER', 'NEED_FOOD',

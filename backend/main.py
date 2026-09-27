@@ -14,7 +14,7 @@ from .utils.time import iso_now
 
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
-                  push, demo_alerts, notifications, aviation)
+                  push, notifications, aviation)
 from .utils.logging import RequestLoggingMiddleware
 
 log = logging.getLogger("weathergpt.main")
@@ -22,31 +22,25 @@ log = logging.getLogger("weathergpt.main")
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Restore the persisted source mode, then start the background alert watcher.
+    """Start the background alert watcher.
 
     Push notifications only reach a user who is NOT looking at the app, so the
     decision to notify cannot live in the browser. This task evaluates the
     verdict for every subscribed district on a timer and pushes on a change —
     the same `build_verdict` the UI renders, so the two cannot disagree.
-    """
-    from .services import alert_watcher, mode_persistence
 
-    # MUST live here, not in an @app.on_event("startup") handler. This app passes
-    # a custom `lifespan=`, and that replaces Starlette's default lifespan — the
-    # one that invokes on_startup handlers. A restore registered as a startup
-    # event was therefore never called: every restart silently re-read .env,
-    # reverted DEMO to hybrid, and left the demo panel and coverage dashboard
-    # polling /api/demo/* into a wall of 403s.
-    try:
-        await mode_persistence.restore_async()
-        log.info("source mode at startup: %s", config.current_source_mode())
-    except Exception as exc:  # noqa: BLE001 - a bad row must not stop the app booting
-        log.warning("mode restore skipped: %s", exc)
+    Single IMD-first mode (2026-09-27): no mode restore — there is nothing to
+    switch between. The chain is always IMD live -> Open-Meteo -> OpenWeatherMap
+    -> file cache (weather) and IMD live -> SACHET/CAP (warnings).
+    """
+    from .services import alert_watcher
+
+    log.info("source mode at startup: %s", config.current_source_mode())
 
     interval = int(getattr(config, "ALERT_WATCH_INTERVAL", alert_watcher.DEFAULT_INTERVAL))
-    tick = int(getattr(config, "DEMO_TICK", alert_watcher.DEMO_TICK_DEFAULT))
+    tick = int(getattr(config, "WATCH_TICK", alert_watcher.WATCH_TICK_DEFAULT))
     task = asyncio.create_task(alert_watcher.run_forever(interval, tick))
-    log.info("alert watcher task started (lifecycle=%ss, network=%ss)", tick, interval)
+    log.info("alert watcher task started (tick=%ss, network=%ss)", tick, interval)
     try:
         yield
     finally:
@@ -119,7 +113,6 @@ app.include_router(climate.router)
 app.include_router(advisory.router)
 app.include_router(v1.router)
 app.include_router(push.router)
-app.include_router(demo_alerts.router)
 app.include_router(notifications.router)
 app.include_router(aviation.router)
 
@@ -132,34 +125,24 @@ except Exception:  # noqa: BLE001 - telemetry must never break alerts
     log.warning("ack router unavailable; /api/ack and /api/coverage disabled")
 
 
-# NOTE: the DEMO/HYBRID/IMD mode restore deliberately lives in `lifespan()`
-# above. It must NOT be re-added as an @app.on_event("startup") handler: this
-# app passes a custom `lifespan=`, which replaces the default lifespan that
-# invokes those handlers, so such a handler is never called (that is exactly
-# how the persisted mode was silently lost on every restart).
-
-
 def _mode_payload() -> dict:
-    """The mode object GET/POST /api/mode share (docs/SOURCE-MODES.md).
+    """Single-mode payload (2026-09-27): the app is always IMD-first.
 
-    `mode` mirrors `source_mode`; `demo_mode` stays for the call sites and tests
-    that already read the boolean. The source strings state which chain actually
-    answers, so the banner can name sources, not just the mode.
+    Kept as a read-only GET for compatibility; there is no mode to switch.
+    `demo_mode` is False — demo mode is removed entirely (single IMD-first
+    mode, 2026-09-27).
     """
-    mode = config.current_source_mode()
-    chains = config.MODE_SOURCES[mode]
     return {
-        "mode": mode,
-        "source_mode": mode,
-        "demo_mode": config.DEMO_MODE,
-        "weather_source": chains["weather"],
-        "warnings_source": chains["warnings"],
-        "available": {"demo": True, "imd": True, "hybrid": True},
+        "mode": "imd",
+        "source_mode": "imd",
+        "demo_mode": False,
+        "weather_source": "IMD → Open-Meteo → OpenWeatherMap → file cache",
+        "warnings_source": "IMD → SACHET/CAP",
+        "weather_chain": ["IMD", "Open-Meteo", "OpenWeatherMap", "file cache"],
+        "warning_chain": ["IMD", "SACHET/CAP"],
+        "available_modes": ["imd"],
+        "available": {"imd": True},
     }
-
-
-# Legacy client compatibility: an old client only knows "live".
-_LEGACY_MODE_ALIASES = {"live": "hybrid"}
 
 
 @app.get("/api/health")
@@ -167,7 +150,6 @@ async def health() -> dict:
     return {
         "status": "ok",
         "imd_adapter": config.IMD_ADAPTER,
-        "demo_mode": config.DEMO_MODE,
         "source_mode": config.current_source_mode(),
     }
 
@@ -175,28 +157,6 @@ async def health() -> dict:
 @app.get("/api/mode")
 async def get_mode() -> dict:
     return _mode_payload()
-
-
-@app.post("/api/mode")
-async def set_mode(payload: dict) -> dict:
-    """Runtime DEMO/IMD/HYBRID switch (in-memory). Demo fixtures stay labelled;
-    `imd` runs official-only and reports UNAVAILABLE rather than backfilling;
-    `hybrid` runs the full multi-source chain. Restart re-reads .env."""
-    raw = (payload or {}).get("mode")
-    mode = _LEGACY_MODE_ALIASES.get(raw, raw) if isinstance(raw, str) else None
-    if mode not in config.MODE_SOURCES:
-        return {"ok": False,
-                "error": "mode must be 'demo', 'imd' or 'hybrid' (legacy 'live' = 'hybrid')"}
-    config.SOURCE_MODE = mode
-    config.DEMO_MODE = mode == "demo"  # derived, kept in sync
-    config.IMD_ADAPTER = "demo" if mode == "demo" else "live"
-    # Persist so restarts/redeploys keep the mode (kv row via the db layer).
-    try:
-        from .services.mode_persistence import persist_async
-        await persist_async(mode)
-    except Exception as exc:  # noqa: BLE001
-        logging.getLogger(__name__).warning("mode persist failed: %s", exc)
-    return {"ok": True, **_mode_payload()}
 
 
 @app.websocket("/ws/warnings")

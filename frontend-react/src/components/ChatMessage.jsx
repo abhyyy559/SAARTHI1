@@ -1,4 +1,4 @@
-// ChatMessage — one structured SAARTHI answer for the Home chat board.
+// ChatMessage — one structured WeatherGPT answer for the Home chat board.
 //
 // Layout contract: verdict chip (icon + word + color via SevStamp, backend
 // severity only — never re-graded here) → at most 40 words before the fold →

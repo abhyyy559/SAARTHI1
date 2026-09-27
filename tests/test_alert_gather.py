@@ -20,6 +20,7 @@ from backend.services import alert_service  # noqa: E402
 HYD = dict(lat=17.385, lon=78.4867, district="Hyderabad", state="Telangana")
 
 
+
 def _alert(identifier, area, severity="ORANGE"):
     return {
         "source": "TEST", "identifier": identifier, "areaDesc": area, "area": area,

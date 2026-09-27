@@ -33,3 +33,32 @@ os.environ["EMERGENCY_STORE_FILE"] = os.path.join(_TMP, "emergency_store.json")
 # Keep the real store out of reach even if something resolves a path before
 # SAARTHI_STORE_DIR is consulted.
 os.environ.pop("DATABASE_URL", None)
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _clear_module_caches():
+    """Start every test with cold module-level latency caches.
+
+    weather._front (5-min weather front cache) and alert_service._gather_cache
+    (5-min positive gather cache) are process-global. Without this, two tests
+    using the same coordinates would share answers — a previous test's mocked
+    data served as the next test's "live" result.
+    """
+    def _clear():
+        try:
+            from backend.api import weather as _w
+            _w._front.clear()
+        except Exception:
+            pass
+        try:
+            from backend.services import alert_service as _a
+            _a._gather_cache.clear()
+        except Exception:
+            pass
+
+    _clear()
+    yield
+    _clear()

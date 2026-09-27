@@ -1,7 +1,7 @@
 // Single application store. Views read from here instead of prop-drilling, and
 // `ask()` is registered by HomeChat from inside an EFFECT (never during render).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, HYD, onDemoForbidden, setOfflineSim } from './api';
+import { api, HYD, setOfflineSim } from './api';
 import { DISTRICTS, t } from './i18n';
 import { cacheGuidance, useOnline } from './offline';
 import { askNotifyPermission, forgetNotified, hasPushSubscription, notify, notifySupport, pushReasonKey, subscribeToPush, unsubscribeFromPush } from './notify';
@@ -41,7 +41,7 @@ export function getVoiceStatus() {
 // switch reads in the user's language; the mode ids stay machine-readable.
 const MODE_LABEL_KEY = { demo: 'modeDemo', imd: 'modeImd', hybrid: 'modeHybrid' };
 const MODE_NOTE_KEY = { demo: 'modeDemoNote', imd: 'modeImdNote', hybrid: 'modeHybridNote' };
-export const SOURCE_MODES = ['demo', 'imd', 'hybrid'];
+export const SOURCE_MODES = ['imd'];
 export const modeLabel = (lang, id) => t(lang, MODE_LABEL_KEY[id] || 'modeHybrid');
 export const modeNote = (lang, id) => t(lang, MODE_NOTE_KEY[id] || 'modeHybridNote');
 
@@ -93,7 +93,7 @@ export function AppProvider({ children }) {
   const [view, setView] = useState(() => {
     try {
       const v = new URLSearchParams(window.location.search).get('view');
-      return ['home', 'alerts', 'advisory', 'notifications', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
+      return ['home', 'alerts', 'advisory', 'notifications', 'trust', 'settings'].includes(v) ? v : 'home';
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));
@@ -112,13 +112,12 @@ export function AppProvider({ children }) {
   });
   const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
   // Single light theme: no theme state, no switcher, no data-theme attribute.
-  // Truthful until /api/mode answers: the backend decides the mode, not a guess.
-  // Three modes, not two — see docs/SOURCE-MODES.md. `sourceMode` is the truth
-  // ('demo' | 'imd' | 'hybrid'); `demoMode` stays a derived boolean because a
-  // lot of call sites already read it and renaming them all buys nothing.
-  const [sourceMode, setSourceMode] = useState('hybrid');
+  // Single IMD-first mode (2026-09-27): no demo mode, no hybrid mode, no
+  // switcher. `sourceMode` is always 'imd'; `demoMode` is always false.
+  // Kept as constants so existing call sites keep working without edits.
+  const sourceMode = 'imd';
   const [modeInfo, setModeInfo] = useState(null);
-  const demoMode = sourceMode === 'demo';
+  const demoMode = false;
   const [districts] = useState(DISTRICTS); // fallback search options (coastal + inland)
   // Auto-location lifecycle: idle → requesting → resolving → ready | denied | unsupported | error.
   // Never silently default: HYD is only a placeholder until the user grants permission
@@ -179,30 +178,18 @@ export function AppProvider({ children }) {
     } catch { /* non-DOM environment */ }
   }, []);
   // One place that reads a /api/mode payload. The backend owns the mode; the UI
-  // never infers it from a boolean it happens to have lying around.
+  // never infers it from a boolean it happens to have lying around. Single
+  // IMD-first mode: the payload always says imd.
   const applyMode = useCallback((d) => {
     if (!d) return;
     setModeInfo(d);
-    setSourceMode(d.source_mode || (d.demo_mode ? 'demo' : 'hybrid'));
   }, []);
 
-  // DEMO / IMD / HYBRID switch: flips the backend at runtime, then refetches.
-  // The mode names which sources are carrying the answer, so the toast says that
-  // rather than just repeating the mode word back at the user.
-  const setBackendMode = useCallback(async (mode) => {
-    try {
-      const r = await api.setMode(mode);
-      if (r && r.ok) {
-        applyMode(r);
-        setSyncTick((n) => n + 1);
-        const shown = r.source_mode || r.mode || mode;
-        showToast(`${t(lang, 'modeSwitched')} ${t(lang, MODE_LABEL_KEY[shown] || 'modeHybrid')}`);
-        return true;
-      }
-    } catch { /* backend unreachable */ }
-    showToast(t(lang, 'modeSwitchFailed'));
+  // No mode switcher in the single-mode app. Kept as a no-op so any lingering
+  // call site fails soft instead of crashing; POST /api/mode is gone.
+  const setBackendMode = useCallback(async () => {
     return false;
-  }, [showToast, lang, applyMode]);
+  }, []);
 
   useEffect(() => {
     api.mode().then(applyMode).catch(() => {});
@@ -214,13 +201,6 @@ export function AppProvider({ children }) {
   useEffect(() => {
     getVoiceStatus();
   }, []);
-
-  // Self-heal: a 403 on any /api/demo/* route means the backend's demo flag
-  // flipped under us (restart, another tab, .env default). Re-sync once per
-  // burst — the throttled hook in api.js keeps this from becoming a storm.
-  useEffect(() => {
-    onDemoForbidden(() => api.mode().then(applyMode).catch(() => {}));
-  }, [applyMode]);
 
   useEffect(() => {
     let dead = false;

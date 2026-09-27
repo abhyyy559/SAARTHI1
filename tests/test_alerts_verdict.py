@@ -52,7 +52,10 @@ def _cap(severity, area="Hyderabad district, Telangana", identifier="cap-1",
 def _install_live(monkeypatch, *, imd_raises=False, imd_warning=None,
                   caps=(), chain=()):
     """Force the live branch with deterministic, offline sources."""
-    monkeypatch.setattr(config, "DEMO_MODE", False)
+    # New mocks = new data: drop any cached gather result from a previous
+    # section, otherwise the 5-min positive cache serves stale mock data.
+    from backend.services import alert_service as _as
+    _as._gather_cache.clear()
 
     async def fake_warning(self, district):
         if imd_raises:
@@ -122,19 +125,8 @@ def test_nearby_alerts_never_calm_the_district(monkeypatch):
     assert data["cap_alerts"] == []
 
 
-# 4. Demo mode always answers: status ok and a verdict is always present.
-def test_demo_mode_always_ok_with_verdict(monkeypatch):
-    monkeypatch.setattr(config, "DEMO_MODE", True)
-    data = _get(district="Hyderabad")
-    assert data["status"] == "ok"
-    assert set(data["verdict"]) == VERDICT_KEYS
-    assert data["verdict"]["level"] == "MODERATE"
-    assert data["verdict"]["basis"] == "verified_warning"
-
-
 # 5. `status` + `verdict` present on every branch of both twins.
 def test_status_key_present_in_every_branch(monkeypatch):
-    monkeypatch.setattr(config, "DEMO_MODE", True)
     for path in ("/api/v1/warnings", "/api/weather/warnings"):
         demo = _get(path, district="Hyderabad")
         assert "status" in demo and "verdict" in demo, (path, demo)

@@ -29,25 +29,6 @@ def test_store_dir_is_redirected_for_tests():
     assert Path(os.environ["SAARTHI_STORE_DIR"]).resolve() == in_use.resolve()
 
 
-def test_writing_a_demo_alert_does_not_touch_the_real_store():
-    """A real write through the store layer must land in the temp dir only."""
-    from backend.services import demo_alert_store
-
-    real_alerts = Path(config.CACHE_FILE).parent / "store" / "docs_demo_alerts.json"
-    before = real_alerts.read_bytes() if real_alerts.exists() else None
-
-    demo_alert_store.reset_store()
-    demo_alert_store.create({"title": "isolation probe", "district": "Hyderabad"})
-
-    written = db._json_path("docs_demo_alerts.json")
-    assert written.exists(), "the alert was not written anywhere"
-    assert "isolation probe" in written.read_text(encoding="utf-8")
-    assert written.resolve() != real_alerts.resolve()
-
-    after = real_alerts.read_bytes() if real_alerts.exists() else None
-    assert after == before, "the test run modified the real demo alert store"
-
-
 def test_notification_log_is_isolated():
     from backend.services import notification_service
 

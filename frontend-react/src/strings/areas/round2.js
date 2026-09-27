@@ -3,7 +3,7 @@
 export default {
   en: {
     navNotifications: 'Notifications', navAdvisor: 'Advisor', navAdmin: 'Demo & Authority',
-    ntfTitle: 'Notifications', ntfSub: 'Everything SAARTHI sent you — alerts, updates and all-clears — even while the app was closed.',
+    ntfTitle: 'Notifications', ntfSub: 'Everything WeatherGPT sent you — alerts, updates and all-clears — even while the app was closed.',
     advEyebrow: 'Advisory',
     ntfEmpty: 'No notifications yet. When an alert is issued for your district, its whole lifecycle lands here.',
     ntfLoadFailed: 'Could not load notifications (offline?). Cached alerts are still on the Alerts page.',
@@ -58,7 +58,7 @@ export default {
   },
   hi: {
     navNotifications: 'सूचनाएँ', navAdvisor: 'सलाहकार', navAdmin: 'डेमो व प्रशासन',
-    ntfTitle: 'सूचनाएँ', ntfSub: 'SAARTHI ने आपको जो कुछ भेजा — अलर्ट, अपडेट और अलर्ट-समाप्ति — ऐप बंद होने पर भी।',
+    ntfTitle: 'सूचनाएँ', ntfSub: 'WeatherGPT ने आपको जो कुछ भेजा — अलर्ट, अपडेट और अलर्ट-समाप्ति — ऐप बंद होने पर भी।',
     advEyebrow: 'परामर्श',
     ntfEmpty: 'अभी कोई सूचना नहीं। आपके जिले का अलर्ट आते ही उसका पूरा चक्र यहाँ दिखेगा।',
     ntfLoadFailed: 'सूचनाएँ लोड नहीं हुईं (ऑफ़लाइन?)। पुराने अलर्ट Alerts पेज पर हैं।',
@@ -113,7 +113,7 @@ export default {
   },
   te: {
     navNotifications: 'నోటిఫికేషన్లు', navAdvisor: 'సలహాదారు', navAdmin: 'డెమో & అధికారులు',
-    ntfTitle: 'నోటిఫికేషన్లు', ntfSub: 'SAARTHI పంపినవన్నీ — అలర్ట్‌లు, అప్‌డేట్‌లు, ముగింపు — యాప్ మూసివేసినప్పుడు కూడా.',
+    ntfTitle: 'నోటిఫికేషన్లు', ntfSub: 'WeatherGPT పంపినవన్నీ — అలర్ట్‌లు, అప్‌డేట్‌లు, ముగింపు — యాప్ మూసివేసినప్పుడు కూడా.',
     advEyebrow: 'సలహా',
     ntfEmpty: 'ఇంకా నోటిఫికేషన్లు లేవు. మీ జిల్లా అలర్ట్ వస్తే దాని పూర్తి చక్రం ఇక్కడ కనిపిస్తుంది.',
     ntfLoadFailed: 'నోటిఫికేషన్లు లోడ్ కాలేదు (ఆఫ్‌లైన్?). పాత అలర్ట్‌లు Alerts పేజీలో ఉన్నాయి.',

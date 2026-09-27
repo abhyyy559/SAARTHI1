@@ -16,36 +16,32 @@ function exportedArray(source, name) {
 }
 const SOURCE_MODES = exportedArray(store, 'SOURCE_MODES');
 
-// --- the three modes -------------------------------------------------------
+// --- the single IMD-first mode (2026-09-27) --------------------------------
 
-test('exactly three source modes exist, and they are the documented ones', () => {
-  assert.deepEqual(SOURCE_MODES, ['demo', 'imd', 'hybrid']);
+test('exactly one source mode exists: imd', () => {
+  assert.deepEqual(SOURCE_MODES, ['imd']);
 });
 
-test('the switch offers every mode and no fourth option', () => {
-  // Rendered from the list, not hardcoded - a hardcoded pair is how the old
-  // two-way LIVE/DEMO switch would creep back in.
-  assert.match(shell, /SOURCE_MODES\.map\(/);
-  assert.doesNotMatch(shell, /setBackendMode\('live'\)/);
-  assert.doesNotMatch(shell, /'LIVE'<\/button>/);
+test('there is no mode switcher in the shell', () => {
+  // No mode segmented control; the language switcher (seg-opt) is unrelated.
+  assert.doesNotMatch(shell, /SOURCE_MODES\.map\(/);
+  assert.doesNotMatch(shell, /setBackendMode\(/);
+  assert.doesNotMatch(shell, /demoModeTitle/);
 });
 
-test('the backend owns the mode - the UI never infers it from a boolean', () => {
-  // demoMode is derived from sourceMode, not tracked separately.
-  assert.match(store, /const demoMode = sourceMode === 'demo'/);
-  assert.match(store, /const \[sourceMode, setSourceMode\] = useState/);
+test('demoMode is a constant false, sourceMode a constant imd', () => {
+  assert.match(store, /const sourceMode = 'imd'/);
+  assert.match(store, /const demoMode = false/);
+  assert.doesNotMatch(store, /setSourceMode/);
   assert.doesNotMatch(store, /setDemoMode/);
 });
 
-test('the legacy "live" alias is accepted from the backend but not offered', () => {
-  // A stale backend answering "live" must not leave the UI in an unknown mode:
-  // applyMode falls back rather than storing "live" as if it were a mode.
-  assert.match(store, /d\.source_mode \|\| \(d\.demo_mode \? 'demo' : 'hybrid'\)/);
-  assert.ok(!SOURCE_MODES.includes('live'));
+test('setBackendMode is a no-op (POST /api/mode is gone)', () => {
+  assert.match(store, /const setBackendMode = useCallback\(async \(\) =>/);
 });
 
-test('every mode has a label and a plain-language note', () => {
-  for (const key of ['modeDemo', 'modeImd', 'modeHybrid', 'modeDemoNote', 'modeImdNote', 'modeHybridNote']) {
+test('the imd mode has a label and a plain-language note', () => {
+  for (const key of ['modeImd', 'modeImdNote']) {
     assert.match(store, new RegExp(key), `store must reference ${key}`);
   }
 });

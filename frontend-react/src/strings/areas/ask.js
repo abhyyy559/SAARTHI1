@@ -32,7 +32,7 @@ export default {
     srcNone: 'No sources reported.',
     srcFailed: 'Source check failed - cannot confirm which are live.',
     srcUpdated: 'Updated',
-    srcErrorHint: 'check the feed URL / network connection, or switch the app to demo mode',
+    srcErrorHint: 'check the feed URL / network connection',
     micHint: 'Speak your question',
   },
   hi: {

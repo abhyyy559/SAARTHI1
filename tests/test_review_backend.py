@@ -84,7 +84,6 @@ def test_gather_reports_whether_any_feed_answered(monkeypatch):
 
 
 def test_watcher_never_all_clears_when_every_feed_is_unreachable(monkeypatch):
-    monkeypatch.setattr(config, "DEMO_MODE", False)
     district = "Hyderabad"
     _reset_watcher_state(district)
     state = alert_watcher._load_state()
@@ -109,7 +108,6 @@ def test_watcher_never_all_clears_when_every_feed_is_unreachable(monkeypatch):
 
 def test_watcher_still_all_clears_after_a_real_answer(monkeypatch):
     """The safe direction must not be bought by disabling all-clears entirely."""
-    monkeypatch.setattr(config, "DEMO_MODE", False)
     district = "Warangal"
     _reset_watcher_state(district)
     state = alert_watcher._load_state()

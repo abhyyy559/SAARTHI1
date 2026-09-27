@@ -27,7 +27,7 @@ def _report_failure(what: str, exc: Exception) -> None:
     """
     if not config.IMD_API_KEY:
         report("imd", UNCONFIGURED,
-               "no IMD_API_KEY — IMD is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
+               "no IMD_API_KEY — IMD is credential-gated (key is IP-bound); set IMD_API_KEY to enable live IMD")
     else:
         report("imd", OFFLINE, f"live {what} failed: {type(exc).__name__}")
 
@@ -70,7 +70,13 @@ class IMDService:
         return "live" if self.adapter == "live" else "degraded"
 
     async def _get(self, path: str, params: dict | None = None) -> dict:
-        headers = {"Authorization": f"Bearer {config.IMD_API_KEY}"} if config.IMD_API_KEY else {}
+        if not config.IMD_API_KEY:
+            # Fail fast: IMD is credential-gated. Without a key every live
+            # call would burn a full network timeout (2s+ in practice) before
+            # reporting UNCONFIGURED. Skip the network entirely — ~0ms.
+            _report_failure(path, RuntimeError("no IMD_API_KEY"))
+            raise AdapterUnavailable("IMD unconfigured: no IMD_API_KEY")
+        headers = {"Authorization": f"Bearer {config.IMD_API_KEY}"}
         url = f"{config.IMD_BASE_URL}/{path}"
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(url, params=params, headers=headers)

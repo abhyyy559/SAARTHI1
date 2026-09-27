@@ -5,12 +5,11 @@
 // Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
 import { HIDDEN_VIEWS, NAV, PRIMARY_VIEWS, t } from '../i18n';
-import { useApp, SOURCE_MODES } from '../store';
+import { useApp } from '../store';
 import { resolveVoicePopup } from '../voiceUi';
 import { notificationsApi } from '../api';
 import Icon from './icons';
 import AlertOverlay from './AlertOverlay';
-import InstallPrompt from './InstallPrompt';
 import NotificationsPanel from './NotificationsPanel';
 import OnboardingTour from './OnboardingTour';
 
@@ -164,7 +163,7 @@ function MoreSheet({ open, onClose }) {
 }
 
 export default function Shell({ children }) {
-  const { view, setView, lang, setLang, loc, locReady, sourceMode, setBackendMode, disaster, netState, device, syncTick, unreadCount } = useApp();
+  const { view, setView, lang, setLang, loc, locReady, disaster, netState, device, syncTick, unreadCount } = useApp();
   const online = netState !== 'offline';
   const [moreOpen, setMoreOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -230,12 +229,9 @@ export default function Shell({ children }) {
   const conn = !online ? 'offline' : 'online';
   const connLabel = t(lang, conn === 'online' ? 'connOnline' : 'connOffline');
 
-  const demoLive = sourceMode === 'demo';
-  // The demo-data banner only belongs where demo/sample content can appear:
-  // never on Admin or Trust chrome. SOS carries its own
-  // "SIMULATED — FOR DEMO ONLY" stamp and lives inside the alerts view.
-  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'trust']);
-  const showDemoBanner = demoLive && demoBannerViews.has(view);
+  // Single IMD-first mode (2026-09-27): no demo mode exists, so the demo-data
+  // banner can never appear. Kept as false so call sites don't crash.
+  const showDemoBanner = false;
 
   return (
     <div className="app">
@@ -244,10 +240,10 @@ export default function Shell({ children }) {
       {/* -------- console rail -------- */}
       <aside className="rail" aria-label={t(lang, 'navLabel')}>
         <div className="rail-brand">
-          <span className="brand-mark" aria-hidden="true">S</span>
+          <span className="brand-mark" aria-hidden="true">W</span>
           <span className="brand-name">
-            <b>SAARTHI</b>
-            <span>WeatherGPT · India</span>
+            <b>WeatherGPT</b>
+            <span>India</span>
           </span>
         </div>
         <nav className="rail-nav">
@@ -310,7 +306,7 @@ export default function Shell({ children }) {
       {/* -------- main column -------- */}
       <div className="main-col">
         <header className="topbar">
-          <span className="brand-mark" aria-hidden="true">S</span>
+          <span className="brand-mark" aria-hidden="true">W</span>
           <div className="district-stamp" aria-live="polite">
             <span className="pin"><Icon name="pin" size={16} /></span>
             <span>
@@ -319,25 +315,6 @@ export default function Shell({ children }) {
             </span>
           </div>
           <div className="topbar-spacer" />
-
-          {/* Mode controls live on the Admin view only — they are backstage,
-              not a citizen setting. Rendered from SOURCE_MODES so the three
-              modes always stay in sync with the store. */}
-          {view === 'admin' && (
-            <div className="segmented" role="group" aria-label={t(lang, 'demoModeTitle')}>
-              {SOURCE_MODES.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  className={`seg-opt${sourceMode === m ? ' is-active' : ''}`}
-                  aria-pressed={sourceMode === m}
-                  onClick={() => setBackendMode(m)}
-                >
-                  {m.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className="topbar-group">
             <span className={`conn-pill is-${conn}`} role="status" title={connLabel}>
@@ -416,7 +393,6 @@ export default function Shell({ children }) {
       <MobileNav current={view} moreOpen={moreOpen} onPick={() => setMoreOpen(true)} />
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
       <NotificationsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onUnread={setUnread} />
-      <InstallPrompt />
       <OnboardingTour />
 
       {toast && (

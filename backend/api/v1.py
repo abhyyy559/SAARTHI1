@@ -284,9 +284,10 @@ async def v1_status():
     backend reports its own reachability view: LIVE vs LIMITED."""
     srcs = snapshot()
     live_n = sum(1 for s in srcs if s["status"] == "LIVE")
-    state = "LIVE" if (live_n >= 2 and not config.DEMO_MODE) else "LIMITED"
-    if config.DEMO_MODE:
-        state = "LIMITED"
+    # Single IMD-first mode: LIVE when at least two sources actually answer,
+    # otherwise LIMITED. No mode flag gates this — the sources speak for
+    # themselves.
+    state = "LIVE" if live_n >= 2 else "LIMITED"
     # Persistence backend: postgres when DATABASE_URL works, else JSON files.
     # Reported so an operator can SEE that alerts/acks survive a redeploy.
     from ..services import db
@@ -295,7 +296,8 @@ async def v1_status():
         "state": state,
         "internet_status": "reachable",
         "source_mode": config.current_source_mode(),
-        "demo_mode": config.DEMO_MODE,
+        # Demo mode is removed entirely (single IMD-first mode, 2026-09-27).
+        "demo_mode": False,
         "last_sync": iso_now(),
         "database": dbh,
         "data_source_status": srcs,

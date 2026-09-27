@@ -24,9 +24,6 @@ export default {
     notifyClearTitle: 'Safe now',
     notifyClearBody: 'The {hazard} warning for {district} has ended.',
     notifyClearBodyPlain: 'The weather warning for {district} has ended.',
-    demoAlert: 'Simulate alert',
-    demoClear: 'Simulate all-clear',
-    demoNotifyHint: 'Demo: fire a warning now, then the all-clear',
   },
   hi: {
     notifyOnBackground: "चेतावनी चालू — ऐप बंद होने पर भी सूचना मिलेगी",
@@ -47,9 +44,6 @@ export default {
     notifyClearTitle: 'अब सुरक्षित',
     notifyClearBody: '{district} की {hazard} चेतावनी समाप्त हो गई।',
     notifyClearBodyPlain: '{district} की मौसम चेतावनी समाप्त हो गई।',
-    demoAlert: 'चेतावनी दिखाएँ',
-    demoClear: 'सुरक्षित दिखाएँ',
-    demoNotifyHint: 'डेमो: पहले चेतावनी, फिर सुरक्षित संदेश',
   },
   te: {
     notifyOnBackground: "హెచ్చరికలు ఆన్ — యాప్ మూసి ఉన్నా నోటిఫికేషన్ వస్తుంది",
@@ -70,8 +64,5 @@ export default {
     notifyClearTitle: 'ఇప్పుడు సురక్షితం',
     notifyClearBody: '{district} కోసం {hazard} హెచ్చరిక ముగిసింది.',
     notifyClearBodyPlain: '{district} కోసం వాతావరణ హెచ్చరిక ముగిసింది.',
-    demoAlert: 'హెచ్చరిక చూపించు',
-    demoClear: 'సురక్షితం చూపించు',
-    demoNotifyHint: 'డెమో: ముందు హెచ్చరిక, తర్వాత సురక్షితం',
   },
 };

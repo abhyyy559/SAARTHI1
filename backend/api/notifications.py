@@ -13,7 +13,6 @@ learns who the user is; the id only separates "my phone marked it read" from
 """
 from fastapi import APIRouter
 
-from .. import config
 from ..services import delivery_service, notification_service
 from ..utils.time import iso_now
 
@@ -68,12 +67,3 @@ async def opened(payload: dict) -> dict:
 async def acknowledged(payload: dict) -> dict:
     """A device reports the user explicitly ACKNOWLEDGED the alert."""
     return _record_event(payload, "acknowledged")
-
-
-@router.post("/reset")
-async def reset() -> dict:
-    if not config.DEMO_MODE:
-        return {"status": "error", "reason": "demo mode only"}
-    notification_service.reset_store()
-    delivery_service.reset_store()
-    return {"status": "reset", "generated_at": iso_now()}

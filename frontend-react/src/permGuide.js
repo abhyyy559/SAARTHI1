@@ -32,7 +32,7 @@ function prefStorage(storage) {
 }
 
 // --- in-app sound preference ------------------------------------------------
-// '1'/missing = on, '0' = off. This is SAARTHI's own switch — the device volume
+// '1'/missing = on, '0' = off. This is WeatherGPT's own switch — the device volume
 // and the browser tab mute stay separate (see the sound guidance strings).
 export function readSoundPref(storage) {
   try {

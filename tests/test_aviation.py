@@ -60,7 +60,7 @@ def _no_alerts():
             "feeds": [], "available": True}
 
 
-def _wire(monkeypatch, *, inputs=None, inputs_error=None, alerts=None, mode="hybrid"):
+def _wire(monkeypatch, *, inputs=None, inputs_error=None, alerts=None):
     async def fake_inputs(lat, lon):
         if inputs_error:
             raise inputs_error
@@ -71,8 +71,6 @@ def _wire(monkeypatch, *, inputs=None, inputs_error=None, alerts=None, mode="hyb
 
     monkeypatch.setattr(openmeteo_adapter, "get_aviation_inputs", fake_inputs)
     monkeypatch.setattr(alert_service, "gather_alerts", fake_gather)
-    monkeypatch.setattr(config, "SOURCE_MODE", mode)
-    monkeypatch.setattr(config, "DEMO_MODE", mode == "demo")
 
 
 def _strings(payload):
@@ -216,41 +214,6 @@ def test_route_registered_on_app():
     paths |= set(main.app.openapi()["paths"])
     assert "/api/aviation/briefing" in paths, sorted(p for p in paths if p)
     print("PASS: test_route_registered_on_app")
-
-
-def test_imd_mode_withholds_non_official_meteorology(monkeypatch):
-    captured = {}
-
-    async def fake_gather(**kwargs):
-        captured.update(kwargs)
-        return _no_alerts()
-
-    async def fake_inputs(lat, lon):  # pragma: no cover — must not be called
-        raise AssertionError("non-official fetch in imd mode")
-
-    monkeypatch.setattr(openmeteo_adapter, "get_aviation_inputs", fake_inputs)
-    monkeypatch.setattr(alert_service, "gather_alerts", fake_gather)
-    monkeypatch.setattr(config, "SOURCE_MODE", "imd")
-    monkeypatch.setattr(config, "DEMO_MODE", False)
-
-    b = asyncio.run(aviation_service.build_briefing(LAT, LON, "en"))
-    secs = _sections(b)
-    for name in ("winds_aloft", "cloud", "visibility", "turbulence_icing", "sun"):
-        assert secs[name]["status"] == "UNAVAILABLE", (name, secs[name])
-        assert "imd mode" in secs[name]["reason"], (name, secs[name])
-    # Official-only alert gather — the commercial chain is never consulted.
-    assert captured.get("force_official_only") is True, captured
-    print("PASS: test_imd_mode_withholds_non_official_meteorology")
-
-
-def test_demo_mode_labels_sample_data(monkeypatch):
-    _wire(monkeypatch, mode="demo")
-    b = asyncio.run(aviation_service.build_briefing(LAT, LON, "en"))
-    secs = _sections(b)
-    for name in ("winds_aloft", "cloud", "visibility", "sun"):
-        assert secs[name]["status"] == "OK", (name, secs[name])
-        assert secs[name]["provenance"] == "DEMO", (name, secs[name])
-    print("PASS: test_demo_mode_labels_sample_data")
 
 
 # --- Determinism: proxies are labelled, numbers are real ------------------------

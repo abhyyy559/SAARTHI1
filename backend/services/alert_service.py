@@ -14,6 +14,7 @@ inputs to that decision are gathered once too. If you need alerts, call
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 from .. import config
@@ -31,6 +32,15 @@ CHAIN_SOURCE = "InTouch/WeatherAPI/GDACS"
 # `gather_alerts`: this shares concurrent duplicate work, it never serves a
 # stored answer.
 _inflight: dict[tuple, "asyncio.Future[dict[str, Any]]"] = {}
+
+# LATENCY: short-TTL cache for POSITIVE gather results (2026-09-27). The
+# commercial chain (InTouch/GDACS) costs ~2s per pass and every chat turn was
+# paying it. A cached answer is served for 5 minutes ONLY when at least one
+# feed actually answered (`available`); failures and empty answers are never
+# cached, so a stale false all-clear is impossible and an outage is re-probed
+# on the next turn instead of being frozen in.
+_GATHER_TTL_S = 300.0
+_gather_cache: dict[tuple, tuple[dict[str, Any], float]] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -237,12 +247,15 @@ def attach_lifecycle_detail(alert: dict[str, Any] | None) -> dict[str, Any] | No
 
 
 def official_only() -> bool:
-    """True in `imd` mode: IMD facts or nothing, so the commercial chain is
-    skipped entirely (docs/SOURCE-MODES.md)."""
-    try:
-        return config.current_source_mode() == "imd"
-    except Exception:  # noqa: BLE001 - never let a mode lookup break alerting
-        return False
+    """Single IMD-first mode (2026-09-27): always False.
+
+    The old `imd` mode was official-only (IMD + CAP, no commercial chain).
+    The collapsed single mode runs the full chain everywhere — IMD first,
+    then SACHET/CAP, then the commercial alert chain — so there is no
+    official-only mode anymore. Kept as a function so existing callers and
+    the `force_official_only` override keep working.
+    """
+    return False
 
 
 def classify_alert(alert: dict, *, lat: float, lon: float, district: str, state_name: str) -> str:
@@ -331,23 +344,35 @@ async def gather_alerts(*, lat: float, lon: float, district: str, state: str = "
 
     This is de-duplication, not caching: nothing is ever served after it was
     fetched, and the answer is exactly as live as the request that produced it.
+
+    On top of de-duplication, POSITIVE results are cached for 5 minutes (see
+    _gather_cache): the commercial chain costs seconds per pass and a chat turn
+    must not pay it twice. Only answers where a feed actually responded are
+    stored — failures/empties are re-probed every turn, never frozen in.
     """
     key = (
         round(float(lat or 0.0), 3), round(float(lon or 0.0), 3),
         (district or "").lower(), (state or "").lower(),
         official_only() if force_official_only is None else bool(force_official_only),
     )
-    pending = _inflight.get(key)
-    if pending is None:
-        pending = asyncio.ensure_future(
-            _gather_uncached(lat=lat, lon=lon, district=district, state=state,
-                             force_official_only=force_official_only)
-        )
-        _inflight[key] = pending
-        pending.add_done_callback(lambda _f, k=key: _inflight.pop(k, None))
-    # shield: one caller giving up (a closed tab) must not cancel the fetch the
-    # other caller is still waiting on.
-    result = await asyncio.shield(pending)
+    hit = _gather_cache.get(key)
+    if hit and (time.monotonic() - hit[1]) < _GATHER_TTL_S:
+        result = hit[0]
+    else:
+        pending = _inflight.get(key)
+        if pending is None:
+            pending = asyncio.ensure_future(
+                _gather_uncached(lat=lat, lon=lon, district=district, state=state,
+                                 force_official_only=force_official_only)
+            )
+            _inflight[key] = pending
+            pending.add_done_callback(lambda _f, k=key: _inflight.pop(k, None))
+        # shield: one caller giving up (a closed tab) must not cancel the fetch the
+        # other caller is still waiting on.
+        result = await asyncio.shield(pending)
+        if result.get("available"):
+            # Positive only: a feed answered. Failures/empties are never cached.
+            _gather_cache[key] = (result, time.monotonic())
     # Hand each caller its own lists. The alert dicts are already fully tagged
     # inside the shared fetch, so they are safe to share; the containers are not,
     # because an endpoint that later appends would otherwise edit another

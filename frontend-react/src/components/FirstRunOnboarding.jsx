@@ -1,7 +1,7 @@
 // First-run onboarding — the "what is this app and what will it ask me" flow.
 //
 // On a brand-new browser (no saved state), before anything else, the user gets:
-//   1. WELCOME  — what SAARTHI does (verified alerts, ask by voice, offline+P2P).
+//   1. WELCOME  — what WeatherGPT does (verified alerts, ask by voice, offline+P2P).
 //   2. LOCATION — why it is asked (warnings are district-specific) and a real
 //      permission prompt. The store's requestLocation() is the ONLY path used,
 //      so this is the same permission the Home prompt would have asked.
@@ -132,7 +132,7 @@ export default function FirstRunOnboarding() {
 
         {cur === 'welcome' && (
           <>
-            <span className="obw-mark" aria-hidden="true">S</span>
+            <span className="obw-mark" aria-hidden="true">W</span>
             <h2 className="display">{t(lang, 'obwTitle')}</h2>
             <p className="obw-lead">{t(lang, 'obwLead')}</p>
             <ul className="obw-points">

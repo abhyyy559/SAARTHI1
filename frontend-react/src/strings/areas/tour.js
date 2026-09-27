@@ -19,7 +19,7 @@ export default {
     ot4t: 'Works offline',
     ot4b: 'The app shell loads without internet. Questions you ask offline are sent when you are back.',
     ot5t: 'Get alerts with the app closed',
-    ot5b: 'Allow notifications once. SAARTHI can then warn you about your district while the app is closed — or inside the app if your browser cannot do background alerts.',
+    ot5b: 'Allow notifications once. WeatherGPT can then warn you about your district while the app is closed — or inside the app if your browser cannot do background alerts.',
     ot5cta: 'Allow notifications',
     ot5on: 'Background alerts on',
     ot5inapp: 'In-app alerts on',

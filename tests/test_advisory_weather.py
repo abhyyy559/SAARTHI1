@@ -40,7 +40,6 @@ def _isolate_runtime_stores(tmp_path, monkeypatch):
     cache_file = str(tmp_path / "weathergpt_cache.json")
     monkeypatch.setattr(config, "CACHE_FILE", cache_file)
     monkeypatch.setattr(weather_mod, "cache", CacheService(cache_file))
-    monkeypatch.setattr(config, "DEMO_MODE", True)
 
 
 def _kinds(items):
@@ -143,20 +142,6 @@ def test_new_strings_trilingual_and_tamil_free():
         assert set(texts) == {"en", "hi", "te"}, kind
         for lang, s in texts.items():
             assert not _TAMIL.search(s), f"Tamil script in {kind}/{lang}"
-
-
-# --- end-to-end: DEMO fixtures flow into the basis -----------------------------
-def test_demo_mode_fixture_observation_grounds_basis():
-    r = TestClient(app).get("/api/v1/advisories",
-                            params={"district": "Hyderabad", "lat": 17.385, "lon": 78.4867})
-    assert r.status_code == 200, r.text
-    basis = r.json()["weather_basis"]
-    assert basis["provenance"] == "DEMO", basis
-    # Fixture: temp 28, humidity 82, rainfall 12, windspeed 9.
-    assert basis["temp_c"] == 28.0 and basis["humidity_pct"] == 82.0, basis
-    assert basis["rain_mm"] == 12.0 and basis["wind_kph"] == 9.0, basis
-    # None of the rules fire at these values — basis present, no lines appended.
-    assert "observed/forecast" not in r.json()["advisory"]
 
 
 def test_explicit_params_take_client_provenance():

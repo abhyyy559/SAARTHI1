@@ -12,7 +12,8 @@ router = APIRouter(prefix="/api")
 async def sources() -> dict:
     return {
         "source_mode": config.current_source_mode(),
-        "demo_mode": config.DEMO_MODE,
+        # Demo mode is removed entirely (single IMD-first mode, 2026-09-27).
+        "demo_mode": False,
         "sources": snapshot(),
         "needs_keys": {
             "DATAGOV_API_KEY": not bool(config.DATAGOV_API_KEY),

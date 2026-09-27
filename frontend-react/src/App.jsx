@@ -3,7 +3,7 @@ import { AppProvider, useApp } from './store';
 import { t } from './i18n';
 import Shell from './components/Shell';
 import FirstRunOnboarding from './components/FirstRunOnboarding';
-import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, SettingsView } from './views';
+import { HomeView, AlertsView, NotificationsView, AdvisoryView, TrustSourcesView, SettingsView } from './views';
 import { Loading } from './components/ui';
 
 // Every id the store's `?view=` whitelist accepts must be registered here.
@@ -19,7 +19,6 @@ const VIEWS = {
   advisory: AdvisoryView,
   trust: TrustSourcesView,
   settings: SettingsView,
-  admin: AdminView,
 };
 
 /** One broken view must never take the console down - and never fake data. */

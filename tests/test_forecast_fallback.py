@@ -1,10 +1,8 @@
-"""Forecast fallback chain tests (per docs/SOURCE-MODES.md).
+"""Forecast fallback chain tests — single IMD-first mode (2026-09-27).
 
-Closes the known gap: `_live_forecast` previously had no OpenWeatherMap leg,
-while `_live_current` did. The contract after the fix:
-
-  hybrid forecast chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
-  imd mode:              IMD only; OWM is never called and cache is never served.
+The one weather chain: IMD -> Open-Meteo -> OpenWeatherMap -> file cache ->
+UNAVAILABLE. No mode switch changes this; the fallbacks engage only when the
+earlier source fails or returns nothing.
 
 All network calls are monkeypatched; the runtime cache is isolated to tmp_path.
 """
@@ -33,14 +31,7 @@ def _isolate_runtime(monkeypatch, tmp_path):
     cache_file = str(tmp_path / "weathergpt_cache.json")
     monkeypatch.setattr(config, "CACHE_FILE", cache_file)
     monkeypatch.setattr(weather_mod, "cache", CacheService(cache_file))
-    monkeypatch.setattr(config, "SOURCE_MODE", config.SOURCE_MODE)
-    monkeypatch.setattr(config, "DEMO_MODE", config.DEMO_MODE)
     monkeypatch.setattr(config, "IMD_ADAPTER", config.IMD_ADAPTER)
-
-
-def _set_mode(monkeypatch, mode: str) -> None:
-    monkeypatch.setattr(config, "SOURCE_MODE", mode)
-    monkeypatch.setattr(config, "DEMO_MODE", mode == "demo")
 
 
 def _fc(source: str = "IMD") -> WeatherForecast:
@@ -77,12 +68,11 @@ def _owm_down(monkeypatch) -> None:
 
 
 # ----------------------------------------------------------------------------
-# hybrid chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
+# single-mode chain: IMD -> Open-Meteo -> OpenWeatherMap -> cache -> UNAVAILABLE
 # ----------------------------------------------------------------------------
 
-async def test_hybrid_forecast_falls_back_to_owm(monkeypatch):
+async def test_forecast_falls_back_to_owm(monkeypatch):
     """IMD down AND Open-Meteo down -> OpenWeatherMap forecast leg answers."""
-    _set_mode(monkeypatch, "hybrid")
     _imd_down(monkeypatch)
     _openmeteo_down(monkeypatch)
     calls: list = []
@@ -95,9 +85,8 @@ async def test_hybrid_forecast_falls_back_to_owm(monkeypatch):
     assert cached and cached["source"] == "OpenWeatherMap"
 
 
-async def test_hybrid_forecast_falls_back_to_cache_after_owm(monkeypatch):
+async def test_forecast_falls_back_to_cache_after_owm(monkeypatch):
     """All three sources down -> cached forecast served with stale_note, CACHED."""
-    _set_mode(monkeypatch, "hybrid")
     _imd_down(monkeypatch)
     _openmeteo_down(monkeypatch)
     _owm_down(monkeypatch)
@@ -112,9 +101,8 @@ async def test_hybrid_forecast_falls_back_to_cache_after_owm(monkeypatch):
     assert data["stale_note"] == "Showing last retrieved information; may be outdated."
 
 
-async def test_hybrid_forecast_honest_unavailable(monkeypatch):
+async def test_forecast_honest_unavailable(monkeypatch):
     """All sources down, no cache -> AdapterUnavailable, never fabricated."""
-    _set_mode(monkeypatch, "hybrid")
     _imd_down(monkeypatch)
     _openmeteo_down(monkeypatch)
     _owm_down(monkeypatch)
@@ -122,10 +110,8 @@ async def test_hybrid_forecast_honest_unavailable(monkeypatch):
         await weather_mod._live_forecast(LAT, LON)
 
 
-async def test_hybrid_forecast_first_source_wins(monkeypatch):
+async def test_forecast_first_source_wins(monkeypatch):
     """IMD reachable -> OWM must not be called (priority preserved)."""
-    _set_mode(monkeypatch, "hybrid")
-
     async def imd_fc(self, lat, lon):
         return _fc("IMD")
 
@@ -135,26 +121,6 @@ async def test_hybrid_forecast_first_source_wins(monkeypatch):
     data, prov = await weather_mod._live_forecast(LAT, LON)
     assert data["source"] == "IMD" and prov == "LIVE"
     assert calls == []
-
-
-# ----------------------------------------------------------------------------
-# imd mode: no OWM, no cache
-# ----------------------------------------------------------------------------
-
-async def test_imd_mode_forecast_never_calls_owm(monkeypatch):
-    """IMD down in imd mode -> raises before Open-Meteo, OWM, or cache."""
-    _set_mode(monkeypatch, "imd")
-    _imd_down(monkeypatch)
-    calls: list = []
-    _owm_ok(monkeypatch, calls)
-    weather_mod.cache.set(
-        weather_mod._key("forecast", LAT, LON),
-        {"source": "Open-Meteo", "days": []},
-        weather_mod.TTLS["forecast"],
-    )
-    with pytest.raises(AdapterUnavailable):
-        await weather_mod._live_forecast(LAT, LON)
-    assert calls == []  # OWM untouched, cache untouched
 
 
 # ----------------------------------------------------------------------------

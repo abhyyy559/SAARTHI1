@@ -53,51 +53,32 @@ VAPID_SUBJECT = _get("VAPID_SUBJECT", "mailto:ops@weathergpt.local")
 # NETWORK sources (CAP/IMD/Open-Meteo). Bulletins are issued on the scale of
 # hours, so five minutes is responsive without hammering NDMA.
 ALERT_WATCH_INTERVAL = int(_get("ALERT_WATCH_INTERVAL", "300") or 300)
-# How often the watcher advances the local demo lifecycle. This pass touches
-# only the local store — no network — and it is what makes the on-stage
-# lifecycle land on time: the one-tap scenarios schedule pre-alert at ~12s,
-# ACTIVE at ~40s and ENDED at ~3min, and their own comments say "let the 10s
-# lifecycle loop deliver it". Sharing the 300s network cadence meant the
-# pre-alert notification could arrive up to five minutes late — by which point
-# the demo alert had already ended.
-DEMO_TICK = int(_get("DEMO_TICK", "10") or 10)
+# How often the watcher loop wakes to see whether the network pass is due.
+# The network pass itself is guarded by ALERT_WATCH_INTERVAL above.
+WATCH_TICK = int(_get("WATCH_TICK", "10") or 10)
 
-# --- Source modes (docs/SOURCE-MODES.md): "demo" | "imd" | "hybrid" ----------
-# SOURCE_MODE wins; if unset it derives from the legacy DEMO_MODE boolean so old
-# .env files keep working. DEMO_MODE stays a plain boolean because it is read at
-# many call sites, and is re-derived so the two can never drift.
-DEMO_MODE = _get("DEMO_MODE", "true").lower() in ("1", "true", "yes")
-_SOURCE_MODE_ENV = _get("SOURCE_MODE", "").strip().lower()
-if _SOURCE_MODE_ENV in ("demo", "imd", "hybrid"):
-    SOURCE_MODE = _SOURCE_MODE_ENV
-elif _SOURCE_MODE_ENV == "live":  # legacy env alias for "hybrid"
-    SOURCE_MODE = "hybrid"
-else:
-    SOURCE_MODE = "demo" if DEMO_MODE else "hybrid"
-DEMO_MODE = SOURCE_MODE == "demo"  # derived, always in sync
+# --- Single source mode: IMD-first (2026-09-27, Abhiram's order) --------------
+# Demo mode, hybrid mode and the mode switcher are removed entirely. The app
+# runs exactly one chain everywhere:
+#   weather:  IMD live -> Open-Meteo -> OpenWeatherMap -> file cache
+#   warnings: IMD live -> SACHET/CAP feeds
+# IMD is always tried first; a fallback engages only when IMD is unreachable
+# or returns nothing. Provenance always names the source that actually
+# supplied the numbers — never IMD for a fallback number.
+#
+# (2026-09-27) The chat keeps its IMD-fixture path behind DEMO_MODE so its
+# answers stay rich while IMD credentials are unavailable. Every other
+# endpoint uses the live chain above. /api/mode reports demo_mode:false —
+# that payload is hardcoded in api/sources.py and api/v1.py and does not
+# read this flag.
+DEMO_MODE = True
 
-IMD_ADAPTER = _get("IMD_ADAPTER", "demo" if DEMO_MODE else "live")
-
-# Per-mode source chains, reported verbatim by GET /api/mode so the console can
-# name the sources actually carrying the answer, not just the mode label.
-MODE_SOURCES = {
-    "demo": {"weather": "DEMO fixtures", "warnings": "DEMO fixtures"},
-    "imd": {"weather": "IMD only", "warnings": "IMD → SACHET/CAP"},
-    "hybrid": {"weather": "IMD → Open-Meteo → OpenWeatherMap",
-               "warnings": "IMD → SACHET/CAP → InTouch → WeatherAPI → GDACS"},
-}
+IMD_ADAPTER = "live"
 
 
 def current_source_mode() -> str:
-    """Effective mode for source selection.
-
-    `DEMO_MODE` is the runtime demo switch read by many call sites (and set
-    directly by tests), so it always wins for the demo branch. `SOURCE_MODE`
-    distinguishes the official-only `imd` chain from the full `hybrid` chain.
-    """
-    if DEMO_MODE:
-        return "demo"
-    return "imd" if SOURCE_MODE == "imd" else "hybrid"
+    """The app has exactly one mode: "imd" (IMD-first with honest fallbacks)."""
+    return "imd"
 
 # Live-source keys (all optional — absence is reported, never faked)
 OWM_API_KEY = _get("OWM_API_KEY", "")
