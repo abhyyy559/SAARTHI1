@@ -59,16 +59,19 @@ def test_advisory_calls_send_persona():
 
 
 def test_chat_sends_persona_and_location():
-    # ChatView posts { message, lat, lon, district, language, user_type } —
-    # the backend tailors advice + caveats by user_type, so dropping it
-    # would silently de-personalize chat answers.
+    # HomeView's agent composer posts { message, latitude, longitude, district,
+    # language, user_type } — the backend ChatRequest only understands
+    # latitude/longitude; sending lat/lon would be silently dropped by Pydantic
+    # and every user would get Hyderabad's weather. The backend tailors advice
+    # + caveats by user_type, so dropping it would silently de-personalize
+    # chat answers.
     views = _read('views.jsx')
-    m = re.search(r'const body = \{([^}]+)\};\s*\n\s*// Try streaming first', views)
-    assert m, "ChatView must build a chat request body"
+    m = re.search(r'const body = \{([^}]+)\};\s*\n\s*let evMeta = null;', views)
+    assert m, "HomeView's agent composer must build a chat request body"
     body = m.group(1)
     assert 'user_type: role' in body, "chat must send the selected role as user_type"
-    assert 'lat: loc.lat' in body and 'lon: loc.lon' in body, \
-        "chat must send the selected location coords"
+    assert 'latitude: loc.lat' in body and 'longitude: loc.lon' in body, \
+        "chat must send coords as latitude/longitude (backend contract)"
     assert 'district: loc.district' in body, "chat must send the district"
     assert 'language: lang' in body, "chat must send the selected language"
 

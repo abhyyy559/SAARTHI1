@@ -4,7 +4,7 @@ import { api, HYD } from './api.js';
 import { LangProvider, useLang, t } from './i18n.jsx';
 import { useApi, useLocalStorage } from './hooks.js';
 import { I, TopBar, BottomNav, SosFab, Sheet, ToastHost, toast, EmptyState } from './components.jsx';
-import { HomeView, AdviceView, AlertsView, TrustView, ChatView, MoreView } from './views.jsx';
+import { HomeView, AdviceView, AlertsView, TrustView, MoreView } from './views.jsx';
 
 const DEFAULT_LOC = { lat: HYD.lat, lon: HYD.lon, district: 'Hyderabad', city: 'Hyderabad', state: 'Telangana' };
 
@@ -41,7 +41,6 @@ function Shell() {
     home: <HomeView loc={loc} go={go} />,
     alerts: <AlertsView loc={loc} />,
     advice: <AdviceView loc={loc} />,
-    chat: <ChatView loc={loc} />,
     more: <MoreView loc={loc} onOpenTrust={() => go('trust')} />,
     trust: <TrustView />,
   };

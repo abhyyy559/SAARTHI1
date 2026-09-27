@@ -30,6 +30,7 @@ export const I = {
   dots: (p) => <Svg {...p}><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></Svg>,
   mic: (p) => <Svg {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></Svg>,
   send: (p) => <Svg {...p}><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></Svg>,
+  speaker: (p) => <Svg {...p}><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></Svg>,
   x: (p) => <Svg {...p}><path d="M6 6l12 12M18 6 6 18" /></Svg>,
   check: (p) => <Svg {...p}><path d="M4.5 12.5 10 18 19.5 6.5" /></Svg>,
   chevR: (p) => <Svg {...p}><path d="m9 5 7 7-7 7" /></Svg>,
@@ -111,17 +112,17 @@ export function ConditionArt({ condition, night }) {
             fill="#fff" style={{ animationDelay: `${i * 0.5}s` }} />
         ))}
         <path d="M300 40a44 44 0 1 0 24 80 36 36 0 1 1-24-80z" fill="#f4ecd8" />
-        <g className="art-cloud" opacity="0.5"><ellipse cx="120" cy="210" rx="80" ry="20" fill="#8ea6c9" opacity="0.5" /></g>
+        <g className="art-cloud" opacity="0.5"><ellipse cx="120" cy="210" rx="80" ry="20" fill="#57534E" opacity="0.5" /></g>
       </svg>
     );
   }
   if (kind === 'storm') {
     return (
       <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <g className="art-cloud"><ellipse cx="200" cy="80" rx="130" ry="44" fill="#2b2a4a" opacity="0.9" />
-          <ellipse cx="120" cy="100" rx="70" ry="30" fill="#3a3860" opacity="0.9" /></g>
+        <g className="art-cloud"><ellipse cx="200" cy="80" rx="130" ry="44" fill="#44403C" opacity="0.9" />
+          <ellipse cx="120" cy="100" rx="70" ry="30" fill="#57534E" opacity="0.9" /></g>
         <path className="art-bolt" d="M205 110l-28 52h22l-8 48 44-66h-24l14-34h-20z" fill="#fde047" />
-        <g className="art-rain" stroke="#9fc3e8" strokeWidth="4" strokeLinecap="round">
+        <g className="art-rain" stroke="#D6CFC0" strokeWidth="4" strokeLinecap="round">
           {[90, 140, 260, 310].map((x, i) => (
             <line key={i} x1={x} y1={150} x2={x - 8} y2={190} style={{ animationDelay: `${i * 0.2}s` }} />
           ))}
@@ -130,11 +131,11 @@ export function ConditionArt({ condition, night }) {
     );
   }
   if (kind === 'rain' || kind === 'snow') {
-    const col = kind === 'snow' ? '#ffffff' : '#bfe0f5';
+    const col = kind === 'snow' ? '#ffffff' : '#A8A29E';
     return (
       <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <g className="art-cloud"><ellipse cx="200" cy="70" rx="140" ry="42" fill={night ? '#1d2f4d' : '#e8f1f8'} opacity="0.92" />
-          <ellipse cx="110" cy="92" rx="70" ry="28" fill={night ? '#243b5e' : '#d5e5f2'} opacity="0.9" /></g>
+        <g className="art-cloud"><ellipse cx="200" cy="70" rx="140" ry="42" fill={night ? '#3A3430' : '#FFFDF7'} opacity="0.92" />
+          <ellipse cx="110" cy="92" rx="70" ry="28" fill={night ? '#4A423B' : '#F5EFE2'} opacity="0.9" /></g>
         <g className="art-rain" stroke={col} strokeWidth="5" strokeLinecap="round">
           {Array.from({ length: 9 }).map((_, i) => (
             <line key={i} x1={60 + i * 36} y1={120} x2={52 + i * 36} y2={165}
@@ -157,9 +158,9 @@ export function ConditionArt({ condition, night }) {
   // cloudy (default)
   return (
     <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <g className="art-cloud"><ellipse cx="150" cy="90" rx="110" ry="38" fill={night ? '#22304f' : '#ffffff'} opacity="0.85" /></g>
-      <g className="art-cloud slow"><ellipse cx="300" cy="150" rx="120" ry="36" fill={night ? '#2b3c60' : '#f2f7fc'} opacity="0.7" /></g>
-      <g className="art-cloud"><ellipse cx="90" cy="200" rx="90" ry="26" fill={night ? '#1a2540' : '#e6eef7'} opacity="0.6" /></g>
+      <g className="art-cloud"><ellipse cx="150" cy="90" rx="110" ry="38" fill={night ? '#3A3430' : '#ffffff'} opacity="0.85" /></g>
+      <g className="art-cloud slow"><ellipse cx="300" cy="150" rx="120" ry="36" fill={night ? '#4A423B' : '#F8F1E2'} opacity="0.7" /></g>
+      <g className="art-cloud"><ellipse cx="90" cy="200" rx="90" ry="26" fill={night ? '#2E2A26' : '#F1E8D6'} opacity="0.6" /></g>
     </svg>
   );
 }
@@ -330,7 +331,6 @@ const NAV = [
   ['home', 'navHome', I.home],
   ['alerts', 'navAlerts', I.bell],
   ['advice', 'navAdvice', I.spark],
-  ['chat', 'navChat', I.chat],
   ['more', 'navMore', I.dots],
 ];
 export function BottomNav({ view, onNav }) {
@@ -399,7 +399,7 @@ function MiniArt({ condition }) {
   const kind = conditionKind(condition);
   const map = { clear: I.sun, rain: I.rain, storm: I.bolt, cloudy: I.cloud, fog: I.fog, snow: I.snow };
   const Icon = map[kind] || I.sun;
-  const color = { clear: '#ffd968', rain: '#7cc4f2', storm: '#fde047', cloudy: '#c8d6e8', fog: '#aeb9c9', snow: '#eaf4ff' }[kind];
+  const color = { clear: '#ffd968', rain: '#A8A29E', storm: '#fde047', cloudy: '#D6CFC0', fog: '#C9C0B2', snow: '#FFF7EA' }[kind];
   return <Icon style={{ color }} />;
 }
 

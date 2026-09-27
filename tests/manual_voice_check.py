@@ -36,7 +36,7 @@ print(f"TTS OK: {len(audio)} bytes -> {wav_path}")
 r2 = httpx.post(
     "https://api.sarvam.ai/speech-to-text",
     headers=H,
-    data={"model": "saarika:v2.5", "language_code": "en-IN"},
+    data={"model": "saaras:v3", "language_code": "en-IN"},
     files={"file": ("check.wav", open(wav_path, "rb"), "audio/wav")},
     timeout=60,
 )

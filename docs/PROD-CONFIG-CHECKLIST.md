@@ -12,7 +12,7 @@ the Render dashboard (all `sync:false`, never committed).
 
 | # | Key | Where | What it does | Default if unset | Set? |
 |---|-----|-------|--------------|------------------|------|
-| 1 | `SARVAM_API_KEY` | backend (Render) | Sarvam STT+TTS. `/api/voice/status` reports `sarvam-live` ONLY when this is set, else honest `browser-fallback`. STT model `saarika:v2.5`, TTS `bulbul:v3`, speaker `priya` | unset → browser fallback | ☐ |
+| 1 | `SARVAM_API_KEY` | backend (Render) | Sarvam STT+TTS. `/api/voice/status` reports `sarvam-live` ONLY when this is set, else honest `browser-fallback`. STT model `saaras:v3`, TTS `bulbul:v3`, speaker `priya` | unset → browser fallback | ☐ |
 | 2 | `LLM_API_KEY` | backend (Render) | Groq key. LLM stays a phrase/translate-only layer; without it chat runs on the grounded rule-based fallback | unset → fallback | ☐ |
 | 3 | `LLM_MODEL` | backend (Render) | Model id. Code-validated against Groq's table; **must be `openai/gpt-oss-120b`** (default) | `openai/gpt-oss-120b` | ☐ |
 | 4 | `CAP_FEED_URL` | backend (Render) | Official alerts feed (NDMA-SACHET / IMD CAP). Empty → CAP reports UNCONFIGURED honestly | unset → unconfigured | ☐ |

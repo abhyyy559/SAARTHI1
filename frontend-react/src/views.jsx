@@ -3,94 +3,318 @@ import { useState, useEffect, useRef } from 'react';
 import { api, HYD } from './api.js';
 import { t, tp, useLang } from './i18n.jsx';
 import { useApi, useLocalStorage, useNow } from './hooks.js';
-import { agoParts, fmtWind, collectAlerts, sourceGroup, sourceDisplayName } from './lib.js';
+import { agoParts, collectAlerts } from './lib.js';
 import {
-  I, SkyHero, GlassStat, SevBadge, StatusPill, ProofLine, Skeleton,
-  SectionHead, EmptyState, RoleGrid, ForecastRail, AlertCard, toast,
+  I, SevBadge, StatusPill, ProofLine, Skeleton,
+  SectionHead, EmptyState, RoleGrid, AlertCard, toast,
 } from './components.jsx';
 
-/* ================= HOME ================= */
+/* ================= HOME — SAARTHI conversational agent ================= */
 export function HomeView({ loc, go }) {
   const { lang } = useLang();
-  const now = useNow();
-  void now;
+  const [role] = useLocalStorage('saarthi:role', 'general');
+  // Starter questions follow the user's profile (farmer, fisherman, …);
+  // unknown values fall back to the general set.
+  const chipRole = ['general', 'farmer', 'driver', 'fisherman', 'aviation', 'commuter', 'office'].includes(role) ? role : 'general';
   const wx = useApi(() => api.current(loc.lat, loc.lon, { lang }), [loc.lat, loc.lon, lang]);
   const warn = useApi(() => api.warnings(loc.district || 'Hyderabad', loc.lat, loc.lon), [loc.district, loc.lat, loc.lon]);
-  const fc = useApi(() => api.forecast(loc.lat, loc.lon), [loc.lat, loc.lon]);
-  const src = useApi(() => api.sources(), []);
+  const voice = useApi(() => api.voiceStatus().catch(() => null), []);
 
-  const cur = wx.data?.current;
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState('idle'); // idle | recording | transcribing
+  const [listening, setListening] = useState(false); // browser SpeechRecognition active
+  const recRef = useRef(null);
+  const mediaRef = useRef(null);
+  const audioRef = useRef(null);
+  const bottomRef = useRef(null);
+  const briefSeeded = useRef(false);
+
   const locName = wx.data?.location?.city || loc.city || loc.district;
+  const briefReady = !wx.loading && !warn.loading;
+  const brief = briefReady ? agentBrief(wx.data, warn.data, locName) : null;
+
+  // The agent opens the conversation itself, with live data — not a static greeting.
+  useEffect(() => {
+    if (brief && !briefSeeded.current) {
+      briefSeeded.current = true;
+      setMsgs([{ role: 'bot', text: brief, brief: true }]);
+    }
+  }, [brief]);
+  // New location, new conversation.
+  useEffect(() => {
+    briefSeeded.current = false;
+    setMsgs([]);
+  }, [loc.lat, loc.lon]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [msgs, busy]);
+
+  const sttLive = voice.data?.stt === 'sarvam-live';
+  const userSaidSomething = msgs.some((m) => m.role === 'user');
+  const push = (m) => setMsgs((xs) => [...xs, m]);
+
+  async function send(text) {
+    const q = (text ?? input).trim();
+    if (!q || busy) return;
+    stopSpeak();
+    setInput('');
+    push({ role: 'user', text: q });
+    setBusy(true);
+    // Backend ChatRequest speaks latitude/longitude — sending lat/lon would be
+    // silently dropped by Pydantic and every user would get Hyderabad's weather.
+    const body = { message: q, latitude: loc.lat, longitude: loc.lon, district: loc.district, language: lang, user_type: role };
+    let evMeta = null;
+    try {
+      let got = false;
+      const botIdx = { i: -1 };
+      for await (const line of api.chatStream(body)) {
+        if (line.type === 'meta' && line.evidence) {
+          // Provenance for this turn; attached to the bot message on done.
+          evMeta = line.evidence;
+        } else if (line.type === 'token' && line.text) {
+          got = true;
+          if (botIdx.i === -1) {
+            setMsgs((xs) => { botIdx.i = xs.length; return [...xs, { role: 'bot', text: '' }]; });
+          }
+          const txt = line.text;
+          setMsgs((xs) => xs.map((m, i) => (i === botIdx.i ? { ...m, text: m.text + txt } : m)));
+        } else if (line.type === 'final' && line.answer) {
+          got = true;
+          const fin = line.answer;
+          setMsgs((xs) => {
+            if (botIdx.i === -1) return [...xs, { role: 'bot', text: fin, evidence: evMeta }];
+            return xs.map((m, i) => (i === botIdx.i ? { ...m, text: fin, evidence: evMeta || m.evidence } : m));
+          });
+        } else if (line.type === 'done' && botIdx.i !== -1 && evMeta) {
+          setMsgs((xs) => xs.map((m, i) => (i === botIdx.i && !m.evidence ? { ...m, evidence: evMeta } : m)));
+        }
+      }
+      if (!got) throw new Error('empty stream');
+    } catch {
+      try {
+        const r = await api.chat(body);
+        push({ role: 'bot', text: r.answer || t('chatErr'), evidence: r.evidence });
+      } catch {
+        push({ role: 'bot', text: t('chatErr') });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function stopRecording() {
+    try { mediaRef.current?.stop(); } catch { /* not recording */ }
+    mediaRef.current = null;
+    try { recRef.current?.stop(); } catch { /* not listening */ }
+    setPhase('idle');
+    setListening(false);
+  }
+
+  async function toggleMic() {
+    if (phase === 'recording' || listening) { stopRecording(); return; }
+    stopSpeak();
+    // Server-side STT (Sarvam) when live: record, then upload for transcription.
+    if (sttLive && navigator.mediaDevices?.getUserMedia && window.MediaRecorder) {
+      try {
+        setPhase('recording');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const rec = new MediaRecorder(stream);
+        const chunks = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = async () => {
+          stream.getTracks().forEach((tr) => tr.stop());
+          setPhase('transcribing');
+          try {
+            const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+            const r = await api.transcribe(blob, lang);
+            const txt = (r && r.text ? r.text : '').trim();
+            setPhase('idle');
+            if (txt) send(txt);
+            else toast(t('noMic'), 'warn');
+          } catch {
+            setPhase('idle');
+            toast(t('chatErr'), 'warn');
+          }
+        };
+        mediaRef.current = rec;
+        rec.start();
+        return;
+      } catch { setPhase('idle'); /* fall through to browser speech */ }
+    }
+    // Browser fallback: on-device speech recognition.
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast(t('noMic'), 'warn'); return; }
+    try {
+      const rec = new SR();
+      rec.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
+      rec.interimResults = false;
+      rec.onresult = (e) => {
+        const txt = e.results[0][0].transcript;
+        setListening(false);
+        if (txt) send(txt);
+      };
+      rec.onerror = () => setListening(false);
+      rec.onend = () => setListening(false);
+      recRef.current = rec;
+      rec.start();
+      setListening(true);
+    } catch { toast(t('noMic'), 'warn'); }
+  }
+
+  function browserSpeak(text) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
+      speechSynthesis.speak(u);
+    } catch { /* no TTS */ }
+  }
+
+  function stopSpeak() {
+    try { speechSynthesis.cancel(); } catch { /* no TTS */ }
+    try { audioRef.current?.pause(); } catch { /* no audio */ }
+    audioRef.current = null;
+  }
+
+  async function speak(text) {
+    stopSpeak();
+    try {
+      // Server-side TTS (Sarvam) when live; the backend answers honestly with
+      // client_speech when no provider is configured.
+      const r = await api.speak(text, lang);
+      if (r && r.audio_base64) {
+        const audio = new Audio(`data:${r.mime || 'audio/wav'};base64,${r.audio_base64}`);
+        audioRef.current = audio;
+        await audio.play();
+      } else {
+        browserSpeak((r && r.text) || text);
+      }
+    } catch {
+      browserSpeak(text);
+    }
+  }
+
+  const voiceLabel = sttLive ? t('voiceSarvam') : t('voiceBrowser');
 
   return (
-    <div className="page">
-      {wx.loading ? <Skeleton kind="hero" /> : wx.error ? (
-        <div className="card"><EmptyState icon={I.cloud} title={t('loadError')} action={<button className="btn primary" onClick={wx.reload}>{t('retry')}</button>} /></div>
-      ) : (
-        <SkyHero condition={cur?.condition} temp={cur?.temperature} observedAt={cur?.observed_at}
-          source={cur?.source} locationName={locName}>
-          <div className="sky-stats">
-            <GlassStat icon={I.wind} label={t('wind')} value={`${fmtWind(cur?.wind_speed)} ${t('windUnit')}`} />
-            <GlassStat icon={I.drop} label={t('humidity')} value={`${Math.round(cur?.humidity ?? 0)}%`} />
-            <GlassStat icon={I.umbrella} label={t('rainfall')} value={`${cur?.rainfall ?? 0} ${t('rainUnit')}`} />
-          </div>
-        </SkyHero>
-      )}
-
-      {/* Alert status with proof of check */}
+    <div className="page agent-page">
+      {/* Slim safety banner: proof-of-check stays above the fold. */}
       <section aria-label={t('alertCheck')}>
         {warn.loading ? <Skeleton /> : <AlertStatusCard data={warn.data} onOpen={() => go('alerts')} />}
       </section>
 
-      {/* Role brief teaser */}
-      {wx.data?.role_brief?.headline ? (
-        <button className="card pressable" onClick={() => go('advice')} style={{ textAlign: 'left', width: '100%' }}>
-          <span className="adv-kind">{t('forYou')}</span>
-          <h3 style={{ fontSize: 'var(--fs-h3)', fontWeight: 800, margin: '4px 0' }}>{wx.data.role_brief.headline}</h3>
-          <span className="link-btn" style={{ padding: 0 }}>{t('openAdvice')} <I.chevR /></span>
-        </button>
-      ) : null}
-
-      {/* Ask teaser */}
-      <section className="card" aria-label={t('askTitle')}>
-        <div className="alert-status">
-          <span className="as-icon info" style={{ background: 'var(--info-bg)', color: 'var(--info)' }}><I.chat /></span>
-          <div style={{ flex: 1 }}>
-            <h3>{t('askTitle')}</h3>
-            <p className="as-sub">{t('askSub')}</p>
-            <div style={{ marginTop: 10 }}>
-              <button className="btn primary" onClick={() => go('chat')}><I.mic />{t('askCta')}</button>
-            </div>
-          </div>
+      {/* The agent: identity first — the conversation is the product.
+          The weather report is not a headline here; it lives in the
+          conversation as SAARTHI's opening message below. */}
+      <section className="agent-hero" aria-label="SAARTHI">
+        <span className="agent-avatar big" aria-hidden="true"><I.chat /></span>
+        <div className="agent-id">
+          <h2>SAARTHI</h2>
+          <p className="agent-tag">{t('agentTagline')}</p>
+          <p className="agent-voice">{t('agentRole')} · {voiceLabel}</p>
+        </div>
+        <div className="agent-talk">
+          <button type="button" className="talk-btn mic" onClick={toggleMic}
+            aria-label={phase === 'recording' || listening ? t('micStop') : t('micStart')}
+            data-active={phase === 'recording' || listening}>
+            <I.mic />
+          </button>
+          {brief ? (
+            <button type="button" className="talk-btn" onClick={() => speak(brief)} aria-label={t('listen')}>
+              <I.speaker />
+            </button>
+          ) : null}
         </div>
       </section>
 
-      {/* Forecast */}
-      <section aria-label={t('forecast')}>
-        <SectionHead title={t('forecast')} />
-        {fc.loading ? <Skeleton /> : fc.error ? (
-          <div className="card"><EmptyState icon={I.cloud} title={t('loadError')} action={<button className="btn ghost" onClick={fc.reload}>{t('retry')}</button>} /></div>
-        ) : <ForecastRail days={fc.data?.forecast?.days || fc.data?.days} lang={lang} />}
-      </section>
+      {/* Starters until the user speaks up — shaped by their profile. */}
+      {!userSaidSomething ? (
+        <div className="chips" role="group" aria-label={t('askTitle')}>
+          {[1, 2, 3].map((i) => {
+            const c = t(`chip_${chipRole}_${i}`);
+            return (
+              <button key={c} type="button" className="chip" onClick={() => send(c)} disabled={busy || !briefReady}>
+                {c}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
-      {/* Collapsed source strip */}
-      <section aria-label={t('sources')}>
-        {src.loading ? <Skeleton /> : src.data ? (
-          <button className="card pressable" onClick={() => go('trust')} style={{ width: '100%', textAlign: 'left' }}>
-            <div className="alert-status">
-              <span className="as-icon muted"><I.db /></span>
-              <div style={{ flex: 1 }}>
-                <h3>{t('sources')}</h3>
-                <p className="as-sub">{tp('sourcesLive', { n: liveCount(src.data.sources), m: (src.data.sources || []).length })}</p>
-                <p className="as-sub" style={{ marginTop: 2 }}>{t('imdFirst')}</p>
-              </div>
-              <I.chevR style={{ color: 'var(--ink3)', flex: 'none', alignSelf: 'center' }} />
-            </div>
-          </button>
-        ) : null}
-      </section>
+      {/* The conversation. */}
+      <div className="chat-log" aria-live="polite">
+        {msgs.map((m, i) => (
+          <div key={i} className={`msg ${m.role}`}>
+            {m.text}
+            {m.role === 'bot' && m.text ? (
+              <span className="m-ev">
+                <button type="button" className="link-btn" onClick={() => speak(m.text)} aria-label={t('listen')}>
+                  <I.speaker />{t('listen')}
+                </button>
+                {m.evidence && m.evidence.length ? (
+                  <span className="m-src">{m.evidence.map((e) => e.source).filter(Boolean).join(' · ')}</span>
+                ) : null}
+              </span>
+            ) : null}
+          </div>
+        ))}
+        {busy ? <div className="msg bot"><span className="typing"><i /><i /><i /></span></div> : null}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Composer, pinned above the dock. */}
+      <form className="composer" onSubmit={(e) => { e.preventDefault(); send(); }}>
+        <button type="button" className="icon-btn" onClick={toggleMic}
+          aria-label={phase === 'recording' || listening ? t('micStop') : t('micStart')}
+          style={phase === 'recording' || listening ? { background: 'var(--bad)', borderColor: 'var(--bad)' } : null}>
+          <I.mic />
+        </button>
+        <input name="message" value={input} onChange={(e) => setInput(e.target.value)}
+          placeholder={phase === 'recording' ? t('recording') : phase === 'transcribing' ? t('transcribing') : t('ph')}
+          aria-label={t('ph')} autoComplete="off" maxLength={500}
+          disabled={phase === 'recording' || phase === 'transcribing'} />
+        <button type="submit" className="send-btn" disabled={busy || !input.trim()} aria-label={t('chatSend')}>
+          <I.send />
+        </button>
+      </form>
     </div>
   );
+}
+
+/** The agent's opening brief: today's weather + warning state, in one breath. */
+function agentBrief(wxData, warnData, locName) {
+  const cur = wxData?.current;
+  const parts = [];
+  if (cur && cur.temperature != null) {
+    parts.push(tp('briefNow', {
+      temp: Math.round(cur.temperature),
+      cond: String(cur.condition || '').toLowerCase(),
+      loc: locName,
+    }));
+  } else {
+    parts.push(t('briefNoData'));
+  }
+  const alerts = collectAlerts(warnData);
+  const active = alerts.filter((a) => a.active);
+  const unavailable = warnData?.status === 'unavailable' || warnData?.provenance === 'UNAVAILABLE';
+  if (active.length > 0) {
+    // A warning for a neighbouring district is context, not this district's
+    // warning — say "nearby", never "active", for those.
+    const direct = active.find((a) => !a.nearby);
+    const top = direct || active[0];
+    parts.push(tp(direct ? 'briefWarnActive' : 'briefWarnNearby', {
+      sev: String(top.severity || '').toLowerCase(),
+      hazard: top.hazard || top.title || '',
+    }));
+  } else if (unavailable) {
+    parts.push(t('briefWarnUnknown'));
+  } else {
+    parts.push(t('briefWarnClear'));
+  }
+  return parts.join(' ');
 }
 
 function liveCount(sources) {
@@ -353,127 +577,6 @@ function Ago({ at }) {
   }
   if (parts.key === 'justNow') return <span>{t('updatedJustNow')}</span>;
   return <span>{tp('updatedAgo', { t: tp(parts.key, parts.params) })}</span>;
-}
-
-/* ================= CHAT ================= */
-export function ChatView({ loc }) {
-  const { lang } = useLang();
-  const [role] = useLocalStorage('saarthi:role', 'general');
-  const [msgs, setMsgs] = useState([{ role: 'bot', text: t('greeting') }]);
-  const [input, setInput] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [listening, setListening] = useState(false);
-  const recRef = useRef(null);
-  const bottomRef = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [msgs]);
-
-  const push = (m) => setMsgs((xs) => [...xs, m]);
-
-  async function send(text) {
-    const q = (text ?? input).trim();
-    if (!q || busy) return;
-    setInput('');
-    push({ role: 'user', text: q });
-    setBusy(true);
-    const body = { message: q, lat: loc.lat, lon: loc.lon, district: loc.district, language: lang, user_type: role };
-    // Try streaming first, fall back to plain POST.
-    try {
-      let got = false;
-      const botIdx = { i: -1 };
-      for await (const line of api.chatStream(body)) {
-        if (line.type === 'token' && line.text) {
-          got = true;
-          if (botIdx.i === -1) {
-            setMsgs((xs) => { botIdx.i = xs.length; return [...xs, { role: 'bot', text: '' }]; });
-          }
-          const txt = line.text;
-          setMsgs((xs) => xs.map((m, i) => (i === botIdx.i ? { ...m, text: m.text + txt } : m)));
-        } else if (line.type === 'final' && line.answer) {
-          got = true;
-          const fin = line.answer;
-          setMsgs((xs) => {
-            if (botIdx.i === -1) return [...xs, { role: 'bot', text: fin, evidence: line.evidence }];
-            return xs.map((m, i) => (i === botIdx.i ? { ...m, text: fin, evidence: line.evidence } : m));
-          });
-        }
-      }
-      if (!got) throw new Error('empty stream');
-    } catch {
-      try {
-        const r = await api.chat(body);
-        push({ role: 'bot', text: r.answer || t('chatErr'), evidence: r.evidence });
-      } catch {
-        push({ role: 'bot', text: t('chatErr') });
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function toggleMic() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { toast(t('noMic'), 'warn'); return; }
-    if (listening) { recRef.current?.stop(); setListening(false); return; }
-    try {
-      const rec = new SR();
-      rec.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
-      rec.interimResults = false;
-      rec.onresult = (e) => {
-        const txt = e.results[0][0].transcript;
-        setListening(false);
-        if (txt) send(txt);
-      };
-      rec.onerror = () => setListening(false);
-      rec.onend = () => setListening(false);
-      recRef.current = rec;
-      rec.start();
-      setListening(true);
-    } catch { toast(t('noMic'), 'warn'); }
-  }
-
-  function speak(text) {
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
-      speechSynthesis.speak(u);
-    } catch { /* no TTS */ }
-  }
-
-  return (
-    <div className="page">
-      <div className="view-head"><h1>{t('chatTitle')}</h1><p>{t('voiceFallback')}</p></div>
-      <div className="chat-log" aria-live="polite">
-        {msgs.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
-            {m.text}
-            {m.role === 'bot' && m.text ? (
-              <span className="m-ev">
-                <button className="link-btn" onClick={() => speak(m.text)} aria-label={t('listen')}><I.mic />{t('listen')}</button>
-              </span>
-            ) : null}
-          </div>
-        ))}
-        {busy ? <div className="msg bot"><span className="typing"><i /><i /><i /></span></div> : null}
-        <div ref={bottomRef} />
-      </div>
-      <form className="composer" onSubmit={(e) => { e.preventDefault(); send(); }}>
-        <button type="button" className="icon-btn" onClick={toggleMic}
-          aria-label={listening ? t('micStop') : t('micStart')}
-          style={listening ? { background: 'var(--bad)', borderColor: 'var(--bad)' } : null}>
-          <I.mic />
-        </button>
-        <input name="message" value={input} onChange={(e) => setInput(e.target.value)}
-          placeholder={t('ph')} aria-label={t('ph')} autoComplete="off" maxLength={500} />
-        <button type="submit" className="send-btn" disabled={busy || !input.trim()} aria-label={t('chatSend')}>
-          <I.send />
-        </button>
-      </form>
-    </div>
-  );
 }
 
 /* ================= MORE ================= */

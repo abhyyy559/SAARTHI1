@@ -22,47 +22,60 @@ REDIS_URL = _get("REDIS_URL", "")
 STT_API_KEY = _get("STT_API_KEY", "")
 TTS_API_KEY = _get("TTS_API_KEY", "")
 
-IMD_BASE_URL = _get("IMD_BASE_URL", "https://mausam.imd.gov.in/api/v1").rstrip("/")
+IMD_BASE_URL = _get("IMD_BASE_URL", "https://api.imd.gov.in/api/v1").rstrip("/")
 
-# IMD endpoint paths, one env var each.
-#
-# These are the ONLY unverified part of the IMD integration: the auth header
-# (`Authorization: Bearer <IMD_API_KEY>`) and the request/response handling are
-# exercised and working, but nobody has seen IMD's real path list yet — the
-# platform is credential-gated. They are therefore configurable so that when the
-# key arrives and a path differs, the fix is a .env line rather than a code edit.
-# Verified behaviour today: with a key set, a real request goes out to
-# {IMD_BASE_URL}/{path} and a bad key returns 400/401 — i.e. the wiring is
-# complete and only the paths are provisional.
+# IMD endpoint paths — VERIFIED 2026-09-27 against IMD's logged-in API docs
+# (api.imd.gov.in/public/api_docs.php). Every endpoint takes ONE query
+# parameter: `id`, an IMD numeric station/district ID (not a name, not lat/lon).
 IMD_PATH_CURRENT = _get("IMD_PATH_CURRENT", "current_wx")
 IMD_PATH_FORECAST = _get("IMD_PATH_FORECAST", "cityforecastloc")
 IMD_PATH_WARNING = _get("IMD_PATH_WARNING", "districtwarning")
-IMD_PATH_NOWCAST = _get("IMD_PATH_NOWCAST", "districtnowcast")
+IMD_PATH_NOWCAST = _get("IMD_PATH_NOWCAST", "nowcast")
 
-# IMD request tuning — all env-driven so key day needs no code edit.
-# Auth scheme IMD never documented publicly: "bearer" (default) sends
-# `Authorization: Bearer <key>`; "header" sends the key under IMD_AUTH_HEADER
-# verbatim; "query" appends it as the IMD_AUTH_PARAM query parameter.
-IMD_AUTH_SCHEME = _get("IMD_AUTH_SCHEME", "bearer").strip().lower()
-IMD_AUTH_HEADER = _get("IMD_AUTH_HEADER", "Authorization")
-IMD_AUTH_PARAM = _get("IMD_AUTH_PARAM", "api_key")
+# IMD auth — VERIFIED 2026-09-27 against IMD's logged-in API docs. Every API
+# call sends BOTH headers:
+#   X-API-KEY: <IMD_API_KEY>        (bound to the server IP on the portal)
+#   Authorization: Bearer <JWT>     (portal-user identity, expires after 1h)
+# The JWT is minted by POSTing the portal email+password to IMD_TOKEN_URL and
+# is cached in memory until shortly before expiry; it must belong to the same
+# portal user as the API key. Earlier guesses (Bearer <API key> alone,
+# query-param key) were wrong and have been removed.
+IMD_TOKEN_URL = _get("IMD_TOKEN_URL", "https://api.imd.gov.in/api/oauth/token.php")
+IMD_API_EMAIL = _get("IMD_API_EMAIL", "")
+IMD_API_PASSWORD = _get("IMD_API_PASSWORD", "")
 IMD_TIMEOUT = float(_get("IMD_TIMEOUT", "10") or 10)
-# Station/city the live current/forecast calls ask for when the caller passes
-# no district (the /api/weather live paths only have lat/lon). Callers that
-# know the district pass it and it wins over this default.
-IMD_DEFAULT_STATION = _get("IMD_DEFAULT_STATION", "Hyderabad")
 
-# IMD response field names are as provisional as the paths — the fixtures use
-# our assumed schema ("temp", "humidity", ...). IMD_FIELD_MAP is a JSON object
-# mapping our normalized name -> the provider's actual name, applied in the
-# live branches only, e.g. '{"temp": "temperature_c", "windspeed": "wind_kph"}'.
-# Unknown on key day: set the key, hit one endpoint, read the real names, and
-# paste the map here. Demo fixtures keep the assumed schema untouched.
-_IMD_FIELD_MAP_RAW = _get("IMD_FIELD_MAP", "").strip()
+# District used by the live current/forecast calls when the caller passes no
+# district (the /api/weather live paths only have lat/lon). Callers that know
+# the district pass it and it wins over this default.
+IMD_DEFAULT_DISTRICT = _get("IMD_DEFAULT_DISTRICT", "Hyderabad")
+
+# IMD station/district ID resolution. The API wants numeric IDs (?id=...); it
+# does not accept names or coordinates. IMD_STATION_IDS is a JSON object
+# mapping district/city name -> {"current": "<station id>",
+# "forecast": "<station code>", "warning": "<district id>",
+# "nowcast": "<district id>"}. It is a MANUAL OVERRIDE — the primary
+# mechanism is the mapping tables below, which resolve ANY Indian location.
+# Use the override to pin a wrong auto-match without touching code.
+_IMD_STATION_IDS_RAW = _get("IMD_STATION_IDS", "").strip()
 try:
-    IMD_FIELD_MAP: dict = json.loads(_IMD_FIELD_MAP_RAW) if _IMD_FIELD_MAP_RAW else {}
+    IMD_STATION_IDS: dict = json.loads(_IMD_STATION_IDS_RAW) if _IMD_STATION_IDS_RAW else {}
 except (json.JSONDecodeError, ValueError):
-    IMD_FIELD_MAP = {}
+    IMD_STATION_IDS = {}
+
+# IMD mapping tables — how any Indian lat/lng resolves to IMD numeric IDs.
+# Fetched once with the dual-header auth (same as other calls) and cached on
+# disk at backend/data/imd_mapping_cache.json for IMD_MAPPING_TTL_S seconds.
+#
+# The endpoint names below are BEST-EFFORT GUESSES following IMD's naming
+# (current_wx, districtwarning, ...) — the API docs sit behind the portal
+# login, so they are NOT verified. A wrong name fails closed: the fetch 404s
+# and resolution falls back to Open-Meteo with the tried URL in the message.
+# Copy the exact endpoint names from
+# https://api.imd.gov.in/public/api_docs.php into these two vars to confirm.
+IMD_PATH_STATION_MAPPING = _get("IMD_PATH_STATION_MAPPING", "stationmapping")
+IMD_PATH_DISTRICT_MAPPING = _get("IMD_PATH_DISTRICT_MAPPING", "districtmapping")
+IMD_MAPPING_TTL_S = int(_get("IMD_MAPPING_TTL_S", "604800") or 604800)
 
 # --- Web Push (background notifications) ------------------------------------
 # A VAPID pair identifies this server to the browser push services. Left unset,
@@ -98,8 +111,15 @@ DATAGOV_RESOURCE_ID = _get("DATAGOV_RESOURCE_ID", "")
 CAP_FEED_URL = _get("CAP_FEED_URL", "")
 # Extra SACHET state feeds, comma-separated. A fisherman in Visakhapatnam is
 # covered by the Andhra feed, not the Telangana one — one feed is not enough.
+# Default: the official public SACHET CAP feeds (no key needed), so alerts
+# work out of the box on any fresh deploy; override via env when needed.
+_SACHET_DEFAULT_FEEDS = [
+    "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
+    "https://sachet.ndma.gov.in/cap_public_website/rss/rss_telangana.xml",
+    "https://sachet.ndma.gov.in/cap_public_website/rss/rss_andhra.xml",
+]
 CAP_FEED_URLS = [u.strip() for u in _get("CAP_FEED_URLS", "").split(",") if u.strip()] or (
-    [CAP_FEED_URL] if CAP_FEED_URL else []
+    [CAP_FEED_URL] if CAP_FEED_URL else list(_SACHET_DEFAULT_FEEDS)
 )
 # Multi-source alert chain (adapters/alert_sources.py)
 WEATHERAPI_KEY = _get("WEATHERAPI_KEY", "")   # free key, weatherapi.com
@@ -113,7 +133,7 @@ WIS2_TOPICS = _get("WIS2_TOPICS", "origin/a/wis2/#")
 
 SARVAM_API_KEY = _get("SARVAM_API_KEY", "")
 SARVAM_STT_URL = _get("SARVAM_STT_URL", "https://api.sarvam.ai/speech-to-text")
-SARVAM_STT_MODEL = _get("SARVAM_STT_MODEL", "saarika:v2.5")
+SARVAM_STT_MODEL = _get("SARVAM_STT_MODEL", "saaras:v3")
 SARVAM_TTS_URL = _get("SARVAM_TTS_URL", "https://api.sarvam.ai/text-to-speech")
 SARVAM_TTS_MODEL = _get("SARVAM_TTS_MODEL", "bulbul:v3")
 SARVAM_TTS_SPEAKER = _get("SARVAM_TTS_SPEAKER", "priya")

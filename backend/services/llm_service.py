@@ -12,7 +12,9 @@ import httpx
 from .. import config
 
 SYSTEM_RULES = (
-    "You are the conversational intelligence layer of WeatherGPT.\n"
+    "You are SAARTHI, the conversational weather intelligence of this app.\n"
+    "Talk to the user directly, warmly and plainly, like a knowledgeable neighbour —\n"
+    "never like a bulletin or a report. Short sentences. No jargon.\n"
     "State ONLY facts that appear in the VERIFIED BACKEND DATA given in the user message.\n"
     "Do not invent weather observations, forecasts or warnings.\n"
     "Do not create emergency warnings.\n"
@@ -24,7 +26,7 @@ SYSTEM_RULES = (
     "service is unreachable or its status is 'unavailable', you must say that warnings\n"
     "could not be checked and that the user should confirm with IMD or local\n"
     "authorities. Silence from a broken service is not an all-clear.\n"
-    "Always distinguish between official meteorological information and WeatherGPT interpretation.\n"
+    "Always distinguish between official meteorological information and SAARTHI's own interpretation.\n"
     "If information is unavailable, stale or incomplete, say so plainly.\n"
     "Lead with the safety picture: the warning status and any hazard. Never open the\n"
     "answer with temperature, and never let temperature be the most prominent number.\n"
@@ -129,7 +131,7 @@ _TEMPLATE_PHRASES = {
         "rain_no": "The {src} forecast shows no significant rainfall expected tomorrow.",
         "rain_na": "Tomorrow's forecast rainfall information is not available from the current data.",
         "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C.",
-        "risk": "WeatherGPT Risk Interpretation for you ({user_type}): {risk}.",
+        "risk": "SAARTHI risk read for you ({user_type}): {risk}.",
         "risk_note": "This is our interpretation, not an IMD rating.",
         "advisory_note": "For safety guidance, check the Advisory tab in the app.",
     },
@@ -143,7 +145,7 @@ _TEMPLATE_PHRASES = {
         "rain_no": "{src} पूर्वानुमान के अनुसार कल कोई खास बारिश की उम्मीद नहीं है।",
         "rain_na": "कल की वर्षा की जानकारी वर्तमान आंकड़ों में उपलब्ध नहीं है।",
         "temp": "कल का तापमान: {tmin}–{tmax}°C।",
-        "risk": "आपके लिए WeatherGPT जोखिम व्याख्या ({user_type}): {risk}।",
+        "risk": "आपके लिए SAARTHI जोखिम आकलन ({user_type}): {risk}।",
         "risk_note": "यह हमारी व्याख्या है, IMD की रेटिंग नहीं।",
         "advisory_note": "सुरक्षा सलाह के लिए ऐप में Advisory टैब देखें।",
     },
@@ -157,7 +159,7 @@ _TEMPLATE_PHRASES = {
         "rain_no": "{src} అంచనా ప్రకారం రేపు గణనీయమైన వర్షం అంచనా లేదు.",
         "rain_na": "రేపటి వర్షపాత సమాచారం ప్రస్తుత డేటాలో అందుబాటులో లేదు.",
         "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C.",
-        "risk": "మీ కోసం WeatherGPT ప్రమాద వివరణ ({user_type}): {risk}.",
+        "risk": "మీ కోసం SAARTHI ప్రమాద అంచనా ({user_type}): {risk}.",
         "risk_note": "ఇది మా వివరణ, IMD రేటింగ్ కాదు.",
         "advisory_note": "భద్రతా మార్గదర్శనం కోసం యాప్‌లోని Advisory ట్యాబ్ చూడండి.",
     },
@@ -270,9 +272,13 @@ class LLMService:
                             {"role": "user", "content": user},
                         ],
                         "temperature": 0.2,
-                        # ~240 tokens is a comfortable ceiling for a 120-word
-                        # answer plus headings; 400 invited padding.
-                        "max_tokens": 240,
+                        # gpt-oss is a reasoning model: it spends part of
+                        # max_tokens on hidden reasoning, so 240 risked a
+                        # truncated answer. 400 leaves headroom; the 120-word
+                        # system rule still caps the visible answer.
+                        # reasoning_effort=low cuts time-to-first-token.
+                        "max_tokens": 400,
+                        "reasoning_effort": "low",
                     },
                 )
                 resp.raise_for_status()
@@ -329,7 +335,8 @@ class LLMService:
                 {"role": "user", "content": user},
             ],
             "temperature": 0.2,
-            "max_tokens": 240,
+            "max_tokens": 400,
+            "reasoning_effort": "low",
             "stream": True,
         }
         sent_any = False

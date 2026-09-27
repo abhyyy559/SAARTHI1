@@ -60,7 +60,7 @@ for TLS. No key needed — this is just deployment config.
 | Item | Resolution |
 |---|---|
 | LLM never actually used | Fixed. Real calls now go to Groq. Your key was tested live — note Groq **retired `llama-3.3-70b`**; the app now uses **`qwen/qwen3.8-27b`** (tested OK with your key). Override anytime via `LLM_MODEL` in `.env` |
-| Sarvam STT/TTS not used by the site | Fixed. Mic audio is now uploaded to the server endpoint (Sarvam `saarika:v2.5`), answers auto-speak via Sarvam `bulbul:v3` in your selected language. Round-trip verified: TTS→STT returned the exact test sentence |
+| Sarvam STT/TTS not used by the site | Fixed. Mic audio is now uploaded to the server endpoint (Sarvam `saaras:v3`), answers auto-speak via Sarvam `bulbul:v3` in your selected language. Round-trip verified: TTS→STT returned the exact test sentence |
 | Language switch (EN/HI/TE) | Enforced server-side now — the LLM must answer in the selected language (verified in tests below) |
 | Persona not affecting advisor | Fixed — fisherman/farmer/etc. now change the advisory text (and chat advice), with Telugu/Hindi versions |
 | Dummy/duplicate alerts | Demo fixture path removed from the live pipeline; local stores cleaned; alerts page now shows only what real sources return |

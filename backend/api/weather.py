@@ -76,14 +76,15 @@ def _services():
 def _imd_keyed() -> bool:
     """True when an IMD API key is configured.
 
-    IMD without a key always fails closed — but only after a ~2s doomed
-    network round trip. Every weather/warning endpoint tries IMD first, so
-    an unkeyed deployment pays that penalty on every call before falling
-    back to Open-Meteo. Callers skip the attempt when this is False and go
-    straight to the fallback chain: identical outcome, ~2s faster per call,
-    which is what keeps the Home screen inside the app's fetch timeout.
-    (The teammate-owned imd_service.py is untouched; this is a caller-side
-    short-circuit, not a behavior change.)
+    IMD without a key always fails closed. Every weather/warning endpoint
+    tries IMD first, so an unkeyed deployment would pay a doomed network
+    round trip on every call before falling back to Open-Meteo. Callers skip
+    the attempt when this is False and go straight to the fallback chain:
+    identical outcome, ~2s faster per call, which is what keeps the Home
+    screen inside the app's fetch timeout. (Caller-side short-circuit, not a
+    behavior change. Note: the key alone is not enough — the service also
+    needs IMD_API_EMAIL/IMD_API_PASSWORD to mint its JWT, and fails fast
+    with no network round trip when they are missing.)
     """
     return bool(config.IMD_API_KEY)
 

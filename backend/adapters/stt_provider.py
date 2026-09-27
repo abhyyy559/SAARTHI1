@@ -1,23 +1,23 @@
 """STT provider — Sarvam-compatible HTTP with honest browser fallback.
 
 Env: SARVAM_API_KEY, SARVAM_STT_URL (default https://api.sarvam.ai/speech-to-text),
-SARVAM_STT_MODEL (default saarika:v2.5), SARVAM_STT_WS_URL (optional override for
-the streaming endpoint; derived from SARVAM_STT_URL when unset). Without a key
+SARVAM_STT_MODEL (default saaras:v3), SARVAM_STT_WS_URL (optional override for
+the streaming endpoint; derived from the API host when unset). Without a key
 the provider reports BROWSER_FALLBACK and the frontend uses Web Speech API —
 badge shows the truth.
 
 Two paths:
 - transcribe(): batch REST — record-then-upload, final transcript only.
-- open_stream(): WebSocket streaming (Sarvam speech-to-text/ws) — partial
-  transcripts arrive while the user is still speaking, which is what makes the
-  < 1 s first-interim budget reachable. The wire protocol below mirrors the
-  official sarvamai SDK (speech_to_text_streaming): connect
-  wss://<host>/speech-to-text/ws with query params language-code / model /
-  mode=transcribe / sample_rate=16000 / high_vad_sensitivity / flush_signal /
-  input_audio_codec=pcm_s16le and header Api-Subscription-Key; audio frames are
-  {"audio": {"data": "<base64>", "sample_rate": 16000, "encoding": "audio/wav"}};
-  flush is {"type": "flush"}; responses are {"type": "data"|"error"|"events",
-  "data": {"transcript": ..., "metrics": ...}}.
+- open_stream(): WebSocket streaming (Sarvam /speech-to-text-translate/streaming)
+  — partial transcripts arrive while the user is still speaking, which is what
+  makes the < 1 s first-interim budget reachable. The wire protocol below mirrors
+  the official sarvamai SDK (speech_to_text_streaming): connect
+  wss://<host>/speech-to-text-translate/streaming with query params language-code
+  / model / mode=transcribe / sample_rate=16000 / high_vad_sensitivity /
+  flush_signal / input_audio_codec=pcm_s16le and header Api-Subscription-Key;
+  audio frames are {"audio": {"data": "<base64>", "sample_rate": 16000,
+  "encoding": "audio/wav"}}; flush is {"type": "flush"}; responses are
+  {"type": "data"|"error"|"events", "data": {"transcript": ..., "metrics": ...}}.
 
   The WebSocket client is stdlib-only (asyncio + ssl) so no new dependency is
   needed. Latency tuning: high_vad_sensitivity=true makes end-of-speech fire
@@ -78,10 +78,11 @@ async def transcribe(audio_bytes: bytes, filename: str, language: str = "en-IN")
         raise AdapterUnavailable("browser-fallback")
     # Sarvam language codes: en-IN, hi-IN, te-IN, ...
     lang = {"en": "en-IN", "hi": "hi-IN", "te": "te-IN"}.get(language, "en-IN")
-    # Batch API latency audit (2026-09-21): the request carries only model +
-    # language_code. No diarization flag (defaults off — good, diarization adds
-    # seconds), no VAD/silence knobs exist on the batch endpoint, multipart is
-    # required by the API. saarika:v2.5 is Sarvam's current low-latency model.
+    # Batch API latency audit (2026-09-21, re-verified 2026-09-27): the request
+    # carries only model + language_code. No diarization flag (defaults off —
+    # good, diarization adds seconds), no VAD/silence knobs exist on the batch
+    # endpoint, multipart is required by the API. saaras:v3 is Sarvam's current
+    # recommended STT model (saarika:v2.5 is deprecated per docs.sarvam.ai).
     # The remaining lever is the streaming endpoint (open_stream below).
     try:
         resp = await _http().post(
@@ -250,9 +251,13 @@ def _stream_url() -> str:
     override = os.environ.get("SARVAM_STT_WS_URL")
     if override:
         return override
+    # Sarvam's streaming endpoint is /speech-to-text-translate/streaming on the
+    # same host (per the provider API audit; the old /speech-to-text/ws guess
+    # 404s). Derive the wss host from the batch URL's host, not its path.
     base = (config.SARVAM_STT_URL or "https://api.sarvam.ai/speech-to-text").rstrip("/")
-    ws_base = base.replace("https://", "wss://").replace("http://", "ws://")
-    return ws_base + "/ws"
+    host = base.split("://", 1)[-1].split("/", 1)[0]
+    scheme = "wss://" if base.startswith("https://") else "ws://"
+    return scheme + host + "/speech-to-text-translate/streaming"
 
 
 class SttStreamSession:

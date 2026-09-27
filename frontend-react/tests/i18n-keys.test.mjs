@@ -20,6 +20,9 @@ const DYNAMIC = {
     .map((r) => `role_${r}`),
   'role_${r}_d': ['general', 'farmer', 'driver', 'fisherman', 'aviation', 'commuter', 'office']
     .map((r) => `role_${r}_d`),
+  // Profile-shaped starter questions on the conversational home.
+  'chip_${r}_${i}': ['general', 'farmer', 'driver', 'fisherman', 'aviation', 'commuter', 'office']
+    .flatMap((r) => [1, 2, 3].map((i) => `chip_${r}_${i}`)),
 };
 
 function walk(dir, out = []) {
