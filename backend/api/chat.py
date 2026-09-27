@@ -1,7 +1,7 @@
 """Chat endpoint — full pipeline: parse -> resolve -> retrieve -> validate -> risk -> advisory -> LLM.
 
-Demo mode: IMD fixtures (DEMO). Live mode: Open-Meteo + IMD-live + CAP (provenance
-per fact). Both modes refuse to invent (§54/§59). Spec alias: POST /api/chat/query.
+Single IMD-first mode: IMD-live + Open-Meteo backfill + CAP (provenance per
+fact). The pipeline refuses to invent (§54/§59). Spec alias: POST /api/chat/query.
 Token streaming: POST /api/chat/stream (NDJSON: meta, token*, final?, done).
 """
 import asyncio
@@ -214,7 +214,10 @@ def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answe
         caveat=caveat_for(user_type, language),
         evidence=[
             {"source": e["source"], "type": e["type"], "issued_at": e.get("issued_at"),
-             "valid_until": e.get("valid_until"), "provenance": e.get("provenance", "DEMO")}
+             "valid_until": e.get("valid_until"),
+             # Honest default: an item with no recorded provenance is UNKNOWN,
+             # never DEMO (demo mode was removed; mislabeling erodes trust).
+             "provenance": e.get("provenance") or "UNKNOWN"}
             for e in provenance_map
         ],
         language=language,
@@ -459,7 +462,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
         # startup already shouted about it on stderr.
         model_error = str(exc)
-        answer, fallback = _template_answer(ctx["evidence"], ctx["language"]), True
+        answer, fallback = _template_answer(ctx["evidence"], ctx["language"], ctx["message"]), True
 
     # Post-LLM response validation (§10, §43): the gate before delivery.
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
@@ -530,7 +533,7 @@ async def chat_stream(req: ChatRequest):
         if truncated or not raw.strip():
             # The live answer broke mid-flight: substitute the grounded template,
             # flagged as fallback — never deliver a half answer as if complete.
-            raw = _template_answer(ctx["evidence"], ctx["language"])
+            raw = _template_answer(ctx["evidence"], ctx["language"], ctx["message"])
             fallback = True
         answer, validated_fallback = _finalize_answer(ctx, raw)
         fallback = fallback or validated_fallback

@@ -131,6 +131,7 @@ _TEMPLATE_PHRASES = {
         "rain_no": "The {src} forecast shows no significant rainfall expected tomorrow.",
         "rain_na": "Tomorrow's forecast rainfall information is not available from the current data.",
         "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C.",
+        "wind": "Wind in {loc} is currently {wind} km/h (source: {src}).",
         "risk": "SAARTHI risk read for you ({user_type}): {risk}.",
         "risk_note": "This is our interpretation, not an IMD rating.",
         "advisory_note": "For safety guidance, check the Advisory tab in the app.",
@@ -145,6 +146,7 @@ _TEMPLATE_PHRASES = {
         "rain_no": "{src} पूर्वानुमान के अनुसार कल कोई खास बारिश की उम्मीद नहीं है।",
         "rain_na": "कल की वर्षा की जानकारी वर्तमान आंकड़ों में उपलब्ध नहीं है।",
         "temp": "कल का तापमान: {tmin}–{tmax}°C।",
+        "wind": "{loc} में हवा की गति अभी {wind} किमी/घंटा है (स्रोत: {src})।",
         "risk": "आपके लिए SAARTHI जोखिम आकलन ({user_type}): {risk}।",
         "risk_note": "यह हमारी व्याख्या है, IMD की रेटिंग नहीं।",
         "advisory_note": "सुरक्षा सलाह के लिए ऐप में Advisory टैब देखें।",
@@ -159,6 +161,7 @@ _TEMPLATE_PHRASES = {
         "rain_no": "{src} అంచనా ప్రకారం రేపు గణనీయమైన వర్షం అంచనా లేదు.",
         "rain_na": "రేపటి వర్షపాత సమాచారం ప్రస్తుత డేటాలో అందుబాటులో లేదు.",
         "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C.",
+        "wind": "{loc}లో ప్రస్తుత గాలి వేగం {wind} కిమీ/గం (మూలం: {src}).",
         "risk": "మీ కోసం SAARTHI ప్రమాద అంచనా ({user_type}): {risk}.",
         "risk_note": "ఇది మా వివరణ, IMD రేటింగ్ కాదు.",
         "advisory_note": "భద్రతా మార్గదర్శనం కోసం యాప్‌లోని Advisory ట్యాబ్ చూడండి.",
@@ -170,7 +173,13 @@ def _phrases(language: str) -> dict:
     return _TEMPLATE_PHRASES.get(language, _TEMPLATE_PHRASES["en"])
 
 
-def _template_answer(evidence: dict, language: str = "en") -> str:
+# Words (en/hi/te) that mark a question as wind-related. The template answer is
+# only a fallback, but a user tapping the "wind" chip deserves an actual wind
+# reading instead of a generic summary.
+_WIND_WORDS = ("wind", "hawa", "हवा", "గాలి")
+
+
+def _template_answer(evidence: dict, language: str = "en", message: str = "") -> str:
     """Rule-based grounded answer. Used when the LLM is disabled or unreachable."""
     verified = evidence.get("verified_warning", {})
     forecast = evidence.get("forecast", {})
@@ -215,6 +224,14 @@ def _template_answer(evidence: dict, language: str = "en") -> str:
     if fc_min is not None and fc_max is not None:
         lines.append(P["temp"].format(tmin=fc_min, tmax=fc_max))
 
+    # Wind questions get the actual current wind reading (km/h per the adapter's
+    # Open-Meteo default). Never invent one — only append when the data exists.
+    if message and any(w in message.lower() for w in _WIND_WORDS):
+        cur = evidence.get("current_weather", {})
+        ws = cur.get("wind_speed")
+        if ws is not None:
+            lines.append(P["wind"].format(loc=loc, src=src, wind=ws))
+
     lines.append(P["risk"].format(user_type=user_type, risk=risk))
     lines.append(P["risk_note"])
     # Facts only on the chat surface: no advice here — guidance lives in the Advisory tab.
@@ -237,7 +254,7 @@ class LLMService:
         rule-based template — the user still gets a grounded answer.
         """
         if not self.enabled:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, language, question), True
 
         if not config.LLM_MODEL_KNOWN:
             # FAIL LOUD: a misconfigured model name used to degrade silently into the
@@ -284,11 +301,11 @@ class LLMService:
                 resp.raise_for_status()
                 content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
         except Exception:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, language, question), True
 
         content = _strip_think_blocks(content)
         if not content:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, language, question), True
         return content, False
 
     async def generate_stream(self, evidence: dict, question: str, language: str):
@@ -303,7 +320,7 @@ class LLMService:
         can never leak into the visible stream.
         """
         if not self.enabled:
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, language, question)}
             yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             return
         if not config.LLM_MODEL_KNOWN:
@@ -312,7 +329,7 @@ class LLMService:
                 "configured endpoint. Fix LLM_MODEL (default: 'openai/gpt-oss-120b') "
                 "or unset it to use the default."
             )
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, language, question)}
             yield {"type": "end", "fallback": True, "model_error": model_error, "truncated": False}
             return
 
@@ -401,13 +418,13 @@ class LLMService:
                         yield {"type": "token", "text": buf}
         except Exception:
             if not sent_any:
-                yield {"type": "token", "text": _template_answer(evidence, language)}
+                yield {"type": "token", "text": _template_answer(evidence, language, question)}
                 yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             else:
                 yield {"type": "end", "fallback": True, "model_error": "", "truncated": True}
             return
         if not sent_any:
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, language, question)}
             yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             return
         yield {"type": "end", "fallback": False, "model_error": "", "truncated": False}

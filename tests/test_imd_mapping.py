@@ -1,6 +1,6 @@
 """IMD any-location mapping tests — nearest-station, district lookup, caching.
 
-The network is faked by monkeypatching httpx.AsyncClient inside imd_mapping.
+The network is faked by monkeypatching make_client inside imd_mapping.
 No real IMD calls.
 """
 import asyncio
@@ -88,7 +88,8 @@ def resolver(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "IMD_STATION_IDS", {})
     monkeypatch.setattr(config, "IMD_DEFAULT_DISTRICT", "Hyderabad")
     monkeypatch.setattr(mapping_mod, "_CACHE_PATH", tmp_path / "cache.json")
-    monkeypatch.setattr(mapping_mod.httpx, "AsyncClient", ScriptedClient)
+    monkeypatch.setattr(mapping_mod, "make_client",
+                        lambda timeout=None: ScriptedClient())
     ScriptedClient.gets = []
     ScriptedClient.fetch_count = 0
     return IMDMappingResolver(get_jwt=fake_jwt)
@@ -173,7 +174,8 @@ def test_stale_cache_used_when_fetch_fails(resolver, tmp_path, monkeypatch):
         async def get(self, url, headers=None, **kwargs):
             raise httpx.ConnectError("nope")
 
-    monkeypatch.setattr(mapping_mod.httpx, "AsyncClient", BrokenClient)
+    monkeypatch.setattr(mapping_mod, "make_client",
+                        lambda timeout=None: BrokenClient())
     r2 = IMDMappingResolver(get_jwt=fake_jwt)
     asyncio.run(r2.ensure_loaded())  # must not raise
     assert r2.station_for(17.40, 78.50)["id"] == "42182"
@@ -185,3 +187,21 @@ def test_get_resolver_singleton():
         assert get_resolver(fake_jwt) is get_resolver(fake_jwt)
     finally:
         mapping_mod._resolver = None
+
+
+def test_mapping_uses_proxy_safe_client_factory(resolver, monkeypatch):
+    """Mapping-table fetches must go through the registry's proxy-safe
+    make_client, like every other adapter — a raw httpx.AsyncClient dies at
+    construction on hosts with malformed proxy env vars. Re-patching with a
+    spy proves the module calls make_client(timeout=...) itself."""
+    seen = {}
+
+    def spy(timeout=None):
+        seen["timeout"] = timeout
+        return ScriptedClient()
+
+    monkeypatch.setattr(mapping_mod, "make_client", spy)
+    ScriptedClient.gets = []
+    asyncio.run(resolver.ensure_loaded())
+    assert seen["timeout"] == config.IMD_TIMEOUT
+    assert any("stationmapping" in u for u in ScriptedClient.gets)

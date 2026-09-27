@@ -21,7 +21,7 @@ from typing import Optional
 import httpx
 
 from .. import config
-from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, report
+from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, make_client, report
 from ..models.weather import WeatherObservation, WeatherForecast, WeatherWarning
 from ..utils.time import IST, now_ist
 from . import district_demo
@@ -56,13 +56,6 @@ def _pick(raw: dict, *names):
         if value is not None:
             return value
     return None
-
-
-def _num(value) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
 
 
 def _num_or_none(value):
@@ -157,7 +150,10 @@ class IMDService:
             raise AdapterUnavailable(
                 "IMD JWT unavailable — set IMD_API_EMAIL and IMD_API_PASSWORD "
                 "(the api.imd.gov.in portal login)")
-        async with httpx.AsyncClient(timeout=config.IMD_TIMEOUT) as client:
+        # make_client: survives malformed proxy env vars (which make plain
+        # httpx.AsyncClient construction raise) — the same factory every
+        # other adapter uses.
+        async with make_client(timeout=config.IMD_TIMEOUT) as client:
             resp = await client.post(
                 config.IMD_TOKEN_URL,
                 json={"email": config.IMD_API_EMAIL,
@@ -204,7 +200,7 @@ class IMDService:
         async def _once(jwt: str) -> httpx.Response:
             headers = {"X-API-KEY": config.IMD_API_KEY,
                        "Authorization": f"Bearer {jwt}"}
-            async with httpx.AsyncClient(timeout=config.IMD_TIMEOUT) as client:
+            async with make_client(timeout=config.IMD_TIMEOUT) as client:
                 return await client.get(f"{config.IMD_BASE_URL}/{path}",
                                         params={"id": imd_id}, headers=headers)
 
@@ -246,10 +242,13 @@ class IMDService:
             observed_at = _obs_time(raw)
         return WeatherObservation(
             source="IMD",
-            temperature=_num(_pick(raw, "Temperature", "temp")),
-            humidity=_num(_pick(raw, "Humidity", "humidity")),
-            rainfall=_num(_pick(raw, "Last 24 hrs Rainfall", "rainfall")),
-            wind_speed=_num(_pick(raw, "Wind Speed", "windspeed")),
+            # _num_or_none (not _num): a garbled IMD field must surface as
+            # "unavailable", never as a measured 0.0 — the model, the Home
+            # brief and the advisory basis all treat None as unknown.
+            temperature=_num_or_none(_pick(raw, "Temperature", "temp")),
+            humidity=_num_or_none(_pick(raw, "Humidity", "humidity")),
+            rainfall=_num_or_none(_pick(raw, "Last 24 hrs Rainfall", "rainfall")),
+            wind_speed=_num_or_none(_pick(raw, "Wind Speed", "windspeed")),
             condition=_pick(raw, "Weather", "Condition", "Weather Code", "condition"),
             observed_at=observed_at,
         )

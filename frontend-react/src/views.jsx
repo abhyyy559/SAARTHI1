@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api, HYD } from './api.js';
 import { t, tp, useLang } from './i18n.jsx';
 import { useApi, useLocalStorage, useNow } from './hooks.js';
-import { agoParts, collectAlerts } from './lib.js';
+import { agoParts, collectAlerts, sourceGroup, sourceDisplayName } from './lib.js';
 import {
   I, SevBadge, StatusPill, ProofLine, Skeleton,
   SectionHead, EmptyState, RoleGrid, AlertCard, toast,
@@ -30,18 +30,33 @@ export function HomeView({ loc, go }) {
   const audioRef = useRef(null);
   const bottomRef = useRef(null);
   const briefSeeded = useRef(false);
+  const seedLang = useRef(null);
 
   const locName = wx.data?.location?.city || loc.city || loc.district;
   const briefReady = !wx.loading && !warn.loading;
   const brief = briefReady ? agentBrief(wx.data, warn.data, locName) : null;
 
   // The agent opens the conversation itself, with live data — not a static greeting.
+  // If the language changes before the user has spoken, the opening brief is
+  // re-seeded in the new language; an in-progress conversation is never wiped.
+  // The brief carries the same source line as any answer: weather source +
+  // the CAP feed when a warning is mentioned.
   useEffect(() => {
-    if (brief && !briefSeeded.current) {
+    if (!brief) return;
+    if (!briefSeeded.current || seedLang.current !== lang) {
       briefSeeded.current = true;
-      setMsgs([{ role: 'bot', text: brief, brief: true }]);
+      seedLang.current = lang;
+      const ev = [];
+      const wsrc = wx.data?.current?.source;
+      if (wsrc) ev.push({ source: wsrc });
+      const alerts = collectAlerts(warn.data);
+      const top = alerts.find((a) => a.active);
+      if (top) ev.push({ source: top.source || 'NDMA-Sachet-CAP' });
+      setMsgs((xs) => (xs.some((m) => m.role === 'user')
+        ? xs
+        : [{ role: 'bot', text: brief, brief: true, evidence: ev }]));
     }
-  }, [brief]);
+  }, [brief, lang]);
   // New location, new conversation.
   useEffect(() => {
     briefSeeded.current = false;
@@ -67,9 +82,10 @@ export function HomeView({ loc, go }) {
     // silently dropped by Pydantic and every user would get Hyderabad's weather.
     const body = { message: q, latitude: loc.lat, longitude: loc.lon, district: loc.district, language: lang, user_type: role };
     let evMeta = null;
+    const botIdx = { i: -1 };
+    let finalSeen = false;
     try {
       let got = false;
-      const botIdx = { i: -1 };
       for await (const line of api.chatStream(body)) {
         if (line.type === 'meta' && line.evidence) {
           // Provenance for this turn; attached to the bot message on done.
@@ -83,6 +99,7 @@ export function HomeView({ loc, go }) {
           setMsgs((xs) => xs.map((m, i) => (i === botIdx.i ? { ...m, text: m.text + txt } : m)));
         } else if (line.type === 'final' && line.answer) {
           got = true;
+          finalSeen = true;
           const fin = line.answer;
           setMsgs((xs) => {
             if (botIdx.i === -1) return [...xs, { role: 'bot', text: fin, evidence: evMeta }];
@@ -94,6 +111,17 @@ export function HomeView({ loc, go }) {
       }
       if (!got) throw new Error('empty stream');
     } catch {
+      if (finalSeen) {
+        // The complete answer already landed via `final`; the break happened
+        // after it — nothing to redo.
+        return;
+      }
+      // A mid-stream break after partial tokens would otherwise leave a
+      // half-rendered answer above the fallback's complete one — drop it.
+      if (botIdx.i !== -1) {
+        const drop = botIdx.i;
+        setMsgs((xs) => xs.filter((_, i) => i !== drop));
+      }
       try {
         const r = await api.chat(body);
         push({ role: 'bot', text: r.answer || t('chatErr'), evidence: r.evidence });
@@ -114,9 +142,13 @@ export function HomeView({ loc, go }) {
   }
 
   async function toggleMic() {
-    if (phase === 'recording' || listening) { stopRecording(); return; }
+    // Any tap while recording / transcribing / listening stops; it must never
+    // start a second recording over an in-flight one.
+    if (phase !== 'idle' || listening) { stopRecording(); return; }
     stopSpeak();
     // Server-side STT (Sarvam) when live: record, then upload for transcription.
+    // A server failure or empty transcript falls back to on-device recognition
+    // rather than dead-ending with a toast.
     if (sttLive && navigator.mediaDevices?.getUserMedia && window.MediaRecorder) {
       try {
         setPhase('recording');
@@ -133,10 +165,10 @@ export function HomeView({ loc, go }) {
             const txt = (r && r.text ? r.text : '').trim();
             setPhase('idle');
             if (txt) send(txt);
-            else toast(t('noMic'), 'warn');
+            else startBrowserSR();
           } catch {
             setPhase('idle');
-            toast(t('chatErr'), 'warn');
+            startBrowserSR();
           }
         };
         mediaRef.current = rec;
@@ -145,6 +177,10 @@ export function HomeView({ loc, go }) {
       } catch { setPhase('idle'); /* fall through to browser speech */ }
     }
     // Browser fallback: on-device speech recognition.
+    startBrowserSR();
+  }
+
+  function startBrowserSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { toast(t('noMic'), 'warn'); return; }
     try {
@@ -219,7 +255,8 @@ export function HomeView({ loc, go }) {
         <div className="agent-talk">
           <button type="button" className="talk-btn mic" onClick={toggleMic}
             aria-label={phase === 'recording' || listening ? t('micStop') : t('micStart')}
-            data-active={phase === 'recording' || listening}>
+            data-active={phase === 'recording' || listening}
+            disabled={busy || phase === 'transcribing'}>
             <I.mic />
           </button>
           {brief ? (
@@ -269,6 +306,7 @@ export function HomeView({ loc, go }) {
       <form className="composer" onSubmit={(e) => { e.preventDefault(); send(); }}>
         <button type="button" className="icon-btn" onClick={toggleMic}
           aria-label={phase === 'recording' || listening ? t('micStop') : t('micStart')}
+          disabled={busy || phase === 'transcribing'}
           style={phase === 'recording' || listening ? { background: 'var(--bad)', borderColor: 'var(--bad)' } : null}>
           <I.mic />
         </button>

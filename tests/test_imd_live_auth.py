@@ -1,6 +1,6 @@
 """IMD live-path tests — dual-header auth, JWT caching, station-ID fail-closed.
 
-The network is faked by monkeypatching httpx.AsyncClient. No real IMD calls.
+The network is faked by monkeypatching make_client. No real IMD calls.
 """
 import os
 import sys
@@ -96,7 +96,8 @@ def live_imd(monkeypatch):
     monkeypatch.setattr(config, "IMD_STATION_IDS", dict(STATION_MAP))
     monkeypatch.setattr(config, "IMD_DEFAULT_DISTRICT", "Hyderabad")
     monkeypatch.setattr(config, "IMD_TIMEOUT", 10.0)
-    monkeypatch.setattr(imd_mod.httpx, "AsyncClient", ScriptedClient)
+    monkeypatch.setattr(imd_mod, "make_client",
+                        lambda timeout=None: ScriptedClient())
     ScriptedClient.posts = []
     ScriptedClient.gets = []
     ScriptedClient.token_calls = 0
@@ -229,3 +230,40 @@ async def test_nowcast_message(live_imd):
     text = await live_imd.get_district_nowcast("Hyderabad")
     assert text == "Light rain likely"
     assert ScriptedClient.gets[0]["params"] == {"id": "DIST-N-1"}
+
+
+async def test_garbled_fields_are_none_not_zero(live_imd):
+    """A garbled IMD field must surface as unavailable (None), never as a
+    measured 0.0 — the old _num() fallback would have rendered '0°C' as if
+    IMD had actually observed it."""
+    ScriptedClient.get_script = [FakeResponse(200, {
+        "Temperature": "N/A", "Humidity": "", "Wind Speed": None,
+        "Last 24 hrs Rainfall": "trace",
+        "Weather": "Clear",
+        "Date of Observation": "2026-09-27", "Time of Observation": "09:00",
+    })]
+    obs = await live_imd.get_current_weather(17.38, 78.48, "Hyderabad")
+    assert obs.temperature is None
+    assert obs.humidity is None
+    assert obs.wind_speed is None
+    assert obs.rainfall is None
+    assert obs.condition == "Clear"
+    assert obs.observed_at is not None
+
+
+async def test_imd_uses_proxy_safe_client_factory(live_imd, monkeypatch):
+    """IMD must build HTTP clients via the registry's proxy-safe make_client
+    (the factory every other adapter uses). A raw httpx.AsyncClient dies at
+    construction on hosts with malformed proxy env vars — which would take
+    IMD down the moment credentials are installed. Re-patching with a spy
+    proves the module calls make_client(timeout=...) rather than building a
+    raw httpx.AsyncClient itself."""
+    seen = {}
+
+    def spy(timeout=None):
+        seen["timeout"] = timeout
+        return ScriptedClient()
+
+    monkeypatch.setattr(imd_mod, "make_client", spy)
+    await live_imd.get_current_weather(17.38, 78.48, "Hyderabad")
+    assert seen["timeout"] == config.IMD_TIMEOUT

@@ -948,3 +948,10 @@ a { color: var(--teal); }
   .lang-seg button { min-width: 0; padding: 0 0.42rem; }
   .topbar-spacer { display: none; }
 }
+/* ---------- Very small screens: give the location pill every spare pixel ---------- */
+@media (max-width: 400px) {
+  .topbar { gap: 0.3rem; padding-inline: 0.6rem; }
+  .loc-btn { padding-inline: 0.4rem; gap: 0.25rem; }
+  .loc-btn svg { width: 16px; height: 16px; }
+  .lang-seg button { padding: 0 0.32rem; font-size: 0.85rem; }
+}

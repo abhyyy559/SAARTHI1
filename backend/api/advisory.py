@@ -150,6 +150,6 @@ async def advisory(severity: str = "GREEN", hazard: str = "", user_type: str = "
         "weather_basis": weather_basis,
         "user_type": user_type,
         "official_instruction": False,
-        "note": "WeatherGPT contextual recommendation — not an official government instruction.",
+        "note": "SAARTHI contextual recommendation — not an official government instruction.",
         "generated_at": iso_now(),
     }

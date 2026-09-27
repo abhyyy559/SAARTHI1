@@ -167,6 +167,7 @@ async def _live_forecast(lat: float, lon: float) -> tuple[dict, str]:
         fc, _ = await owm_adapter.get_forecast(lat, lon)
         data = fc.model_dump(mode="json")
         cache.set(_key("forecast", lat, lon), data, TTLS["forecast"])
+        _front_set("forecast", lat, lon, data)
         return data, "LIVE"
     except AdapterUnavailable:
         cached = cache.get(_key("forecast", lat, lon))

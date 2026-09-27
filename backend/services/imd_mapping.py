@@ -31,10 +31,8 @@ import time
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
 
-import httpx
-
 from .. import config
-from ..adapters.registry import AdapterUnavailable
+from ..adapters.registry import AdapterUnavailable, make_client
 
 _CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "imd_mapping_cache.json"
 
@@ -167,7 +165,9 @@ class IMDMappingResolver:
         headers = {"X-API-KEY": config.IMD_API_KEY,
                    "Authorization": f"Bearer {await self._get_jwt()}"}
         try:
-            async with httpx.AsyncClient(timeout=config.IMD_TIMEOUT) as client:
+            # make_client: proxy-safe factory (see imd_service) — a malformed
+            # proxy env must not take down mapping-table fetches.
+            async with make_client(timeout=config.IMD_TIMEOUT) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 return resp.json()
