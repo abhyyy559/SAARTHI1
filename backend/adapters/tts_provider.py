@@ -1,7 +1,7 @@
 """TTS provider — Sarvam-compatible HTTP with honest browser fallback.
 
 Env: SARVAM_API_KEY, SARVAM_TTS_URL (default https://api.sarvam.ai/text-to-speech),
-SARVAM_TTS_MODEL (default bulbul:v2). Without a key -> BROWSER_FALLBACK marker
+SARVAM_TTS_MODEL (default bulbul:v3). Without a key -> BROWSER_FALLBACK marker
 and the frontend speaks via speechSynthesis.
 """
 from __future__ import annotations

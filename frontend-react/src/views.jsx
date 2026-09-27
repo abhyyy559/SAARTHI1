@@ -10,6 +10,28 @@ import {
 } from './components.jsx';
 
 /* ================= HOME — SAARTHI conversational agent ================= */
+
+// Source citations inside an answer — "(source: Open-Meteo)", "(स्रोत: …)",
+// "(మూలం: …)" — are rendered distinctly so the grounding is visible, not
+// buried in the paragraph. Plain text otherwise.
+const CITE_RE = /\((source|स्रोत|మూలం):\s*[^)]+\)/g;
+function renderCited(text) {
+  if (!text || typeof text !== 'string') return text;
+  CITE_RE.lastIndex = 0;
+  let m = CITE_RE.exec(text);
+  if (!m) return text;
+  const out = [];
+  let i = 0, k = 0;
+  while (m) {
+    if (m.index > i) out.push(text.slice(i, m.index));
+    out.push(<span key={k++} className="m-cite">{m[0]}</span>);
+    i = m.index + m[0].length;
+    m = CITE_RE.exec(text);
+  }
+  if (i < text.length) out.push(text.slice(i));
+  return out;
+}
+
 export function HomeView({ loc, go }) {
   const { lang } = useLang();
   const [role] = useLocalStorage('saarthi:role', 'general');
@@ -28,6 +50,10 @@ export function HomeView({ loc, go }) {
   const recRef = useRef(null);
   const mediaRef = useRef(null);
   const audioRef = useRef(null);
+  // speak() generation: bumped by stopSpeak() and by each new speak(), so a
+  // superseded in-flight TTS (fetch or queued chunk) can never start playback
+  // after the user stopped it or asked for something else.
+  const speakSeq = useRef(0);
   const bottomRef = useRef(null);
   const briefSeeded = useRef(false);
   const seedLang = useRef(null);
@@ -204,12 +230,22 @@ export function HomeView({ loc, go }) {
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
+      // Best-match a device voice for the UI language — setting only
+      // utterance.lang can leave Hindi/Telugu read in a wrong-accent default
+      // voice. getVoices() may still be empty on first call; then we keep the
+      // previous behaviour (lang set, no explicit voice).
+      const want = lang === 'hi' ? 'hi' : lang === 'te' ? 'te' : 'en';
+      u.lang = want === 'hi' ? 'hi-IN' : want === 'te' ? 'te-IN' : 'en-IN';
+      const voices = (speechSynthesis.getVoices && speechSynthesis.getVoices()) || [];
+      const match = voices.find((v) => (v.lang || '').toLowerCase().startsWith(want))
+        || voices.find((v) => (v.lang || '').toLowerCase().startsWith('en'));
+      if (match) u.voice = match;
       speechSynthesis.speak(u);
     } catch { /* no TTS */ }
   }
 
   function stopSpeak() {
+    speakSeq.current++; // invalidate any in-flight speak()
     try { speechSynthesis.cancel(); } catch { /* no TTS */ }
     try { audioRef.current?.pause(); } catch { /* no audio */ }
     audioRef.current = null;
@@ -217,19 +253,34 @@ export function HomeView({ loc, go }) {
 
   async function speak(text) {
     stopSpeak();
+    const gen = speakSeq.current;
+    const alive = () => gen === speakSeq.current;
+    // Progressive TTS: play sentence chunks as they arrive instead of waiting
+    // for the whole answer. Without a server provider the backend answers with
+    // honest browser-fallback JSON and we speak it on-device (never "Sarvam").
+    const queue = [];
+    let started = false;
+    const playNext = () => {
+      if (!alive()) return;
+      const item = queue.shift();
+      if (!item) { started = false; return; }
+      started = true;
+      const audio = new Audio(`data:${item.mime || 'audio/wav'};base64,${item.audio_base64}`);
+      audioRef.current = audio;
+      audio.onended = () => { audioRef.current = null; playNext(); };
+      audio.onerror = () => { audioRef.current = null; playNext(); };
+      audio.play().catch(() => { if (alive()) browserSpeak(text); });
+    };
     try {
-      // Server-side TTS (Sarvam) when live; the backend answers honestly with
-      // client_speech when no provider is configured.
-      const r = await api.speak(text, lang);
-      if (r && r.audio_base64) {
-        const audio = new Audio(`data:${r.mime || 'audio/wav'};base64,${r.audio_base64}`);
-        audioRef.current = audio;
-        await audio.play();
-      } else {
-        browserSpeak((r && r.text) || text);
+      for await (const chunk of api.speakStream(text, lang)) {
+        if (!alive()) return; // superseded — never play stale audio
+        if (chunk.done && chunk.client_speech) { browserSpeak(chunk.text || text); return; }
+        if (chunk.audio_base64) { queue.push(chunk); if (!started) playNext(); }
+        // Mid-stream provider-failure trailer: queued chunks keep playing;
+        // we do NOT speak the text a second time over them.
       }
     } catch {
-      browserSpeak(text);
+      if (alive()) browserSpeak(text);
     }
   }
 
@@ -285,14 +336,14 @@ export function HomeView({ loc, go }) {
       <div className="chat-log" aria-live="polite">
         {msgs.map((m, i) => (
           <div key={i} className={`msg ${m.role}`}>
-            {m.text}
+            {renderCited(m.text)}
             {m.role === 'bot' && m.text ? (
               <span className="m-ev">
                 <button type="button" className="link-btn" onClick={() => speak(m.text)} aria-label={t('listen')}>
                   <I.speaker />{t('listen')}
                 </button>
                 {m.evidence && m.evidence.length ? (
-                  <span className="m-src">{m.evidence.map((e) => e.source).filter(Boolean).join(' · ')}</span>
+                  <span className="m-src"><b>{t('srcLabel')}</b>{m.evidence.map((e) => e.source).filter(Boolean).join(' · ')}</span>
                 ) : null}
               </span>
             ) : null}

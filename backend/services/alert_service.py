@@ -14,6 +14,7 @@ inputs to that decision are gathered once too. If you need alerts, call
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 from .. import config
@@ -298,13 +299,42 @@ async def _fetch_cap() -> tuple[list[dict], str]:
         return [], "UNAVAILABLE"
 
 
+# The commercial-chain result cache, keyed by (lat, lon, district). See
+# _fetch_chain for the contract. Module-level like _inflight: one process,
+# no cross-request leakage beyond the 5-minute TTL.
+_CHAIN_TTL_S = 300
+_CHAIN_CACHE: dict[tuple[float, float, str], tuple[list[dict], str, float]] = {}
+
+
 async def _fetch_chain(lat: float, lon: float, district: str) -> tuple[list[dict], str]:
-    """The commercial/global chain, best-effort. Never raises."""
+    """The commercial/global chain, best-effort. Never raises.
+
+    LATENCY: the chain fans out to three upstreams and cost ~1.4s per chat
+    turn even when nothing had changed — it was the entire warm-path TTFB of
+    /api/chat. Alerts evolve on the order of minutes, so a fresh answer is
+    served from a 5-minute TTL cache (mirroring the CAP serve-fresh cache).
+    Only a POSITIVE answer is cached — the chain's only positive label is
+    LIVE-with-alerts; a failure or an empty answer is never cached, so recovery
+    is never delayed. Served copies carry provenance CACHED, so the per-alert
+    label in the evidence panel stays honest, exactly like CAP.
+    """
+    key = (round(float(lat or 0.0), 3), round(float(lon or 0.0), 3),
+           (district or "").lower())
+    hit = _CHAIN_CACHE.get(key)
+    if hit is not None:
+        alerts, _prov, fetched_at = hit
+        if time.monotonic() - fetched_at < _CHAIN_TTL_S:
+            return [dict(a) for a in alerts], "CACHED"
+        _CHAIN_CACHE.pop(key, None)
     try:
         from ..adapters.alert_sources import get_alerts as chain_get_alerts
 
         chained, prov = await chain_get_alerts(lat, lon, district)
-        return list(chained or []), prov or ""
+        alerts = list(chained or [])
+        prov = prov or ""
+        if prov == "LIVE" and alerts:
+            _CHAIN_CACHE[key] = ([dict(a) for a in alerts], prov, time.monotonic())
+        return alerts, prov
     except Exception:  # noqa: BLE001 - the chain is best-effort
         return [], ""
 
@@ -394,7 +424,10 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
     # answer. "It answered and had nothing" and "we could not reach it" are
     # different facts (see verdict_service); only the first may be a calm.
     _NEGATIVE = ("", "UNAVAILABLE", "UNCONFIGURED")
-    feeds_answered = (cap_prov not in _NEGATIVE) or chain_prov == LIVE
+    # A CACHED chain counts as answered: the cache only ever holds a
+    # LIVE-with-alerts answer (see _fetch_chain), so CACHED implies the chain
+    # spoke — the same way CAP's serve-fresh CACHED counts above.
+    feeds_answered = (cap_prov not in _NEGATIVE) or chain_prov in ("LIVE", "CACHED")
 
     # The overall provenance names where the shown alerts came from — or, when
     # nothing is shown, why. A configured feed that failed is UNAVAILABLE, not

@@ -205,7 +205,10 @@ export const api = {
     const fd = new FormData();
     const extension = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : blob.type.includes('wav') ? 'wav' : 'webm';
     fd.append('file', blob, `speech.${extension}`);
-    return j(`/api/voice/transcribe?language=${encodeURIComponent(language)}`, { method: 'POST', body: fd });
+    // The backend STT client allows 30 s; the default 5 s fetch timeout would
+    // abort a legitimate upload+transcription on slow networks and silently
+    // degrade to browser recognition.
+    return j(`/api/voice/transcribe?language=${encodeURIComponent(language)}`, { method: 'POST', body: fd }, 30000);
   },
   synthesize: (text, language) =>
     post('/api/voice/synthesize', { text, language }),

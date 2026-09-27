@@ -63,6 +63,11 @@ def _spoken_fallback_text(text: str, language: str) -> str:
 async def transcribe(audio: UploadFile = File(..., alias="file"), language: str = "en") -> JSONResponse:
     t0 = time.perf_counter()
     audio_bytes = await audio.read()
+    if len(audio_bytes) == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Voice upload is empty (0 bytes). Record something before sending.",
+        )
     if len(audio_bytes) > MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=413,

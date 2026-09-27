@@ -649,9 +649,16 @@ a { color: var(--teal); }
 .chip:active { transform: scale(0.96); background: #FFEDD5; }
 .chip:disabled { opacity: 0.5; cursor: default; }
 .m-ev .m-src {
-  display: block; margin-top: 0.35rem;
-  font-size: var(--fs-small); color: var(--ink3);
+  display: block; margin-top: 0.4rem; padding-top: 0.35rem;
+  border-top: 1px dashed var(--line);
+  font-size: var(--fs-small); color: var(--ink2);
 }
+.m-ev .m-src b {
+  font-weight: 800; margin-right: 0.4rem; color: var(--ink3);
+  text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.05em;
+}
+/* Inline source citations inside an answer — the grounding, made visible. */
+.m-cite { font-weight: 700; color: var(--accent-deep); white-space: nowrap; }
 .m-ev .link-btn svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
 .voice-note {
   text-align: center; font-size: var(--fs-small); color: var(--ink2);

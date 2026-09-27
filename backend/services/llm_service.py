@@ -28,6 +28,17 @@ SYSTEM_RULES = (
     "authorities. Silence from a broken service is not an all-clear.\n"
     "Always distinguish between official meteorological information and SAARTHI's own interpretation.\n"
     "If information is unavailable, stale or incomplete, say so plainly.\n"
+    # --- GROUNDING. The answer must show its work: every weather fact names
+    # its source, in plain words, so the reader can see what is official and
+    # what is SAARTHI's reading. The source names live in VERIFIED BACKEND
+    # DATA — use ONLY those, never invent one.
+    "CITE YOUR SOURCES. Every weather fact you state must name where it came from.\n"
+    "For observations and forecasts use the `source_name` field (e.g. Open-Meteo, IMD).\n"
+    "For warnings use the `source` field inside `verified_warning` (e.g. NDMA-Sachet-CAP, IMD).\n"
+    "Say it the way people speak: 'according to Open-Meteo', 'per the NDMA-SACHET CAP alert'.\n"
+    "NEVER invent a source name. If a source field is missing or UNKNOWN, say the source\n"
+    "is unrecorded — do not guess. When the warning service was unreachable, name no\n"
+    "warning source at all.\n"
     "Lead with the safety picture: the warning status and any hazard. Never open the\n"
     "answer with temperature, and never let temperature be the most prominent number.\n"
     "The reader is deciding whether it is safe to go out, farm or put to sea.\n"
@@ -122,7 +133,7 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
 # English-only answer. English strings are unchanged from the original template.
 _TEMPLATE_PHRASES = {
     "en": {
-        "active_warning": "There is an active official warning for {loc}: {severity} — {hazard}.",
+        "active_warning": "There is an active official warning for {loc}: {severity} — {hazard} (source: {wsrc}).",
         "valid_until": "It is valid until {valid_until}.",
         "unreachable": ("The official warning service for {loc} could not be reached, so we cannot "
                         "confirm whether a warning is active. Please check IMD or local authorities directly."),
@@ -130,14 +141,14 @@ _TEMPLATE_PHRASES = {
         "rain_yes": "Rain is possible tomorrow in {loc} according to the latest {src} forecast (expected rainfall: {rain} mm).",
         "rain_no": "The {src} forecast shows no significant rainfall expected tomorrow.",
         "rain_na": "Tomorrow's forecast rainfall information is not available from the current data.",
-        "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C.",
+        "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C (source: {src}).",
         "wind": "Wind in {loc} is currently {wind} km/h (source: {src}).",
         "risk": "SAARTHI risk read for you ({user_type}): {risk}.",
         "risk_note": "This is our interpretation, not an IMD rating.",
         "advisory_note": "For safety guidance, check the Advisory tab in the app.",
     },
     "hi": {
-        "active_warning": "{loc} के लिए सक्रिय आधिकारिक चेतावनी है: {severity} — {hazard}।",
+        "active_warning": "{loc} के लिए सक्रिय आधिकारिक चेतावनी है: {severity} — {hazard} (स्रोत: {wsrc})।",
         "valid_until": "यह {valid_until} तक वैध है।",
         "unreachable": ("{loc} की आधिकारिक चेतावनी सेवा से संपर्क नहीं हो सका, इसलिए हम पुष्टि "
                         "नहीं कर सकते कि कोई चेतावनी सक्रिय है या नहीं। कृपया IMD या स्थानीय प्रशासन से सीधे जाँचें।"),
@@ -145,14 +156,14 @@ _TEMPLATE_PHRASES = {
         "rain_yes": "ताज़ा {src} पूर्वानुमान के अनुसार कल {loc} में बारिश संभव है (अनुमानित वर्षा: {rain} मिमी)।",
         "rain_no": "{src} पूर्वानुमान के अनुसार कल कोई खास बारिश की उम्मीद नहीं है।",
         "rain_na": "कल की वर्षा की जानकारी वर्तमान आंकड़ों में उपलब्ध नहीं है।",
-        "temp": "कल का तापमान: {tmin}–{tmax}°C।",
+        "temp": "कल का तापमान: {tmin}–{tmax}°C (स्रोत: {src})।",
         "wind": "{loc} में हवा की गति अभी {wind} किमी/घंटा है (स्रोत: {src})।",
         "risk": "आपके लिए SAARTHI जोखिम आकलन ({user_type}): {risk}।",
         "risk_note": "यह हमारी व्याख्या है, IMD की रेटिंग नहीं।",
         "advisory_note": "सुरक्षा सलाह के लिए ऐप में Advisory टैब देखें।",
     },
     "te": {
-        "active_warning": "{loc} కోసం క్రియాశీల అధికారిక హెచ్చరిక ఉంది: {severity} — {hazard}.",
+        "active_warning": "{loc} కోసం క్రియాశీల అధికారిక హెచ్చరిక ఉంది: {severity} — {hazard} (మూలం: {wsrc}).",
         "valid_until": "ఇది {valid_until} వరకు చెల్లుతుంది.",
         "unreachable": ("{loc} యొక్క అధికారిక హెచ్చరిక సేవను చేరుకోలేకపోయాం, కాబట్టి హెచ్చరిక "
                         "క్రియాశీలంగా ఉందో లేదో నిర్ధారించలేము. దయచేసి IMD లేదా స్థానిక అధికారులను నేరుగా సంప్రదించండి."),
@@ -160,7 +171,7 @@ _TEMPLATE_PHRASES = {
         "rain_yes": "తాజా {src} అంచనా ప్రకారం రేపు {loc}లో వర్షం పడే అవకాశం ఉంది (అంచనా వర్షపాతం: {rain} మిమీ).",
         "rain_no": "{src} అంచనా ప్రకారం రేపు గణనీయమైన వర్షం అంచనా లేదు.",
         "rain_na": "రేపటి వర్షపాత సమాచారం ప్రస్తుత డేటాలో అందుబాటులో లేదు.",
-        "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C.",
+        "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C (మూలం: {src}).",
         "wind": "{loc}లో ప్రస్తుత గాలి వేగం {wind} కిమీ/గం (మూలం: {src}).",
         "risk": "మీ కోసం SAARTHI ప్రమాద అంచనా ({user_type}): {risk}.",
         "risk_note": "ఇది మా వివరణ, IMD రేటింగ్ కాదు.",
@@ -204,8 +215,13 @@ def _template_answer(evidence: dict, language: str = "en", message: str = "") ->
     service_unreachable = verified.get("warning_service") == "unavailable"
 
     if warn:
+        # The warning source is real data: _fetch_warning_safe defaults it to
+        # IMD and _llm_warning_view carries the verdict's source (e.g.
+        # NDMA-Sachet-CAP) — never invented here.
+        wsrc = verified.get("source") or "IMD"
         lines.append(
-            P["active_warning"].format(loc=loc, severity=verified.get('severity'), hazard=verified.get('hazard'))
+            P["active_warning"].format(loc=loc, severity=verified.get('severity'), hazard=verified.get('hazard'),
+                                       wsrc=wsrc)
         )
         if verified.get("valid_until"):
             lines.append(P["valid_until"].format(valid_until=verified.get('valid_until')))
@@ -222,7 +238,7 @@ def _template_answer(evidence: dict, language: str = "en", message: str = "") ->
         lines.append(P["rain_na"])
 
     if fc_min is not None and fc_max is not None:
-        lines.append(P["temp"].format(tmin=fc_min, tmax=fc_max))
+        lines.append(P["temp"].format(tmin=fc_min, tmax=fc_max, src=src))
 
     # Wind questions get the actual current wind reading (km/h per the adapter's
     # Open-Meteo default). Never invent one — only append when the data exists.
