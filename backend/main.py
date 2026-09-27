@@ -22,25 +22,14 @@ log = logging.getLogger("weathergpt.main")
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Restore the persisted source mode, then start the background alert watcher.
+    """Start the background alert watcher and warm the SACHET CAP cache.
 
     Push notifications only reach a user who is NOT looking at the app, so the
     decision to notify cannot live in the browser. This task evaluates the
     verdict for every subscribed district on a timer and pushes on a change —
     the same `build_verdict` the UI renders, so the two cannot disagree.
     """
-    from .services import alert_watcher, mode_persistence
-
-    # MUST live here, not in an @app.on_event("startup") handler. This app passes
-    # a custom `lifespan=`, and that replaces Starlette's default lifespan — the
-    # one that invokes on_startup handlers. A restore registered as a startup
-    # event was therefore never called: every restart silently re-read .env,
-    # reverted IMD to hybrid, and left the mode switcher polling /api/mode
-    try:
-        await mode_persistence.restore_async()
-        log.info("source mode at startup: %s", config.current_source_mode())
-    except Exception as exc:  # noqa: BLE001 - a bad row must not stop the app booting
-        log.warning("mode restore skipped: %s", exc)
+    from .services import alert_watcher
 
     interval = int(getattr(config, "ALERT_WATCH_INTERVAL", alert_watcher.DEFAULT_INTERVAL))
     tick = int(getattr(config, "WATCH_TICK", alert_watcher.WATCH_TICK_DEFAULT))
@@ -147,68 +136,12 @@ except Exception:  # noqa: BLE001 - telemetry must never break alerts
     log.warning("ack router unavailable; /api/ack and /api/coverage disabled")
 
 
-# NOTE: the DEMO/HYBRID/IMD mode restore deliberately lives in `lifespan()`
-# above. It must NOT be re-added as an @app.on_event("startup") handler: this
-# app passes a custom `lifespan=`, which replaces the default lifespan that
-# invokes those handlers, so such a handler is never called (that is exactly
-# how the persisted mode was silently lost on every restart).
-
-
-def _mode_payload() -> dict:
-    """The mode object GET/POST /api/mode share (docs/SOURCE-MODES.md).
-
-    `mode` mirrors `source_mode`. The source strings state which chain actually
-    answers, so the console can name sources, not just the mode label. Demo
-    mode was removed — only `imd` (official-only) and `hybrid` exist.
-    """
-    mode = config.current_source_mode()
-    chains = config.MODE_SOURCES[mode]
-    return {
-        "mode": mode,
-        "source_mode": mode,
-        "weather_source": chains["weather"],
-        "warnings_source": chains["warnings"],
-        "available": {"imd": True, "hybrid": True},
-    }
-
-
-# Legacy client compatibility: an old client only knows "live".
-_LEGACY_MODE_ALIASES = {"live": "hybrid"}
-
-
 @app.get("/api/health")
 async def health() -> dict:
     return {
         "status": "ok",
-        "imd_adapter": config.IMD_ADAPTER,
-        "source_mode": config.current_source_mode(),
+        "source_mode": "imd",
     }
-
-
-@app.get("/api/mode")
-async def get_mode() -> dict:
-    return _mode_payload()
-
-
-@app.post("/api/mode")
-async def set_mode(payload: dict) -> dict:
-    """Runtime IMD/HYBRID switch (in-memory). `imd` runs official-only and
-    reports UNAVAILABLE rather than backfilling; `hybrid` runs the full
-    multi-source chain. Restart re-reads .env."""
-    raw = (payload or {}).get("mode")
-    mode = _LEGACY_MODE_ALIASES.get(raw, raw) if isinstance(raw, str) else None
-    if mode not in config.MODE_SOURCES:
-        return {"ok": False,
-                "error": "mode must be 'imd' or 'hybrid' (legacy 'live' = 'hybrid')"}
-    config.SOURCE_MODE = mode
-    config.IMD_ADAPTER = "live"
-    # Persist so restarts/redeploys keep the mode (kv row via the db layer).
-    try:
-        from .services.mode_persistence import persist_async
-        await persist_async(mode)
-    except Exception as exc:  # noqa: BLE001
-        logging.getLogger(__name__).warning("mode persist failed: %s", exc)
-    return {"ok": True, **_mode_payload()}
 
 
 @app.websocket("/ws/warnings")

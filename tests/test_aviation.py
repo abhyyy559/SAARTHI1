@@ -9,8 +9,9 @@ Contracts under test:
 3. Severity is backend-authoritative: the briefing never escalates or
    re-grades; UNKNOWN stays UNKNOWN.
 4. The mandatory disclaimer ships in en, hi and te.
-5. imd mode: non-official meteorology is withheld (official-only rule) and
-   alerts are gathered official-only. Demo mode: labelled DEMO fixtures.
+5. Single IMD-first mode (2026-09-27): Open-Meteo aviation inputs are always
+   fetched and honestly labelled (never withheld, never presented as IMD),
+   and the full alert chain is gathered by default — no official-only mode.
 
 All network calls are monkeypatched. Deterministic: same fake inputs give
 the same briefing.
@@ -23,7 +24,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import asyncio  # noqa: E402
 
-import backend.config as config  # noqa: E402
 from backend.adapters import openmeteo_adapter  # noqa: E402
 from backend.adapters.registry import AdapterUnavailable  # noqa: E402
 from backend.services import alert_service  # noqa: E402
@@ -60,7 +60,7 @@ def _no_alerts():
             "feeds": [], "available": True}
 
 
-def _wire(monkeypatch, *, inputs=None, inputs_error=None, alerts=None, mode="hybrid"):
+def _wire(monkeypatch, *, inputs=None, inputs_error=None, alerts=None):
     async def fake_inputs(lat, lon):
         if inputs_error:
             raise inputs_error
@@ -71,7 +71,6 @@ def _wire(monkeypatch, *, inputs=None, inputs_error=None, alerts=None, mode="hyb
 
     monkeypatch.setattr(openmeteo_adapter, "get_aviation_inputs", fake_inputs)
     monkeypatch.setattr(alert_service, "gather_alerts", fake_gather)
-    monkeypatch.setattr(config, "SOURCE_MODE", mode)
 
 
 def _strings(payload):
@@ -217,28 +216,30 @@ def test_route_registered_on_app():
     print("PASS: test_route_registered_on_app")
 
 
-def test_imd_mode_withholds_non_official_meteorology(monkeypatch):
+def test_single_mode_fetches_honestly_labelled_aviation_inputs(monkeypatch):
+    # Single IMD-first mode: Open-Meteo aviation inputs are always fetched
+    # and labelled Open-Meteo (never withheld, never presented as IMD).
+    # The full alert chain is gathered — not forced official-only.
     captured = {}
 
     async def fake_gather(**kwargs):
         captured.update(kwargs)
         return _no_alerts()
 
-    async def fake_inputs(lat, lon):  # pragma: no cover — must not be called
-        raise AssertionError("non-official fetch in imd mode")
+    async def fake_inputs(lat, lon):
+        return _fake_inputs(), "LIVE"
 
     monkeypatch.setattr(openmeteo_adapter, "get_aviation_inputs", fake_inputs)
     monkeypatch.setattr(alert_service, "gather_alerts", fake_gather)
-    monkeypatch.setattr(config, "SOURCE_MODE", "imd")
 
     b = asyncio.run(aviation_service.build_briefing(LAT, LON, "en"))
     secs = _sections(b)
     for name in ("winds_aloft", "cloud", "visibility", "turbulence_icing", "sun"):
-        assert secs[name]["status"] == "UNAVAILABLE", (name, secs[name])
-        assert "imd mode" in secs[name]["reason"], (name, secs[name])
-    # Official-only alert gather — the commercial chain is never consulted.
-    assert captured.get("force_official_only") is True, captured
-    print("PASS: test_imd_mode_withholds_non_official_meteorology")
+        # Fetched and rendered — never withheld, never UNAVAILABLE-with-mode-excuse.
+        assert secs[name]["status"] == "OK", (name, secs[name])
+        assert "Open-Meteo" in secs[name]["provenance"], (name, secs[name])
+    assert captured.get("force_official_only") is None, captured
+    print("PASS: test_single_mode_fetches_honestly_labelled_aviation_inputs")
 
 
 # --- Determinism: proxies are labelled, numbers are real ------------------------

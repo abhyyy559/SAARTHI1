@@ -83,33 +83,13 @@ ALERT_WATCH_INTERVAL = int(_get("ALERT_WATCH_INTERVAL", "300") or 300)
 # The network pass itself is guarded by ALERT_WATCH_INTERVAL above.
 WATCH_TICK = int(_get("WATCH_TICK", "10") or 10)
 
-# --- Source modes (docs/SOURCE-MODES.md): "imd" | "hybrid" -------------------
-# Demo mode was removed (2026-09-23, Abhiram's order): the app runs on real
-# sources only. SOURCE_MODE selects the official-only "imd" chain or the full
-# "hybrid" chain (IMD -> Open-Meteo -> OpenWeatherMap). Anything else,
-# including the retired "demo"/"live" values, falls back to "hybrid".
-_SOURCE_MODE_ENV = _get("SOURCE_MODE", "").strip().lower()
-if _SOURCE_MODE_ENV in ("imd", "hybrid"):
-    SOURCE_MODE = _SOURCE_MODE_ENV
-else:
-    # Legacy DEMO_MODE=true envs (retired): demo data no longer exists, so a
-    # stale DEMO_MODE=true can only mean "not imd-only" -> hybrid.
-    SOURCE_MODE = "hybrid"
-
-IMD_ADAPTER = _get("IMD_ADAPTER", "live")
-
-# Per-mode source chains, reported verbatim by GET /api/mode so the console can
-# name the sources actually carrying the answer, not just the mode label.
-MODE_SOURCES = {
-    "imd": {"weather": "IMD only", "warnings": "IMD → SACHET/CAP"},
-    "hybrid": {"weather": "IMD → Open-Meteo → OpenWeatherMap",
-               "warnings": "IMD → SACHET/CAP → InTouch → WeatherAPI → GDACS"},
-}
-
-
-def current_source_mode() -> str:
-    """Effective mode for source selection: "imd" (official-only) or "hybrid"."""
-    return "imd" if SOURCE_MODE == "imd" else "hybrid"
+# --- Source mode: exactly one (2026-09-27, Abhiram's order) ---------------------
+# The app runs a single IMD-first mode: IMD -> Open-Meteo -> OpenWeatherMap
+# for weather, SACHET/CAP feeds for alerts, file cache last. There is no mode
+# switcher, no /api/mode, no SOURCE_MODE env var — status payloads carry a
+# literal "imd" for older clients. When IMD has no key or is unreachable, the
+# chain falls back with honest provenance — a fallback number is never
+# presented as official IMD data.
 
 # Live-source keys (all optional — absence is reported, never faked)
 OWM_API_KEY = _get("OWM_API_KEY", "")

@@ -18,19 +18,17 @@ Honesty rules, enforced here:
 - Backend severity is authoritative: alert severity passes through
   `build_verdict` untouched (UNKNOWN stays UNKNOWN).
 
-Source-mode semantics (docs/SOURCE-MODES.md):
-- demo: labelled DEMO fixtures (sample data for the demo), never live.
-- imd: official-only. GFS/Open-Meteo is NOT official, so every non-official
-  meteorology section reports UNAVAILABLE instead of backfilling. Alerts use
-  the official chain only.
-- hybrid: the full honest chain — live GFS meteorology + official alerts.
+Source-mode semantics (2026-09-27, Abhiram's order): the app runs exactly
+one IMD-first mode. Meteorology always comes from the live GFS/Open-Meteo
+backfill, honestly labelled Open-Meteo, and alerts gather the full
+SACHET/CAP + backfill chain by default. There is no demo, hybrid, or
+official-only mode and no mode switcher.
 """
 from __future__ import annotations
 
 import asyncio
 import math
 
-from .. import config
 from ..adapters import openmeteo_adapter
 from ..adapters.registry import AdapterUnavailable
 from . import alert_service
@@ -50,10 +48,6 @@ _LEVELS = (850, 700, 500)
 
 def _lang(lang: str) -> str:
     return lang if lang in ("en", "hi", "te") else "en"
-
-
-def _official_only() -> bool:
-    return config.current_source_mode() == "imd"
 
 
 def _compass(deg: float | None) -> str | None:
@@ -77,11 +71,8 @@ def _fetch_error_reason(inputs: dict | None) -> str | None:
 
 
 async def _fetch_inputs(lat: float, lon: float) -> dict:
-    if _official_only():
-        # imd mode: GFS/Open-Meteo is non-official. Never backfill — every
-        # meteorology section below will report UNAVAILABLE with this reason.
-        raise AdapterUnavailable(
-            "imd mode: non-official meteorology withheld (GFS/Open-Meteo is not IMD)")
+    # Single IMD-first mode: Open-Meteo aviation inputs are the meteorology
+    # backfill, honestly labelled per section.
     data, _ = await openmeteo_adapter.get_aviation_inputs(lat, lon)
     return data
 
@@ -90,10 +81,7 @@ async def _fetch_inputs(lat: float, lon: float) -> dict:
 # Pure section builders (no I/O). Deterministic: same input -> same output.
 # ---------------------------------------------------------------------------
 
-def _section_winds(inputs: dict, official_only: bool) -> dict:
-    if official_only:
-        return _unavailable("winds_aloft",
-                            "imd mode: non-official data withheld — official aviation sources only")
+def _section_winds(inputs: dict) -> dict:
     err = _fetch_error_reason(inputs)
     if err:
         return _unavailable("winds_aloft", err)
@@ -123,10 +111,7 @@ def _section_winds(inputs: dict, official_only: bool) -> dict:
     }
 
 
-def _section_cloud(inputs: dict, official_only: bool) -> dict:
-    if official_only:
-        return _unavailable("cloud",
-                            "imd mode: non-official data withheld — official aviation sources only")
+def _section_cloud(inputs: dict) -> dict:
     err = _fetch_error_reason(inputs)
     if err:
         return _unavailable("cloud", err)
@@ -145,10 +130,7 @@ def _section_cloud(inputs: dict, official_only: bool) -> dict:
     }
 
 
-def _section_visibility(inputs: dict, official_only: bool) -> dict:
-    if official_only:
-        return _unavailable("visibility",
-                            "imd mode: non-official data withheld — official aviation sources only")
+def _section_visibility(inputs: dict) -> dict:
     err = _fetch_error_reason(inputs)
     if err:
         return _unavailable("visibility", err)
@@ -182,16 +164,13 @@ def _vector_shear(a: dict | None, b: dict | None) -> float | None:
         return None
 
 
-def _section_turbulence_icing(inputs: dict, official_only: bool) -> dict:
+def _section_turbulence_icing(inputs: dict) -> dict:
     """Turbulence/icing only when the data supports it.
 
     Real inputs available: wind shear between 850 and 500 hPa (computed from
     real level winds), temperature/RH profile. A full turbulence or icing
     assessment (pilot reports, SIGMETs, microphysics) is NOT available, so
     both stay labelled coarse proxies / honest gaps — never official grades."""
-    if official_only:
-        return _unavailable("turbulence_icing",
-                            "imd mode: non-official data withheld — official aviation sources only")
     err = _fetch_error_reason(inputs)
     if err:
         return _unavailable("turbulence_icing", err)
@@ -234,10 +213,7 @@ def _section_turbulence_icing(inputs: dict, official_only: bool) -> dict:
     }
 
 
-def _section_sun(inputs: dict, official_only: bool) -> dict:
-    if official_only:
-        return _unavailable("sun",
-                            "imd mode: non-official data withheld — official aviation sources only")
+def _section_sun(inputs: dict) -> dict:
     err = _fetch_error_reason(inputs)
     if err:
         return _unavailable("sun", err)
@@ -252,16 +228,15 @@ def _section_sun(inputs: dict, official_only: bool) -> dict:
     }
 
 
-async def _section_alerts(lat: float, lon: float, official_only: bool) -> dict:
+async def _section_alerts(lat: float, lon: float) -> dict:
     """Active official alerts + the single authoritative verdict.
 
-    gather_alerts honours source mode itself (force_official_only in imd
-    mode); build_verdict decides the level once. Severity passes through —
+    build_verdict decides the level once. Severity passes through —
     the briefing never re-grades."""
     loc = LocationService().resolve(lat, lon)
     gathered = await alert_service.gather_alerts(
         lat=lat, lon=lon, district=loc.get("district", ""),
-        state=loc.get("state", ""), force_official_only=official_only)
+        state=loc.get("state", ""))
     verdict = build_verdict(
         cap_alerts=gathered.get("relevant"),
         nearby_alerts=gathered.get("nearby"),
@@ -294,7 +269,6 @@ async def build_briefing(lat: float, lon: float, lang: str = "en") -> dict:
     """Assemble the briefing. The two I/O passes run CONCURRENTLY
     (asyncio.gather); concurrency never changes provenance semantics."""
     language = _lang(lang)
-    only_official = _official_only()
     loc = LocationService().resolve(lat, lon)
 
     # One meteorology fetch + the alert gather, concurrently. Inputs drive the
@@ -303,18 +277,18 @@ async def build_briefing(lat: float, lon: float, lang: str = "en") -> dict:
     # becomes a named failure the sections report as UNAVAILABLE.
     try:
         inputs, alerts = await asyncio.gather(
-            _fetch_inputs(lat, lon), _section_alerts(lat, lon, only_official),
+            _fetch_inputs(lat, lon), _section_alerts(lat, lon),
         )
     except AdapterUnavailable as exc:
         inputs = {"_fetch_error": str(exc) or "meteorology feed unreachable"}
-        alerts = await _section_alerts(lat, lon, only_official)
+        alerts = await _section_alerts(lat, lon)
 
     sections = [
-        _section_winds(inputs, only_official),
-        _section_cloud(inputs, only_official),
-        _section_visibility(inputs, only_official),
-        _section_turbulence_icing(inputs, only_official),
-        _section_sun(inputs, only_official),
+        _section_winds(inputs),
+        _section_cloud(inputs),
+        _section_visibility(inputs),
+        _section_turbulence_icing(inputs),
+        _section_sun(inputs),
         alerts,
     ]
     return {
@@ -325,5 +299,5 @@ async def build_briefing(lat: float, lon: float, lang: str = "en") -> dict:
         "sections": sections,
         "disclaimer": DISCLAIMER[language],
         "source": SOURCE,
-        "mode": config.current_source_mode(),
+        "mode": "imd",
     }

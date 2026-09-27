@@ -64,8 +64,8 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
     advisory_cards_service rules engine (trilingual templates, no LLM).
 
     Reuses weather.py's _live_current/_live_forecast helpers, preserving
-    provenance and the imd-mode official-only rule: imd mode raises rather than
-    backfilling with non-official sources, and surfaces as UNAVAILABLE.
+    provenance: an unreachable source yields UNAVAILABLE, never a fabricated
+    number.
     """
     district = (LocationService().resolve(lat, lon) or {}).get("district") or ""
     async def _safe_current():
@@ -125,11 +125,19 @@ async def advisory(severity: str = "GREEN", hazard: str = "", user_type: str = "
                    lat: Optional[float] = None, lon: Optional[float] = None) -> dict:
     sev = (severity or "GREEN").upper()
     verified = {"verified": sev not in ("GREEN", "NONE", ""), "severity": sev, "hazard": hazard}
-    floor = advisory_for(verified, user_type, language)
+    # Coastal awareness for sea-going personas: resolve the GPS fix so a
+    # fisherman in an inland district is told plainly that sea guidance does
+    # not apply, instead of receiving the generic coastal template. No
+    # location passed means we do not know — coastal=None keeps the normal
+    # wording; an unknown district must never be called inland.
+    loc = (LocationService().resolve(lat, lon)
+           if lat is not None and lon is not None else {})
+    floor = advisory_for(verified, user_type, language,
+                         coastal=loc.get("coastal"), district=loc.get("district") or "")
     # Rule layer (T2.1 S2.1.3): append-only, never softens the floor above.
     # When the client did not pass weather numbers but did pass a location,
-    # the server fetches the current observation itself (DEMO fixtures / live
-    # chain / UNAVAILABLE — same provenance semantics as /api/advisory/cards)
+    # the server fetches the current observation itself (live chain /
+    # UNAVAILABLE — same provenance semantics as /api/advisory/cards)
     # so persona advice reflects real conditions, not alerts alone.
     # Missing/unreachable weather yields no weather lines — never an invented
     # calm, never a false all-clear.

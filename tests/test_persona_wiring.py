@@ -1,9 +1,12 @@
-""""I am a" persona feature - wiring contract tests.
+"""Role ("I am a") wiring contract tests — from-scratch frontend (2026-09-27).
 
-These assert the actual data flow that makes the persona dropdown functional
-(the original bug: it was cosmetic). Backend behaviour (advisory/risk per
-persona) is covered live in test_unknown_risk.py; here we pin the frontend
-wiring so the dropdown can never silently become cosmetic again.
+These pin the actual data flow that makes the role picker functional, so it
+can never silently become cosmetic again:
+- role persisted in localStorage ('saarthi:role')
+- RoleGrid taps write the role (onPick -> setRole)
+- advisory + chat API calls carry the role as user_type/persona
+Backend behaviour (advisory/risk per role) is covered live in
+test_unknown_risk.py; here we pin the frontend wiring.
 """
 import os
 import re
@@ -19,48 +22,55 @@ def _read(name: str) -> str:
         return f.read()
 
 
-def test_store_exposes_persona_and_district():
-    store = _read('store.jsx')
-    assert "setPersona" in store and "persona, setPersona" in store
-    assert "loc, setDistrict, districts" in store  # context value carries location
+def test_role_persisted_in_local_storage():
+    views = _read('views.jsx')
+    assert "useLocalStorage('saarthi:role'" in views, \
+        "the selected role must be persisted (saarthi:role), not held in transient state"
 
 
-def test_persona_role_grid_writes_to_store():
-    # Persona selection moved out of Advisory into Settings (the profile row).
-    # Pin the new wiring so a persona tap can never silently become cosmetic
-    # again.
-    settings = _read(os.path.join('components', 'SettingsPanel.jsx'))
-    assert re.search(r"onPick=\{setPersona\}", settings), \
-        "Settings role grid must wire onPick to the store's setPersona"
-    assert re.search(r"className=\"role-grid\"", settings), \
-        "the persona role grid must render inside SettingsPanel"
-    advisor = _read(os.path.join('components', 'Advisor.jsx'))
-    assert "className=\"role-grid\"" not in advisor, \
-        "Advisor must no longer render the persona role grid"
-    assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*onPick\(ut\.id\)", advisor), \
-        "role card tap must call onPick with the user type"
-    # District selection likewise moved out of the topbar — it now lives in
-    # the location prompt's manual district chips.
-    loc = _read(os.path.join('components', 'LocationPrompt.jsx'))
-    assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*setDistrict\(r\)", loc), \
-        "district chip must write location to store"
+def test_role_grid_writes_role():
+    # RoleGrid renders the tappable grid; a tap must call onPick with the role id.
+    components = _read('components.jsx')
+    assert re.search(r'export function RoleGrid\(\{\s*value,\s*onPick\s*\}\)', components), \
+        "RoleGrid must accept value + onPick"
+    assert 'className="role-grid"' in components, \
+        "the role grid must render with the role-grid class"
+    assert re.search(r'onClick=\{\(\) => onPick\(r\)\}', components), \
+        "role card tap must call onPick with the role id"
+    # AdviceView wires the grid to the persisted role — never cosmetic.
+    views = _read('views.jsx')
+    assert re.search(r'onPick=\{pick\}', views), \
+        "AdviceView must wire RoleGrid onPick to its pick handler"
+    assert re.search(r'setRole\(r\)', views), \
+        "the pick handler must write the role via setRole"
 
 
-def test_homechat_sends_persona_and_location():
-    # Phase 0 (2026-09-21): ChatPanel.jsx was dead code (nothing rendered it);
-    # HomeChat.jsx is the live chat. The persona/location wiring contract is
-    # unchanged — only the owner moved.
-    chat = _read(os.path.join('components', 'HomeChat.jsx'))
-    assert "user_type: persona" in chat, "chat must send the selected persona"
-    assert "latitude: loc && loc.lat" in chat, "chat must send the selected district coords"
-    assert "language: lang" in chat, "chat must send the selected language"
-    assert "PERSONA_LABELS" in chat, "chat header must show who is being answered"
+def test_advisory_calls_send_persona():
+    api = _read('api.js')
+    assert re.search(r'user_type=\$\{encodeURIComponent\(persona\)\}', api), \
+        "profileAdvisory must send the role as user_type"
+    assert re.search(r'persona=\$\{encodeURIComponent\(persona\)\}', api), \
+        "advisoryCards must send the role as persona"
+    views = _read('views.jsx')
+    assert 'api.advisoryCards(loc, role, lang)' in views, \
+        "AdviceView must pass the selected role to advisoryCards"
+    assert 'api.profileAdvisory(loc, role, lang)' in views, \
+        "AdviceView must pass the selected role to profileAdvisory"
 
 
-def test_persona_chips_differ_by_persona():
-    # Phase 0 (2026-09-21): see above — ChatPanel.jsx deleted, HomeChat.jsx live.
-    chat = _read(os.path.join('components', 'HomeChat.jsx'))
-    assert "PERSONA_QUESTIONS[persona]" in chat, "question chips must follow persona"
+def test_chat_sends_persona_and_location():
+    # ChatView posts { message, lat, lon, district, language, user_type } —
+    # the backend tailors advice + caveats by user_type, so dropping it
+    # would silently de-personalize chat answers.
+    views = _read('views.jsx')
+    m = re.search(r'const body = \{([^}]+)\};\s*\n\s*// Try streaming first', views)
+    assert m, "ChatView must build a chat request body"
+    body = m.group(1)
+    assert 'user_type: role' in body, "chat must send the selected role as user_type"
+    assert 'lat: loc.lat' in body and 'lon: loc.lon' in body, \
+        "chat must send the selected location coords"
+    assert 'district: loc.district' in body, "chat must send the district"
+    assert 'language: lang' in body, "chat must send the selected language"
 
 
 def test_backend_advisory_differs_per_persona():

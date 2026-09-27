@@ -26,11 +26,11 @@ the Render dashboard (all `sync:false`, never committed).
 | 12 | `DATABASE_URL` | backend (Render) | Postgres via asyncpg. Without it the app runs on the JSON-file fallback (hosted state does NOT survive restart) | unset → JSON fallback | ☐ |
 | 13 | `VAPID_PRIVATE_KEY` / `VAPID_PUBLIC_KEY` | backend (Render) | Web Push. **ROTATE** — a VAPID private key is exposed in public git history (`vapid_keys.json`) | unset → push off | ☐ |
 | 14 | `EMERGENCY_KEY` | backend (Render) | Fernet-format key for encrypted SOS queue; unset → ephemeral per-process key (documented) | unset → ephemeral | ☐ |
-| 15 | `DEMO_MODE` | backend (Render) | Legacy boolean; `SOURCE_MODE` wins when set. `true` = fixture run (DEMO), `false` = live backends. Abhiram's standing ops plan: **`true` on Render** for the rehearsed run | per your call | ☐ |
-| 16 | `SOURCE_MODE` / `IMD_ADAPTER` | backend (Render) | Explicit mode: `demo` / `imd` / `hybrid` (IMD-only never touches commercial sources). `SOURCE_MODE` wins over `DEMO_MODE`; unset + `DEMO_MODE=false` → `hybrid` | set explicitly | ☐ |
+| 15 | `DEMO_MODE` | backend (Render) | REMOVED 2026-09-27 — no demo mode exists; setting it does nothing | remove | ☐ |
+| 16 | `SOURCE_MODE` / `IMD_ADAPTER` | backend (Render) | REMOVED 2026-09-27 — single IMD-first mode (IMD → Open-Meteo → OpenWeatherMap → cache); no mode switcher exists | remove | ☐ |
 | 17 | `FRONTEND_ORIGINS` | backend (Render) | CORS allow-list, comma-separated — **must include the Vercel URL** (e.g. `https://saarthi.vercel.app`) | unset → CORS blocks the frontend | ☐ |
 | 18 | `VITE_API_URL` | frontend (Vercel) | Backend base URL the app calls (`api.js` prefers this over `VITE_API_BASE`) | unset → relative/same-origin | ☐ |
-| 19 | `VITE_ADMIN_PIN` | frontend (Vercel) | Team PIN for `?view=admin` (demo-grade gate, not authentication; default `26068`) | default `26068` | ☐ |
+| 19 | `VITE_ADMIN_PIN` | frontend (Vercel) | REMOVED 2026-09-27 — the admin panel was removed; no `?view=admin` route exists | remove | ☐ |
 
 **Keys that exist but you do NOT need to set:** `STT_API_KEY`, `TTS_API_KEY` —
 legacy vars in `config.py`, read by nothing; the voice path uses only

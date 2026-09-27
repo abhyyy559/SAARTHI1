@@ -75,8 +75,8 @@ async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: st
     from ..services.advisory_service import weather_advisories, weather_advisories_text
     # Rule layer (T2.1 S2.1.3): append-only weather-grounded lines; never softens the floor.
     # When the client did not pass weather numbers, the server fetches the current
-    # observation for lat/lon itself (DEMO fixtures / live chain / UNAVAILABLE —
-    # same provenance semantics as /api/advisory/cards), so persona advice reflects
+    # observation for lat/lon itself (live chain / UNAVAILABLE — same
+    # provenance semantics as /api/advisory/cards), so persona advice reflects
     # real conditions, not alerts alone. Missing/unreachable weather yields no
     # lines — never an invented calm, never a false all-clear.
     _current, _weather_basis = await weather_mod.resolve_advisory_weather(
@@ -295,7 +295,7 @@ async def v1_status():
     return {
         "state": state,
         "internet_status": "reachable",
-        "source_mode": config.current_source_mode(),
+        "source_mode": "imd",
         "last_sync": iso_now(),
         "database": dbh,
         "data_source_status": srcs,

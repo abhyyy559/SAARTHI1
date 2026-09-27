@@ -144,8 +144,6 @@ const V = '/api/v1';
 
 export const api = {
   health: () => j('/api/health'),
-  mode: () => j('/api/mode'),
-  setMode: (mode) => post('/api/mode', { mode }),
   sources: () => j('/api/sources'),
   status: () => j(`${V}/system/status`),
   resolveLocation: (lat, lon) => j(`${V}/location/resolve?lat=${lat}&lon=${lon}`).then((d) => d.location || d),
@@ -218,7 +216,7 @@ export const api = {
 };
 
 export const HYD = { lat: 17.385, lon: 78.4867, district: 'Hyderabad' };
-// Round2 S1.2.5 aliases: same endpoints, grouped by domain so Admin/AlertDetails/
+// Round2 S1.2.5 aliases: same endpoints, grouped by domain so AlertDetails/
 // Coverage views import intent-revealing names. All hit the identical routes.
 export const ackApi = {
   send: (payload) => api.ack(payload),

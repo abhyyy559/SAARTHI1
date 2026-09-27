@@ -1,28 +1,27 @@
-# When the IMD key arrives
+# IMD API key onboarding
 
-Everything except the endpoint paths is already built and exercised. This is the
-whole change.
+SAARTHI runs in a single IMD-first mode (see `docs/SOURCE-MODES.md`): IMD is
+the primary source, with Open-Meteo / OpenWeatherMap / SACHET-CAP backfill and
+cache. There is no mode switch and no `IMD_ADAPTER` toggle — the only thing
+that turns IMD on is a real key.
 
-## 1. Paste the key
+## 1. Generate the key
 
-`weathergpt/.env`:
+Request API access at the IMD portal (the API is credential-gated; without a
+key the IMD adapter reports `UNCONFIGURED` and the app runs on backfill +
+cache, honestly labelled).
 
-```ini
-IMD_API_KEY=<the key>
-IMD_ADAPTER=live
-```
+## 2. Set `IMD_API_KEY`
 
-`IMD_ADAPTER=live` is what stops the fixture adapter answering. With the key set
-and `IMD_ADAPTER=demo` you still get fixtures (stamped DEMO) — deliberately, so a
-key can be added without silently switching the demo to live data.
+- **Production (Render):** set `IMD_API_KEY` in the Render dashboard
+  (Environment tab of the backend service). Redeploy after saving.
+- **Local:** add it to your `.env`:
+  ```ini
+  IMD_API_KEY=<the key>
+  ```
 
-## 2. Restart the backend
-
-```bash
-cd SAARTHI && PYTHONPATH=weathergpt python -m uvicorn backend.main:app --port 8003
-```
-
-Then check the switch actually took:
+That is the whole change — no code change, no mode to flip. Restart the
+backend and check the source actually took:
 
 ```bash
 curl -s localhost:8003/api/sources | python -m json.tool | grep -A2 '"imd"'
@@ -42,7 +41,7 @@ IMD_BASE_URL=https://mausam.imd.gov.in/api/v1
 IMD_PATH_CURRENT=current_wx        # current observation
 IMD_PATH_FORECAST=cityforecastloc  # city forecast
 IMD_PATH_WARNING=districtwarning   # district warning  <- the one alerts depend on
-IMD_PATH_NOWCAST=districtnowcast   # nowcast
+IMD_PATH_NOWCAST=districtnowcast    # nowcast
 ```
 
 If the key returns `400 Bad Request` or `401`, that is the wiring working and the
@@ -52,7 +51,7 @@ path or the auth scheme being wrong — not a broken integration. Adjust the
 To see the exact URL being attempted:
 
 ```bash
-cd weathergpt && IMD_API_KEY=<key> IMD_ADAPTER=live python -c "
+cd weathergpt && IMD_API_KEY=<key> python -c "
 import sys, asyncio; sys.path.insert(0,'.')
 import backend.services.imd_service as m
 orig = m.httpx.AsyncClient
@@ -67,24 +66,15 @@ asyncio.run(imd_service.IMDService().get_district_warning('Hyderabad'))
 
 ## 4. What changes for the user
 
-Nothing in the UI has to change — that is the point of the source-mode design:
-
-| | now (`demo`) | after the key (`live`) |
-|---|---|---|
-| Weather | IMD-grade fixtures, stamped DEMO | real IMD, stamped LIVE |
-| Warnings | fixtures | real district warnings |
-| Alerts page | demo alerts | live official alerts |
-| Push | works | works, now driven by real alerts |
-
-Switch modes at runtime from the top bar or `POST /api/mode {"mode":"hybrid"}`.
-`hybrid` keeps the multi-source fallback chain (IMD → SACHET/CAP → Open-Meteo),
-so one IMD failure does not blank the screen. The chosen mode is persisted and
-survives a restart.
+Nothing in the UI has to change — that is the point of the single-mode design.
+Before the key, IMD cards read `UNCONFIGURED` and answers ride the backfill
+chain; after the key, the same cards read real IMD data, stamped `LIVE`. The
+provenance chips always name the actual source.
 
 ## Still not covered by the key
 
 - **CAP / SACHET** — separate feed, needs `CAP_FEED_URL`. It is the path that
-  actually carries the NDMA alerts, and it is what is serving alerts today.
+  actually carries the NDMA alerts.
 - **WIS 2.0** — the MQTT push-ingest path is a documented stub
   (`wis2_adapter.py`); it needs a broker and the MQTT dependency. The app polls
   CAP instead. Shown honestly on the Trust view as `STUB / UNCONFIGURED`.

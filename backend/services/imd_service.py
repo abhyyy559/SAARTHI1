@@ -27,7 +27,7 @@ def _report_failure(what: str, exc: Exception) -> None:
     """
     if not config.IMD_API_KEY:
         report("imd", UNCONFIGURED,
-               "no IMD_API_KEY — IMD is credential-gated; set IMD_ADAPTER=demo for fixture warnings")
+               "no IMD_API_KEY — IMD is credential-gated; set IMD_API_KEY to enable official data")
     else:
         report("imd", OFFLINE, f"live {what} failed: {type(exc).__name__}")
 
@@ -63,7 +63,8 @@ def _relative_ts(hours_ago: int = 1, hours_ahead: int | None = None) -> Optional
 
 class IMDService:
     def __init__(self, adapter: Optional[str] = None) -> None:
-        self.adapter = adapter or config.IMD_ADAPTER
+        # Single mode: the live adapter is the only one. Demo mode was removed.
+        self.adapter = adapter or "live"
 
     @property
     def capability(self) -> str:

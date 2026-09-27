@@ -318,9 +318,13 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
                    "issued_at": a.get("sent"), "valid_until": a.get("expires"),
                    "provenance": a.get("provenance") or gathered["provenance"]})
 
-    # imd mode serves IMD facts or nothing, so the phrasing layer must not name
-    # Open-Meteo as the source of an IMD observation (docs/SOURCE-MODES.md).
-    source_name = "IMD" if config.current_source_mode() == "imd" else "Open-Meteo"
+    # Single IMD-first mode: name the source that actually supplied the facts
+    # (the observation payload's own `source` field), never a mode-derived
+    # label — the phrasing layer must not name Open-Meteo as the source of an
+    # IMD observation, nor IMD as the source of a fallback number.
+    source_name = ((current_dict or {}).get("source")
+                   or (forecast_dict or {}).get("source")
+                   or "Open-Meteo")
     notes = {"source_name": source_name, **prov_notes,
              "cap_alerts": cap_alerts, "nearby_alerts": nearby_alerts,
              "warning_raw": warning_d,

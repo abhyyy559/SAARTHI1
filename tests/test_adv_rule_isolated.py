@@ -48,3 +48,30 @@ def test_persona_matrix_kept():
                                        "outdoor-worker", "student"), p
         for lang in ("en", "hi", "te"):
             assert m._NO_WARN[p][lang], (p, lang)
+
+
+def test_inland_fisherman_allclear_has_no_sea_line():
+    # Regression: the backend used to tell inland fishermen to "check again
+    # before sailing" — the frontend filtered it, the raw API did not.
+    for lang in ("en", "hi", "te"):
+        text = advisory_for({"verified": False}, "fisherman", lang,
+                            coastal=False, district="Hyderabad")
+        assert "sailing" not in text.lower(), (lang, text)
+        assert "समुद्र में जाने" not in text, (lang, text)
+        assert "బయలుదేరే" not in text, (lang, text)
+    print("PASS: test_inland_fisherman_allclear_has_no_sea_line")
+
+
+def test_coastal_fisherman_keeps_sea_line():
+    text = advisory_for({"verified": False}, "fisherman", "en",
+                        coastal=True, district="Kochi")
+    assert "before sailing" in text, text
+    print("PASS: test_coastal_fisherman_keeps_sea_line")
+
+
+def test_unknown_coastal_never_called_inland():
+    # coastal=None (unknown district) must not get the inland wording.
+    text = advisory_for({"verified": False}, "fisherman", "en",
+                        coastal=None, district="")
+    assert "not a coastal district" not in text, text
+    print("PASS: test_unknown_coastal_never_called_inland")

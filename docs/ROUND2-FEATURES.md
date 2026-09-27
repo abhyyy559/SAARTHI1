@@ -17,8 +17,8 @@ issuing (upstream, official) and acknowledging (downstream, the citizen).
 ## 1. The core pipeline
 
 ```
-DATA SOURCES
-   Weather APIs (Open-Meteo chain)   Official alerts (SACHET/CAP when granted)   Demo/Admin panel
+DATA SOURCES (single IMD-first mode — no mode switch)
+   IMD → Open-Meteo → OpenWeatherMap → cache (weather) · IMD → SACHET/CAP → cache (warnings)
               └──────────────────────────┬──────────────────────────┘
                                        ↓
                               DATA INGESTION (adapters)
@@ -42,15 +42,10 @@ DATA SOURCES
                        AUTHORITY COVERAGE DASHBOARD
 ```
 
-Both operating modes feed the **same** downstream pipeline — a demo alert and a
-CAP alert are indistinguishable after ingestion except by their `source` label:
-
-- **LIVE mode** — Open-Meteo weather chain + SACHET/CAP official alerts (the
-  connector is built and waiting on `CAP_FEED_URL`; IMD joins as one more
-  connector when API access arrives — no architecture change).
-- **DEMO mode** — the Admin panel creates realistic alerts with the full
-  lifecycle. Every button drives the real pipeline: state machine → push →
-  notification log → delivery ledger.
+One operating mode feeds the downstream pipeline — IMD-first with multi-source
+backfill (see `docs/SOURCE-MODES.md`). There is no demo mode, no mode switch,
+and no admin console (all removed 2026-09-27). Every fact carries its `source`
+label, and the provenance chip always names the actual source that answered.
 
 ---
 
@@ -75,13 +70,11 @@ CAP alert are indistinguishable after ingestion except by their `source` label:
 
 | # | Feature | What it does | Where it lives |
 |---|---|---|---|
-| 11 | **Demo / Admin control panel** — RETIRED 2026-09-23 (demo mode removed) | ~~Create alerts (type, severity, district, timed window, instruction); lifecycle buttons (Pre-alert / Activate / Update / Extend / Cancel / End); immediate push on every action; reset.~~ | ~~`components/AdminPanel.jsx`, `api/demo_alerts.py`~~ |
-| 12 | **One-tap demo scenarios** — RETIRED 2026-09-23 (demo mode removed) | ~~Thunderstorm / Heat wave / Heavy rain / Cyclone — each schedules its own pre-alert (~12 s), activation (~40 s) and end (~3 min), so the lifecycle plays hands-free during the pitch.~~ | ~~`api/demo_alerts.py::create_scenario`~~ |
 | 13 | **Alert scheduler (auto-lifecycle)** | Background watcher advances scheduled alerts by the clock and notifies each state exactly once (dedup persists across restarts). An alert whose whole window passed while the server was down is CANCELLED — never fake-activated. | `services/alert_watcher.py::auto_advance_demo` |
 | 14 | **P2P relay — QR flow (resilience layer)** | Alert travels device-to-device with no internet: the sender's phone shows rotating QR frames, any nearby phone scans them with its camera — no pairing, no accounts. Hop limits (5, or 10 for RED), fail-closed Official badge, acks queued offline. The server-side simulated relay (`POST /api/demo/relay`) was deleted: it fabricated hop traces and `simulated:false` ledger rows for a delivery that never happened. | `frontend-react/src/p2pqr.js`, `components/QrRelay.jsx` / `QrScan.jsx`, `services/emergency_service.py` (encrypted store-and-forward transports) |
 | 15 | **Delivery & acknowledgement ledger** | Per (alert, device) records: DELIVERED (push accepted) / P2P_RELAYED / PENDING / OFFLINE / UNREACHABLE. Engagement (opened / acknowledged) is tracked separately so neither metric hides the other. | `services/delivery_service.py` |
-| 16 | **Authority coverage dashboard** — RETIRED 2026-09-23 (demo mode removed) | ~~Reached %, per-status counts, per-zone grid (NW…SE) showing *which areas have poor alert reach*. Real devices and a labelled SIMULATED audience are always reported separately.~~ | ~~`components/AuthorityDashboard.jsx`, `api/demo_alerts.py::coverage`~~ |
-| 17 | **Data source status** | Per-source LIVE/CACHED/UNAVAILABLE/UNCONFIGURED status; two source modes (IMD / HYBRID). Demo mode removed 2026-09-23. | `components/SourceStrip.jsx`, `api/sources.py`, `api/mode` |
+| 16 | **Alert coverage dashboard** | Reached %, per-status counts, per-zone grid showing *which areas have poor alert reach*. Communication visibility — not a safety count. Formerly the authority console's second card; now public in Trust & sources. | `components/CoverageDashboard.jsx`, `api/ack.py::coverage` |
+| 17 | **Data source status** | Per-source LIVE/CACHED/UNAVAILABLE/UNCONFIGURED status, single IMD-first mode (IMD → Open-Meteo → OWM → SACHET/CAP → cache). Provenance always names the actual source. | `components/SourceStrip.jsx`, `api/sources.py` |
 
 ---
 
@@ -96,8 +89,10 @@ CAP alert are indistinguishable after ingestion except by their `source` label:
   value is *cached* alerts + local rules + P2P relay + sync on reconnect.
 - **Weather forecast ≠ official alert.** Open-Meteo data is never labelled as an
   IMD alert. Source and authority travel with every alert.
-- **Demo data is labelled.** The simulated audience, simulated relay traces and
-  demo alerts carry their SIMULATED/DEMO provenance end to end.
+- **Provenance is end-to-end.** Every fact carries its source label
+  (`LIVE` / `CACHED` / `UNAVAILABLE` / `UNCONFIGURED` / `COMMUNITY`); nothing is
+  silently backfilled, and a backfill source is never labelled as an official
+  alert.
 
 ---
 
@@ -105,19 +100,16 @@ CAP alert are indistinguishable after ingestion except by their `source` label:
 
 | Step | Action | What the jury sees |
 |---|---|---|
-| 1 | Open Home | Verdict, weather, connection state — grounded |
-| 2 | Open **Demo & Authority** → tap **⛈ Thunderstorm** scenario | Alert created; within seconds the PRE-ALERT notification pops (app minimized!) |
-| 3 | ~40 s later | ACTIVE notification arrives on its own — nobody touched the app |
-| 4 | Open **Notifications** | The lifecycle trail: Pre-alert → Active, unread badges |
-| 5 | Open **Advisor** → switch user types | Same storm, different advice for farmer / driver / fisherman / commuter |
-| 6 | Toggle **offline** (top bar) | Alerts and advisories still readable; banner shows cached state + last sync |
-| 7 | Admin → **P2P relay** | Ledger records Device B → Device A transfer with no internet; coverage shows P2P_RELAYED |
-| 8 | **Seed audience** → open dashboard | Reached %, offline, unreachable, P2P per zone — real and simulated kept apart |
-| 9 | Wait for **ends_at** (or press **End alert**) | "Safe now — the warning has ended" notification; final coverage state |
+| 1 | Open Home | Verdict, weather, connection state — grounded, provenance chips on everything |
+| 2 | Open **Alerts** | Active warnings with severity, validity window, instruction, source |
+| 3 | Open **Notifications** (topbar bell) | The lifecycle trail of everything SAARTHI sent — even while the app was closed |
+| 4 | Open **Advisory** → switch user types | Same weather, different advice for farmer / driver / fisherman / commuter |
+| 5 | Toggle **offline** (top bar) | Alerts and advisories still readable; banner shows cached state + last sync |
+| 6 | Trust & sources → coverage | Delivery/ack counts per district and zone — communication visibility, not a safety count |
 
-Everything above is triggerable live. If the stage WiFi dies: offline mode,
-cached alerts, the demo panel and coverage all run on localhost without any
-external API.
+Everything above runs on the live single-mode pipeline — no fixtures, no demo
+panel. If the stage WiFi dies: offline mode, cached alerts and advisories keep
+working on localhost; the provenance chips read CACHED instead of failing.
 
 ---
 
@@ -126,5 +118,7 @@ external API.
 - No SMS channel (needs a gateway contract; the architecture has a slot for it).
 - No cell-broadcast integration (that is SACHET's infrastructure — we position
   alongside it).
-- No real IMD feed yet (connector is ready; the demo panel stands in).
+- No real IMD feed yet (connector is ready; without the key the IMD card reads
+  UNCONFIGURED and answers ride the backfill chain — see
+  `docs/IMD-KEY-ONBOARDING.md`).
 - No nationwide claims from a two-device P2P demo.

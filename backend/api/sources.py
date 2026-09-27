@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api")
 @router.get("/sources")
 async def sources() -> dict:
     return {
-        "source_mode": config.current_source_mode(),
+        "source_mode": "imd",
         "sources": snapshot(),
         "needs_keys": {
             "DATAGOV_API_KEY": not bool(config.DATAGOV_API_KEY),

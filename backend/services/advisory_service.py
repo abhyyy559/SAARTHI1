@@ -236,6 +236,16 @@ _ACTION_INLAND_FISHERMAN = {
 }
 
 
+# All-clear for a fisherman we KNOW is inland: the sea-sailing line in
+# _NO_WARN["fisherman"] would be noise, so the backend says the inland thing
+# itself instead of relying on the frontend to filter it.
+_NO_WARN_INLAND_FISHERMAN = {
+    "en": "No severe-weather warning for your area right now. If you fish in tanks, reservoirs or rivers, stay off the water during lightning and strong winds.",
+    "hi": "फिलहाल आपके क्षेत्र के लिए कोई गंभीर मौसम चेतावनी नहीं है। यदि आप तालाब, जलाशय या नदी में मछली पकड़ते हैं, तो बिजली और तेज़ हवा के दौरान पानी से दूर रहें।",
+    "te": "ప్రస్తుతం మీ ప్రాంతానికి తీవ్ర వాతావరణ హెచ్చరిక లేదు. మీరు చెరువులు, జలాశయాలు లేదా నదుల్లో చేపలు పడితే, పిడుగులు మరియు బలమైన గాలుల సమయంలో నీటికి దూరంగా ఉండండి.",
+}
+
+
 # The feed answered, but every alert it had for this district has closed its
 # validity window. That is NOT "the service is unreachable" — saying so would be
 # a false statement about the world, and it sends the reader to the wrong fix.
@@ -1359,6 +1369,8 @@ def advisory_for(
             return lead + _UNVERIFIED[lang]
         # Honesty rule 2: only a confirmed, LOW verdict is an all-clear.
         if confirmed and level == "LOW":
+            if inland:
+                return lead + _NO_WARN_INLAND_FISHERMAN[lang]
             return lead + _NO_WARN[key][lang]
         # Anything else is an official hazard we must not render as calm.
         src = verified if isinstance(verified, dict) else {}
@@ -1372,6 +1384,8 @@ def advisory_for(
     if unreachable:
         return lead + _UNREACHABLE[key][lang]
     if not src.get("verified"):
+        if inland:
+            return lead + _NO_WARN_INLAND_FISHERMAN[lang]
         return lead + _NO_WARN[key][lang]
     sev = (src.get("severity") or "GREEN").upper()
     haz = src.get("hazard") or "Severe weather"

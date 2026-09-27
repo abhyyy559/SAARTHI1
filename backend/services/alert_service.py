@@ -236,15 +236,6 @@ def attach_lifecycle_detail(alert: dict[str, Any] | None) -> dict[str, Any] | No
     return alert
 
 
-def official_only() -> bool:
-    """True in `imd` mode: IMD facts or nothing, so the commercial chain is
-    skipped entirely (docs/SOURCE-MODES.md)."""
-    try:
-        return config.current_source_mode() == "imd"
-    except Exception:  # noqa: BLE001 - never let a mode lookup break alerting
-        return False
-
-
 def classify_alert(alert: dict, *, lat: float, lon: float, district: str, state_name: str) -> str:
     """Tag the alert in place; return 'relevant' | 'nearby' | 'drop'.
 
@@ -334,7 +325,7 @@ async def gather_alerts(*, lat: float, lon: float, district: str, state: str = "
     key = (
         round(float(lat or 0.0), 3), round(float(lon or 0.0), 3),
         (district or "").lower(), (state or "").lower(),
-        official_only() if force_official_only is None else bool(force_official_only),
+        bool(force_official_only),
     )
     pending = _inflight.get(key)
     if pending is None:
@@ -383,7 +374,7 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
     provenance = "UNCONFIGURED"
     feeds: list[str] = []
 
-    only_official = official_only() if force_official_only is None else force_official_only
+    only_official = bool(force_official_only)
     if only_official:
         cap_alerts, cap_prov = await _fetch_cap()
         chain_alerts, chain_prov = [], ""

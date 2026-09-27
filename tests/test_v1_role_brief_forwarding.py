@@ -5,13 +5,12 @@ WeatherCard calls this route, and dropping them silently served the
 "general" brief to every role.
 
 The live chain is mocked (_live_current/_live_forecast), so this runs
-offline; imd mode skips the OWM cross-check, so no network path remains.
+offline; the OWM cross-check is stubbed too, so no network path remains.
 """
 import pytest
 from fastapi.testclient import TestClient
 
 import backend.api.weather as weather_mod
-import backend.config as config
 from backend.main import app
 
 FARMER_MODERATE_RAIN_HEADLINE = "Rain in the next few days — plan field work around it"
@@ -30,8 +29,12 @@ def _offline_live(monkeypatch):
 
     monkeypatch.setattr(weather_mod, "_live_current", fake_current)
     monkeypatch.setattr(weather_mod, "_live_forecast", fake_forecast)
-    # imd mode skips the OWM cross-check, so no other network path remains.
-    monkeypatch.setattr(config, "SOURCE_MODE", "imd")
+    # Single IMD-first mode always runs the OWM cross-check — stub it so no
+    # network path remains.
+    async def fake_cross_check(lat, lon):
+        return None, "UNCONFIGURED"
+
+    monkeypatch.setattr(weather_mod, "_cross_check", fake_cross_check)
 
 
 def test_v1_current_forwards_role_and_lang_to_brief():
