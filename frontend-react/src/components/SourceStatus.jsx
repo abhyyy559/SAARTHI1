@@ -1,7 +1,7 @@
 // Source Status — data source status page (Round2 S3.3.4).
 //
 // SACHET CAP / Open-Meteo / WIS2 / IMD via GET /api/sources. Every adapter's
-// own status string renders VERBATIM (LIVE | CACHED | DEMO | READY |
+// own status string renders VERBATIM (LIVE | CACHED | READY |
 // UNCONFIGURED | OFFLINE | ERROR) — honest UNCONFIGURED labels are kept, never
 // relabelled upward.
 //
@@ -33,7 +33,6 @@ const WANT = [
 
 const CITIZEN_KEY = {
   LIVE: 'srcLineLive',
-  DEMO: 'srcLineDemo',
   UNCONFIGURED: 'srcLineUnconfigured',
   OFFLINE: 'srcLineOffline',
   CACHED: 'srcLineCached',

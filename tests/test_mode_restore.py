@@ -1,14 +1,13 @@
-"""The persisted DEMO/HYBRID/IMD mode must survive a restart.
+"""The persisted IMD/HYBRID source mode must survive a restart.
 
-This is the bug that made the whole demo panel look broken: the mode was
-persisted correctly, but nothing read it back at startup, so every restart
-re-read `.env` (`DEMO_MODE=false`) and came up in hybrid. The UI kept believing
-demo was on and polled `/api/demo/*` into a wall of 403s.
+Demo mode was removed (2026-09-23), so the persisted values that matter are
+"imd" and "hybrid" — and a stale legacy "demo" row must be IGNORED, never
+resurrected, because the fixture data behind it no longer exists.
 
-Root cause: the restore was registered with `@app.on_event("startup")`, but the
-app passes a custom `lifespan=`. In Starlette a custom lifespan REPLACES the
-default lifespan — the one that invokes `on_startup` handlers — so the handler
-was never called. These tests exercise the real lifespan, not the helper.
+These tests exercise the real lifespan, not the helper: the restore is
+wired to the custom lifespan() in main.py (a restore registered with
+@app.on_event("startup") would silently never run, since a custom lifespan
+replaces Starlette's default one).
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -28,36 +27,33 @@ def isolated_store(tmp_path, monkeypatch):
 def boot_hybrid(monkeypatch):
     """Boot state as .env defines it: hybrid, so a restore is observable."""
     monkeypatch.setattr(config, "SOURCE_MODE", "hybrid", raising=False)
-    monkeypatch.setattr(config, "DEMO_MODE", False, raising=False)
     monkeypatch.setattr(config, "IMD_ADAPTER", "live", raising=False)
 
 
-def test_lifespan_restores_persisted_demo_mode(isolated_store, boot_hybrid):
-    """Start the app for real: the persisted 'demo' must win over .env."""
+def test_lifespan_restores_persisted_imd_mode(isolated_store, boot_hybrid):
+    """Start the app for real: the persisted 'imd' must win over .env."""
     import asyncio
 
-    asyncio.run(mode_persistence.persist_async("demo"))
+    asyncio.run(mode_persistence.persist_async("imd"))
     assert config.current_source_mode() == "hybrid"  # nothing restored yet
 
     from backend.main import app
 
     with TestClient(app):
-        assert config.current_source_mode() == "demo"
-        assert config.DEMO_MODE is True
-        assert config.IMD_ADAPTER == "demo"
+        assert config.current_source_mode() == "imd"
+        assert config.IMD_ADAPTER == "live"
 
 
-def test_demo_endpoints_open_after_restore(isolated_store, boot_hybrid):
-    """The user-visible consequence: /api/demo/* stops 403-ing."""
+def test_persisted_legacy_demo_value_is_ignored(isolated_store, boot_hybrid):
+    """A stale 'demo' row must never resurrect demo mode — the fixtures are gone."""
     import asyncio
 
     asyncio.run(mode_persistence.persist_async("demo"))
 
     from backend.main import app
 
-    with TestClient(app) as c:
-        assert c.get("/api/demo/alerts").status_code == 200
-        assert c.get("/api/health").json()["source_mode"] == "demo"
+    with TestClient(app):
+        assert config.current_source_mode() == "hybrid"
 
 
 def test_lifespan_leaves_hybrid_alone(isolated_store, boot_hybrid):

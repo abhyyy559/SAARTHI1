@@ -54,10 +54,12 @@ test('hero chat card: white card, 2px ink border, hard shadow, dominant log', ()
   const c = chatCss();
   assert.match(c, /\.hc\.is-hero\s*\{[^}]*border:\s*2px solid var\(--ink\)/, 'hero card keeps the 2px ink border');
   assert.match(c, /\.hc\.is-hero\s*\{[^}]*box-shadow:\s*6px 6px 0 var\(--ink\)/, 'hero card carries the hardest shadow on the view');
-  assert.match(c, /\.hc\.is-hero \.hc-log\s*\{[^}]*min-height:\s*32vh/, 'conversation area dominates the screen');
-  for (const sel of ['.hc.is-hero .hc-mic', '.hc.is-hero .hc-send']) {
+  assert.match(c, /\.hc\.is-hero \.hc-log\s*\{[^}]*min-height:\s*16vh/, 'hero stays compact — conversation area does not dominate the screen');
+  // Hero mic/send inherit the base 44px touch target (no hero-specific
+  // override): the ≥44px touch contract is satisfied by the base rule.
+  for (const sel of ['.hc-mic', '.hc-send']) {
     const esc = sel.replace(/\./g, '\\.');
-    assert.match(c, new RegExp(`${esc}[^}]*?min-height:\\s*52px`), `${sel} stays a ≥44px touch target`);
+    assert.match(c, new RegExp(`${esc}[^}]*?min-height:\\s*44px`), `${sel} stays a ≥44px touch target`);
   }
   // The hero card must tighten, never overflow, at the smallest widths.
   assert.match(c, /@media\s*\(\s*max-width:\s*380px\s*\)[\s\S]*?\.hc\.is-hero/, 'hero card must adapt at ≤380px');

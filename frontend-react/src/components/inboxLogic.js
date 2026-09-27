@@ -43,7 +43,7 @@ export function transitionKey(kind) {
 
 // Group newest-first notification rows into per-alert trails.
 // Each group: { key, alertId, items (oldest-first), latest, unread,
-// severity, demo }. `tr` is the translate function (injected so this file
+// severity }. `tr` is the translate function (injected so this file
 // stays importable in node).
 export function groupNotifications(items) {
   const order = [];
@@ -51,14 +51,13 @@ export function groupNotifications(items) {
   for (const n of items || []) {
     const key = n.alert_id || `misc:${n.district || ''}:${n.kind || ''}`;
     if (!byKey.has(key)) {
-      const g = { key, alertId: n.alert_id || '', items: [], unread: 0, demo: false };
+      const g = { key, alertId: n.alert_id || '', items: [], unread: 0 };
       byKey.set(key, g);
       order.push(g);
     }
     const g = byKey.get(key);
     g.items.push(n);
     if (!n.read) g.unread += 1;
-    if (n.alert_id && String(n.alert_id).startsWith('demo-')) g.demo = true;
   }
   for (const g of order) {
     // Timeline reads oldest -> newest: issued first, ended last.
@@ -71,8 +70,8 @@ export function groupNotifications(items) {
   return order;
 }
 
-// Human title for a group. Demo alerts resolve through the fetched bulletin;
-// official trails read the hazard out of their stable key; nothing is guessed.
+// Human title for a group. Fetched bulletins win when present; official
+// trails read the hazard out of their stable key; nothing is guessed.
 export function groupTitle(group, fetched, tr) {
   if (fetched && (fetched.title || fetched.hazard)) {
     return fetched.title || fetched.hazard;
@@ -100,13 +99,4 @@ export function relTime(iso, nowMs = Date.now()) {
     const days = Math.round(hrs / 24);
     return `${days} d ago`;
   } catch { return ''; }
-}
-
-// Merge official CAP alerts and demo alerts into one list, official first,
-// each tagged with its origin so the row can label it honestly.
-export function mergeAlerts(official, demo) {
-  const list = [];
-  for (const a of official || []) list.push({ ...a, _origin: 'official' });
-  for (const a of demo || []) list.push({ ...a, _origin: 'demo' });
-  return list;
 }

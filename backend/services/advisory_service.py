@@ -458,6 +458,824 @@ def weather_advisories(
     return items[:3]
 
 
+# ---------------------------------------------------------------------------
+# Role-first weather brief (2026-09-23).
+#
+# Raw numbers ("23°C, 82% humidity") mean nothing to most users. The brief
+# translates the observed/forecast window into what the weather MEANS for the
+# user's role: a plain-language headline plus 1-2 focus lines, with numbers
+# as supporting detail, never the headline.
+#
+# Same conservative thresholds as weather_advisories(), plus a 40 kph "rough"
+# wind band for wind-sensitive roles (fishing, aviation, driving). Every
+# user-facing string is EN/HI/TE. Empty input yields {} — never invented.
+# ---------------------------------------------------------------------------
+_WIND_ROUGH_KPH = 40.0
+
+_BRIEF_KIND_ORDER = ("heavy_rain", "gale", "heatwave", "heat_stress",
+                     "cold", "moderate_rain", "rough")
+
+_KIND_LABEL = {
+    "heavy_rain": {"en": "heavy rain", "hi": "भारी बारिश", "te": "భారీ వర్షం"},
+    "gale": {"en": "strong wind", "hi": "तेज़ हवा", "te": "బలమైన గాలి"},
+    "heatwave": {"en": "extreme heat", "hi": "अत्यधिक गर्मी", "te": "తీవ్ర వేడి"},
+    "heat_stress": {"en": "heat stress", "hi": "हीट स्ट्रेस", "te": "హీట్ స్ట్రెస్"},
+    "cold": {"en": "cold", "hi": "ठंड", "te": "చలి"},
+    "moderate_rain": {"en": "moderate rain", "hi": "मध्यम बारिश", "te": "మధ్యస్థ వర్షం"},
+    "rough": {"en": "rough winds", "hi": "उफनती हवाएँ", "te": "అలజడి గాలులు"},
+}
+
+# _ROLE_BRIEF[role][kind] = {"headline": {en,hi,te}, "lines": [{en,hi,te}, ...]}.
+# {v} cites the number that fired the rule (rain mm / wind kph / temp °C);
+# {t} is the window's peak temperature. Max 2 lines are ever surfaced.
+_ROLE_BRIEF = {
+    "farmer": {
+        "heavy_rain": {
+            "headline": {
+                "en": "Heavy rain coming — protect the crop",
+                "hi": "भारी बारिश आ रही है — फसल बचाएँ",
+                "te": "భారీ వర్షం వస్తోంది — పంటను కాపాడుకోండి",
+            },
+            "lines": [
+                {"en": "Hold off on spraying and irrigation until it passes.",
+                 "hi": "इसके गुज़रने तक छिड़काव और सिंचाई रोक दें।",
+                 "te": "ఇది దాటే వరకు పిచికారీ, నీటిపారుదల ఆపండి."},
+                {"en": "Clear field drainage and cover harvested produce.",
+                 "hi": "खेत की जल निकासी साफ करें और कटी उपज ढक दें।",
+                 "te": "పొలం నీటి పారుదల శుభ్రం చేసి, కోసిన పంటను కప్పండి."},
+            ],
+        },
+        "moderate_rain": {
+            "headline": {
+                "en": "Rain in the next few days — plan field work around it",
+                "hi": "अगले कुछ दिनों में बारिश — खेत का काम उसी हिसाब से करें",
+                "te": "రాబోయే రోజుల్లో వర్షం — పొలం పనులు దానికి తగ్గట్టు ప్లాన్ చేయండి",
+            },
+            "lines": [
+                {"en": "Spray only if you get a dry window of several hours.",
+                 "hi": "कई घंटों का सूखा समय मिले तभी छिड़काव करें।",
+                 "te": "కొన్ని గంటల పొడి సమయం దొరికితేనే పిచికారీ చేయండి."},
+            ],
+        },
+        "gale": {
+            "headline": {
+                "en": "Strong winds — skip spraying",
+                "hi": "तेज़ हवाएँ — छिड़काव न करें",
+                "te": "బలమైన గాలులు — పిచికారీ వద్దు",
+            },
+            "lines": [
+                {"en": "Wind will blow spray off target; wait for calm air.",
+                 "hi": "हवा दवा को बहा ले जाएगी; हवा शांत होने का इंतज़ार करें।",
+                 "te": "గాలి మందును ఎగరగొడుతుంది; గాలి తగ్గే వరకు ఆగండి."},
+                {"en": "Tie down covers and secure loose sheets on sheds.",
+                 "hi": "ढकने की चादरें बाँधें, शेड की खुली चादरें कसें।",
+                 "te": "కప్పులను కట్టండి, షెడ్లపై వదులు రేకులను బిగించండి."},
+            ],
+        },
+        "heatwave": {
+            "headline": {
+                "en": "Extreme heat — crops under stress",
+                "hi": "अत्यधिक गर्मी — फसल तनाव में",
+                "te": "తీవ్ర వేడి — పంట ఒత్తిడిలో",
+            },
+            "lines": [
+                {"en": "Irrigate early morning or evening, not midday.",
+                 "hi": "सुबह जल्दी या शाम को सिंचाई करें, दोपहर में नहीं।",
+                 "te": "తెల్లవారుజామున లేదా సాయంత్రం నీరు పెట్టండి, మధ్యాహ్నం వద్దు."},
+            ],
+        },
+        "heat_stress": {
+            "headline": {
+                "en": "Hot and humid — hard days for field work",
+                "hi": "गर्मी और उमस — खेत के काम के लिए कठिन दिन",
+                "te": "వేడి, ఉక్కపోత — పొలం పనికి కష్టమైన రోజులు",
+            },
+            "lines": [
+                {"en": "Start work early, drink water often, rest in shade.",
+                 "hi": "काम जल्दी शुरू करें, बार-बार पानी पिएँ, छाँव में आराम करें।",
+                 "te": "పని తెల్లవారుజామునే మొదలుపెట్టండి, తరచూ నీరు తాగండి, నీడలో విశ్రాంతి తీసుకోండి."},
+            ],
+        },
+        "cold": {
+            "headline": {
+                "en": "Cold nights ahead — young plants at risk",
+                "hi": "आगे ठंडी रातें — नन्हे पौधों को खतरा",
+                "te": "చల్లని రాత్రులు రాబోతున్నాయి — లేత మొక్కలకు ప్రమాదం",
+            },
+            "lines": [
+                {"en": "Cover seedlings and protect young plants from frost.",
+                 "hi": "पौध को ढकें, नन्हे पौधों को पाले से बचाएँ।",
+                 "te": "నారును కప్పండి, లేత మొక్కలను మంచు నుండి కాపాడండి."},
+            ],
+        },
+    },
+    "fisherman": {
+        "gale": {
+            "headline": {
+                "en": "Too rough — stay off the water",
+                "hi": "बहुत उफान — पानी में न उतरें",
+                "te": "చాలా అలజడి — నీటిలోకి దిగవద్దు",
+            },
+            "lines": [
+                {"en": "Strong winds {v} kph; dangerous for all boats.",
+                 "hi": "तेज़ हवाएँ {v} किमी/घंटा; सभी नावों के लिए खतरनाक।",
+                 "te": "బలమైన గాలులు {v} కిమీ/గం; అన్ని పడవలకు ప్రమాదకరం."},
+                {"en": "If already out, head back to shore now.",
+                 "hi": "बाहर हों तो अभी तट पर लौटें।",
+                 "te": "బయట ఉంటే ఇప్పుడే తీరానికి తిరిగి రండి."},
+            ],
+        },
+        "rough": {
+            "headline": {
+                "en": "Choppy seas — small boats stay in",
+                "hi": "उफनता समुद्र — छोटी नावें किनारे रहें",
+                "te": "అలజడి సముద్రం — చిన్న పడవలు ఒడ్డునే ఉండండి",
+            },
+            "lines": [
+                {"en": "Winds near {v} kph; not safe for small craft.",
+                 "hi": "{v} किमी/घंटा के आसपास हवाएँ; छोटी नावों के लिए सुरक्षित नहीं।",
+                 "te": "{v} కిమీ/గం గాలులు; చిన్న పడవలకు సురక్షితం కాదు."},
+            ],
+        },
+        "heavy_rain": {
+            "headline": {
+                "en": "Heavy rain over the coast — poor visibility",
+                "hi": "तट पर भारी बारिश — दृश्यता कम",
+                "te": "తీరంలో భారీ వర్షం — దృశ్యమానత తక్కువ",
+            },
+            "lines": [
+                {"en": "Check the marine bulletin before heading out.",
+                 "hi": "निकलने से पहले मरीन बुलेटिन ज़रूर देखें।",
+                 "te": "బయలుదేరే ముందు మెరైన్ బులెటిన్ చూడండి."},
+            ],
+        },
+    },
+    "driver": {
+        "heavy_rain": {
+            "headline": {
+                "en": "Risky roads — heavy rain",
+                "hi": "खतरनाक सड़कें — भारी बारिश",
+                "te": "ప్రమాదకర రోడ్లు — భారీ వర్షం",
+            },
+            "lines": [
+                {"en": "Avoid waterlogged stretches; never drive through standing water.",
+                 "hi": "जलभराव वाले रास्तों से बचें; खड़े पानी में गाड़ी कभी न चलाएँ।",
+                 "te": "నీరు నిలిచిన రోడ్లకు దూరంగా ఉండండి; నిలిచిన నీటిలో వాహనం నడపవద్దు."},
+            ],
+        },
+        "moderate_rain": {
+            "headline": {
+                "en": "Wet roads ahead",
+                "hi": "आगे गीली सड़कें",
+                "te": "ముందు తడి రోడ్లు",
+            },
+            "lines": [
+                {"en": "Slow down and keep extra distance from the vehicle ahead.",
+                 "hi": "गति कम रखें, आगे के वाहन से ज़्यादा दूरी रखें।",
+                 "te": "వేగం తగ్గించండి, ముందు వాహనానికి ఎక్కువ దూరం ఉంచండి."},
+            ],
+        },
+        "gale": {
+            "headline": {
+                "en": "Strong winds — grip the wheel",
+                "hi": "तेज़ हवाएँ — स्टीयरिंग कसकर पकड़ें",
+                "te": "బలమైన గాలులు — స్టీరింగ్ గట్టిగా పట్టుకోండి",
+            },
+            "lines": [
+                {"en": "Be careful on bridges and open highways; watch for fallen branches.",
+                 "hi": "पुलों और खुले हाईवे पर सावधान रहें; गिरी डालियों पर नज़र रखें।",
+                 "te": "వంతెనలు, ఖాళీ హైవేలపై జాగ్రత్త; పడిన కొమ్మలను గమనించండి."},
+            ],
+        },
+        "cold": {
+            "headline": {
+                "en": "Cold mornings — watch for fog",
+                "hi": "ठंडी सुबह — कोहरे से सावधान",
+                "te": "చల్లని ఉదయాలు — పొగమంచు జాగ్రత్త",
+            },
+            "lines": [
+                {"en": "Use headlights and drive slow if fog appears.",
+                 "hi": "कोहरा दिखे तो हेडलाइट जलाएँ, धीरे चलाएँ।",
+                 "te": "పొగమంచు కనిపిస్తే హెడ్‌లైట్లు వేసి నెమ్మదిగా నడపండి."},
+            ],
+        },
+    },
+    "commuter": {
+        "heavy_rain": {
+            "headline": {
+                "en": "Expect a messy commute",
+                "hi": "अस्त-व्यस्त सफर की तैयारी रखें",
+                "te": "గందరగోళ ప్రయాణానికి సిద్ధంగా ఉండండి",
+            },
+            "lines": [
+                {"en": "Leave early; buses and trains may run late.",
+                 "hi": "जल्दी निकलें; बस-ट्रेन देर से चल सकती हैं।",
+                 "te": "తొందరగా బయలుదేరండి; బస్సులు, రైళ్లు ఆలస్యం కావచ్చు."},
+                {"en": "Avoid low-lying, flood-prone routes.",
+                 "hi": "निचले, बाढ़-प्रवण रास्तों से बचें।",
+                 "te": "తక్కువ ప్రాంతాలు, వరద ముంపు రోడ్లకు దూరంగా ఉండండి."},
+            ],
+        },
+        "moderate_rain": {
+            "headline": {
+                "en": "Rainy commute likely — carry rain gear",
+                "hi": "बारिश वाला सफर संभव — छाता/रेनकोट रखें",
+                "te": "వర్షపు ప్రయాణం సంభవం — గొడుగు/రెయిన్‌కోట్ ఉంచుకోండి",
+            },
+            "lines": [
+                {"en": "Allow extra travel time.",
+                 "hi": "यात्रा में अतिरिक्त समय रखें।",
+                 "te": "ప్రయాణానికి అదనపు సమయం ఉంచుకోండి."},
+            ],
+        },
+        "heat_stress": {
+            "headline": {
+                "en": "Hot, sticky commute",
+                "hi": "गर्म, चिपचिपा सफर",
+                "te": "వేడి, ఉక్కపోత ప్రయాణం",
+            },
+            "lines": [
+                {"en": "Carry water; crowded buses and platforms feel hotter.",
+                 "hi": "पानी साथ रखें; भीड़ वाली बसों-प्लेटफॉर्म पर गर्मी ज़्यादा लगती है।",
+                 "te": "నీరు తీసుకెళ్లండి; రద్దీ బస్సులు, ప్లాట్‌ఫారాలపై వేడి ఎక్కువగా అనిపిస్తుంది."},
+            ],
+        },
+        "gale": {
+            "headline": {
+                "en": "Windy commute",
+                "hi": "हवादार सफर",
+                "te": "గాలుల ప్రయాణం",
+            },
+            "lines": [
+                {"en": "Hold on tight on two-wheelers and open platforms.",
+                 "hi": "दुपहिया और खुले प्लेटफॉर्म पर कसकर पकड़ें।",
+                 "te": "ద్విచక్ర వాహనాలు, ఖాళీ ప్లాట్‌ఫారాలపై గట్టిగా పట్టుకోండి."},
+            ],
+        },
+    },
+    "employee": {
+        "heavy_rain": {
+            "headline": {
+                "en": "Heavy rain — plan the workday around it",
+                "hi": "भारी बारिश — काम का दिन उसी हिसाब से बनाएँ",
+                "te": "భారీ వర్షం — పని దినాన్ని దానికి తగ్గట్టు ప్లాన్ చేయండి",
+            },
+            "lines": [
+                {"en": "Leave early or ask about remote work; avoid flooded routes.",
+                 "hi": "जल्दी निकलें या घर से काम की बात करें; जलभराव वाले रास्तों से बचें।",
+                 "te": "తొందరగా బయలుదేరండి లేదా ఇంటి నుండి పని గురించి అడగండి; నీరు నిలిచిన రోడ్లకు దూరంగా ఉండండి."},
+            ],
+        },
+        "moderate_rain": {
+            "headline": {
+                "en": "Rainy commute likely",
+                "hi": "बारिश वाला सफर संभव",
+                "te": "వర్షపు ప్రయాణం సంభవం",
+            },
+            "lines": [
+                {"en": "Allow extra travel time.",
+                 "hi": "यात्रा में अतिरिक्त समय रखें।",
+                 "te": "ప్రయాణానికి అదనపు సమయం ఉంచుకోండి."},
+            ],
+        },
+        "heat_stress": {
+            "headline": {
+                "en": "Hot and humid workday",
+                "hi": "गर्म और उमस भरा काम का दिन",
+                "te": "వేడి, ఉక్కపోత పని దినం",
+            },
+            "lines": [
+                {"en": "Drink water through the day; keep rooms ventilated.",
+                 "hi": "दिनभर पानी पिएँ; कमरों में हवा आती रहे।",
+                 "te": "రోజంతా నీరు తాగండి; గదుల్లో గాలి ఆడేలా చూడండి."},
+            ],
+        },
+        "heatwave": {
+            "headline": {
+                "en": "Extreme heat — limit midday travel",
+                "hi": "अत्यधिक गर्मी — दोपहर का सफर सीमित करें",
+                "te": "తీవ్ర వేడి — మధ్యాహ్న ప్రయాణాన్ని తగ్గించండి",
+            },
+            "lines": [
+                {"en": "Postpone outdoor errands to morning or evening.",
+                 "hi": "बाहर के काम सुबह या शाम को करें।",
+                 "te": "బయటి పనులు ఉదయం లేదా సాయంత్రానికి వాయిదా వేయండి."},
+            ],
+        },
+    },
+    "outdoor-worker": {
+        "heatwave": {
+            "headline": {
+                "en": "Too hot for midday work",
+                "hi": "दोपहर के काम के लिए बहुत गर्म",
+                "te": "మధ్యాహ్న పనికి చాలా వేడి",
+            },
+            "lines": [
+                {"en": "Shift heavy work to early morning; drink water every hour.",
+                 "hi": "भारी काम सुबह जल्दी निपटाएँ; हर घंटे पानी पिएँ।",
+                 "te": "భారీ పని తెల్లవారుజామునే చేయండి; ప్రతి గంటకు నీరు తాగండి."},
+                {"en": "Watch for dizziness or nausea — stop and rest in shade.",
+                 "hi": "चक्कर या मतली लगे तो रुकें, छाँव में आराम करें।",
+                 "te": "తలతిరగడం, వికారం అనిపిస్తే ఆగి నీడలో విశ్రాంతి తీసుకోండి."},
+            ],
+        },
+        "heat_stress": {
+            "headline": {
+                "en": "Hot and humid — pace yourself",
+                "hi": "गर्मी और उमस — धीरे-धीरे काम करें",
+                "te": "వేడి, ఉక్కపోత — నెమ్మదిగా పని చేయండి",
+            },
+            "lines": [
+                {"en": "Rest in shade often; drink water before you feel thirsty.",
+                 "hi": "बार-बार छाँव में आराम करें; प्यास लगने से पहले पानी पिएँ।",
+                 "te": "తరచూ నీడలో విశ్రాంతి తీసుకోండి; దాహం వేయకముందే నీరు తాగండి."},
+            ],
+        },
+        "heavy_rain": {
+            "headline": {
+                "en": "Downpours coming — plan for shelter",
+                "hi": "मूसलाधार बारिश आ रही — आश्रय की तैयारी रखें",
+                "te": "కుండపోత వర్షం వస్తోంది — ఆశ్రయానికి సిద్ధంగా ఉండండి",
+            },
+            "lines": [
+                {"en": "Stop exposed work during lightning; move under cover.",
+                 "hi": "बिजली गिरते समय खुला काम रोकें; छत के नीचे जाएँ।",
+                 "te": "మెరుపుల సమయంలో బహిరంగ పని ఆపండి; కప్పు కిందకు వెళ్లండి."},
+            ],
+        },
+        "gale": {
+            "headline": {
+                "en": "Strong winds on site",
+                "hi": "साइट पर तेज़ हवाएँ",
+                "te": "సైట్‌లో బలమైన గాలులు",
+            },
+            "lines": [
+                {"en": "Tie down loose material; stay clear of scaffolding and hoardings.",
+                 "hi": "खुला सामान बाँधें; मचान और होर्डिंग से दूर रहें।",
+                 "te": "వదులు సామగ్రిని కట్టండి; స్కాఫోల్డింగ్, హోర్డింగులకు దూరంగా ఉండండి."},
+            ],
+        },
+        "cold": {
+            "headline": {
+                "en": "Cold start — dress in layers",
+                "hi": "ठंडी शुरुआत — परतों में कपड़े पहनें",
+                "te": "చల్లని ఆరంభం — పొరలుగా దుస్తులు ధరించండి",
+            },
+            "lines": [
+                {"en": "Keep hands and head covered through the morning.",
+                 "hi": "सुबह हाथ-सिर ढककर रखें।",
+                 "te": "ఉదయం చేతులు, తల కప్పుకుని ఉండండి."},
+            ],
+        },
+    },
+    "student": {
+        "heavy_rain": {
+            "headline": {
+                "en": "Heavy rain — messy school run",
+                "hi": "भारी बारिश — स्कूल का रास्ता अस्त-व्यस्त",
+                "te": "భారీ వర్షం — స్కూలు దారి గందరగోళం",
+            },
+            "lines": [
+                {"en": "Avoid flooded routes; follow your school's weather instructions.",
+                 "hi": "जलभराव वाले रास्तों से बचें; स्कूल के मौसम निर्देश मानें।",
+                 "te": "నీరు నిలిచిన రోడ్లకు దూరంగా ఉండండి; పాఠశాల వాతావరణ సూచనలు పాటించండి."},
+            ],
+        },
+        "moderate_rain": {
+            "headline": {
+                "en": "Carry rain gear",
+                "hi": "छाता/रेनकोट साथ रखें",
+                "te": "గొడుగు/రెయిన్‌కోట్ తీసుకెళ్లండి",
+            },
+            "lines": [
+                {"en": "Wet roads on the way — leave a little early.",
+                 "hi": "रास्ते में गीली सड़कें — थोड़ा जल्दी निकलें।",
+                 "te": "దారిలో తడి రోడ్లు — కొంచెం తొందరగా బయలుదేరండి."},
+            ],
+        },
+        "heat_stress": {
+            "headline": {
+                "en": "Hot and sticky day",
+                "hi": "गर्म और चिपचिपा दिन",
+                "te": "వేడి, ఉక్కపోత రోజు",
+            },
+            "lines": [
+                {"en": "Carry water; stay in shade between classes.",
+                 "hi": "पानी साथ रखें; कक्षाओं के बीच छाँव में रहें।",
+                 "te": "నీరు తీసుకెళ్లండి; తరగతుల మధ్య నీడలో ఉండండి."},
+            ],
+        },
+        "heatwave": {
+            "headline": {
+                "en": "Extreme heat — take it easy outdoors",
+                "hi": "अत्यधिक गर्मी — बाहर आराम से रहें",
+                "te": "తీవ్ర వేడి — బయట నెమ్మదిగా ఉండండి",
+            },
+            "lines": [
+                {"en": "Avoid games in the afternoon sun; drink water often.",
+                 "hi": "दोपहर की धूप में खेल से बचें; बार-बार पानी पिएँ।",
+                 "te": "మధ్యాహ్న ఎండలో ఆటలకు దూరంగా ఉండండి; తరచూ నీరు తాగండి."},
+            ],
+        },
+    },
+    "aviation": {
+        "gale": {
+            "headline": {
+                "en": "Strong winds — check winds aloft",
+                "hi": "तेज़ हवाएँ — ऊपरी हवा जाँचें",
+                "te": "బలమైన గాలులు — పై గాలి తనిఖీ చేయండి",
+            },
+            "lines": [
+                {"en": "Planning guidance only — always use official METAR/TAF.",
+                 "hi": "केवल योजना सहायता — हमेशा आधिकारिक METAR/TAF देखें।",
+                 "te": "ప్రణాళిక సహాయం మాత్రమే — ఎల్లప్పుడూ అధికారిక METAR/TAF చూడండి."},
+            ],
+        },
+        "rough": {
+            "headline": {
+                "en": "Bumpy air possible",
+                "hi": "हवा में झटके संभव",
+                "te": "గాలిలో కుదుపులు సంభవం",
+            },
+            "lines": [
+                {"en": "Winds near {v} kph at the surface; check upper winds.",
+                 "hi": "सतह पर {v} किमी/घंटा के आसपास हवाएँ; ऊपरी हवा जाँचें।",
+                 "te": "ఉపరితలంపై {v} కిమీ/గం గాలులు; పై గాలులను తనిఖీ చేయండి."},
+            ],
+        },
+        "heavy_rain": {
+            "headline": {
+                "en": "Storms in the area",
+                "hi": "इलाके में तूफ़ान",
+                "te": "ప్రాంతంలో తుఫానులు",
+            },
+            "lines": [
+                {"en": "Check TAFs and radar; not an official briefing.",
+                 "hi": "TAF और रडार देखें; यह आधिकारिक ब्रीफिंग नहीं।",
+                 "te": "TAFలు, రాడార్ చూడండి; ఇది అధికారిక బ్రీఫింగ్ కాదు."},
+            ],
+        },
+    },
+    "general": {
+        "heavy_rain": {
+            "headline": {
+                "en": "Heavy rain coming",
+                "hi": "भारी बारिश आ रही है",
+                "te": "భారీ వర్షం వస్తోంది",
+            },
+            "lines": [
+                {"en": "Avoid waterlogged roads and low-lying areas.",
+                 "hi": "जलभराव वाली सड़कों और निचले इलाकों से बचें।",
+                 "te": "నీరు నిలిచిన రోడ్లు, తక్కువ ప్రాంతాలకు దూరంగా ఉండండి."},
+            ],
+        },
+        "gale": {
+            "headline": {
+                "en": "Very windy — {v} kph",
+                "hi": "बहुत हवादार — {v} किमी/घंटा",
+                "te": "చాలా గాలులు — {v} కిమీ/గం",
+            },
+            "lines": [
+                {"en": "Stay clear of hoardings, trees and exposed structures.",
+                 "hi": "होर्डिंग, पेड़ों और खुली संरचनाओं से दूर रहें।",
+                 "te": "హోర్డింగులు, చెట్లు, బహిరంగ నిర్మాణాలకు దూరంగా ఉండండి."},
+            ],
+        },
+        "heatwave": {
+            "headline": {
+                "en": "{v}°C — extreme heat",
+                "hi": "{v}°C — अत्यधिक गर्मी",
+                "te": "{v}°C — తీవ్ర వేడి",
+            },
+            "lines": [
+                {"en": "Stay hydrated and avoid the midday sun.",
+                 "hi": "पानी पिएँ, दोपहर की धूप से बचें।",
+                 "te": "నీరు తాగండి, మధ్యాహ్న ఎండకు దూరంగా ఉండండి."},
+            ],
+        },
+        "heat_stress": {
+            "headline": {
+                "en": "It'll feel hotter than {t}°C",
+                "hi": "{t}°C से ज़्यादा गर्म लगेगा",
+                "te": "{t}°C కంటే ఎక్కువ వేడిగా అనిపిస్తుంది",
+            },
+            "lines": [
+                {"en": "Humid heat builds fast — drink water often, rest in shade.",
+                 "hi": "उमस भरी गर्मी तेज़ी से असर करती है — बार-बार पानी पिएँ, छाँव में आराम करें।",
+                 "te": "తేమ వేడి వేగంగా ప్రభావం చూపుతుంది — తరచూ నీరు తాగండి, నీడలో విశ్రాంతి తీసుకోండి."},
+            ],
+        },
+        "moderate_rain": {
+            "headline": {
+                "en": "Rainy days ahead",
+                "hi": "आगे बारिश वाले दिन",
+                "te": "ముందు వర్షపు రోజులు",
+            },
+            "lines": [
+                {"en": "Carry rain gear and allow extra travel time.",
+                 "hi": "छाता रखें, यात्रा में अतिरिक्त समय रखें।",
+                 "te": "గొడుగు ఉంచుకోండి, ప్రయాణానికి అదనపు సమయం ఉంచుకోండి."},
+            ],
+        },
+        "cold": {
+            "headline": {
+                "en": "Cold spell — {v}°C",
+                "hi": "ठंड का दौर — {v}°C",
+                "te": "చలి కాలం — {v}°C",
+            },
+            "lines": [
+                {"en": "Dress warmly, especially mornings and nights.",
+                 "hi": "गर्म कपड़े पहनें, खासकर सुबह-शाम।",
+                 "te": "వెచ్చని దుస్తులు ధరించండి, ముఖ్యంగా ఉదయం, రాత్రి."},
+            ],
+        },
+    },
+}
+
+# Calm-day brief per role — interpretation never goes silent.
+_ROLE_CALM = {
+    "farmer": {
+        "headline": {
+            "en": "No weather extremes — good window for field work",
+            "hi": "मौसम में कोई चरम नहीं — खेत के काम का अच्छा समय",
+            "te": "వాతావరణంలో తీవ్రతలు లేవు — పొలం పనులకు మంచి సమయం",
+        },
+        "lines": [
+            {"en": "Safe to spray, sow and irrigate in the next few days.",
+             "hi": "अगले कुछ दिनों में छिड़काव, बुवाई, सिंचाई सुरक्षित है।",
+             "te": "రాబోయే రోజుల్లో పిచికారీ, విత్తనాలు, నీటిపారుదల సురక్షితం."},
+        ],
+    },
+    "fisherman": {
+        "headline": {
+            "en": "Winds look manageable",
+            "hi": "हवाएँ ठीक-ठाक दिख रही हैं",
+            "te": "గాలులు అదుపులో ఉన్నట్టున్నాయి",
+        },
+        "lines": [
+            {"en": "Still check the marine bulletin before heading out.",
+             "hi": "फिर भी निकलने से पहले मरीन बुलेटिन देख लें।",
+             "te": "అయినా బయలుదేరే ముందు మెరైన్ బులెటిన్ చూడండి."},
+        ],
+    },
+    "driver": {
+        "headline": {
+            "en": "Clear run — no weather hazards for driving",
+            "hi": "साफ सफर — ड्राइविंग में मौसम की कोई बाधा नहीं",
+            "te": "సాఫీ సఫర్ — డ్రైవింగ్‌కు వాతావరణ అడ్డంకులు లేవు",
+        },
+        "lines": [
+            {"en": "Good driving weather in the next few days.",
+             "hi": "अगले कुछ दिन ड्राइविंग के लिए अच्छा मौसम।",
+             "te": "రాబోయే రోజులు డ్రైవింగ్‌కు అనుకూలం."},
+        ],
+    },
+    "commuter": {
+        "headline": {
+            "en": "Smooth commute weather",
+            "hi": "सफर के लिए बढ़िया मौसम",
+            "te": "ప్రయాణానికి చక్కని వాతావరణం",
+        },
+        "lines": [
+            {"en": "No rain or heat extremes to slow you down.",
+             "hi": "आपको रोकने वाली न बारिश, न अत्यधिक गर्मी।",
+             "te": "మిమ్మల్ని ఆపే వర్షం గానీ, తీవ్ర వేడి గానీ లేదు."},
+        ],
+    },
+    "employee": {
+        "headline": {
+            "en": "Easy workday weather",
+            "hi": "काम के लिए आसान मौसम",
+            "te": "పనికి అనుకూల వాతావరణం",
+        },
+        "lines": [
+            {"en": "No weather disruptions expected.",
+             "hi": "मौसम से कोई बाधा की उम्मीद नहीं।",
+             "te": "వాతావరణ అంతరాయాలు ఊహించలేదు."},
+        ],
+    },
+    "outdoor-worker": {
+        "headline": {
+            "en": "Workable weather",
+            "hi": "काम लायक मौसम",
+            "te": "పనికి తగిన వాతావరణం",
+        },
+        "lines": [
+            {"en": "No extremes — normal site precautions are enough.",
+             "hi": "कोई चरम नहीं — सामान्य सावधानियाँ काफी हैं।",
+             "te": "తీవ్రతలు లేవు — సాధారణ జాగ్రత్తలు చాలు."},
+        ],
+    },
+    "student": {
+        "headline": {
+            "en": "Easy weather for school",
+            "hi": "स्कूल के लिए आसान मौसम",
+            "te": "స్కూలుకు అనుకూల వాతావరణం",
+        },
+        "lines": [
+            {"en": "No rain or heat extremes expected.",
+             "hi": "न बारिश, न अत्यधिक गर्मी की उम्मीद।",
+             "te": "వర్షం గానీ, తీవ్ర వేడి గానీ ఊహించలేదు."},
+        ],
+    },
+    "aviation": {
+        "headline": {
+            "en": "No major weather flags",
+            "hi": "मौसम की कोई बड़ी चेतावनी नहीं",
+            "te": "వాతావరణ హెచ్చరికలు లేవు",
+        },
+        "lines": [
+            {"en": "Still check official METAR/TAF before flight.",
+             "hi": "उड़ान से पहले आधिकारिक METAR/TAF फिर भी देखें।",
+             "te": "విమానానికి ముందు అధికారిక METAR/TAF తప్పక చూడండి."},
+        ],
+    },
+    "researcher": {
+        "headline": {
+            "en": "No threshold crossings in the window",
+            "hi": "इस अवधि में कोई सीमा पार नहीं",
+            "te": "ఈ వ్యవధిలో పరిమితి దాటలేదు",
+        },
+        "lines": [
+            {"en": "Full observed numbers are listed below for your analysis.",
+             "hi": "विश्लेषण हेतु पूरे आँकड़े नीचे दिए गए हैं।",
+             "te": "మీ విశ్లేషణ కోసం పూర్తి సంఖ్యలు కింద ఇవ్వబడ్డాయి."},
+        ],
+    },
+    "disaster_manager": {
+        "headline": {
+            "en": "No weather extremes in the window",
+            "hi": "इस अवधि में कोई मौसमी चरम नहीं",
+            "te": "ఈ వ్యవధిలో వాతావరణ తీవ్రతలు లేవు",
+        },
+        "lines": [
+            {"en": "Situation normal on weather signals; official warnings take precedence.",
+             "hi": "मौसमी संकेत सामान्य; आधिकारिक चेतावनियाँ सर्वोपरि हैं।",
+             "te": "వాతావరణ సంకేతాలు సాధారణం; అధికారిక హెచ్చరికలకే ప్రాధాన్యం."},
+        ],
+    },
+    "general": {
+        "headline": {
+            "en": "Pleasant weather, no extremes",
+            "hi": "सुहावना मौसम, कोई चरम नहीं",
+            "te": "ఆహ్లాదకర వాతావరణం, తీవ్రతలు లేవు",
+        },
+        "lines": [
+            {"en": "Good days to be outdoors.",
+             "hi": "बाहर रहने के लिए अच्छे दिन।",
+             "te": "బయట ఉండటానికి మంచి రోజులు."},
+        ],
+    },
+}
+
+# Inland fisherman: sea guidance is noise inland — say the true thing first.
+_FISHERMAN_INLAND_LINES = [
+    {"en": "For tanks, reservoirs and rivers: water levels can rise fast after heavy rain.",
+     "hi": "तालाबों, जलाशयों, नदियों के लिए: भारी बारिश के बाद जलस्तर तेज़ी से बढ़ सकता है।",
+     "te": "చెరువులు, జలాశయాలు, నదుల కోసం: భారీ వర్షం తర్వాత నీటి మట్టం వేగంగా పెరగవచ్చు."},
+    {"en": "Avoid swollen streams and sudden dam releases.",
+     "hi": "उफनती नदियों और बाँधों के अचानक पानी छोड़ने से बचें।",
+     "te": "ఉప్పొంగే వాగులు, డ్యాముల ఆకస్మిక నీటి విడుదలకు దూరంగా ఉండండి."},
+]
+
+# Which kinds each role's brief reacts to. researcher/disaster_manager get a
+# data summary instead of role lines (handled separately in the function).
+_ROLE_KINDS = {
+    "farmer": ("heavy_rain", "moderate_rain", "gale", "heatwave", "heat_stress", "cold"),
+    "fisherman": ("gale", "rough", "heavy_rain"),
+    "driver": ("heavy_rain", "moderate_rain", "gale", "cold"),
+    "commuter": ("heavy_rain", "moderate_rain", "heat_stress", "gale"),
+    "employee": ("heavy_rain", "moderate_rain", "heat_stress", "heatwave"),
+    "outdoor-worker": ("heatwave", "heat_stress", "heavy_rain", "gale", "cold"),
+    "student": ("heavy_rain", "moderate_rain", "heat_stress", "heatwave"),
+    "aviation": ("gale", "rough", "heavy_rain"),
+    "researcher": (),
+    "disaster_manager": (),
+    "general": ("heavy_rain", "gale", "heatwave", "heat_stress", "moderate_rain", "cold"),
+}
+
+
+def _brief_fired(current: dict | None, forecast: dict | None):
+    """(obs, fired kinds). obs None when there is no weather data at all."""
+    obs = _observed_weather(current, forecast)
+    if all(obs.get(k) is None for k in ("rain_mm", "wind_kph", "temp_c", "humidity_pct")):
+        return None, []
+    fired: list[str] = []
+    if obs["rain_mm"] is not None and obs["rain_mm"] >= _RAIN_HEAVY_MM:
+        fired.append("heavy_rain")
+    elif obs["rain_mm"] is not None and obs["rain_mm"] >= _RAIN_MOD_MM:
+        fired.append("moderate_rain")
+    if obs["wind_kph"] is not None and obs["wind_kph"] >= _WIND_GALE_KPH:
+        fired.append("gale")
+    elif obs["wind_kph"] is not None and obs["wind_kph"] >= _WIND_ROUGH_KPH:
+        fired.append("rough")
+    if obs["temp_c"] is not None and obs["temp_c"] >= _HEAT_C:
+        fired.append("heatwave")
+    elif obs["temp_c"] is not None and obs["temp_c"] <= _COLD_C:
+        fired.append("cold")
+    if (obs["humidity_pct"] is not None and obs["temp_hi"] is not None
+            and obs["temp_hi"] >= _HEATSTRESS_TEMP_C
+            and obs["humidity_pct"] >= _HEATSTRESS_HUMIDITY_PCT):
+        fired.append("heat_stress")
+    return obs, fired
+
+
+def _brief_numbers(obs: dict, kind: str) -> dict:
+    """Format args for brief templates: {v} cites the number that fired."""
+    v = {"heavy_rain": obs.get("rain_mm"), "moderate_rain": obs.get("rain_mm"),
+         "gale": obs.get("wind_kph"), "rough": obs.get("wind_kph"),
+         "heatwave": obs.get("temp_c"), "cold": obs.get("temp_c"),
+         "heat_stress": obs.get("temp_hi")}.get(kind)
+    t = obs.get("temp_hi")
+    return {"v": f"{v:g}" if v is not None else "–",
+            "t": f"{t:g}" if t is not None else "–"}
+
+
+def _peak_summary(obs: dict) -> str:
+    """Peak signals in the window, digits only — same in every language."""
+    parts = []
+    if obs.get("rain_mm") is not None:
+        parts.append(f"{obs['rain_mm']:g}mm rain")
+    if obs.get("wind_kph") is not None:
+        parts.append(f"{obs['wind_kph']:g} kph wind")
+    if obs.get("temp_c") is not None:
+        parts.append(f"{obs['temp_c']:g}°C")
+    return ", ".join(parts) if parts else "–"
+
+
+def role_weather_brief(current: dict | None, forecast: dict | None,
+                       role: str = "general", language: str = "en",
+                       district: str | None = None,
+                       coastal: bool | None = None) -> dict:
+    """Role-first interpreted weather brief.
+
+    Returns {"role", "headline", "lines", "calm", "fired"} with all
+    user-facing strings in `language` (en/hi/te), or {} when there is no
+    weather data. The headline says what the weather MEANS for the role;
+    numbers stay supporting detail. researcher/disaster_manager get a
+    peak-signals summary instead of role lines.
+    """
+    lang = _lang_of(language)
+    key = role if role in _ROLE_KINDS else "general"
+    obs, fired = _brief_fired(current, forecast)
+    if obs is None:
+        return {}
+
+    if key in ("researcher", "disaster_manager"):
+        summary = _peak_summary(obs)
+        if fired:
+            kinds = ", ".join(_KIND_LABEL[k][lang] for k in _BRIEF_KIND_ORDER if k in fired)
+            if key == "researcher":
+                headline = {
+                    "en": f"Threshold crossings in the window: {kinds}",
+                    "hi": f"इस अवधि में सीमा पार: {kinds}",
+                    "te": f"ఈ వ్యవధిలో పరిమితి దాటింది: {kinds}",
+                }[lang]
+                lines = [{
+                    "en": f"Peak signals: {summary}.",
+                    "hi": f"चरम संकेत: {summary}।",
+                    "te": f"గరిష్ఠ సంకేతాలు: {summary}.",
+                }[lang]]
+            else:
+                headline = {
+                    "en": f"Weather extremes to watch: {kinds}",
+                    "hi": f"नज़र रखने योग्य मौसमी चरम: {kinds}",
+                    "te": f"గమనించాల్సిన వాతావరణ తీవ్రతలు: {kinds}",
+                }[lang]
+                lines = [{
+                    "en": f"Peak in window: {summary}. Official warnings take precedence.",
+                    "hi": f"इस अवधि में चरम: {summary}। आधिकारिक चेतावनियाँ सर्वोपरि हैं।",
+                    "te": f"ఈ వ్యవధిలో గరిష్ఠం: {summary}. అధికారిక హెచ్చరికలకే ప్రాధాన్యం.",
+                }[lang]]
+        else:
+            calm = _ROLE_CALM[key]
+            headline = calm["headline"][lang]
+            lines = [ln[lang] for ln in calm["lines"]]
+        return {"role": key, "headline": headline, "lines": lines,
+                "calm": not fired, "fired": fired}
+
+    if key == "fisherman" and coastal is False:
+        # Sea guidance is noise inland — say the true thing first.
+        headline = _INLAND_LEAD[lang].format(district=district or "Your district")
+        lines = [ln[lang] for ln in _FISHERMAN_INLAND_LINES]
+        return {"role": key, "headline": headline, "lines": lines,
+                "calm": not fired, "fired": fired}
+
+    kinds = [k for k in _BRIEF_KIND_ORDER if k in fired and k in _ROLE_KINDS[key]]
+    if not kinds:
+        calm = _ROLE_CALM[key]
+        return {"role": key, "headline": calm["headline"][lang],
+                "lines": [ln[lang] for ln in calm["lines"]],
+                "calm": True, "fired": fired}
+    top = kinds[0]
+    entry = _ROLE_BRIEF[key][top]
+    nums = _brief_numbers(obs, top)
+    return {"role": key,
+            "headline": entry["headline"][lang].format(**nums),
+            "lines": [ln[lang].format(**nums) for ln in entry["lines"]][:2],
+            "calm": False, "fired": kinds}
+
+
 def weather_advisories_text(items: list | None, language: str = "en") -> str:
     """Render rule items as appended lines. "" when empty — floor untouched."""
     if not items:

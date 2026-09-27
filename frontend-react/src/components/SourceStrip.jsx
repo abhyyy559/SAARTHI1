@@ -1,5 +1,5 @@
 // Source strip — the console's honesty strip. One row per adapter, with the
-// adapter's own status string rendered VERBATIM (LIVE | CACHED | DEMO | READY |
+// adapter's own status string rendered VERBATIM (LIVE | CACHED | READY |
 // UNCONFIGURED | OFFLINE | ERROR). Nothing is relabelled upward: READY stays a
 // neutral grey because "configured but not yet exercised" is not live data, and
 // a failed probe says so instead of showing an empty-but-tidy strip.
@@ -69,7 +69,6 @@ export default function SourceStrip({ refreshKey }) {
       <div className="src-head">
         <span className="tile-icon" aria-hidden="true"><Icon name="layers" size={20} /></span>
         <span className="kicker">{t(lang, 'sourcesTitle')}</span>
-        {data.demo_mode ? <span className="prov DEMO">DEMO</span> : null}
       </div>
       {failed && <p className="sub">{t(lang, 'srcFailed')}</p>}
       {!failed && sources.length === 0 && <p className="sub">{t(lang, 'srcNone')}</p>}

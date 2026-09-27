@@ -34,13 +34,11 @@ def _isolate_runtime(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "CACHE_FILE", cache_file)
     monkeypatch.setattr(weather_mod, "cache", CacheService(cache_file))
     monkeypatch.setattr(config, "SOURCE_MODE", config.SOURCE_MODE)
-    monkeypatch.setattr(config, "DEMO_MODE", config.DEMO_MODE)
     monkeypatch.setattr(config, "IMD_ADAPTER", config.IMD_ADAPTER)
 
 
 def _set_mode(monkeypatch, mode: str) -> None:
     monkeypatch.setattr(config, "SOURCE_MODE", mode)
-    monkeypatch.setattr(config, "DEMO_MODE", mode == "demo")
 
 
 def _fc(source: str = "IMD") -> WeatherForecast:
@@ -130,6 +128,7 @@ async def test_hybrid_forecast_first_source_wins(monkeypatch):
         return _fc("IMD")
 
     monkeypatch.setattr(IMDService, "get_forecast", imd_fc)
+    monkeypatch.setattr(config, "IMD_API_KEY", "test-key")  # IMD keyed -> attempt runs
     calls: list = []
     _owm_ok(monkeypatch, calls)
     data, prov = await weather_mod._live_forecast(LAT, LON)
@@ -198,11 +197,15 @@ def test_owm_forecast_aggregates_daily(monkeypatch):
     """3-hourly entries become one ForecastDay per local calendar date."""
     monkeypatch.setattr(config, "OWM_API_KEY", "test-key")
     # 19800s = +5:30. ts=1690000000 -> UTC 2023-07-22 04:26:40 -> IST 09:56:40 (same date)
-    monkeypatch.setattr(owm_adapter.httpx, "AsyncClient", _fake_forecast_response([
+    FakeClient = _fake_forecast_response([
         _entry(1690000000, 30.0, "clear sky"),
         _entry(1690010800, 33.0, "few clouds", rain=1.5),   # same local date
         _entry(1690086400, 28.0, "light rain", rain=2.0),    # next local date
-    ]))
+    ])
+    # Seam moved 2026-09-23: adapters build clients via registry.make_client
+    # (proxy-safe), not httpx.AsyncClient directly.
+    monkeypatch.setattr(owm_adapter, "make_client",
+                        lambda timeout=12.0: FakeClient(timeout=timeout))
     import asyncio
     fc, prov = asyncio.run(owm_adapter.get_forecast(17.385, 78.4867))
     assert prov == "LIVE"
@@ -238,7 +241,8 @@ def test_owm_forecast_fetch_failure_raises(monkeypatch):
         async def get(self, *a, **k):
             raise RuntimeError("connection reset")
 
-    monkeypatch.setattr(owm_adapter.httpx, "AsyncClient", BoomClient)
+    monkeypatch.setattr(owm_adapter, "make_client",
+                        lambda timeout=12.0: BoomClient())
     import asyncio
     with pytest.raises(AdapterUnavailable):
         asyncio.run(owm_adapter.get_forecast(17.385, 78.4867))

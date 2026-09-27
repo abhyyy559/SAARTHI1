@@ -17,6 +17,7 @@ from ..adapters import cap_adapter, openmeteo_adapter, owm_adapter
 from ..adapters.registry import AdapterUnavailable
 from ..models.weather import Location, NormalizedWeather
 from ..services import district_service, nwp_service
+from ..services.advisory_service import role_weather_brief
 from ..services.alert_service import classify_alert, gather_alerts
 from ..services.cache_service import CacheService, TTLS
 from ..services.imd_service import IMDService
@@ -42,12 +43,25 @@ def _official_only() -> bool:
 
 
 def _services():
-    # Demo branches below must read fixtures even when IMD_ADAPTER=live is set
-    # explicitly; otherwise they hit the live endpoint and 500 (AdapterUnavailable).
-    # Non-demo modes always use the live adapter so `imd` can never serve a
-    # fixture as if it were official.
-    imd = IMDService(adapter="demo" if config.DEMO_MODE else "live")
+    # Always the live adapter: demo mode was removed, so fixtures can never be
+    # served as if they were official.
+    imd = IMDService(adapter="live")
     return {"imd": imd, "val": ValidationService(imd), "risk": RiskService(), "loc": LocationService()}
+
+
+def _imd_keyed() -> bool:
+    """True when an IMD API key is configured.
+
+    IMD without a key always fails closed — but only after a ~2s doomed
+    network round trip. Every weather/warning endpoint tries IMD first, so
+    an unkeyed deployment pays that penalty on every call before falling
+    back to Open-Meteo. Callers skip the attempt when this is False and go
+    straight to the fallback chain: identical outcome, ~2s faster per call,
+    which is what keeps the Home screen inside the app's fetch timeout.
+    (The teammate-owned imd_service.py is untouched; this is a caller-side
+    short-circuit, not a behavior change.)
+    """
+    return bool(config.IMD_API_KEY)
 
 
 def _key(kind: str, lat: float, lon: float, extra: str = "") -> str:
@@ -62,13 +76,14 @@ def _as_json(x) -> dict:
 async def _live_current(lat: float, lon: float) -> tuple[dict, str]:
     """IMD first whenever official access works, then Open-Meteo,
     OpenWeatherMap, file cache last. Provenance names the actual source."""
-    try:
-        obs = await IMDService(adapter="live").get_current_weather(lat, lon)
-        data = obs.model_dump(mode="json")
-        cache.set(_key("current", lat, lon), data, TTLS["current"])
-        return data, "LIVE"
-    except AdapterUnavailable:
-        pass
+    if _imd_keyed():
+        try:
+            obs = await IMDService(adapter="live").get_current_weather(lat, lon)
+            data = obs.model_dump(mode="json")
+            cache.set(_key("current", lat, lon), data, TTLS["current"])
+            return data, "LIVE"
+        except AdapterUnavailable:
+            pass
     if _official_only():
         # imd mode stops here. Backfilling with Open-Meteo/OWM/cache would
         # present a non-official number as the console's answer.
@@ -93,13 +108,14 @@ async def _live_current(lat: float, lon: float) -> tuple[dict, str]:
 
 
 async def _live_forecast(lat: float, lon: float) -> tuple[dict, str]:
-    try:
-        fc = await IMDService(adapter="live").get_forecast(lat, lon)
-        data = fc.model_dump(mode="json")
-        cache.set(_key("forecast", lat, lon), data, TTLS["forecast"])
-        return data, "LIVE"
-    except AdapterUnavailable:
-        pass
+    if _imd_keyed():
+        try:
+            fc = await IMDService(adapter="live").get_forecast(lat, lon)
+            data = fc.model_dump(mode="json")
+            cache.set(_key("forecast", lat, lon), data, TTLS["forecast"])
+            return data, "LIVE"
+        except AdapterUnavailable:
+            pass
     if _official_only():
         # imd mode stops here — no Open-Meteo, no cache. Official-only means
         # official-only (docs/SOURCE-MODES.md).
@@ -139,17 +155,11 @@ async def _cross_check(lat: float, lon: float) -> tuple[dict | None, str]:
 async def advisory_current_observation(lat: float, lon: float) -> tuple[dict | None, str]:
     """Current-observation blob for server-side advisory weather grounding.
 
-    Same provenance semantics as /api/advisory/cards: DEMO_MODE reads fixtures
-    (provenance DEMO); otherwise the live chain (_live_current: IMD ->
-    Open-Meteo -> OWM -> cache, imd mode official-only). An unreachable IMD in
-    imd mode raises AdapterUnavailable inside _live_current rather than
-    backfilling with non-official sources — surfaced here as (None,
-    "UNAVAILABLE"). Never returns invented numbers.
+    Live chain (_live_current: IMD -> Open-Meteo -> OWM -> cache, imd mode
+    official-only). An unreachable IMD in imd mode raises AdapterUnavailable
+    inside _live_current rather than backfilling with non-official sources —
+    surfaced here as (None, "UNAVAILABLE"). Never returns invented numbers.
     """
-    if config.DEMO_MODE:
-        imd = _services()["imd"]
-        data = (await imd.get_current_weather(lat, lon)).model_dump(mode="json")
-        return data, "DEMO"
     try:
         return await _live_current(lat, lon)
     except AdapterUnavailable:
@@ -197,51 +207,53 @@ async def resolve_advisory_weather(lat: Optional[float], lon: Optional[float],
 
 
 @router.get("/weather/current")
-async def current_wx(lat: float = 17.385, lon: float = 78.4867, district: Optional[str] = None) -> dict:
+async def current_wx(lat: float = 17.385, lon: float = 78.4867, district: Optional[str] = None,
+                     role: Optional[str] = None, lang: Optional[str] = "en") -> dict:
     s = _services()
     loc = s["loc"].resolve(lat, lon)
     if district:
         loc["district"] = district
-    if config.DEMO_MODE:
-        # district= lets the location-switcher presets serve their own sample
-        # weather (Visakhapatnam rain, Chennai clear); without it the generic
-        # Hyderabad sample answers, exactly as before.
-        obs = await s["imd"].get_current_weather(
-            loc["latitude"], loc["longitude"], district=loc.get("district"))
-        cross, cross_prov = None, "UNCONFIGURED"
-        prov = "DEMO"
-    else:
+
+    def _brief(current_dict: dict | None, forecast_dict: dict | None) -> dict:
+        # Role-first interpreted weather: headline says what the weather MEANS
+        # for the role; numbers stay supporting detail. Empty when no data.
+        return role_weather_brief(current_dict, forecast_dict, role or "general",
+                                  lang or "en", district=loc.get("district"),
+                                  coastal=loc.get("coastal"))
+
+    try:
+        # LATENCY: the primary fetch and the OWM cross-check are independent
+        # network calls, so they run together — this saves the cross-check
+        # round trip before the response can render. Provenance semantics
+        # are unchanged: the cross-check still names its own source, and a
+        # failed primary fetch still returns the "unavailable" payload.
+        if _official_only():
+            # A second opinion is a non-official source; imd mode omits it
+            # rather than mix it into an official-only answer.
+            data, prov = await _live_current(loc["latitude"], loc["longitude"])
+            cross, cross_prov = None, "UNCONFIGURED"
+        else:
+            (data, prov), (cross, cross_prov) = await asyncio.gather(
+                _live_current(loc["latitude"], loc["longitude"]),
+                _cross_check(loc["latitude"], loc["longitude"]),
+            )
         try:
-            # LATENCY: the primary fetch and the OWM cross-check are independent
-            # network calls, so they run together — this saves the cross-check
-            # round trip before the response can render. Provenance semantics
-            # are unchanged: the cross-check still names its own source, and a
-            # failed primary fetch still returns the "unavailable" payload.
-            if _official_only():
-                # A second opinion is a non-official source; imd mode omits it
-                # rather than mix it into an official-only answer.
-                data, prov = await _live_current(loc["latitude"], loc["longitude"])
-                cross, cross_prov = None, "UNCONFIGURED"
-            else:
-                (data, prov), (cross, cross_prov) = await asyncio.gather(
-                    _live_current(loc["latitude"], loc["longitude"]),
-                    _cross_check(loc["latitude"], loc["longitude"]),
-                )
-            return {
-                "location": loc, "current": data, "provenance": prov,
-                "cross_check": {"data": cross, "provenance": cross_prov} if cross else None,
-                "generated_at": iso_now(),
-            }
-        except AdapterUnavailable as exc:
-            return {
-                "status": "unavailable", "message": UNAVAILABLE_MSG, "detail": str(exc),
-                "provenance": "UNAVAILABLE", "location": loc, "generated_at": iso_now(),
-            }
-    return {
-        "location": loc,
-        "current": obs.model_dump(mode="json") if obs is not None else data,
-        "provenance": prov, "generated_at": iso_now(),
-    }
+            fc, _ = await _live_forecast(loc["latitude"], loc["longitude"])
+        except AdapterUnavailable:
+            fc = None
+        brief = _brief(data, fc)
+        return {
+            "location": loc, "current": data, "provenance": prov,
+            "cross_check": {"data": cross, "provenance": cross_prov} if cross else None,
+            "role_brief": brief,
+            "generated_at": iso_now(),
+        }
+    except AdapterUnavailable as exc:
+        return {
+            "status": "unavailable", "message": UNAVAILABLE_MSG, "detail": str(exc),
+            "provenance": "UNAVAILABLE", "location": loc, "role_brief": {},
+            "generated_at": iso_now(),
+        }
 
 
 @router.get("/weather/forecast")
@@ -250,9 +262,6 @@ async def forecast(lat: float = 17.385, lon: float = 78.4867, district: Optional
     loc = s["loc"].resolve(lat, lon)
     if district:
         loc["district"] = district
-    if config.DEMO_MODE:
-        fc = await s["imd"].get_forecast(loc["latitude"], loc["longitude"], district=loc.get("district"))
-        return {"location": loc, "forecast": fc.model_dump(mode="json"), "provenance": "DEMO", "generated_at": iso_now()}
     try:
         data, prov = await _live_forecast(loc["latitude"], loc["longitude"])
     except AdapterUnavailable as exc:
@@ -281,11 +290,10 @@ async def model_comparison(lat: float = 17.385, lon: float = 78.4867) -> dict:
 @router.get("/weather/nowcast")
 async def nowcast(district: str = "Hyderabad", lat: Optional[float] = None, lon: Optional[float] = None) -> dict:
     s = _services()
-    if config.DEMO_MODE:
-        text = await s["imd"].get_district_nowcast(district)
-        return {"district": district, "nowcast": text, "provenance": "DEMO", "generated_at": iso_now()}
     loc = s["loc"].resolve(lat, lon)
     try:
+        if not _imd_keyed():
+            raise AdapterUnavailable("no IMD_API_KEY — skipping doomed IMD attempt")
         data = await IMDService(adapter="live").get_district_nowcast(loc.get("district", district))
         prov = "LIVE"
     except AdapterUnavailable:
@@ -319,48 +327,40 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
         loc = s["loc"].lookup(district) or {"district": district}
     district_name = loc.get("district", district)
 
-    if config.DEMO_MODE:
-        w = await s["imd"].get_district_warning(district_name)
-        verified = s["val"].validate_warning(w, district_name) if w else None
-        cap_alerts, cap_prov = cap_adapter.demo_fixture(district_name)
-        # Same classifier the live path uses, so a demo fixture and a real feed
-        # cannot disagree about what counts as relevant.
-        state_name = loc.get("state") or district_service.state_of(district_name)
-        for a in cap_alerts:
-            classify_alert(a, lat=lat, lon=lon, district=district_name, state_name=state_name)
-        warning_d = w.model_dump(mode="json") if w else None
-        verified_d = verified.model_dump(mode="json") if verified else None
-        # Fixtures always answer, so the warning service is genuinely available.
-        verdict = build_verdict(
-            verified=verified_d, warning=warning_d,
-            cap_alerts=[a for a in cap_alerts if a["relevance"]["relevant"]],
-            nearby_alerts=[], warning_service_available=True,
-        )
-        return {
-            "status": "ok",
-            "location": loc,
-            "warning": warning_d,
-            "verified": verified_d,
-            "cap_alerts": cap_alerts, "cap_provenance": cap_prov,
-            "provenance": "DEMO", "verdict": verdict, "generated_at": iso_now(),
-        }
-
     # LIVE: official IMD warning + CAP alerts, each honest about availability.
     # `warn_call_ok` separates two facts that must never be conflated:
     #   - the service answered and had no active warning  -> reachable, calm
     #   - we could not reach the service at all           -> reachable=False, UNKNOWN
     warning, verified_d, warn_prov = None, None, "UNAVAILABLE"
     warn_call_ok = False
-    try:
-        w = await s["imd"].get_district_warning(district_name)
-        warn_call_ok = True  # the service answered, possibly with nothing to report
-        v = s["val"].validate_warning(w, district_name) if w else None
-        warning = w.model_dump(mode="json") if w else None
-        verified_d = v.model_dump(mode="json") if v else None
-        warn_prov = "LIVE"  # provenance of the CHECK, not of a warning that may be absent
-    except AdapterUnavailable:
-        warning, verified_d, warn_prov = None, None, "UNAVAILABLE"
 
+    async def _imd_warning():
+        # The IMD check and the CAP/chain gather are independent network
+        # calls; run them together so one slow source cannot stack its
+        # latency onto the other (this endpoint feeds the Home screen and
+        # must answer inside the app's fetch timeout).
+        if not _imd_keyed():
+            return False, None, None, "UNAVAILABLE"
+        try:
+            w = await s["imd"].get_district_warning(district_name)
+            v = s["val"].validate_warning(w, district_name) if w else None
+            return (
+                True,
+                w.model_dump(mode="json") if w else None,
+                v.model_dump(mode="json") if v else None,
+                "LIVE",  # provenance of the CHECK, not of a warning that may be absent
+            )
+        except AdapterUnavailable:
+            return False, None, None, "UNAVAILABLE"
+
+    (warn_call_ok, warning, verified_d, warn_prov), gathered = await asyncio.gather(
+        _imd_warning(),
+        gather_alerts(lat=lat, lon=lon, district=district_name,
+                      state=loc.get("state") or ""),
+    )
+    # the service answered and had no active warning -> reachable, calm;
+    # we could not reach the service at all -> reachable=False, UNKNOWN.
+    # These two facts must never be conflated.
     warning_service_available = warn_call_ok
 
     # A warning for a different district is context, not this district's warning.
@@ -372,8 +372,7 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
 
     # One gatherer for both this endpoint and /api/chat, so the Alerts page and
     # the chat verdict can never see a different set of alerts (alert_service).
-    gathered = await gather_alerts(lat=lat, lon=lon, district=district_name,
-                                   state=loc.get("state") or "")
+    # (gathered already holds the concurrent fetch from above — do not fetch twice.)
     cap_alerts = gathered["relevant"]
     nearby_alerts = gathered["nearby"]
     cap_prov = gathered["provenance"]

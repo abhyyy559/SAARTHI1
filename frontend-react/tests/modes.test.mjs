@@ -16,38 +16,43 @@ function exportedArray(source, name) {
 }
 const SOURCE_MODES = exportedArray(store, 'SOURCE_MODES');
 
-// --- the three modes -------------------------------------------------------
+// --- the two modes ---------------------------------------------------------
 
-test('exactly three source modes exist, and they are the documented ones', () => {
-  assert.deepEqual(SOURCE_MODES, ['demo', 'imd', 'hybrid']);
+test('exactly two source modes exist, and they are the documented ones', () => {
+  assert.deepEqual(SOURCE_MODES, ['imd', 'hybrid']);
 });
 
-test('the switch offers every mode and no fourth option', () => {
-  // Rendered from the list, not hardcoded - a hardcoded pair is how the old
-  // two-way LIVE/DEMO switch would creep back in.
+test('the switch offers every mode and no third option', () => {
+  // Rendered from the list, not hardcoded - a hardcoded option is how a
+  // third mode would creep back in.
   assert.match(shell, /SOURCE_MODES\.map\(/);
   assert.doesNotMatch(shell, /setBackendMode\('live'\)/);
   assert.doesNotMatch(shell, /'LIVE'<\/button>/);
+  assert.doesNotMatch(shell, /setBackendMode\('demo'\)/);
 });
 
 test('the backend owns the mode - the UI never infers it from a boolean', () => {
-  // demoMode is derived from sourceMode, not tracked separately.
-  assert.match(store, /const demoMode = sourceMode === 'demo'/);
+  // No demoMode boolean anywhere: the mode is a two-valued string from /api/mode.
+  assert.doesNotMatch(store, /demoMode/);
+  assert.doesNotMatch(store, /demo_mode/);
   assert.match(store, /const \[sourceMode, setSourceMode\] = useState/);
   assert.doesNotMatch(store, /setDemoMode/);
 });
 
-test('the legacy "live" alias is accepted from the backend but not offered', () => {
-  // A stale backend answering "live" must not leave the UI in an unknown mode:
-  // applyMode falls back rather than storing "live" as if it were a mode.
-  assert.match(store, /d\.source_mode \|\| \(d\.demo_mode \? 'demo' : 'hybrid'\)/);
+test('an unknown mode id from the backend falls back to hybrid, never demo', () => {
+  // The backend owns the mode; the UI never infers it from a boolean it
+  // happens to have lying around. Unknown ids land on hybrid.
+  assert.match(store, /d\.source_mode \|\| d\.mode/);
+  assert.match(store, /setSourceMode\(m === 'imd' \|\| m === 'hybrid' \? m : 'hybrid'\)/);
   assert.ok(!SOURCE_MODES.includes('live'));
+  assert.ok(!SOURCE_MODES.includes('demo'));
 });
 
-test('every mode has a label and a plain-language note', () => {
-  for (const key of ['modeDemo', 'modeImd', 'modeHybrid', 'modeDemoNote', 'modeImdNote', 'modeHybridNote']) {
+test('every mode has a label and a plain-language note, and demo has neither', () => {
+  for (const key of ['modeImd', 'modeHybrid', 'modeImdNote', 'modeHybridNote']) {
     assert.match(store, new RegExp(key), `store must reference ${key}`);
   }
+  assert.doesNotMatch(store, /modeDemo/);
 });
 
 // --- i18n parity ----------------------------------------------------------

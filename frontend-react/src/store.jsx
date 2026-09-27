@@ -1,10 +1,10 @@
 // Single application store. Views read from here instead of prop-drilling, and
 // `ask()` is registered by HomeChat from inside an EFFECT (never during render).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, HYD, onDemoForbidden, setOfflineSim } from './api';
+import { api, HYD, setOfflineSim } from './api';
 import { DISTRICTS, t } from './i18n';
 import { cacheGuidance, useOnline } from './offline';
-import { askNotifyPermission, forgetNotified, hasPushSubscription, notify, notifySupport, pushReasonKey, subscribeToPush, unsubscribeFromPush } from './notify';
+import { askNotifyPermission, hasPushSubscription, notify, notifySupport, pushReasonKey, subscribeToPush, unsubscribeFromPush } from './notify';
 import { tagFor, transition } from './alertWatch';
 import { splitSpeakChunks } from './speakChunks';
 
@@ -37,11 +37,11 @@ export function getVoiceStatus() {
   return voiceStatusCache.inflight;
 }
 
-// The three source modes (docs/SOURCE-MODES.md). Labels live in i18n so the
-// switch reads in the user's language; the mode ids stay machine-readable.
-const MODE_LABEL_KEY = { demo: 'modeDemo', imd: 'modeImd', hybrid: 'modeHybrid' };
-const MODE_NOTE_KEY = { demo: 'modeDemoNote', imd: 'modeImdNote', hybrid: 'modeHybridNote' };
-export const SOURCE_MODES = ['demo', 'imd', 'hybrid'];
+// The two source modes. Labels live in i18n so the switch reads in the
+// user's language; the mode ids stay machine-readable.
+const MODE_LABEL_KEY = { imd: 'modeImd', hybrid: 'modeHybrid' };
+const MODE_NOTE_KEY = { imd: 'modeImdNote', hybrid: 'modeHybridNote' };
+export const SOURCE_MODES = ['imd', 'hybrid'];
 export const modeLabel = (lang, id) => t(lang, MODE_LABEL_KEY[id] || 'modeHybrid');
 export const modeNote = (lang, id) => t(lang, MODE_NOTE_KEY[id] || 'modeHybridNote');
 
@@ -72,7 +72,7 @@ const readLoc = () => {
 // Opaque per-device id for read receipts and delivery telemetry. The server
 // never learns who the user is — the id only separates "my phone read it" from
 // "my tablet did", and lets one browser act as both citizen and relay target
-// in the P2P demo.
+// in the P2P relay simulation.
 const readDevice = () => {
   try {
     let d = localStorage.getItem('wgpt.device');
@@ -113,12 +113,10 @@ export function AppProvider({ children }) {
   const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
   // Single light theme: no theme state, no switcher, no data-theme attribute.
   // Truthful until /api/mode answers: the backend decides the mode, not a guess.
-  // Three modes, not two — see docs/SOURCE-MODES.md. `sourceMode` is the truth
-  // ('demo' | 'imd' | 'hybrid'); `demoMode` stays a derived boolean because a
-  // lot of call sites already read it and renaming them all buys nothing.
+  // Two modes — imd or hybrid — see docs/SOURCE-MODES.md. The backend owns the
+  // mode; an unknown mode id from the backend falls back to hybrid.
   const [sourceMode, setSourceMode] = useState('hybrid');
   const [modeInfo, setModeInfo] = useState(null);
-  const demoMode = sourceMode === 'demo';
   const [districts] = useState(DISTRICTS); // fallback search options (coastal + inland)
   // Auto-location lifecycle: idle → requesting → resolving → ready | denied | unsupported | error.
   // Never silently default: HYD is only a placeholder until the user grants permission
@@ -179,14 +177,16 @@ export function AppProvider({ children }) {
     } catch { /* non-DOM environment */ }
   }, []);
   // One place that reads a /api/mode payload. The backend owns the mode; the UI
-  // never infers it from a boolean it happens to have lying around.
+  // never infers it. {mode: 'imd'|'hybrid', source_mode, weather_source,
+  // warnings_source, available}. Unknown ids fall back to hybrid.
   const applyMode = useCallback((d) => {
     if (!d) return;
     setModeInfo(d);
-    setSourceMode(d.source_mode || (d.demo_mode ? 'demo' : 'hybrid'));
+    const m = d.source_mode || d.mode;
+    setSourceMode(m === 'imd' || m === 'hybrid' ? m : 'hybrid');
   }, []);
 
-  // DEMO / IMD / HYBRID switch: flips the backend at runtime, then refetches.
+  // IMD / HYBRID switch: flips the backend at runtime, then refetches.
   // The mode names which sources are carrying the answer, so the toast says that
   // rather than just repeating the mode word back at the user.
   const setBackendMode = useCallback(async (mode) => {
@@ -215,13 +215,6 @@ export function AppProvider({ children }) {
     getVoiceStatus();
   }, []);
 
-  // Self-heal: a 403 on any /api/demo/* route means the backend's demo flag
-  // flipped under us (restart, another tab, .env default). Re-sync once per
-  // burst — the throttled hook in api.js keeps this from becoming a storm.
-  useEffect(() => {
-    onDemoForbidden(() => api.mode().then(applyMode).catch(() => {}));
-  }, [applyMode]);
-
   useEffect(() => {
     let dead = false;
     let wasDown = false;
@@ -237,8 +230,8 @@ export function AppProvider({ children }) {
         setNetState('live');
         setLastSync(new Date().toISOString());
         // Re-sync the backend mode on every beat: if the backend restarts it
-        // boots back to its .env default (usually hybrid). Without this the UI
-        // keeps believing demo is on and spams demo endpoints with 403s.
+        // boots back to its default. Without this the UI keeps showing a stale
+        // mode.
         api.mode().then(applyMode).catch(() => {});
         if (wasDown) {
           wasDown = false;
@@ -688,41 +681,17 @@ export function AppProvider({ children }) {
     return () => { alive = false; };
   }, []);
 
-  // Demo triggers. They feed the SAME path a real verdict takes, so what you see
-  // in the demo is the shipping behaviour, not a special case.
-  const simulateAlert = useCallback(async () => {
-    const perm = notifySupport() === 'granted' ? 'granted' : await askNotifyPermission();
-    setNotifyPerm(perm);
-    const v = { level: 'HIGH', basis: 'cap_alert', confirmed: true, severity: 'ORANGE', hazard: 'Heavy rain' };
-    const change = transition(prevVerdict.current, v, loc.district) || { kind: 'start', ...v, district: loc.district };
-    prevVerdict.current = v;
-    if (perm === 'granted') {
-      forgetNotified(); // demo: allow replaying the same event
-      fireNotification(change, loc.district);
-    } else {
-      showToast(t(lang, perm === 'unsupported' ? 'notifyUnsupported' : 'notifyBlocked'));
-    }
-  }, [lang, loc.district, fireNotification, showToast]);
-
-  const simulateClear = useCallback(async () => {
-    const v = { level: 'LOW', basis: 'none', confirmed: true, severity: 'GREEN', hazard: null };
-    const change = transition(prevVerdict.current, v, loc.district) || { kind: 'clear', district: loc.district };
-    prevVerdict.current = v;
-    forgetNotified();
-    fireNotification(change, loc.district);
-  }, [loc.district, fireNotification]);
-
   // The offline toggle must actually CUT the network path, not just relabel the
   // screen. api.js exposes setOfflineSim for exactly this, and without this call
   // the app kept talking to the backend: the "offline" banner sat above live
-  // data, which is a worse lie than having no offline demo at all.
+  // data, which is a worse lie than having no offline indicator at all.
   useEffect(() => {
     setOfflineSim(simOffline);
   }, [simOffline]);
 
-  // Proves the closed-app path: the SERVER sends this one, not the page.
-  // When an alert is selected the test push deep-links to it, so the demo
-  // proves the tap → alert-detail path, not just delivery.
+    // Proves the closed-app path: the SERVER sends this one, not the page.
+    // When an alert is selected the test push deep-links to it, so the test
+    // proves the tap → alert-detail path, not just delivery.
   const sendTestPush = useCallback(async () => {
     try {
       const body = { district: loc.district };
@@ -748,7 +717,7 @@ export function AppProvider({ children }) {
     view, setView,
     lang, setLang,
     persona, setPersona,
-    demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, setSources,
+    sourceMode, modeInfo, setBackendMode, backendState, sources, setSources,
     conn, connectionPill, offline, online, simOffline, setSimOffline,
     pipe, setPipe, result, handleResult,
     selectedAlert, setSelectedAlert,
@@ -761,14 +730,14 @@ export function AppProvider({ children }) {
     device,
     netState, lastSync, syncTick, toast, showToast,
     publishVerdict,
-    notifyOn, notifyPerm, pushReady: pushMode === 'background', pushMode, pushReason, toggleNotify, enableNotify, simulateAlert, simulateClear, sendTestPush,
+    notifyOn, notifyPerm, pushReady: pushMode === 'background', pushMode, pushReason, toggleNotify, enableNotify, sendTestPush,
     unreadCount,
-  }), [view, lang, persona, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
+  }), [view, lang, persona, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
     simOffline, pipe, result, handleResult, selectedAlert,
     disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, listenState, setListenState, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,
     netState, lastSync, syncTick, toast, showToast,
-    publishVerdict, notifyOn, notifyPerm, pushMode, pushReason, toggleNotify, enableNotify, simulateAlert, simulateClear, sendTestPush, device, unreadCount]);
+    publishVerdict, notifyOn, notifyPerm, pushMode, pushReason, toggleNotify, enableNotify, sendTestPush, device, unreadCount]);
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }

@@ -91,6 +91,13 @@ h1, h2, h3, h4 { margin: 0 0 8px; line-height: 1.25; }
   padding: 16px 16px 48px;
 }
 
+/* Desktop: use the width — tighter gutters, plainer column. Mobile (<=860px)
+   untouched: the 390px layout and the FAB / QuickActions / alert-pill
+   geometry stay exactly as verified. */
+@media (min-width: 861px) {
+  #main { max-width: 1120px; padding: 12px 12px 48px; }
+}
+
 /* Desktop rail */
 .rail {
   width: 248px; flex: 0 0 248px; background: var(--card);
@@ -281,7 +288,6 @@ h1, h2, h3, h4 { margin: 0 0 8px; line-height: 1.25; }
 }
 .prov.LIVE { background: var(--tint-green); }
 .prov.CACHED { background: var(--tint-amber); }
-.prov.DEMO { background: var(--brand); }
 .prov.COMMUNITY { background: var(--tint-blue); }
 .prov.UNAVAILABLE, .prov.UNCONFIGURED, .prov.OFFLINE, .prov.ERROR { background: var(--tint-unknown); }
 
@@ -435,7 +441,6 @@ button.chip:active { transform: translateY(1px); }
 .p2p-panel { border: 2px dashed var(--ink); border-radius: var(--radius); padding: 12px; margin: 12px 0; background: var(--paper); }
 .p2p-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .p2p-title .display { font-size: 17px; margin: 0; }
-.p2p-demo { display: grid; gap: 8px; }
 .p2p-story { margin: 0; font-weight: 600; }
 .p2p-log { display: grid; gap: 4px; }
 .log-line { font-size: 13px; display: flex; gap: 6px; align-items: center; }
@@ -662,11 +667,8 @@ button.chip:active { transform: translateY(1px); }
 .form-grid { display: grid; gap: 10px; }
 .field { display: grid; gap: 4px; }
 .field label { font-weight: 700; font-size: 14px; }
-.demo-list { display: grid; gap: 10px; }
 .scn-card { border: 2px solid var(--ink); border-radius: var(--radius); padding: 12px; background: var(--card); display: grid; gap: 8px; }
-.demo-state { font-size: 12px; font-weight: 800; }
-.demo-alert-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.demo-history { display: grid; gap: 4px; margin-top: 8px; }
+.alert-state { font-size: 12px; font-weight: 800; }
 .ops-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .ops-panel, .cov-block { border: 2px solid var(--ink); border-radius: var(--radius); padding: 12px; background: var(--card); }
 .cov-stats { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -675,7 +677,6 @@ button.chip:active { transform: translateY(1px); }
 .stat .hint { font-size: 12px; color: var(--ink-soft); }
 .cov-bar { height: 12px; border: 2px solid var(--ink); border-radius: 6px; background: var(--paper); overflow: hidden; }
 .cov-bar > span { display: block; height: 100%; background: var(--sea); }
-.demo-mode-gate { border: 2px dashed var(--ink); border-radius: var(--radius); padding: 12px; }
 .det-timeline { display: grid; gap: 6px; }
 .det-timeline-row { display: flex; gap: 10px; font-size: 14px; }
 
@@ -1177,10 +1178,6 @@ button.chip:active { transform: translateY(1px); }
 .admin-sev { font-size: 12px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 5px; }
 .admin-sev i { font-style: normal; font-weight: 800; font-size: 13px; color: var(--sev, var(--ink)); }
 
-.demo-list .evrow[data-sev] {
-  border-left: 3px solid var(--sev, var(--line));
-  padding-left: 10px;
-}
 
 /* Unread badge on nav items (rail + More sheet) */
 .nav-badge {

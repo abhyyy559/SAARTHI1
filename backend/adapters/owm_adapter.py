@@ -10,12 +10,11 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 
-import httpx
 
 from .. import config
 from ..models.weather import ForecastDay, WeatherForecast
 from ..utils.time import IST
-from .registry import ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
+from .registry import ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, make_client, report
 
 SOURCE = "OpenWeatherMap"
 
@@ -26,7 +25,7 @@ async def get_current(latitude: float, longitude: float) -> tuple[dict, str]:
         report("owm", UNCONFIGURED, "OWM_API_KEY not set")
         raise AdapterUnavailable("OpenWeatherMap unconfigured (needs API key)")
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with make_client(timeout=12.0) as client:
             resp = await client.get(
                 "https://api.openweathermap.org/data/2.5/weather",
                 params={"lat": latitude, "lon": longitude, "appid": key, "units": "metric"},
@@ -62,7 +61,7 @@ async def get_forecast(latitude: float, longitude: float) -> tuple[WeatherForeca
         report("owm", UNCONFIGURED, "OWM_API_KEY not set")
         raise AdapterUnavailable("OpenWeatherMap unconfigured (needs API key)")
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with make_client(timeout=12.0) as client:
             resp = await client.get(
                 "https://api.openweathermap.org/data/2.5/forecast",
                 params={"lat": latitude, "lon": longitude, "appid": key, "units": "metric"},

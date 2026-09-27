@@ -260,9 +260,6 @@ def test_hindi_telugu_bodies_are_not_english():
 async def test_cards_endpoint_wires_inputs(monkeypatch):
     import backend.api.advisory as advisory_ep
     import backend.api.weather as weather_mod
-    import backend.config as config
-
-    monkeypatch.setattr(config, "DEMO_MODE", False)
 
     async def fake_current(lat, lon):
         return ({"source": "Open-Meteo", "temperature": 44.0,

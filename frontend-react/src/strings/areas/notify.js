@@ -12,7 +12,6 @@ export default {
     // The button is a verb; the past tense belongs in the post-send toast.
     notifyTest: "Send test push",
     notifyTestNone: "No device is registered for this district yet",
-    demoPushHint: "Sent by the server, so it arrives with the app closed",
     notifyOn: 'Alerts on',
     notifyOff: 'Alerts off',
     notifyBlocked: 'Notifications are blocked in your browser settings',
@@ -24,9 +23,6 @@ export default {
     notifyClearTitle: 'Safe now',
     notifyClearBody: 'The {hazard} warning for {district} has ended.',
     notifyClearBodyPlain: 'The weather warning for {district} has ended.',
-    demoAlert: 'Simulate alert',
-    demoClear: 'Simulate all-clear',
-    demoNotifyHint: 'Demo: fire a warning now, then the all-clear',
   },
   hi: {
     notifyOnBackground: "चेतावनी चालू — ऐप बंद होने पर भी सूचना मिलेगी",
@@ -35,7 +31,6 @@ export default {
     notifyTestSent: "परीक्षण सूचना भेजी गई",
     notifyTest: "टेस्ट सूचना भेजें",
     notifyTestNone: "इस जिले के लिए कोई डिवाइस पंजीकृत नहीं है",
-    demoPushHint: "सर्वर से भेजी गई — ऐप बंद होने पर भी पहुँचेगी",
     notifyOn: 'चेतावनी चालू',
     notifyOff: 'चेतावनी बंद',
     notifyBlocked: 'ब्राउज़र सेटिंग में सूचनाएँ बंद हैं',
@@ -47,9 +42,6 @@ export default {
     notifyClearTitle: 'अब सुरक्षित',
     notifyClearBody: '{district} की {hazard} चेतावनी समाप्त हो गई।',
     notifyClearBodyPlain: '{district} की मौसम चेतावनी समाप्त हो गई।',
-    demoAlert: 'चेतावनी दिखाएँ',
-    demoClear: 'सुरक्षित दिखाएँ',
-    demoNotifyHint: 'डेमो: पहले चेतावनी, फिर सुरक्षित संदेश',
   },
   te: {
     notifyOnBackground: "హెచ్చరికలు ఆన్ — యాప్ మూసి ఉన్నా నోటిఫికేషన్ వస్తుంది",
@@ -58,7 +50,6 @@ export default {
     notifyTestSent: "పరీక్ష నోటిఫికేషన్ పంపబడింది",
     notifyTest: "టెస్ట్ నోటిఫికేషన్ పంపండి",
     notifyTestNone: "ఈ జిల్లాకు ఇంకా ఏ పరికరం నమోదు కాలేదు",
-    demoPushHint: "సర్వర్ నుండి పంపబడింది — యాప్ మూసి ఉన్నా చేరుతుంది",
     notifyOn: 'హెచ్చరికలు ఆన్',
     notifyOff: 'హెచ్చరికలు ఆఫ్',
     notifyBlocked: 'బ్రౌజర్ సెట్టింగ్‌లలో నోటిఫికేషన్‌లు నిలిపివేయబడ్డాయి',
@@ -70,8 +61,5 @@ export default {
     notifyClearTitle: 'ఇప్పుడు సురక్షితం',
     notifyClearBody: '{district} కోసం {hazard} హెచ్చరిక ముగిసింది.',
     notifyClearBodyPlain: '{district} కోసం వాతావరణ హెచ్చరిక ముగిసింది.',
-    demoAlert: 'హెచ్చరిక చూపించు',
-    demoClear: 'సురక్షితం చూపించు',
-    demoNotifyHint: 'డెమో: ముందు హెచ్చరిక, తర్వాత సురక్షితం',
   },
 };

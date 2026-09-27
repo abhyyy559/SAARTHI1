@@ -48,11 +48,8 @@ self.addEventListener('push', (event) => {
   }
 
   const severity = String(payload.severity || 'UNKNOWN').toUpperCase();
-  const rawTitle = payload.title || 'Weather alert';
-  // Demo pushes must never read as live warnings on the lock screen —
-  // product law is "never label mocks LIVE". In-app surfaces are stamped;
-  // the OS notification gets the same honesty here.
-  const title = payload.demo ? `[Demo] ${rawTitle}` : rawTitle;
+  // Pushes carry the warning as-is — the lock-screen title is never rewritten.
+  const title = payload.title || 'Weather alert';
 
   event.waitUntil(
     self.registration.showNotification(title, {

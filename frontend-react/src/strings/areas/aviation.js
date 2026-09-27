@@ -45,8 +45,6 @@ export default {
     avKt: 'kt',
     avWhyWhy: 'Why is this section unavailable?',
     avMode: 'Source mode',
-    avSample: 'Sample data',
-    avSampleNote: 'Sample values for demo — not real observations.',
   },
   hi: {
     avTitle: 'विमानन ब्रीफिंग',
@@ -90,8 +88,6 @@ export default {
     avKt: 'नॉट',
     avWhyWhy: 'यह अनुभाग क्यों उपलब्ध नहीं है?',
     avMode: 'स्रोत मोड',
-    avSample: 'नमूना डेटा',
-    avSampleNote: 'डेमो के लिए नमूना मान — वास्तविक अवलोकन नहीं।',
   },
   te: {
     avTitle: 'విమానయాన బ్రీఫింగ్',
@@ -135,7 +131,5 @@ export default {
     avKt: 'kt',
     avWhyWhy: 'ఈ విభాగం ఎందుకు అందుబాటులో లేదు?',
     avMode: 'మూలం మోడ్',
-    avSample: 'నమూనా డేటా',
-    avSampleNote: 'డెమో కోసం నమూనా విలువలు — నిజమైన పరిశీలనలు కావు.',
   },
 };

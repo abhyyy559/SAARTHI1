@@ -2,7 +2,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from backend.services.climate_service import analyze_series, demo_series  # noqa: E402
+from backend.services.climate_service import analyze_series  # noqa: E402
 
 
 def _synthetic(years=range(2010, 2020)):
@@ -29,14 +29,7 @@ def test_no_invented_stats_on_gaps():
     print("PASS: test_no_invented_stats_on_gaps")
 
 
-def test_demo_labelled():
-    out, prov = demo_series()
-    assert prov == "DEMO" and "DEMO" in out["source"]
-    print("PASS: test_demo_labelled")
-
-
 if __name__ == "__main__":
     test_trend_recovers_slope()
     test_no_invented_stats_on_gaps()
-    test_demo_labelled()
     print("\nAll climate tests passed.")

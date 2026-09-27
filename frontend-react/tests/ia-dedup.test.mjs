@@ -175,13 +175,16 @@ test('home is about-you + chat hero + weather + active-alerts, no dispatch strip
   assert.match(home, /USER_TYPES\.find/, 'the strip reflects the same USER_TYPES the picker uses');
   assert.match(home, /setView\('settings'\)/, 'the change affordance goes to Settings');
   // Weather card: real current conditions with a provenance chip, honest UNAVAILABLE.
+  // 2026-09-23: the card now passes { role, lang } so the same source answers
+  // with the role-first interpreted brief alongside the raw values.
   assert.match(home, /<WeatherCard \/>/, 'the weather card mounts on Home');
-  assert.match(weatherCard, /api\.current\(loc\.lat, loc\.lon\)/, 'the card reads the same api.current source as HomeHero');
+  assert.match(weatherCard, /api\.current\(loc\.lat, loc\.lon/, 'the card reads the same api.current source as HomeHero');
+  assert.match(weatherCard, /\{ role: persona \|\| 'general', lang \}/, 'the card requests the role-first brief for the user role');
   assert.match(weatherCard, /<Prov value=\{prov\}/, 'the card carries the source provenance chip');
   // Active alerts: compact top-3 of active only; each row taps into the Alerts view.
   assert.match(home, /<HomeAlerts \/>/, 'the active-alerts section mounts on Home');
   assert.match(home, /api\.warnings\(loc\.district/, 'home alerts read the official warnings feed');
-  assert.match(home, /demoAlertApi\.list/, 'home alerts include the labelled demo alerts');
+  assert.doesNotMatch(home, /demoAlertApi\.list/, 'no demo-alerts feed merged into home alerts');
   assert.match(home, /isOfficialSource/, 'home alerts admit only official sources');
   assert.match(home, /endedState\(a\)/, 'home alerts exclude ended alerts');
   assert.match(home, /\.slice\(0, 3\)/, 'home shows at most the top 3 active alerts');

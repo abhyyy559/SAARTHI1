@@ -5,7 +5,6 @@
 - POST /api/notifications/read     {ids | all: true, district, device}
 - POST /api/notifications/ack      {alert_id, device} — explicit "I received this"
 - POST /api/notifications/open     {alert_id, device} — device reports alert opened
-- POST /api/notifications/reset    (demo mode) clear the log
 
 `device` is an opaque id the frontend keeps in localStorage. The server never
 learns who the user is; the id only separates "my phone marked it read" from
@@ -68,12 +67,3 @@ async def opened(payload: dict) -> dict:
 async def acknowledged(payload: dict) -> dict:
     """A device reports the user explicitly ACKNOWLEDGED the alert."""
     return _record_event(payload, "acknowledged")
-
-
-@router.post("/reset")
-async def reset() -> dict:
-    if not config.DEMO_MODE:
-        return {"status": "error", "reason": "demo mode only"}
-    notification_service.reset_store()
-    delivery_service.reset_store()
-    return {"status": "reset", "generated_at": iso_now()}

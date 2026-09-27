@@ -76,29 +76,7 @@ def _fetch_error_reason(inputs: dict | None) -> str | None:
     return inputs.get("_fetch_error")
 
 
-def _demo_fixture() -> dict:
-    """Labelled sample data for demo mode. Deterministic and clearly marked —
-    never presented as live numbers."""
-    def _lvl(p: int) -> dict:
-        return {"level_hpa": p, "wind_speed_kt": 12 + p // 100,
-                "wind_direction_deg": 250, "wind_from": "WSW",
-                "temperature_c": None, "relative_humidity_pct": None}
-
-    return {
-        "source": "DEMO fixture", "model": "GFS (demo sample)",
-        "levels_now": [_lvl(1000), _lvl(850), _lvl(700), _lvl(500)],
-        "levels_plus6h": [_lvl(1000), _lvl(850), _lvl(700), _lvl(500)],
-        "visibility_m": 9000, "cloud_cover_low_pct": 25,
-        "cloud_cover_mid_pct": 40, "cloud_cover_high_pct": 10,
-        "sunrise": "06:05", "sunset": "18:35",
-        "demo": True,
-        "note": "Sample data for demo — not real observations.",
-    }
-
-
 async def _fetch_inputs(lat: float, lon: float) -> dict:
-    if config.DEMO_MODE:
-        return _demo_fixture()
     if _official_only():
         # imd mode: GFS/Open-Meteo is non-official. Never backfill — every
         # meteorology section below will report UNAVAILABLE with this reason.

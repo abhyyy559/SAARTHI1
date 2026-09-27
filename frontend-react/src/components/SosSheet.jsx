@@ -5,7 +5,7 @@
 // shell opens the full Emergency console in a modal sheet. Everything inside
 // the sheet is the untouched Emergency component — arm→send, the picture
 // grid, the delivery stepper, the session inbox, the QR relay, and its own
-// "SIMULATED — FOR DEMO ONLY" stamp all ride along unchanged.
+// "SIMULATED RELAY" stamp all ride along unchanged.
 import { useEffect, useRef } from 'react';
 import { t } from '../i18n';
 import { useApp } from '../store';

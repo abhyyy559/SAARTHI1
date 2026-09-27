@@ -22,7 +22,7 @@ const TAMIL = /[\u0B80-\u0BFF]/;
 // as-is through a data URL (same pattern as alerts-notify.test.mjs).
 const logicSrc = read('../src/components/inboxLogic.js');
 const logic = await import(`data:text/javascript;base64,${Buffer.from(logicSrc).toString('base64')}`);
-const { groupNotifications, transitionKey, groupTitle, relTime, mergeAlerts, KIND_ICON } = logic;
+const { groupNotifications, transitionKey, groupTitle, relTime, KIND_ICON } = logic;
 
 // Worker 4 (2026-09-21): the grouped inbox page was superseded by the
 // notifications side panel — the Tamil/script check now targets the panel,
@@ -32,10 +32,10 @@ const listSrc = read('../src/components/AlertsList.jsx');
 const stringsSrc = read('../src/strings/areas/inbox.js');
 
 const FULL = [
-  { id: 'n1', alert_id: 'demo-x', kind: 'pre-alert', at: '2026-09-20T10:00:00', severity: 'ORANGE', district: 'Kochi', read: false },
-  { id: 'n2', alert_id: 'demo-x', kind: 'active', at: '2026-09-20T11:00:00', severity: 'RED', district: 'Kochi', read: false },
-  { id: 'n3', alert_id: 'demo-x', kind: 'extended', at: '2026-09-20T12:00:00', severity: 'RED', district: 'Kochi', read: false },
-  { id: 'n4', alert_id: 'demo-x', kind: 'ended', at: '2026-09-20T13:00:00', severity: 'GREEN', district: 'Kochi', read: true },
+  { id: 'n1', alert_id: 'cap-x', kind: 'pre-alert', at: '2026-09-20T10:00:00', severity: 'ORANGE', district: 'Kochi', read: false },
+  { id: 'n2', alert_id: 'cap-x', kind: 'active', at: '2026-09-20T11:00:00', severity: 'RED', district: 'Kochi', read: false },
+  { id: 'n3', alert_id: 'cap-x', kind: 'extended', at: '2026-09-20T12:00:00', severity: 'RED', district: 'Kochi', read: false },
+  { id: 'n4', alert_id: 'cap-x', kind: 'ended', at: '2026-09-20T13:00:00', severity: 'GREEN', district: 'Kochi', read: true },
 ];
 
 // --- en/hi/te parity ---------------------------------------------------------
@@ -80,7 +80,7 @@ test('inbox strings: no all-caps sentence', () => {
 test('groupNotifications: one full lifecycle in one group, oldest-first', () => {
   const groups = groupNotifications([...FULL].reverse());
   assert.equal(groups.length, 1);
-  assert.equal(groups[0].alertId, 'demo-x');
+  assert.equal(groups[0].alertId, 'cap-x');
   assert.deepEqual(groups[0].items.map((i) => i.kind), ['pre-alert', 'active', 'extended', 'ended']);
 });
 
@@ -94,7 +94,7 @@ test('groupNotifications: unread rolls up per group and sums for the badge', () 
   const other = { id: 'm1', alert_id: 'cap:abc', kind: 'start', at: '2026-09-20T09:00:00', severity: 'YELLOW', read: true };
   const groups = groupNotifications([...FULL, other]);
   assert.equal(groups.length, 2);
-  const g = groups.find((x) => x.alertId === 'demo-x');
+  const g = groups.find((x) => x.alertId === 'cap-x');
   assert.equal(g.unread, 3);
   const total = groups.reduce((n, x) => n + x.unread, 0);
   assert.equal(total, 3);
@@ -164,11 +164,10 @@ test('relTime: reads as live', () => {
 
 // --- merge / titles --------------------------------------------------------------
 
-test('mergeAlerts: official first, origins tagged honestly', () => {
-  const merged = mergeAlerts([{ id: 'c1' }], [{ id: 'd1' }]);
-  assert.equal(merged.length, 2);
-  assert.equal(merged[0]._origin, 'official');
-  assert.equal(merged[1]._origin, 'demo');
+test('demo merge is gone — the inbox groups real notifications only', () => {
+  // mergeAlerts(official, demo) is removed: no demo feed exists to merge.
+  assert.equal(logic.mergeAlerts, undefined, 'mergeAlerts must not be exported');
+  assert.ok(!/[Dd]emo/.test(logicSrc), 'inboxLogic has no demo state left');
 });
 
 test('groupTitle: official key hazard reads out without guessing', () => {

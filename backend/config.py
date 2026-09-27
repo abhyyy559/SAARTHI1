@@ -79,35 +79,28 @@ VAPID_SUBJECT = _get("VAPID_SUBJECT", "mailto:ops@weathergpt.local")
 # NETWORK sources (CAP/IMD/Open-Meteo). Bulletins are issued on the scale of
 # hours, so five minutes is responsive without hammering NDMA.
 ALERT_WATCH_INTERVAL = int(_get("ALERT_WATCH_INTERVAL", "300") or 300)
-# How often the watcher advances the local demo lifecycle. This pass touches
-# only the local store — no network — and it is what makes the on-stage
-# lifecycle land on time: the one-tap scenarios schedule pre-alert at ~12s,
-# ACTIVE at ~40s and ENDED at ~3min, and their own comments say "let the 10s
-# lifecycle loop deliver it". Sharing the 300s network cadence meant the
-# pre-alert notification could arrive up to five minutes late — by which point
-# the demo alert had already ended.
-DEMO_TICK = int(_get("DEMO_TICK", "10") or 10)
+# How often the watcher loop wakes to see whether the network pass is due.
+# The network pass itself is guarded by ALERT_WATCH_INTERVAL above.
+WATCH_TICK = int(_get("WATCH_TICK", "10") or 10)
 
-# --- Source modes (docs/SOURCE-MODES.md): "demo" | "imd" | "hybrid" ----------
-# SOURCE_MODE wins; if unset it derives from the legacy DEMO_MODE boolean so old
-# .env files keep working. DEMO_MODE stays a plain boolean because it is read at
-# many call sites, and is re-derived so the two can never drift.
-DEMO_MODE = _get("DEMO_MODE", "true").lower() in ("1", "true", "yes")
+# --- Source modes (docs/SOURCE-MODES.md): "imd" | "hybrid" -------------------
+# Demo mode was removed (2026-09-23, Abhiram's order): the app runs on real
+# sources only. SOURCE_MODE selects the official-only "imd" chain or the full
+# "hybrid" chain (IMD -> Open-Meteo -> OpenWeatherMap). Anything else,
+# including the retired "demo"/"live" values, falls back to "hybrid".
 _SOURCE_MODE_ENV = _get("SOURCE_MODE", "").strip().lower()
-if _SOURCE_MODE_ENV in ("demo", "imd", "hybrid"):
+if _SOURCE_MODE_ENV in ("imd", "hybrid"):
     SOURCE_MODE = _SOURCE_MODE_ENV
-elif _SOURCE_MODE_ENV == "live":  # legacy env alias for "hybrid"
-    SOURCE_MODE = "hybrid"
 else:
-    SOURCE_MODE = "demo" if DEMO_MODE else "hybrid"
-DEMO_MODE = SOURCE_MODE == "demo"  # derived, always in sync
+    # Legacy DEMO_MODE=true envs (retired): demo data no longer exists, so a
+    # stale DEMO_MODE=true can only mean "not imd-only" -> hybrid.
+    SOURCE_MODE = "hybrid"
 
-IMD_ADAPTER = _get("IMD_ADAPTER", "demo" if DEMO_MODE else "live")
+IMD_ADAPTER = _get("IMD_ADAPTER", "live")
 
 # Per-mode source chains, reported verbatim by GET /api/mode so the console can
 # name the sources actually carrying the answer, not just the mode label.
 MODE_SOURCES = {
-    "demo": {"weather": "DEMO fixtures", "warnings": "DEMO fixtures"},
     "imd": {"weather": "IMD only", "warnings": "IMD → SACHET/CAP"},
     "hybrid": {"weather": "IMD → Open-Meteo → OpenWeatherMap",
                "warnings": "IMD → SACHET/CAP → InTouch → WeatherAPI → GDACS"},
@@ -115,14 +108,7 @@ MODE_SOURCES = {
 
 
 def current_source_mode() -> str:
-    """Effective mode for source selection.
-
-    `DEMO_MODE` is the runtime demo switch read by many call sites (and set
-    directly by tests), so it always wins for the demo branch. `SOURCE_MODE`
-    distinguishes the official-only `imd` chain from the full `hybrid` chain.
-    """
-    if DEMO_MODE:
-        return "demo"
+    """Effective mode for source selection: "imd" (official-only) or "hybrid"."""
     return "imd" if SOURCE_MODE == "imd" else "hybrid"
 
 # Live-source keys (all optional — absence is reported, never faked)
@@ -138,6 +124,12 @@ CAP_FEED_URLS = [u.strip() for u in _get("CAP_FEED_URLS", "").split(",") if u.st
 # Multi-source alert chain (adapters/alert_sources.py)
 WEATHERAPI_KEY = _get("WEATHERAPI_KEY", "")   # free key, weatherapi.com
 WEATHERUNION_KEY = _get("WEATHERUNION_KEY", "")  # free key, Zomato Weather Union
+
+# WIS2 (optional, unverified): public global brokers need no private key.
+# The live MQTT subscriber is not implemented in the MVP — these only
+# document intent; CAP polling remains the official-warning path.
+WIS2_BROKER = _get("WIS2_BROKER", "")
+WIS2_TOPICS = _get("WIS2_TOPICS", "origin/a/wis2/#")
 
 SARVAM_API_KEY = _get("SARVAM_API_KEY", "")
 SARVAM_STT_URL = _get("SARVAM_STT_URL", "https://api.sarvam.ai/speech-to-text")

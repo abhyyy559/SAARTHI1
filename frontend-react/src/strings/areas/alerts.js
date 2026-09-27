@@ -80,8 +80,6 @@ export default {
     emgSend: 'Send',
     emgSync: 'Sync',
     emgQrRelay: 'Relay via QR',
-    emgSimulate: 'Demo relay',
-    emgSimHint: 'Demo only. Simulated.',
     emgMedical: 'Medical help needed',
     emgPeople: 'People',
     emgLess: 'Less',
@@ -91,8 +89,6 @@ export default {
     emgNotSent: 'Not sent. Server not reachable.',
     emgSynced: 'Synced {n}. Waiting {p}.',
     emgSyncFailed: 'Sync failed. Still offline.',
-    emgSimNote: 'Demo relay {id}. Simulated.',
-    emgSimFailed: 'Demo failed. Server not reachable.',
     emgInboxTitle: 'Messages',
     emgInboxEmpty: 'No messages yet.',
     emgNearby: 'Nearby',
@@ -114,7 +110,6 @@ export default {
 
     // --- P2P hop diagram -----------------------------------------------
     p2pTitle: 'How your message travels',
-    p2pSimulated: 'SIMULATED — FOR DEMO ONLY',
     p2pYou: 'You',
     p2pRelayA: 'Relay A',
     p2pRelayB: 'Relay B',
@@ -191,8 +186,6 @@ export default {
     emgSend: 'भेजें',
     emgSync: 'सिंक',
     emgQrRelay: 'QR से भेजें',
-    emgSimulate: 'डेमो रिले',
-    emgSimHint: 'सिर्फ़ डेमो। नकली।',
     emgMedical: 'चिकित्सा सहायता चाहिए',
     emgPeople: 'लोग',
     emgLess: 'कम',
@@ -202,8 +195,6 @@ export default {
     emgNotSent: 'नहीं भेजा। सर्वर नहीं मिला।',
     emgSynced: '{n} भेजे गए। {p} बाकी।',
     emgSyncFailed: 'सिंक नहीं हुआ। अभी ऑफ़लाइन।',
-    emgSimNote: 'डेमो रिले {id}। नकली।',
-    emgSimFailed: 'डेमो नहीं चला। सर्वर नहीं मिला।',
     emgInboxTitle: 'संदेश',
     emgInboxEmpty: 'अभी कोई संदेश नहीं।',
     emgNearby: 'पास में',
@@ -224,7 +215,6 @@ export default {
 
     // --- P2P hop diagram -----------------------------------------------
     p2pTitle: 'आपका संदेश कैसे जाता है',
-    p2pSimulated: 'SIMULATED — FOR DEMO ONLY',
     p2pYou: 'आप',
     p2pRelayA: 'रिले A',
     p2pRelayB: 'रिले B',
@@ -301,8 +291,6 @@ export default {
     emgSend: 'పంపండి',
     emgSync: 'సింక్',
     emgQrRelay: 'QR ద్వారా పంపండి',
-    emgSimulate: 'డెమో రిలే',
-    emgSimHint: 'డెమో మాత్రమే. నకిలీది.',
     emgMedical: 'వైద్య సహాయం కావాలి',
     emgPeople: 'మంది',
     emgLess: 'తక్కువ',
@@ -312,8 +300,6 @@ export default {
     emgNotSent: 'పంపలేదు. సర్వర్ అందుబాటులో లేదు.',
     emgSynced: '{n} పంపబడ్డాయి. {p} మిగిలాయి.',
     emgSyncFailed: 'సింక్ కాలేదు. ఇంకా ఆఫ్‌లైన్.',
-    emgSimNote: 'డెమో రిలే {id}. నకిలీది.',
-    emgSimFailed: 'డెమో కాలేదు. సర్వర్ అందుబాటులో లేదు.',
     emgInboxTitle: 'సందేశాలు',
     emgInboxEmpty: 'ఇంకా సందేశాలు లేవు.',
     emgNearby: 'సమీపంలో',
@@ -334,7 +320,6 @@ export default {
 
     // --- P2P hop diagram -----------------------------------------------
     p2pTitle: 'మీ సందేశం ఎలా వెళ్తుంది',
-    p2pSimulated: 'SIMULATED — FOR DEMO ONLY',
     p2pYou: 'మీరు',
     p2pRelayA: 'రిలే A',
     p2pRelayB: 'రిలే B',

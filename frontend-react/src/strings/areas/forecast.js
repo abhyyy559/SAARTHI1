@@ -1,0 +1,47 @@
+// 7-day forecast section (ForecastCard.jsx). EN / HI / TE parity is a ship
+// gate — every key below must exist in all three. Provenance labels (LIVE /
+// CACHED / UNAVAILABLE) stay machine-readable and are never translated.
+export default {
+  en: {
+    fcTitle: 'The week ahead',
+    fcSeeWeek: 'See the week',
+    fcToday: 'Today',
+    fcTomorrow: 'Tomorrow',
+    fcHigh: 'High',
+    fcLow: 'Low',
+    fcRainChance: 'Rain chance',
+    fcChecking: 'Checking the week ahead…',
+    fcUnavailableTitle: "Couldn't check the forecast",
+    fcUnavailableBody: "The week ahead isn't available right now. Nothing is guessed — check back later.",
+    fcRetry: 'Try again',
+    fcStale: 'May be outdated',
+  },
+  hi: {
+    fcTitle: 'आने वाले 7 दिन',
+    fcSeeWeek: 'सप्ताह देखें',
+    fcToday: 'आज',
+    fcTomorrow: 'कल',
+    fcHigh: 'अधिकतम',
+    fcLow: 'न्यूनतम',
+    fcRainChance: 'वर्षा संभावना',
+    fcChecking: 'आगामी सप्ताह का मौसम जाँच रहे हैं…',
+    fcUnavailableTitle: 'पूर्वानुमान नहीं मिल सका',
+    fcUnavailableBody: 'अभी सप्ताह का पूर्वानुमान उपलब्ध नहीं है। कोई अंदाज़ा नहीं लगाया गया — बाद में फिर जाँचें।',
+    fcRetry: 'फिर कोशिश करें',
+    fcStale: 'पुराना हो सकता है',
+  },
+  te: {
+    fcTitle: 'రాబోయే 7 రోజులు',
+    fcSeeWeek: 'వారం చూడండి',
+    fcToday: 'ఈ రోజు',
+    fcTomorrow: 'రేపు',
+    fcHigh: 'గరిష్ట',
+    fcLow: 'కనిష్ట',
+    fcRainChance: 'వర్షావకాశం',
+    fcChecking: 'రాబోయే వారం వాతావరణం తనిఖీ చేస్తున్నాం…',
+    fcUnavailableTitle: 'అంచనా తెలుసుకోలేకపోయాం',
+    fcUnavailableBody: 'రాబోయే వారం అంచనా ప్రస్తుతం అందుబాటులో లేదు. ఏదీ ఊహించలేదు — తర్వాత మళ్లీ చూడండి.',
+    fcRetry: 'మళ్లీ ప్రయత్నించండి',
+    fcStale: 'పాతది కావచ్చు',
+  },
+};

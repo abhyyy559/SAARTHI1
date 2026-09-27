@@ -15,7 +15,7 @@ export default {
     // Sky hero (Crew A, 2026-09-21): the creative weather band. Lens words are
     // plain weather descriptions (hot, breezy, heavy rain) — never safety
     // severities; the backend verdict stays the one severity. Provenance codes
-    // (LIVE/CACHED/DEMO) are machine-readable and stay untranslated.
+    // (LIVE/CACHED) are machine-readable and stay untranslated.
     lensTitle: 'What the conditions mean',
     lensHeat: 'Heat', lensRain: 'Rain', lensWind: 'Wind',
     lensNA: 'Not available yet',

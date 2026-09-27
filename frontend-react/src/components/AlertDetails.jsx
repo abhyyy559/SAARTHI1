@@ -4,7 +4,8 @@
 // - Renders the backend's severity AS-IS (never re-derived, never upgraded);
 //   lifecycle states render as translated human words (Upcoming, Pre-alert…),
 //   never raw backend codes.
-// - Shows district, source (DEMO vs NDMA-SACHET CAP), instruction (What to do).
+// - Shows district, source (the alert's real source — SACHET / NDMA / IMD),
+//   instruction (What to do).
 // - Details: status, started, expected end/ended, issued by, effects and
 //   reason (only when the backend supplies them) — from the backend's
 //   lifecycle_detail (alert_service), with honest "not started yet" for
@@ -34,15 +35,12 @@ export function lifecycleDetail(a = {}) {
     }
     return null;
   };
-  const src = String(a.source || '').toLowerCase();
-  const ident = String(a.id || a.identifier || '').toLowerCase();
-  const isDemo = src.includes('demo') || ident.startsWith('demo-');
   const reasonParts = [String(a.urgency || '').trim(), String(a.certainty || '').trim()].filter(Boolean);
   return {
     startedAt: pick(back.started_at, a.started_at, a.onset, a.effective),
     expectedEndAt: pick(back.expected_end_at, a.expected_end_at, a.ends_at, a.expires, a.valid_until),
     completedAt: pick(back.completed_at, a.completed_at),
-    issuer: pick(back.issuer, a.issuer, a.sender, isDemo ? 'DEMO' : 'NDMA-SACHET CAP'),
+    issuer: pick(back.issuer, a.issuer, a.sender),
     reason: pick(back.reason, a.reason, reasonParts.length ? reasonParts.join(', ') : null),
     effects: pick(back.effects, a.effects, a.description),
   };
@@ -114,13 +112,9 @@ export default function AlertDetails({ alert, onAck }) {
   const state = String(alert.lifecycle_state || alert.state || 'UPCOMING').toUpperCase();
   const isUpcoming = state === 'UPCOMING';
   const district = alert.district || alert.areaDesc || alert.area || '';
-  // Provenance honesty: demo/admin content wears the DEMO badge; the official
-  // badge names the alert's real source (SACHET / NDMA / IMD), never a guess.
-  const src = String(alert.source || '').toLowerCase();
-  const ident = String(alert.id || alert.identifier || '').toLowerCase();
-  const isDemo = src.includes('demo') || ident.startsWith('demo-') || alert.demo === true;
-  const sourceLabel = isDemo ? 'DEMO'
-    : (String(alert.source || '').toUpperCase() || 'NDMA-SACHET CAP');
+  // Provenance honesty: the badge names the alert's real source
+  // (SACHET / NDMA / IMD) — "not available" when the backend sent none.
+  const sourceLabel = String(alert.source || '').toUpperCase();
   const instruction = alert.instruction || '';
   const head = alert.title || alert.headline || alert.message || alert.hazard || alert.event || '';
   const history = Array.isArray(alert.history) ? alert.history
@@ -158,8 +152,8 @@ export default function AlertDetails({ alert, onAck }) {
         <div className="bc-body">
           <div className="bc-head">
             <span className="sev-stamp" data-sev={sev}>{sevWord(lang, sev)}</span>
-            <span className="demo-state">{stateLabel(state)}</span>
-            <span className={`prov ${sourceLabel === 'DEMO' ? 'DEMO' : 'OFFICIAL'}`}>{sourceLabel}</span>
+            <span className="alert-state">{stateLabel(state)}</span>
+            {sourceLabel ? <span className="prov OFFICIAL">{sourceLabel}</span> : na}
           </div>
           {head && <h2 className="bc-title">{head}</h2>}
           {district && (

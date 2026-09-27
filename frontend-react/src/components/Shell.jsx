@@ -1,6 +1,6 @@
 // App shell — the SIGNAL BOARD console.
 // White desktop rail (248px) with full-bleed yellow active blocks,
-// a utility top bar, hazard-stripe demo/offline banners, exactly four
+// a utility top bar, hazard-stripe offline banners, exactly four
 // mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet.
 // Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
@@ -74,10 +74,10 @@ function VoicePopups() {
 function StatusBanner({ kind, children }) {
   return (
     <div className={`banner ${kind === 'offline' ? 'banner-offline' : 'banner-hazard'}`} role="status">
-      {(kind === 'demo' || kind === 'offline') && <span className="hz-stripes" aria-hidden="true" />}
+      {kind === 'offline' && <span className="hz-stripes" aria-hidden="true" />}
       <Icon name={kind === 'offline' ? 'offline' : 'alert'} size={18} />
       <span>{children}</span>
-      {(kind === 'demo' || kind === 'offline') && <span className="hz-stripes" aria-hidden="true" />}
+      {kind === 'offline' && <span className="hz-stripes" aria-hidden="true" />}
     </div>
   );
 }
@@ -233,14 +233,6 @@ export default function Shell({ children }) {
   const conn = !online ? 'offline' : 'online';
   const connLabel = t(lang, conn === 'online' ? 'connOnline' : 'connOffline');
 
-  const demoLive = sourceMode === 'demo';
-  // The demo-data banner only belongs where demo/sample content can appear:
-  // never on Admin or Trust chrome. The SOS console carries its own
-  // "SIMULATED — FOR DEMO ONLY" stamp and now floats above every view —
-  // the shell's SOS button opens it in a modal sheet.
-  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'trust']);
-  const showDemoBanner = demoLive && demoBannerViews.has(view);
-
   return (
     <div className="app">
       <a className="skip-link" href="#main">{t(lang, 'skipToContent')}</a>
@@ -325,10 +317,10 @@ export default function Shell({ children }) {
           <div className="topbar-spacer" />
 
           {/* Mode controls live on the Admin view only — they are backstage,
-              not a citizen setting. Rendered from SOURCE_MODES so the three
+              not a citizen setting. Rendered from SOURCE_MODES so the two
               modes always stay in sync with the store. */}
           {view === 'admin' && (
-            <div className="segmented" role="group" aria-label={t(lang, 'demoModeTitle')}>
+            <div className="segmented" role="group" aria-label={t(lang, 'modeTitle')}>
               {SOURCE_MODES.map((m) => (
                 <button
                   key={m}
@@ -382,11 +374,6 @@ export default function Shell({ children }) {
           </div>
         </header>
 
-        {showDemoBanner && (
-          <StatusBanner kind="demo">
-            {t(lang, 'sbBannerDemo')}
-          </StatusBanner>
-        )}
         {!online && (
           <StatusBanner kind="offline">
             {t(lang, 'sbBannerOffline')}

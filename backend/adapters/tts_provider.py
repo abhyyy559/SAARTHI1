@@ -18,7 +18,7 @@ from ..utils.speak_sanitize import (
     sanitize_for_tts,
     split_sentences,
 )
-from .registry import LIVE, UNCONFIGURED, AdapterUnavailable, report
+from .registry import LIVE, UNCONFIGURED, AdapterUnavailable, make_client, report
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ _client: httpx.AsyncClient | None = None
 def _http() -> httpx.AsyncClient:
     global _client
     if _client is None:
-        _client = httpx.AsyncClient(timeout=30.0)
+        _client = make_client(timeout=30.0)
     return _client
 
 

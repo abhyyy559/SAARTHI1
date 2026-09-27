@@ -1,9 +1,12 @@
 """Source-mode contract tests (docs/SOURCE-MODES.md).
 
-Three modes — demo / imd / hybrid — with one switch. The behavioural rule that
+Two modes — imd / hybrid — with one switch. The behavioural rule that
 matters most: in `imd` mode an unreachable IMD is reported as UNAVAILABLE and is
 NEVER silently backfilled with Open-Meteo/OWM/cache, because this console's
 whole claim is provenance honesty.
+
+Demo mode was removed (2026-09-23): "demo" is no longer a valid mode anywhere —
+POST /api/mode rejects it, and no response carries a `demo_mode` key.
 
 All external calls are monkeypatched, so these run offline. The runtime cache is
 isolated to tmp_path so the developer's real weathergpt_cache.json is untouched.
@@ -32,10 +35,9 @@ from backend.utils.time import now_ist  # noqa: E402
 HYBRID_BODY = {
     "mode": "hybrid",
     "source_mode": "hybrid",
-    "demo_mode": False,
     "weather_source": "IMD → Open-Meteo → OpenWeatherMap",
     "warnings_source": "IMD → SACHET/CAP → InTouch → WeatherAPI → GDACS",
-    "available": {"demo": True, "imd": True, "hybrid": True},
+    "available": {"imd": True, "hybrid": True},
 }
 
 
@@ -47,13 +49,11 @@ def _isolate_runtime(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "CACHE_FILE", cache_file)
     monkeypatch.setattr(weather_mod, "cache", CacheService(cache_file))
     monkeypatch.setattr(config, "SOURCE_MODE", config.SOURCE_MODE)
-    monkeypatch.setattr(config, "DEMO_MODE", config.DEMO_MODE)
     monkeypatch.setattr(config, "IMD_ADAPTER", config.IMD_ADAPTER)
 
 
 def _set_mode(monkeypatch, mode: str) -> None:
     monkeypatch.setattr(config, "SOURCE_MODE", mode)
-    monkeypatch.setattr(config, "DEMO_MODE", mode == "demo")
 
 
 def _obs(source: str = "IMD", temperature: float = 30.0) -> WeatherObservation:
@@ -83,6 +83,7 @@ def _imd_ok(monkeypatch) -> None:
 
     monkeypatch.setattr(IMDService, "get_current_weather", cur)
     monkeypatch.setattr(IMDService, "get_forecast", fc)
+    monkeypatch.setattr(config, "IMD_API_KEY", "test-key")  # IMD keyed -> attempt runs
 
 
 def _openmeteo_ok(monkeypatch, calls: list) -> None:
@@ -115,47 +116,44 @@ def test_get_mode_hybrid_matches_contract(monkeypatch):
     assert r.json() == HYBRID_BODY
 
 
-def test_get_mode_demo_and_imd(monkeypatch):
-    _set_mode(monkeypatch, "demo")
-    demo = TestClient(app).get("/api/mode").json()
-    assert demo["mode"] == "demo" and demo["source_mode"] == "demo"
-    assert demo["demo_mode"] is True
-    assert demo["weather_source"] == "DEMO fixtures"
-
+def test_get_mode_imd(monkeypatch):
+    """The other surviving mode names its official-only chains; demo is gone."""
     _set_mode(monkeypatch, "imd")
     imd = TestClient(app).get("/api/mode").json()
     assert imd["mode"] == "imd" and imd["source_mode"] == "imd"
-    assert imd["demo_mode"] is False
+    assert "demo_mode" not in imd
     assert imd["weather_source"] == "IMD only"
     assert imd["warnings_source"] == "IMD → SACHET/CAP"
+    assert imd["available"] == {"imd": True, "hybrid": True}
 
 
 # -------------------------------------------------------------- POST /api/mode
 
-@pytest.mark.parametrize("mode", ["demo", "imd", "hybrid"])
-def test_post_mode_accepts_three_modes(monkeypatch, mode):
+@pytest.mark.parametrize("mode", ["imd", "hybrid"])
+def test_post_mode_accepts_two_modes(monkeypatch, mode):
     _set_mode(monkeypatch, "hybrid")
     r = TestClient(app).post("/api/mode", json={"mode": mode})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["ok"] is True
     assert body["mode"] == mode and body["source_mode"] == mode
-    assert body["demo_mode"] is (mode == "demo")
-    # The plain boolean and the adapter stay in sync with the mode.
-    assert config.DEMO_MODE is (mode == "demo")
-    assert config.IMD_ADAPTER == ("demo" if mode == "demo" else "live")
+    assert "demo_mode" not in body            # demo mode was removed
+    assert body["available"] == {"imd": True, "hybrid": True}
+    # The runtime flags stay in sync with the mode.
+    assert config.SOURCE_MODE == mode
+    assert config.IMD_ADAPTER == "live"
 
 
 def test_post_mode_legacy_live_alias_is_hybrid(monkeypatch):
-    _set_mode(monkeypatch, "demo")
+    _set_mode(monkeypatch, "imd")
     body = TestClient(app).post("/api/mode", json={"mode": "live"}).json()
     assert body["ok"] is True
     assert body["mode"] == "hybrid" and body["source_mode"] == "hybrid"
-    assert body["demo_mode"] is False
-    assert config.SOURCE_MODE == "hybrid" and config.DEMO_MODE is False
+    assert "demo_mode" not in body
+    assert config.SOURCE_MODE == "hybrid"
 
 
-@pytest.mark.parametrize("payload", [{"mode": "bogus"}, {"mode": "LIVE "}, {}, {"mode": None}])
+@pytest.mark.parametrize("payload", [{"mode": "demo"}, {"mode": "bogus"}, {"mode": "LIVE "}, {}, {"mode": None}])
 def test_post_mode_rejects_invalid(monkeypatch, payload):
     _set_mode(monkeypatch, "hybrid")
     r = TestClient(app).post("/api/mode", json=payload)
@@ -170,7 +168,7 @@ def test_health_reports_source_mode(monkeypatch):
     _set_mode(monkeypatch, "imd")
     body = TestClient(app).get("/api/health").json()
     assert body["source_mode"] == "imd"
-    assert body["demo_mode"] is False
+    assert "demo_mode" not in body            # demo mode was removed
     assert "imd_adapter" in body                 # existing keys are not removed
 
 
@@ -269,7 +267,10 @@ def test_hybrid_mode_endpoint_uses_openmeteo(monkeypatch):
                                params={"lat": 17.385, "lon": 78.4867}).json()
     assert body.get("status") != "unavailable"
     assert body["current"]["source"] == "Open-Meteo"
-    assert calls == ["current"]
+    # The role-first weather brief needs the forecast window ("rain in the
+    # next few days"), so /weather/current fetches it alongside the current
+    # observation. Both go through the same hybrid fallback chain.
+    assert calls == ["current", "forecast"]
 
 
 # ------------------------------------- imd mode: warnings stay IMD + SACHET/CAP

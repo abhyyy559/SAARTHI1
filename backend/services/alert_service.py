@@ -253,8 +253,7 @@ def classify_alert(alert: dict, *, lat: float, lon: float, district: str, state_
     NOT a calm: it never lowers a verdict, it just stops the console claiming a
     silent all-clear on the strength of an alert it cannot read.
 
-    Public because the demo-fixture path in `api/weather.py` needs the same
-    tagging; it must not grow a second, subtly different copy of these rules.
+    Public because `api/weather.py` needs the same tagging; it must not grow a second, subtly different copy of these rules.
     """
     # Aliases, because the feed writes "Ranga Reddy" where the user's district is
     # "Rangareddy" — and a spelling difference must not hide an official alert.

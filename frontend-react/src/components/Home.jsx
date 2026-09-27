@@ -8,6 +8,11 @@
 //   1. Ask, the hero (Agent 3's HomeChat) — the flagship, the first thing the
 //      eye hits and the largest element on the screen.
 //   2. WeatherCard — current conditions, raw values plus provenance.
+//   2b. ForecastCard — the 7-day forecast (high/low, rain chance, condition
+//      icon + word) with its own provenance chip, directly under Weather now
+//      so the two weather blocks read as one. Advisory does NOT repeat it:
+//      its cards already ground on the 3-day forecast, and a second copy
+//      would push advice down on a 390px phone.
 //   3. HomeAlerts — ACTIVE alerts only, top 3, each tappable straight into
 //      the Alerts view. Abhiram's call (2026-09-23): alerts belong on home —
 //      this overrides the old IA-dedup "no per-page alert block" decision.
@@ -20,14 +25,15 @@
 import { useEffect, useState } from 'react';
 import { t } from '../i18n';
 import { useApp } from '../store';
-import { api, demoAlertApi } from '../api';
+import { api } from '../api';
 import HomeHero from './HomeHero';
 import HomeChat from './HomeChat';
 import AviationBriefing from './AviationBriefing';
 import WeatherCard from './WeatherCard';
+import ForecastCard from './ForecastCard';
 import { USER_TYPES } from './Advisor';
-import { isDemoAlert, isOfficialSource } from './AlertsList';
-import { mergeAlerts, relTime } from './inboxLogic';
+import { isOfficialSource } from './AlertsList';
+import { relTime } from './inboxLogic';
 import { SevStamp } from './ui';
 import Icon from './icons';
 
@@ -74,10 +80,10 @@ function AboutYou() {
   );
 }
 
-// HomeAlerts — the compact active-alerts section. Same two sources as
-// AlertsList (official CAP warnings + demo-store alerts), the same dedup and
-// official-source admission, then ACTIVE ONLY, top 3. Each row is a link into
-// the Alerts view via the store's selectedAlert — detail lives there.
+// HomeAlerts — the compact active-alerts section. Same source as AlertsList
+// (official CAP warnings), the same dedup and official-source admission,
+// then ACTIVE ONLY, top 3. Each row is a link into the Alerts view via the
+// store's selectedAlert — detail lives there.
 const endedState = (a) => String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
 
 function HomeAlerts() {
@@ -95,27 +101,23 @@ function HomeAlerts() {
     setFailed(false);
     Promise.all([
       api.warnings(loc.district, loc.lat, loc.lon).catch(() => null),
-      demoAlertApi.list(loc.district).catch(() => null),
-    ]).then(([w, d]) => {
+    ]).then(([w]) => {
       if (!alive) return;
-      if (!w && !d) {
-        // Both sources unreachable: say so honestly, never a fake all-clear.
+      if (!w) {
+        // Source unreachable: say so honestly, never a fake all-clear.
         setFailed(true);
         setAlerts([]);
         return;
       }
       const official = [];
-      // Same demo-badging rule as AlertsList: in demo mode every fixture
-      // alert wears the DEMO badge instead of reading as official.
-      const responseIsDemo = String(w?.provenance || '').toUpperCase() === 'DEMO';
       for (const a of (w?.cap_alerts || [])) {
-        official.push(responseIsDemo ? { ...a, demo: true } : a);
+        official.push(a);
       }
       if (w?.warning && (w.verified?.verified || w.verdict?.basis === 'unverified_warning')) {
         official.unshift({
           ...w.warning,
           headline: w.warning.message,
-          source: responseIsDemo ? 'DEMO' : (w.warning.source || 'IMD'),
+          source: w.warning.source || 'IMD',
         });
       }
       // Canonical identity so the same warning never renders twice.
@@ -127,7 +129,7 @@ function HomeAlerts() {
         seenIds.add(key);
         return true;
       });
-      const active = mergeAlerts(deduped, [...(d?.alerts || [])])
+      const active = deduped
         .filter(isOfficialSource)
         .filter((a) => !endedState(a))
         .slice(0, 3);
@@ -171,7 +173,7 @@ function HomeAlerts() {
             const sev = a.severity || 'UNKNOWN';
             const head = (a.headline || a.title || a.message || a.hazard || a.event || '').trim();
             const district = a.district || a.areaDesc || a.area || loc.district;
-            const tag = isDemoAlert(a) ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
+            const tag = t(lang, 'listOfficialTag');
             const at = a.updated_at || a.issued_at || a.sent || a.created_at;
             return (
               <div key={String(a.id || a.identifier || head || i)} className="alerts-row" role="listitem" data-sev={sev}>
@@ -233,6 +235,8 @@ export default function Home() {
       </section>
       {/* Current conditions: raw values, provenance chip, no verdict. */}
       <WeatherCard />
+      {/* The week ahead: 7-day forecast right under Weather now. */}
+      <ForecastCard />
       {/* Active alerts (top 3) — rows tap through to the Alerts view. */}
       <HomeAlerts />
       {/* The verdict readout stays — safety-critical — but compact and

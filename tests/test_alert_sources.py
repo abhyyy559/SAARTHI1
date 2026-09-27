@@ -90,5 +90,32 @@ if __name__ == "__main__":
     test_mk_alert_matches_cap_shape()
     test_chain_never_raises_and_reports_unavailable(None)
     test_chain_first_source_with_alerts_wins(None)
+    test_chain_concurrent_priority_preserved(None)
     test_gdacs_distance_filter()
     print("\nAll alert source tests passed.")
+
+
+def test_chain_concurrent_priority_preserved(monkeypatch):
+    # Lower-priority source returns FASTER, but higher-priority alerts must win.
+    # This verifies asyncio.gather doesn't break chain ordering.
+    async def slow_hit(lat, lon, district):
+        await asyncio.sleep(0.05)  # InTouch (higher priority) is slower
+        return [asc._mk_alert(
+            source=asc.SOURCE_BY_NAME["weatherintouch"], identifier="wit-1",
+            hazard="Storm", severity="RED", headline="Storm",
+            message="Storm warning", instruction="Stay inside.", area="Hyderabad",
+            effective="2026-09-17T10:00:00", expires="2026-09-18T10:00:00")]
+    async def fast_hit(lat, lon, district):
+        await asyncio.sleep(0.01)  # WeatherAPI (lower priority) is faster
+        return [asc._mk_alert(
+            source=asc.SOURCE_BY_NAME["weatherapi"], identifier="wapi-1",
+            hazard="Flood", severity="ORANGE", headline="Flood",
+            message="Flood warning", instruction="Move up.", area="Hyderabad",
+            effective="2026-09-17T10:00:00", expires="2026-09-18T10:00:00")]
+    monkeypatch.setattr(asc, "_from_weatherintouch", slow_hit)
+    monkeypatch.setattr(asc, "_from_weatherapi", fast_hit)
+    monkeypatch.setattr(asc, "_from_gdacs", fast_hit)
+    alerts, prov = asyncio.run(asc.get_alerts(17.385, 78.4867, "Hyderabad"))
+    # InTouch is first in chain order, so its alerts win despite being slower.
+    assert alerts[0]["identifier"] == "wit-1", "priority order must survive concurrency"
+    print("PASS: test_chain_concurrent_priority_preserved")

@@ -7,7 +7,7 @@
 // when a confirmed severe warning is active, which is the worst moment to hand
 // someone a language they may not read.
 //
-// Machine-readable codes (LIVE/CACHED/DEMO, RED/ORANGE, mode ids) are NOT here:
+// Machine-readable codes (LIVE/CACHED, RED/ORANGE, mode ids) are NOT here:
 // they are rendered verbatim by design.
 export default {
   en: {

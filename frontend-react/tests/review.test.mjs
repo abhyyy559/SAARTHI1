@@ -66,11 +66,11 @@ test('HomeHero clears the stale flag on ANY answered request', () => {
   assert.ok(staleIdx < warningIdx, 'setStale(false) must not be gated behind d.warning');
 });
 
-test('the hero status chip cannot say LIVE over a DEMO/CACHED payload', () => {
+test('the hero status chip cannot say LIVE over a CACHED payload', () => {
   // The old card hardcoded 'LIVE' while the evidence line rendered the
-  // payload's own provenance, so the card contradicted itself: "LIVE" beside
-  // "DEMO". HomeHero derives evProv honestly: pending/aged/unavailable win
-  // over the payload's own provenance word, which is the last resort.
+  // payload's own provenance, so the card contradicted itself. HomeHero
+  // derives evProv honestly: pending/aged/unavailable win over the payload's
+  // own provenance word, which is the last resort.
   assert.doesNotMatch(hero, /basis === 'unavailable' \? t\(lang, 'basisUnavailable'\) : 'LIVE'/);
   assert.match(hero, /const evProv = pending \? '—' : aged \? 'CACHED' : basis === 'unavailable' \? 'UNAVAILABLE'/);
   assert.match(hero, /\{evProv\}/, 'the evidence line must render the derived provenance');
@@ -119,7 +119,7 @@ test('the api client defines no method key twice', () => {
   // The uncommitted diff had grown a second copy of the whole notifications
   // block inside `export const api`. In an object literal the later key silently
   // wins, so a future edit to the first copy would do nothing. Scope the scan to
-  // the `api` literal itself — sibling exports (demoAlertApi, notificationsApi)
+  // the `api` literal itself — sibling exports (notificationsApi, coverageApi)
   // legitimately reuse names like `list` and `reset`.
   const start = apiSrc.indexOf('export const api = {');
   assert.ok(start > -1, 'api.js must export the api client object');

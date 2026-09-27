@@ -28,6 +28,7 @@ class ForecastDay(BaseModel):
     min_temperature: Optional[float] = None
     max_temperature: Optional[float] = None
     rainfall: Optional[float] = None
+    rain_chance: Optional[float] = None  # precipitation probability %, 0-100
 
 
 class WeatherForecast(BaseModel):

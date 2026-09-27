@@ -84,7 +84,6 @@ def test_gather_reports_whether_any_feed_answered(monkeypatch):
 
 
 def test_watcher_never_all_clears_when_every_feed_is_unreachable(monkeypatch):
-    monkeypatch.setattr(config, "DEMO_MODE", False)
     district = "Hyderabad"
     _reset_watcher_state(district)
     state = alert_watcher._load_state()
@@ -109,7 +108,6 @@ def test_watcher_never_all_clears_when_every_feed_is_unreachable(monkeypatch):
 
 def test_watcher_still_all_clears_after_a_real_answer(monkeypatch):
     """The safe direction must not be bought by disabling all-clears entirely."""
-    monkeypatch.setattr(config, "DEMO_MODE", False)
     district = "Warangal"
     _reset_watcher_state(district)
     state = alert_watcher._load_state()
@@ -255,10 +253,10 @@ def test_naive_expiry_is_read_as_ist():
 # tests, but the endpoint still carried its own inline copy — the helper was
 # never called, so the bug was still live.
 # ---------------------------------------------------------------------------
-def _install_demo_chat(monkeypatch, llm_answer):
-    monkeypatch.setattr(config, "DEMO_MODE", True)
+def _install_live_chat(monkeypatch, llm_answer):
+    """Chat is always live now (demo mode removed): mock the live retrieval."""
 
-    async def fake_retrieve(loc):
+    async def fake_retrieve(loc, lat, lon):
         current = {"source": "IMD", "temperature": 28.0}
         forecast = {"source": "IMD", "days": [{"rainfall": 1.0}, {"rainfall": 22.0}]}
         verified = {"verified": False, "severity": "GREEN", "hazard": None}
@@ -267,12 +265,12 @@ def _install_demo_chat(monkeypatch, llm_answer):
     async def fake_generate(self, evidence, question, language):
         return llm_answer, False
 
-    monkeypatch.setattr(chat, "_retrieve_demo", fake_retrieve)
+    monkeypatch.setattr(chat, "_retrieve_live", fake_retrieve)
     monkeypatch.setattr(chat.LLMService, "generate", fake_generate)
 
 
 def _ask(monkeypatch, answer, message="Will it rain tomorrow?"):
-    _install_demo_chat(monkeypatch, answer)
+    _install_live_chat(monkeypatch, answer)
     r = TestClient(app).post("/api/chat", json={"message": message, "user_type": "general"})
     assert r.status_code == 200, r.text
     return r.json()["answer"]

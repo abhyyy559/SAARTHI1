@@ -1,6 +1,6 @@
 // Home screen, Round 3 strings: the compact about-you strip, the weather
 // card, and the active-alerts section. EN/HI/TE — all three required.
-// Severity words and provenance labels (LIVE / CACHED / DEMO / UNAVAILABLE)
+// Severity words and provenance labels (LIVE / CACHED / UNAVAILABLE)
 // stay machine-readable and are never translated.
 export default {
   en: {

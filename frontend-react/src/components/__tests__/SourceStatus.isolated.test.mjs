@@ -19,12 +19,12 @@ test('fetches /api/sources and /api/mode', () => {
   assert.match(s, /mode\(\)|api\.mode/);
 });
 
-test('covers all seven rows: IMD, Open-Meteo, SACHET/CAP, Demo, cache, P2P, Push', () => {
+test('covers all seven rows: IMD, Open-Meteo, SACHET/CAP, GIS jobs, cache, P2P, Push', () => {
   const s = src();
   assert.match(s, /IMD/);
   assert.match(s, /Open-Meteo/);
   assert.match(s, /SACHET|CAP/);
-  assert.match(s, /[Dd]emo/);
+  assert.match(s, /gis-location|gis-polygon|gis-hazard/);
   assert.match(s, /cache/i);
   assert.match(s, /P2P/);
   assert.match(s, /[Pp]ush/);

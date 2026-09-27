@@ -11,7 +11,6 @@ Both halves are pinned here, at the helper and at the endpoint.
 import pytest
 from fastapi.testclient import TestClient
 
-from backend import config
 from backend.api.chat import _ensure_rain_lead
 from backend.main import app
 
@@ -66,9 +65,9 @@ def test_missing_forecast_never_invents_an_answer():
 # ---------------------------------------------------------------------------
 @pytest.fixture()
 def client(monkeypatch):
-    config.DEMO_MODE = True
-
-    async def fake_retrieve(loc):
+    # Chat is always live now (demo mode removed): mock the live retrieval
+    # with a deterministic offline chain.
+    async def fake_retrieve(loc, lat, lon):
         current = {"source": "IMD", "temperature": 28.0}
         verified = {"verified": False, "severity": "GREEN", "hazard": None}
         return current, RAIN_FORECAST, verified, [], {"source_name": "IMD"}
@@ -77,7 +76,7 @@ def client(monkeypatch):
         return fake_generate.answer, False
 
     import backend.api.chat as chat
-    monkeypatch.setattr(chat, "_retrieve_demo", fake_retrieve)
+    monkeypatch.setattr(chat, "_retrieve_live", fake_retrieve)
     monkeypatch.setattr(chat.LLMService, "generate", fake_generate)
     fake_generate.answer = ""
     with TestClient(app) as c:

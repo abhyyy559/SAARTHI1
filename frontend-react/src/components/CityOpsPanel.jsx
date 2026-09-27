@@ -5,7 +5,7 @@
 // Details route another agent owns.
 //
 // FACTS ONLY — no advice, no recommendations. Each metric names its own
-// provenance honestly (LIVE / CACHED / DEMO / UNAVAILABLE). Backend severity is
+// provenance honestly (LIVE / CACHED / UNAVAILABLE). Backend severity is
 // authoritative: alert severities render verbatim through SevStamp, never
 // re-derived, never recoloured; UNKNOWN stays UNKNOWN.
 //

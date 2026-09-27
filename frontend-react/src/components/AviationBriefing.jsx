@@ -225,7 +225,6 @@ export default function AviationBriefing() {
   const current = response?.key === key ? response : null;
   const data = current?.data;
   const sections = data?.sections || [];
-  const anySample = sections.some((s) => s?.provenance === 'DEMO');
 
   return (
     <Card
@@ -240,9 +239,6 @@ export default function AviationBriefing() {
         <Icon name="alert" size={16} aria-hidden="true" />
         <strong>{t(lang, 'avDisclaimer')}</strong>
       </p>
-      {anySample && (
-        <p className="sub av-sample" role="note">{t(lang, 'avSample')}: {t(lang, 'avSampleNote')}</p>
-      )}
       <div role="status" aria-live="polite">
         {!current ? (
           <p className="sub">{t(lang, 'avLoading')}</p>

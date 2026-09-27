@@ -15,6 +15,7 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import QrRelay from './QrRelay';
+import InfoCardQr from './InfoCardQr';
 
 // One glyph and one short word per message type - the picture is the label.
 const EMG_ICON = {
@@ -45,7 +46,7 @@ const wordOf = (lang, type) =>
   (EMG_WORD[type] ? t(lang, EMG_WORD[type]) : String(type).replaceAll('_', ' '));
 
 // Per-browser-session sender id: the inbox shows messages sent from THIS
-// phone in THIS demo, never the backend's shared historical pile (B2).
+// phone in THIS session, never the backend's shared historical pile (B2).
 function sessionSenderId() {
   try {
     let sid = sessionStorage.getItem('wgpt.sid');
@@ -93,6 +94,7 @@ export default function Emergency() {
   // no nav. A fully-offline phone can hand its SOS to a nearby phone via
   // rotating QR frames, straight from the SOS console.
   const [showQr, setShowQr] = useState(false);
+  const [showInfoCard, setShowInfoCard] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -248,6 +250,19 @@ export default function Emergency() {
         >
           <Icon name="radio" size={14} /> {t(lang, 'emgQrRelay')}
         </button>
+        {/* Offline info-card QR: a STATIC plain-text QR of this phone's saved
+            emergency info — any generic camera app can read it, no app
+            install needed on the scanner's side. Separate from the rotating
+            app-to-app SOS relay above. */}
+        <button
+          className="btn btn-secondary sm"
+          type="button"
+          onClick={() => setShowInfoCard((s) => !s)}
+          aria-expanded={showInfoCard}
+          title={t(lang, 'icShowSub')}
+        >
+          <Icon name="qr" size={14} /> {t(lang, 'icShowBtn')}
+        </button>
       </div>
       {showQr && (
         <div style={{ marginBottom: 10 }}>
@@ -262,6 +277,11 @@ export default function Emergency() {
             lang={lang}
             bare
           />
+        </div>
+      )}
+      {showInfoCard && (
+        <div style={{ marginBottom: 10 }}>
+          <InfoCardQr />
         </div>
       )}
       {note ? <p className="mono" role="status">{note}</p> : null}

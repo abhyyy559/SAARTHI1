@@ -7,8 +7,8 @@
 // - The backend verdict is the ONE severity — read, never derived. The lens
 //   words ("Hot", "Breezy", "Heavy rain") are weather descriptions, never
 //   safety severities; no icon+word+color stamp is ever attached to them.
-// - Every value carries its provenance: LIVE / CACHED / DEMO / UNAVAILABLE,
-//   taken from the API payload. Demo fixtures are never labelled LIVE.
+// - Every value carries its provenance: LIVE / CACHED / UNAVAILABLE,
+//   taken from the API payload.
 // - Missing data renders "not available yet", never a fake all-clear.
 // - Manual city fallback (text input + apply) appears whenever location is
 //   denied or unavailable, wired to the existing location-search API and the

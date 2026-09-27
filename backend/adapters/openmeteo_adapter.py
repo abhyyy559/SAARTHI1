@@ -6,11 +6,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import httpx
 
 from ..models.weather import ForecastDay, WeatherForecast, WeatherObservation
 from ..utils.time import IST
-from .registry import LIVE, OFFLINE, AdapterUnavailable, report
+from .registry import LIVE, OFFLINE, AdapterUnavailable, make_client, report
 
 BASE = "https://api.open-meteo.com/v1/forecast"
 SOURCE = "Open-Meteo"
@@ -32,7 +31,7 @@ def _condition(code: int | None) -> str:
 
 async def _fetch(params: dict) -> dict:
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with make_client(timeout=12.0) as client:
             resp = await client.get(BASE, params=params)
             resp.raise_for_status()
             return resp.json()
@@ -70,7 +69,7 @@ async def get_current(latitude: float, longitude: float) -> tuple[WeatherObserva
 async def get_forecast(latitude: float, longitude: float) -> tuple[WeatherForecast, str]:
     data = await _fetch({
         "latitude": latitude, "longitude": longitude,
-        "daily": "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum",
+        "daily": "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max",
         "timezone": "Asia/Kolkata", "forecast_days": 7,
     })
     daily = data.get("daily") or {}
@@ -85,6 +84,7 @@ async def get_forecast(latitude: float, longitude: float) -> tuple[WeatherForeca
             min_temperature=_at("temperature_2m_min"),
             max_temperature=_at("temperature_2m_max"),
             rainfall=_at("precipitation_sum"),
+            rain_chance=_at("precipitation_probability_max"),
         ))
     fc = WeatherForecast(source=SOURCE, location=None, issued_at=datetime.now(IST), days=days)
     report("open-meteo", LIVE, f"forecast {len(days)} days")

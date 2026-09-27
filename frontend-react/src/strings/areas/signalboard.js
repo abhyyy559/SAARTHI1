@@ -6,7 +6,7 @@ export default {
     // --- rail / mobile chrome ------------------------------------------------
     close: 'Close',
     navAdvisor: 'Your role',
-    navAdmin: 'Demo control panel',
+    navAdmin: 'Authorities console',
     navLabel: 'Sections',
     langLabel: 'Language',
     skipToContent: 'Skip to main content',
@@ -16,7 +16,6 @@ export default {
     sbTakeTour: 'Take the tour',
     sbStep: 'Step {n} of {m}',
     // --- status banners -------------------------------------------------------
-    sbBannerDemo: 'Sample data — not a real warning',
     sbBannerOffline: 'Offline — messages will queue',
     // --- home ----------------------------------------------------------------
     sbDistrictKicker: 'Your district',
@@ -42,7 +41,6 @@ export default {
     sbDisclaimer: 'This guidance is general advice for your role. Always follow official IMD and government warnings — they override anything here.',
     // --- alerts / P2P -----------------------------------------------------------
     sbMaydayKicker: 'Emergency messages',
-    sbSimStamp: 'Simulated — for demo only',
     sbP2pRelayIdle: 'Nothing relayed yet',
     sbSosLabel: 'Emergency',
     emgSosArmed: 'Armed — tap again to send',
@@ -57,7 +55,7 @@ export default {
   hi: {
     close: 'बंद करें',
     navAdvisor: 'आपकी भूमिका',
-    navAdmin: 'डेमो कंट्रोल पैनल',
+    navAdmin: 'प्रशासन कंसोल',
     navLabel: 'अनुभाग',
     langLabel: 'भाषा',
     skipToContent: 'मुख्य सामग्री पर जाएँ',
@@ -66,7 +64,6 @@ export default {
     sbSih: 'SIH 2026',
     sbTakeTour: 'टूर शुरू करें',
     sbStep: 'चरण {n} / {m}',
-    sbBannerDemo: 'नमूना डेटा — असली चेतावनी नहीं',
     sbBannerOffline: 'ऑफ़लाइन — संदेश कतार में लगेंगे',
     sbDistrictKicker: 'आपका जिला',
     sbListenVerdict: 'सुनें',
@@ -87,7 +84,6 @@ export default {
     sbDecisionHead: 'निर्णय सहायता — सरकारी निर्देश नहीं',
     sbDisclaimer: 'यह सलाह आपकी भूमिका के लिए सामान्य मार्गदर्शन है। हमेशा आधिकारिक IMD और सरकारी चेतावनियों का पालन करें — वे इस सलाह से ऊपर हैं।',
     sbMaydayKicker: 'आपातकालीन संदेश',
-    sbSimStamp: 'सिम्युलेटेड — केवल डेमो के लिए',
     sbP2pRelayIdle: 'अभी कुछ रिले नहीं हुआ',
     sbSosLabel: 'आपातकाल',
     emgSosArmed: 'तैयार — भेजने के लिए फिर दबाएँ',
@@ -100,7 +96,7 @@ export default {
   te: {
     close: 'మూసివేయండి',
     navAdvisor: 'మీ పాత్ర',
-    navAdmin: 'డెమో నియంత్రణ ప్యానెల్',
+    navAdmin: 'అధికార కన్సోల్',
     navLabel: 'విభాగాలు',
     langLabel: 'భాష',
     skipToContent: 'ప్రధాన కంటెంట్‌కు వెళ్లండి',
@@ -109,7 +105,6 @@ export default {
     sbSih: 'SIH 2026',
     sbTakeTour: 'టూర్ చూడండి',
     sbStep: 'దశ {n} / {m}',
-    sbBannerDemo: 'నమూనా డేటా — నిజమైన హెచ్చరిక కాదు',
     sbBannerOffline: 'ఆఫ్‌లైన్ — సందేశాలు క్యూలో ఉంటాయి',
     sbDistrictKicker: 'మీ జిల్లా',
     sbListenVerdict: 'వినండి',
@@ -130,7 +125,6 @@ export default {
     sbDecisionHead: 'నిర్ణయ సహాయం — అధికారిక సూచన కాదు',
     sbDisclaimer: 'ఈ సలహా మీ పాత్ర కోసం సాధారణ మార్గదర్శనం. ఎల్లప్పుడూ అధికారిక IMD మరియు ప్రభుత్వ హెచ్చరికలను పాటించండి — అవి ఈ సలహా కంటే ముఖ్యమైనవి.',
     sbMaydayKicker: 'అత్యవసర సందేశాలు',
-    sbSimStamp: 'సిమ్యులేటెడ్ — డెమో కోసం మాత్రమే',
     sbP2pRelayIdle: 'ఇంకా ఏదీ రిలే కాలేదు',
     sbSosLabel: 'అత్యవసర',
     emgSosArmed: 'సిద్ధం — పంపడానికి మళ్లీ నొక్కండి',

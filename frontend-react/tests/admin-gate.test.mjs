@@ -1,9 +1,8 @@
 // Admin gating regression tests (source-level).
 //
 // The admin console is team-only: it must not appear in any public nav, and
-// ?view=admin must stop at a PIN gate. The gate is a demo gate, not
-// authentication — the real protection stays server-side (DEMO_MODE-gated
-// demo endpoints).
+// ?view=admin must stop at a PIN gate. The gate is a team gate, not
+// authentication — the real protection stays server-side.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -60,10 +59,11 @@ test('PIN is overridable via env with a documented default', () => {
   );
 });
 
-test('gate honesty: comment states it is a demo gate, not authentication', () => {
+test('gate honesty: comment states it is a team gate, not authentication', () => {
   const code = read('../src/views.jsx');
-  assert.match(code, /DEMO gate, not/, 'gate must document that it is not authentication');
-  assert.match(code, /DEMO_MODE-gated/, 'gate must point at the real server-side protection');
+  assert.match(code, /team-access gate/, 'gate must document the team-only scope');
+  assert.match(code, /not authentication/, 'gate must document that it is not authentication');
+  assert.match(code, /real protection is server-side/, 'gate must point at the real server-side protection');
 });
 
 test('PIN input accepts letters — the default PIN is SAARTHI', () => {
@@ -106,11 +106,11 @@ test('no admin entry in the public More sheet rows', () => {
   );
 });
 
-test('demo banner never names or shows on the admin route', () => {
+test('no demo banner exists in the shell at all', () => {
   const code = read('../src/components/Shell.jsx');
-  const bannerViews = code.match(/const demoBannerViews = new Set\(\[([\s\S]*?)\]\)/);
-  assert.ok(bannerViews, 'demoBannerViews set must exist');
-  assert.ok(!bannerViews[1].includes('admin'), 'demo banner must not show on admin');
+  assert.doesNotMatch(code, /demoBannerViews/, 'no demo-banner view set left behind');
+  assert.doesNotMatch(code, /showDemoBanner/, 'no demo-banner render flag');
+  assert.doesNotMatch(code, /sbBannerDemo/, 'no demo-banner string referenced');
 });
 
 test('onboarding tour never steps toward admin', () => {

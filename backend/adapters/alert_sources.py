@@ -9,6 +9,7 @@ pipeline already speaks (relevance, card rendering, provenance badges).
 """
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime
 from typing import Any
@@ -17,7 +18,7 @@ import httpx
 
 from .. import config
 from ..utils.time import IST
-from .registry import ERROR, LIVE, report
+from .registry import ERROR, LIVE, make_client, report
 
 UNAVAILABLE = "UNAVAILABLE"  # matches the literal used across the warnings API
 
@@ -28,7 +29,7 @@ SOURCE_BY_NAME = {
     "sachet": "NDMA-Sachet-CAP",
 }
 
-_TIMEOUT = httpx.Timeout(12.0, connect=6.0)
+_TIMEOUT = httpx.Timeout(2.5, connect=2.0)
 
 
 def _iso(value: Any) -> str:
@@ -108,7 +109,7 @@ async def _from_weatherintouch(lat: float, lon: float, district: str) -> list[di
                    "arguments": {"place": district or "Hyderabad"}},
     }
     headers = {"Accept": "application/json, text/event-stream"}
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with make_client(timeout=_TIMEOUT) as client:
         r = await client.post("https://api.weatherintouch.com/api/mcp",
                               json=body, headers=headers)
         r.raise_for_status()
@@ -147,7 +148,7 @@ async def _from_weatherapi(lat: float, lon: float, district: str) -> list[dict[s
     key = config.WEATHERAPI_KEY
     if not key:
         raise RuntimeError("WEATHERAPI_KEY not configured")
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with make_client(timeout=_TIMEOUT) as client:
         r = await client.get("https://api.weatherapi.com/v1/alerts.json",
                              params={"key": key, "q": f"{lat},{lon}"})
         r.raise_for_status()
@@ -181,7 +182,7 @@ async def _from_gdacs(lat: float, lon: float, district: str) -> list[dict[str, A
     footprint estimate used ONLY for relevance, never shown as precision."""
     from ..services.gis_service import haversine_km
 
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with make_client(timeout=_TIMEOUT) as client:
         r = await client.get("https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH",
                              params={"country": "India", "alertlevel": "Orange;Red"})
         r.raise_for_status()
@@ -225,20 +226,29 @@ async def _from_gdacs(lat: float, lon: float, district: str) -> list[dict[str, A
 # ------------------------------------------------------------------- chain
 async def get_alerts(lat: float, lon: float, district: str) -> tuple[list[dict[str, Any]], str]:
     """Run the priority chain. Returns (alerts, provenance). First live source
-    with alerts wins; UNAVAILABLE only when every source fails or is empty."""
+    with alerts wins; UNAVAILABLE only when every source fails or is empty.
+
+    The sources are independent, so they run concurrently — one slow upstream
+    must not stack its timeout onto the others (sequential runs turned two
+    slow sources into a ~25s page load). Priority is preserved: among the
+    sources that answered, the first in chain order carrying alerts wins.
+    """
     chain = [
         ("weatherintouch", _from_weatherintouch),
         ("weatherapi", _from_weatherapi),
         ("gdacs", _from_gdacs),
     ]
-    for name, fn in chain:
-        try:
-            alerts = await fn(lat, lon, district)
-            if alerts:
-                report(SOURCE_BY_NAME[name], LIVE, f"{len(alerts)} alert(s)")
-                return alerts, LIVE
-            report(SOURCE_BY_NAME[name], LIVE, "reachable, no active alerts")
-        except Exception as exc:  # noqa: BLE001 - chain must never raise
-            report(SOURCE_BY_NAME[name], ERROR, f"{type(exc).__name__}")
+    results = await asyncio.gather(
+        *(fn(lat, lon, district) for _, fn in chain),
+        return_exceptions=True,
+    )
+    for (name, _), res in zip(chain, results):
+        if isinstance(res, Exception):
+            report(SOURCE_BY_NAME[name], ERROR, f"{type(res).__name__}")
+            continue
+        if res:
+            report(SOURCE_BY_NAME[name], LIVE, f"{len(res)} alert(s)")
+            return res, LIVE
+        report(SOURCE_BY_NAME[name], LIVE, "reachable, no active alerts")
     # Chain found nothing: caller falls back to SACHET/fixtures upstream.
     return [], UNAVAILABLE

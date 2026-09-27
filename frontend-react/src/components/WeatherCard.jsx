@@ -6,7 +6,7 @@
 // payload does not carry renders "Not available", never a guess — wind
 // direction is not part of the observation model, so it will usually read
 // UNAVAILABLE until the backend starts sending it. The provenance chip
-// (LIVE / CACHED / DEMO / UNAVAILABLE) is read straight from the payload.
+// (LIVE / CACHED / UNAVAILABLE) is read straight from the payload.
 //
 // Harbour Signal: paper card, 2px ink borders, system font, sentence case.
 import { useEffect, useState } from 'react';
@@ -14,6 +14,7 @@ import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
+import { briefSpeechText } from './briefSpeech';
 import { Prov } from './ui';
 import './WeatherCard.css';
 
@@ -47,26 +48,29 @@ const finiteNum = (v) => {
 };
 
 export default function WeatherCard() {
-  const { lang, loc, locReady, syncTick } = useApp();
+  const { lang, loc, locReady, syncTick, persona, speak, stopSpeaking, speechState } = useApp();
   const [current, setCurrent] = useState(null);
   const [prov, setProv] = useState(null);
+  const [brief, setBrief] = useState(null);
 
   useEffect(() => {
     if (!locReady) return undefined;
     let alive = true;
-    api.current(loc.lat, loc.lon)
+    api.current(loc.lat, loc.lon, { role: persona || 'general', lang })
       .then((d) => {
         if (!alive) return;
         setCurrent(d.current || null);
         setProv(d && d.provenance ? String(d.provenance).toUpperCase() : 'UNAVAILABLE');
+        setBrief(d && d.role_brief && d.role_brief.headline ? d.role_brief : null);
       })
       .catch(() => {
         if (!alive) return;
         setCurrent(null);
         setProv('UNAVAILABLE');
+        setBrief(null);
       });
     return () => { alive = false; };
-  }, [locReady, loc, syncTick]);
+  }, [locReady, loc, syncTick, persona, lang]);
 
   const pending = !locReady || (current === null && prov === null);
 
@@ -80,6 +84,8 @@ export default function WeatherCard() {
   const cond = current && current.condition ? String(current.condition) : null;
 
   const na = t(lang, 'h3Unavailable');
+  const speaking = speechState === 'playing' || speechState === 'loading';
+  const briefText = briefSpeechText(brief);
 
   const cells = [
     {
@@ -112,7 +118,34 @@ export default function WeatherCard() {
       {pending ? (
         <p className="wx-pending" role="status">{t(lang, 'h3WxChecking')}</p>
       ) : (
-        <div className="wx-grid" role="list">
+        <>
+          {brief ? (
+            <div className="wx-brief">
+              <p className="wx-brief-eyebrow">{t(lang, 'wxForYou')}</p>
+              <p className="wx-brief-head">{brief.headline}</p>
+              {brief.lines && brief.lines.map((ln, i) => (
+                <p key={i} className="wx-brief-line">{ln}</p>
+              ))}
+              {/* Light week tie-in: the brief interprets the forecast, the
+                  full 7 days live in ForecastCard right below this card. */}
+              <a className="wx-brief-week" href="#forecast-week">
+                {t(lang, 'fcSeeWeek')}
+                <Icon name="chevron" size={14} aria-hidden="true" />
+              </a>
+              <button
+                type="button"
+                className="wx-brief-listen"
+                onClick={() => {
+                  if (speaking) { stopSpeaking(); } else { speak(briefText); }
+                }}
+                aria-label={t(lang, speaking ? 'wxStop' : 'wxListen')}
+              >
+                <Icon name="speaker" size={14} aria-hidden="true" />
+                <span>{t(lang, speaking ? 'wxStop' : 'wxListen')}</span>
+              </button>
+            </div>
+          ) : null}
+          <div className="wx-grid" role="list">
           {cells.map((c) => (
             <div key={c.label} className="wx-cell" role="listitem">
               <span className="wx-icon" aria-hidden="true"><Icon name={c.icon} size={22} /></span>
@@ -124,6 +157,7 @@ export default function WeatherCard() {
             </div>
           ))}
         </div>
+        </>
       )}
     </section>
   );

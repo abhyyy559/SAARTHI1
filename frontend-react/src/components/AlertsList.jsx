@@ -4,34 +4,23 @@
 // component, expansion instead of navigation.
 //
 // SOURCE HONESTY (Phase 1 Crew D): this page shows ONLY official sources —
-// the admin dashboard (demo alerts, always labelled DEMO), SACHET, NDMA, IMD.
-// Third-party providers (WeatherAPI.com, GDACS) feed the verdict engine but
-// never render here as warnings; community reports are a separate surface
-// entirely. `official === false` is an explicit backend opt-out and always
-// wins over name matching.
+// SACHET, NDMA, IMD. Third-party providers (WeatherAPI.com, GDACS) feed the
+// verdict engine but never render here as warnings; community reports are a
+// separate surface entirely. `official === false` is an explicit backend
+// opt-out and always wins over name matching.
 import { useCallback, useEffect, useState } from 'react';
-import { api, demoAlertApi } from '../api';
+import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import { SevStamp } from './ui';
-import { relTime, mergeAlerts } from './inboxLogic';
+import { relTime } from './inboxLogic';
 import AlertDetails from './AlertDetails';
 
-// An alert is a demo/admin-dashboard alert: simulated content that must wear
-// the DEMO badge — never presented as a live official warning.
-export function isDemoAlert(a) {
-  if (!a) return false;
-  const src = String(a.source || '').toUpperCase();
-  return src.includes('DEMO') || a._origin === 'demo' || a.demo === true;
-}
-
-// The Alerts page admits only official sources. The admin dashboard's demo
-// alerts are admitted too, but isDemoAlert marks them DEMO on the row.
+// The Alerts page admits only official sources.
 export function isOfficialSource(a) {
   if (!a) return false;
   if (a.official === false) return false; // explicit backend opt-out (third-party)
-  if (isDemoAlert(a)) return true;
   if (a.official === true) return true;
   const src = String(a.source || '').toUpperCase();
   return src.includes('SACHET') || src.includes('NDMA') || src.includes('IMD');
@@ -65,30 +54,23 @@ export default function AlertsList({ initialAlertId = null }) {
     // Reset on location/mode change so stale alerts never flash as current.
     setAlerts(null);
     setUnavailable(false);
-    Promise.all([
-      api.warnings(loc.district, loc.lat, loc.lon).catch(() => null),
-      demoAlertApi.list(loc.district).catch(() => null),
-    ]).then(([w, d]) => {
+    api.warnings(loc.district, loc.lat, loc.lon).then((w) => {
       if (!alive) return;
-      if (!w && !d) {
-        // Both sources unreachable: say so honestly, never a fake all-clear.
+      if (!w) {
+        // Source unreachable: say so honestly, never a fake all-clear.
         setUnavailable(true);
         setAlerts([]);
         return;
       }
       const official = [];
-      // In demo mode the whole warnings payload is simulated content: every
-      // fixture alert wears the DEMO badge, so the jury sees the simulation
-      // for what it is instead of an official-looking warning.
-      const responseIsDemo = String(w?.provenance || '').toUpperCase() === 'DEMO';
-      for (const a of (w?.cap_alerts || [])) {
-        official.push(responseIsDemo ? { ...a, demo: true } : a);
+      for (const a of (w.cap_alerts || [])) {
+        official.push(a);
       }
-      if (w?.warning && (w.verified?.verified || w.verdict?.basis === 'unverified_warning')) {
+      if (w.warning && (w.verified?.verified || w.verdict?.basis === 'unverified_warning')) {
         official.unshift({
           ...w.warning,
           headline: w.warning.message,
-          source: responseIsDemo ? 'DEMO' : (w.warning.source || 'IMD'),
+          source: w.warning.source || 'IMD',
         });
       }
       // The backend can return the same warning twice: once as the headline
@@ -109,11 +91,9 @@ export default function AlertsList({ initialAlertId = null }) {
         seenIds.add(key);
         return true;
       });
-      const demo = [...(d?.alerts || [])];
-      // Emergency alerts only, and only official sources: demo-store alerts
-      // are admin-dashboard alerts (admitted, DEMO-badged); third-party chain
+      // Emergency alerts only, and only official sources: third-party chain
       // alerts (WeatherAPI.com, GDACS — official=false) never render here.
-      setAlerts(mergeAlerts(deduped, demo).filter(isOfficialSource));
+      setAlerts(deduped.filter(isOfficialSource));
     });
     return () => { alive = false; };
   }, [locKey, loc.district, loc.lat, loc.lon, syncTick, tick]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -160,7 +140,7 @@ export default function AlertsList({ initialAlertId = null }) {
       const sev = a.severity || 'UNKNOWN';
       const head = (a.headline || a.title || a.message || a.hazard || a.event || '').trim();
       const district = a.district || a.areaDesc || a.area || loc.district;
-      const tag = isDemoAlert(a) ? t(lang, 'listDemoTag') : t(lang, 'listOfficialTag');
+      const tag = t(lang, 'listOfficialTag');
       const state = String(a.lifecycle_state || a.state || '').toUpperCase();
       const rowId = `alert-row-${section}-${i}`;
       const toggle = () => {

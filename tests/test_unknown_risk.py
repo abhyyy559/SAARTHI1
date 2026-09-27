@@ -22,7 +22,6 @@ def test_unavailable_warning_risk_is_unknown():
 
 @pytest.mark.parametrize("has_weather", [False, True])
 def test_chat_preserves_unknown_warning_risk(monkeypatch, has_weather):
-    monkeypatch.setattr(config, "DEMO_MODE", False)
     current = {"source": "Open-Meteo", "temperature": 28} if has_weather else None
     warning = {"verified": False, "severity": "GREEN", "hazard": None,
                "source": "IMD", "warning_service": "unavailable"}

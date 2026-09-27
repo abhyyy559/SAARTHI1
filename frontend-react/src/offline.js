@@ -51,7 +51,7 @@ export function readObservationSnapshot() {
   return (readCache().observation || {}).data || null;
 }
 
-// Round2 S3.1.2: cached ALERT viewing (demo/official alert snapshot).
+// Round2 S3.1.2: cached ALERT viewing (official alert snapshot).
 // Saved on every successful alerts fetch; rendered offline with a CACHED chip.
 // Stale (>60min) dims the card, expired (>6h, mirrors backend ALERT_TTL) greys
 // it out — never rendered as live, never invented when absent.
@@ -99,19 +99,6 @@ export function saveAdvisorySnapshot(cards, district) {
 
 export function readAdvisorySnapshot() {
   return (readCache().advisory || {}).data || null;
-}
-
-// Demo alerts snapshot: the demo alert LIST for the P2P relay picker. The
-// verdict/warning cache does not carry demo alerts, so the Offline & P2P panel
-// fetches them itself whenever online in demo mode and snapshots them here.
-// Rendered with a DEMO stamp — never as official. { alerts, district, at }.
-export function saveDemoAlertsSnapshot(alerts, district) {
-  saveCache('demo_alerts', { alerts: Array.isArray(alerts) ? alerts : [], district, at: new Date().toISOString() });
-}
-
-export function readDemoAlertsSnapshot() {
-  const d = (readCache().demo_alerts || {}).data || null;
-  return d && Array.isArray(d.alerts) ? d : null;
 }
 
 // App-shell readiness probe (Worker 5): asks the service worker whether it is

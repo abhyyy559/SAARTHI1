@@ -24,7 +24,7 @@ test('removed P2P panels stay removed; relayed notification rows keep the exact 
   const ntf = read('../src/components/NotificationsPanel.jsx');
   assert.match(ntf, /ntfSimulatedTag/, 'notification rows must stamp simulated P2P');
   const hs = read('../src/strings/areas/harboursignal.js');
-  assert.match(hs, /ntfSimulatedTag: 'SIMULATED — FOR DEMO ONLY'/);
+  assert.match(hs, /ntfSimulatedTag: 'SIMULATED RELAY'/);
 });
 
 test('emergency inbox filters to the per-session sender id', () => {
@@ -102,16 +102,14 @@ test('SourceStrip uses one meaningful icon per source', () => {
 });
 
 // --- banner scoping ------------------------------------------------------------
-test('demo-data banner only shows on demo-content views', () => {
+test('no demo-data banner exists in the shell', () => {
   const code = read('../src/components/Shell.jsx');
-  // IA dedup (2026-09-20): ask/advisor/details/sources routes are gone; the
-  // banner follows the demo-content routes. Aviation is a profile now — its
-  // briefing renders on Home, which is already in the banner set.
-  for (const v of ['home', 'alerts', 'advisory', 'notifications', 'offline', 'trust'])
-    assert.match(code, new RegExp(`'${v}'`), `banner set must include ${v}`);
-  for (const v of ['ask', 'details', 'sources', 'advisor', 'aviation'])
-    assert.doesNotMatch(code, new RegExp(`'${v}'`), `banner set must not include removed view ${v}`);
-  assert.match(code, /showDemoBanner/, 'banner must be gated, not always-on in demo mode');
+  // Demo mode is gone from the backend: the shell has no demo banner to scope.
+  assert.doesNotMatch(code, /showDemoBanner/, 'no demo banner render flag');
+  assert.doesNotMatch(code, /demoBannerViews/, 'no demo banner view set');
+  assert.doesNotMatch(code, /sbBannerDemo/, 'no demo banner string referenced');
+  // The offline banner is the only status banner left in the shell.
+  assert.match(code, /sbBannerOffline/, 'offline banner stays');
 });
 
 // --- view heading ----------------------------------------------------------------

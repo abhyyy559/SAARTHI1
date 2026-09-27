@@ -2,19 +2,17 @@
 
 WHY THIS EXISTS
 ---------------
-The DEMO/HYBRID/IMD switch used to live only in `config.SOURCE_MODE` (memory).
-Every backend restart re-read `.env` (`DEMO_MODE=false` here) and silently
-reverted to hybrid — the UI kept believing demo was on and spammed demo
-endpoints with 403s. Round 2's demo cannot afford that: the panel, coverage
-dashboard and Home's active-alerts section all poll `/api/demo/*` only when
-they believe demo is live.
+The IMD/HYBRID switch used to live only in `config.SOURCE_MODE` (memory).
+Every backend restart re-read `.env` and silently reverted to hybrid — the UI
+kept believing another mode was on.
 
 Now the switch is a kv row (`mode:source_mode`) written through the db layer:
 JSON file on a laptop, Postgres row on Render. `.env` remains only the
-BOOT default when nothing has ever been persisted.
+BOOT default when nothing has ever been persisted. A persisted legacy "demo"
+value is ignored — demo mode was removed, the app runs on real sources only.
 
-Contract (unchanged for callers): `current_source_mode()`, `DEMO_MODE`,
-`SOURCE_MODE`, `IMD_ADAPTER` keep their names and semantics.
+Contract (unchanged for callers): `current_source_mode()`, `SOURCE_MODE`,
+`IMD_ADAPTER` keep their names and semantics.
 """
 from __future__ import annotations
 
@@ -27,14 +25,13 @@ from .. import config
 log = logging.getLogger(__name__)
 
 _KEY = "mode:source_mode"
-_VALID = frozenset(config.MODE_SOURCES)  # {"demo", "imd", "hybrid"}
+_VALID = frozenset(config.MODE_SOURCES)  # {"imd", "hybrid"}
 
 
 def apply_mode(mode: str) -> None:
     """Set the in-memory runtime flags (no persistence). Call after validation."""
     config.SOURCE_MODE = mode
-    config.DEMO_MODE = mode == "demo"
-    config.IMD_ADAPTER = "demo" if mode == "demo" else "live"
+    config.IMD_ADAPTER = "live"
 
 
 def _restore_sync() -> None:

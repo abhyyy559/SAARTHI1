@@ -17,7 +17,7 @@ import httpx
 
 from .. import config
 from ..utils.time import IST
-from .registry import CACHED, DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
+from .registry import CACHED, DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, make_client, report
 
 SOURCE = "NDMA-Sachet-CAP"
 _FIXTURE = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures" / "cap_alert.json"
@@ -253,21 +253,47 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
         report("cap", UNCONFIGURED, "CAP_FEED_URL not set")
         raise AdapterUnavailable("CAP feed unconfigured (needs CAP_FEED_URL)")
     from datetime import timedelta
+    # Serve-fresh: a full fetch fans out to ~30 linked CAP documents and costs
+    # tens of seconds on a slow upstream — far beyond what the Home screen can
+    # wait for. SACHET updates on the order of minutes, not seconds, so serve
+    # the last fetch while it is fresh (5 min). The payload carries its own
+    # retrieved_at, so the UI can show exactly how old it is; this is a
+    # performance cache, not a data claim — the alerts still come from the
+    # live feed, and anything older than the window triggers a live re-fetch.
+    try:
+        from ..services.cache_service import CacheService
+        from ..utils.time import now_ist
+        entry = CacheService().last_snapshot().get("cap_alerts") or {}
+        retrieved_at = entry.get("retrieved_at")
+        if retrieved_at and entry.get("data") is not None:
+            age_s = (now_ist() - datetime.fromisoformat(retrieved_at)).total_seconds()
+            if 0 <= age_s < 300:
+                alerts = entry["data"]
+                report("cap", CACHED, f"{len(alerts)} active alerts (fetched {int(age_s)}s ago)")
+                return alerts, CACHED
+    except Exception:
+        pass
     try:
         alerts: list[dict[str, Any]] = []
         seen: set[str] = set()
         failed = 0
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            for url in urls:
-                try:
-                    for a in await _fetch_feed(client, url):
-                        ident = a.get("identifier") or a.get("headline") or url
-                        if ident not in seen:
-                            seen.add(ident)
-                            alerts.append(a)
-                except Exception:
+        async with make_client(timeout=12.0) as client:
+            # The feeds are independent: fetch them concurrently so one slow
+            # upstream cannot stack its timeout onto the others (sequential
+            # fetches turned 3 slow feeds into a ~25s page load).
+            results = await asyncio.gather(
+                *(_fetch_feed(client, url) for url in urls),
+                return_exceptions=True,
+            )
+            for url, res in zip(urls, results):
+                if isinstance(res, Exception):
                     failed += 1
                     continue  # one bad feed never kills the others
+                for a in res:
+                    ident = a.get("identifier") or a.get("headline") or url
+                    if ident not in seen:
+                        seen.add(ident)
+                        alerts.append(a)
     except AdapterUnavailable:
         raise
     except Exception as exc:
@@ -361,3 +387,4 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
         a["fixture_source"] = a.get("source") or ""
         a["demo"] = True
     return alerts, DEMO
+

@@ -9,7 +9,6 @@ import Advisor from './components/Advisor';
 import AdviceCards from './components/AdviceCards';
 import ViewHead from './components/ViewHead';
 import AdminPanel from './components/AdminPanel';
-import AuthorityDashboard from './components/AuthorityDashboard';
 import CoverageDashboard from './components/CoverageDashboard';
 import SourceStatus from './components/SourceStatus';
 import SourceStrip from './components/SourceStrip';
@@ -22,12 +21,11 @@ import { useEffect, useState } from 'react';
 import { Card } from './components/ui';
 import Icon from './components/icons';
 
-// Authorities-only gate for the admin console. This is a DEMO gate, not
-// authentication: it keeps the official-alert publishing controls out of the
-// normal user's path (?view=admin is in no nav). The real protection is
-// server-side — demo/management endpoints are DEMO_MODE-gated in the API.
+// Authorities-only gate for the admin console. This is a team-access gate,
+// not authentication: it keeps the authority console out of the normal
+// user's path (?view=admin is in no nav). The real protection is server-side.
 // Unlocking records nothing about identity: the session flag wgpt-admin-ok
-// is the entire record of the unlock event — a demo PIN matched in this tab.
+// is the entire record of the unlock event — a team PIN matched in this tab.
 // Closing the tab re-locks.
 // PIN override: VITE_ADMIN_PIN. Session-scoped: closing the tab re-locks.
 const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || 'SAARTHI';
@@ -45,7 +43,7 @@ function AdminGate({ children }) {
     e.preventDefault();
     if (pin === ADMIN_PIN) {
       try { sessionStorage.setItem(ADMIN_OK_KEY, '1'); } catch { /* private mode: unlock lasts this view only */ }
-      console.info('[admin] gate unlocked with demo PIN — not authentication, no identity recorded');
+      console.info('[admin] gate unlocked with team PIN — not authentication, no identity recorded');
       setOk(true);
     } else {
       setWrong(true);
@@ -87,7 +85,7 @@ function AdminGate({ children }) {
           </button>
         </div>
       </form>
-      <p style={{ marginTop: 12, fontSize: 13, opacity: 0.75 }}>{t(lang, 'adminGateDemoNote')}</p>
+      <p style={{ marginTop: 12, fontSize: 13, opacity: 0.75 }}>{t(lang, 'adminGateNote')}</p>
     </Card>
   );
 }
@@ -185,9 +183,8 @@ export function SettingsView() {
 export function AdminView() {
   return (
     <AdminGate>
-      <ViewHead titleKey="demoTitle" subKey="demoSub" />
+      <ViewHead titleKey="adminTitle" subKey="adminSub" />
       <AdminPanel />
-      <AuthorityDashboard />
       <CoverageDashboard />
     </AdminGate>
   );

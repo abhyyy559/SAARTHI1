@@ -20,9 +20,9 @@ test('accepts a district prop', () => {
   assert.match(src(), /function CoverageDashboard\(\{\s*district/);
 });
 
-test('fetches coverage for the district alert, with offline mock fallback', () => {
+test('fetches district coverage from the real coverage API, with offline mock fallback', () => {
   const s = src();
-  assert.match(s, /demoAlerts|coverage/);
+  assert.match(s, /coverageApi\.byDistrict/);
   assert.match(s, /404|fallback|mock|sample/i);
 });
 

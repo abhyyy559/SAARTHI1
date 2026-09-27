@@ -10,7 +10,6 @@ import { api } from '../api';
 import { t } from '../i18n';
 import { useApp } from '../store';
 import { Card, Stat } from './ui';
-import Icon from './icons';
 import { DISTRICTS } from '../i18n';
 
 const COUNT_KEYS = ['delivered', 'opened', 'acknowledged', 'pending', 'offline', 'unreachable', 'p2p_relayed'];
@@ -78,11 +77,6 @@ export default function CoverageDashboard({ district: initialDistrict }) {
             {COUNT_KEYS.map((k) => (
               <Stat key={k} k={t(lang, `cov${k.charAt(0).toUpperCase() + k.slice(1)}`)} v={counts[k] || 0} />
             ))}
-            {counts.p2p_relayed > 0 && (
-              <span className="prov DEMO">
-                <Icon name="radio" size={12} /> {t(lang, 'covSimLabel')}
-              </span>
-            )}
           </div>
           {zones.length > 0 && (
             <div className="zone-grid" role="table" aria-label={t(lang, 'covZoneBreakdown')}>

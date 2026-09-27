@@ -2,7 +2,7 @@
 //
 // Short and plain on purpose — the answer's trustworthiness must land in 2-3
 // seconds for a user with limited literacy, so these are labels, not sentences.
-// Provenance codes (LIVE/CACHED/DEMO/COMMUNITY/UNAVAILABLE/UNCONFIGURED) are
+// Provenance codes (LIVE/CACHED/COMMUNITY/UNAVAILABLE/UNCONFIGURED) are
 // machine-readable and are NEVER listed here: they are rendered verbatim.
 export default {
   en: {
@@ -32,7 +32,7 @@ export default {
     srcNone: 'No sources reported.',
     srcFailed: 'Source check failed - cannot confirm which are live.',
     srcUpdated: 'Updated',
-    srcErrorHint: 'check the feed URL / network connection, or switch the app to demo mode',
+    srcErrorHint: 'check the feed URL / network connection, or the data-source mode in the authority console',
     micHint: 'Speak your question',
   },
   hi: {
@@ -62,7 +62,7 @@ export default {
     srcNone: 'कोई स्रोत नहीं मिला।',
     srcFailed: 'स्रोत जाँच विफल - कौन सक्रिय है, पुष्ट नहीं।',
     srcUpdated: 'अपडेट',
-    srcErrorHint: 'फ़ीड URL / नेटवर्क कनेक्शन जांचें, या ऐप को डेमो मोड में बदलें',
+    srcErrorHint: 'फ़ीड URL / नेटवर्क कनेक्शन जांचें, या प्राधिकरण कंसोल में डेटा-स्रोत मोड देखें',
     micHint: 'अपना सवाल बोलें',
   },
   te: {
@@ -92,7 +92,7 @@ export default {
     srcNone: 'మూలాలు ఏవీ నివేదించబడలేదు.',
     srcFailed: 'మూలాల తనిఖీ విఫలమైంది - ఏవి ప్రత్యక్షమో ధృవీకరించలేము.',
     srcUpdated: 'నవీకరించబడింది',
-    srcErrorHint: 'ఫీడ్ URL / నెట్‌వర్క్ కనెక్షన్‌ను తనిఖీ చేయండి, లేదా యాప్‌ను డెమో మోడ్‌కు మార్చండి',
+    srcErrorHint: 'ఫీడ్ URL / నెట్‌వర్క్ కనెక్షన్‌ను తనిఖీ చేయండి, లేదా అధికార కన్సోల్‌లో డేటా-మూల మోడ్ చూడండి',
     micHint: 'మీ ప్రశ్న చెప్పండి',
   },
 };

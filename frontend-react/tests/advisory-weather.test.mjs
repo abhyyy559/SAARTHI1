@@ -23,11 +23,11 @@ test('basis line renders observed numbers, units and the alert count', () => {
 });
 
 test('alert count pluralises; zero or unknown counts are omitted', () => {
-  const many = formatWeatherBasis({ temp_c: 34, provenance: 'DEMO' }, 3, tr('en'));
+  const many = formatWeatherBasis({ temp_c: 34, provenance: 'LIVE' }, 3, tr('en'));
   assert.match(many.text, /\+ 3 active alerts/);
-  const none = formatWeatherBasis({ temp_c: 34, provenance: 'DEMO' }, 0, tr('en'));
+  const none = formatWeatherBasis({ temp_c: 34, provenance: 'LIVE' }, 0, tr('en'));
   assert.doesNotMatch(none.text, /active alert/);
-  const unknown = formatWeatherBasis({ temp_c: 34, provenance: 'DEMO' }, undefined, tr('en'));
+  const unknown = formatWeatherBasis({ temp_c: 34, provenance: 'LIVE' }, undefined, tr('en'));
   assert.doesNotMatch(unknown.text, /active alert/);
 });
 

@@ -97,12 +97,13 @@ test('alerts list: only official sources render — third-party feeds are filter
   assert.match(listSrc, /\.filter\(isOfficialSource\)/, 'the merged list is filtered by the source guard');
 });
 
-test('alerts list: demo alerts are admitted but always labelled DEMO', () => {
-  assert.match(listSrc, /export function isDemoAlert/, 'AlertsList must export the demo guard');
-  assert.match(listSrc, /isDemoAlert\(a\) \? t\(lang, 'listDemoTag'\)/, 'demo alerts wear the DEMO chip, never the Official one');
-  // Demo-mode warnings payloads are simulated content: every fixture alert
-  // is badged DEMO instead of looking official.
-  assert.match(listSrc, /responseIsDemo/, 'demo-mode fixture alerts are stamped demo');
+test('alerts list: every row wears the Official label — no demo tier exists', () => {
+  // Demo mode is gone from the backend, so demo alerts cannot exist: the
+  // row tag is unconditionally the official one.
+  assert.doesNotMatch(listSrc, /isDemoAlert/, 'no demo guard exported or referenced');
+  assert.doesNotMatch(listSrc, /listDemoTag/, 'no DEMO chip referenced');
+  assert.doesNotMatch(listSrc, /responseIsDemo/, 'no demo-fixture stamping');
+  assert.match(listSrc, /const tag = t\(lang, 'listOfficialTag'\)/, 'every row wears the Official label');
 });
 
 test('alerts list: community has no place on this page', () => {
@@ -174,8 +175,8 @@ test('alert details: acknowledge and timeline keep working', () => {
 
 test('alert details: no bolt-on widgets — title and full details only', () => {
   // Phase 1 (2026-09-21): the demo P2P relay panel is stripped from alert
-  // details. The backend /api/demo/relay endpoint stays; the Alerts page
-  // shows title + complete details per alert, nothing more.
+  // details. The relay simulation lives in the SOS console instead; the
+  // Alerts page shows title + complete details per alert, nothing more.
   assert.doesNotMatch(detailsSrc, /p2p-panel/, 'no P2P relay panel in details');
   assert.doesNotMatch(detailsSrc, /doRelay|relayState|relayTrace/, 'no relay state machine in details');
   assert.doesNotMatch(detailsSrc, /demoAlertApi/, 'no demo-alerts API import left behind');

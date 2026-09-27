@@ -31,11 +31,10 @@ def _text_lines(lines):
 
 @pytest.fixture(autouse=True)
 def _isolate_runtime_stores(tmp_path, monkeypatch):
-    """Never read/write the developer's real cache; force demo mode."""
+    """Never read/write the developer's real cache."""
     cache_file = str(tmp_path / "weathergpt_cache.json")
     monkeypatch.setattr(config, "CACHE_FILE", cache_file)
     monkeypatch.setattr(weather_mod, "cache", CacheService(cache_file))
-    monkeypatch.setattr(config, "DEMO_MODE", True)
 
 
 def _stream_lines(client, body):
@@ -99,7 +98,22 @@ def test_truncated_stream_emits_final_with_complete_template(monkeypatch):
         yield {"type": "token", "text": " likely tom"}
         yield {"type": "end", "fallback": False, "model_error": "boom", "truncated": True}
 
+    async def fake_retrieve_live(loc, lat, lon):
+        # Deterministic fixture: the test pins the truncation/final-event
+        # contract, not the data layer (demo data was removed 2026-09-23,
+        # and live network must never decide a unit test).
+        current = {"temperature": 28.0, "humidity": 80.0, "condition": "Cloudy",
+                   "rainfall": 0.0, "wind_speed": 9.0}
+        forecast = {"days": [
+            {"date": "2026-09-23", "min_temperature": 24.0, "max_temperature": 31.0,
+             "rainfall": 0.0, "condition": "Partly Cloudy"},
+            {"date": "2026-09-24", "min_temperature": 24.0, "max_temperature": 32.0,
+             "rainfall": 5.0, "condition": "Rain"},
+        ]}
+        return current, forecast, {"verified": False}, [], {}
+
     monkeypatch.setattr(chat_mod.LLMService, "generate_stream", fake_stream)
+    monkeypatch.setattr(chat_mod, "_retrieve_live", fake_retrieve_live)
     client = TestClient(app)
     lines = _stream_lines(client, {"message": "Will it rain tomorrow?", "language": "en"})
     kinds = [ln["type"] for ln in lines]

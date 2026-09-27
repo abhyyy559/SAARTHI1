@@ -30,7 +30,6 @@ VERDICT_KEYS = {"level", "basis", "confirmed", "severity", "hazard", "source",
 @pytest.fixture()
 def outage(monkeypatch):
     """Every upstream fails; the app must still answer honestly."""
-    monkeypatch.setattr(config, "DEMO_MODE", False)
     monkeypatch.setattr(config, "SOURCE_MODE", "hybrid")
 
     async def _raise(*a, **k):
