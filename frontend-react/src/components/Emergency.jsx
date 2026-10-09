@@ -138,7 +138,9 @@ export default function Emergency() {
     if (!armed) {
       setArmed(true);
       clearTimeout(armTimer.current);
-      armTimer.current = setTimeout(() => setArmed(false), 4000);
+      // 8s to tap again: 4s expired on slow phones and the second tap
+      // re-armed instead of sending — read as "SOS not working".
+      armTimer.current = setTimeout(() => setArmed(false), 8000);
       return;
     }
     clearTimeout(armTimer.current);
