@@ -16,33 +16,47 @@ def _get(key: str, default: str = "") -> str:
 
 
 IMD_API_KEY = _get("IMD_API_KEY", "")
+# Portal-issued JWT for api.imd.gov.in (see the auth note below). The hex API
+# key alone can never pass the gateway — both values are required for IMD.
+# Paste a fresh access_token here, or set IMD_API_EMAIL/PASSWORD below and the
+# adapter mints + refreshes it itself (55-min TTL, refresh-on-401) so it never
+# dies mid-demo. Email/password win only when IMD_JWT is empty.
+IMD_JWT = _get("IMD_JWT", "")
+IMD_API_EMAIL = _get("IMD_API_EMAIL", "")
+IMD_API_PASSWORD = _get("IMD_API_PASSWORD", "")
+IMD_TOKEN_URL = _get("IMD_TOKEN_URL", "https://api.imd.gov.in/api/oauth/token.php")
 LLM_API_KEY = _get("LLM_API_KEY", "")
 DATABASE_URL = _get("DATABASE_URL", "")
 REDIS_URL = _get("REDIS_URL", "")
 STT_API_KEY = _get("STT_API_KEY", "")
 TTS_API_KEY = _get("TTS_API_KEY", "")
 
-IMD_BASE_URL = _get("IMD_BASE_URL", "https://mausam.imd.gov.in/api/v1").rstrip("/")
+# Real public IMD API (api.imd.gov.in/api/v1 — verified 2026-10-09 against the
+# official reference at https://api.imd.gov.in/public/api_reference.html).
+# The old default (mausam.imd.gov.in/api/v1) was a guess and does not exist —
+# every live call against it failed, which is why live mode never showed data.
+IMD_BASE_URL = _get("IMD_BASE_URL", "https://api.imd.gov.in/api/v1").rstrip("/")
 
-# IMD endpoint paths, one env var each.
-#
-# These are the ONLY unverified part of the IMD integration: the auth header
-# (`Authorization: Bearer <IMD_API_KEY>`) and the request/response handling are
-# exercised and working, but nobody has seen IMD's real path list yet — the
-# platform is credential-gated. They are therefore configurable so that when the
-# key arrives and a path differs, the fix is a .env line rather than a code edit.
-# Verified behaviour today: with a key set, a real request goes out to
-# {IMD_BASE_URL}/{path} and a bad key returns 400/401 — i.e. the wiring is
-# complete and only the paths are provisional.
+# IMD endpoint paths, one env var each. Names match the official reference
+# (https://api.imd.gov.in/public/api_reference.html). They stay configurable
+# so a renamed path is a .env line rather than a code edit.
 IMD_PATH_CURRENT = _get("IMD_PATH_CURRENT", "current_wx")
 IMD_PATH_FORECAST = _get("IMD_PATH_FORECAST", "cityforecastloc")
 IMD_PATH_WARNING = _get("IMD_PATH_WARNING", "districtwarning")
 IMD_PATH_NOWCAST = _get("IMD_PATH_NOWCAST", "districtnowcast")
 
 # IMD request tuning — all env-driven so key day needs no code edit.
-# Auth scheme IMD never documented publicly: "bearer" (default) sends
-# `Authorization: Bearer <key>`; "header" sends the key under IMD_AUTH_HEADER
-# verbatim; "query" appends it as the IMD_AUTH_PARAM query parameter.
+# Auth (PROVEN 2026-10-09 by probing the live API with a real portal key):
+# the gateway is DUAL-credential. `x-api-key: <IMD_API_KEY>` identifies the
+# caller; `Authorization: Bearer <IMD_JWT>` authorizes it. Key-only calls get
+# `{"error":"Authorization header missing or invalid"}`; key + non-JWT Bearer
+# gets `{"error":"Invalid or expired JWT token"}` — i.e. the gateway reads
+# both headers and the Bearer value must be a real JWT. The JWT is issued
+# inside the portal after login (email + password + CAPTCHA, a human step at
+# https://api.imd.gov.in/public/login.php). IMD_AUTH_SCHEME positions the KEY:
+# "bearer" (default) = `x-api-key` header; "header" = IMD_AUTH_HEADER verbatim;
+# "query" = IMD_AUTH_PARAM query parameter. The JWT always rides as
+# `Authorization: Bearer` whenever IMD_JWT is set.
 IMD_AUTH_SCHEME = _get("IMD_AUTH_SCHEME", "bearer").strip().lower()
 IMD_AUTH_HEADER = _get("IMD_AUTH_HEADER", "Authorization")
 IMD_AUTH_PARAM = _get("IMD_AUTH_PARAM", "api_key")

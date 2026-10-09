@@ -99,7 +99,9 @@ test('the notification listen control has an accessible name', () => {
   // accessible name.
   const ntf = src('components/NotificationsPanel.jsx');
   assert.doesNotMatch(ntf, /<span aria-hidden[^>]*>\s*<\/span>\s*<\/button>/);
-  assert.match(ntf, /<button[^>]*>[\s\S]{0,120}?t\(lang, 'alertsListen'\)/);
+  // `[^>]*` cannot span the `=>` inside the button's onClick, and the attrs
+  // run ~230 chars — match across any chars with a window that fits.
+  assert.match(ntf, /<button[\s\S]{0,300}?t\(lang, 'alertsListen'\)/);
   assert.doesNotMatch(home, /h-notif-speak/, 'Home no longer carries the notification strip');
 });
 

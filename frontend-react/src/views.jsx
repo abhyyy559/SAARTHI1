@@ -146,8 +146,9 @@ export function AdvisoryView() {
   );
 }
 
-// Offline & P2P: no separate page or nav section (Phase 1). The QR relay
-// (QrRelay/QrScan over src/p2pqr.js) remains a background capability only.
+// Offline & P2P: no separate page or nav section. The QR relay
+// (QrRelay/QrScan over src/p2pqr.js) lives as a tabbed Show/Scan section at
+// the bottom of the Alerts view — reachable via the Alerts tab.
 
 // Aviation is a PROFILE, not a route: the briefing renders on Home for the
 // aviation persona (see Home.jsx). There is no public aviation view.

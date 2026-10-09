@@ -14,6 +14,7 @@ import { test } from 'node:test';
 import {
   HOP_LIMIT_CRITICAL,
   HOP_LIMIT_NORMAL,
+  alertPlainText,
   buildEnvelope,
   canRelay,
   chunkEnvelope,
@@ -298,6 +299,30 @@ test('QrScan.jsx: the only network call is the queued ack via the api prop', () 
 
 // The separate P2P page was removed in Phase 1 (the QR relay is a background
 // capability only), so embedding is a prop contract now, not a panel check.
+test('alertPlainText is a short human-readable summary for any regular camera', () => {
+  const text = alertPlainText(ALERT);
+  assert.ok(text.includes('SAARTHI ALERT'), 'carries the app header');
+  assert.ok(text.includes('ORANGE'), 'carries the severity');
+  assert.ok(text.includes('Unplug appliances.'), 'carries the guidance');
+  assert.ok(!text.includes('saarthi-p2p-frame'), 'no protocol JSON — readable as-is');
+  assert.ok(text.length <= 600, `fits one fast low-density QR code, got ${text.length}`);
+  assert.equal(alertPlainText(null), '', 'bad input yields empty, never crashes');
+  assert.equal(alertPlainText({}), 'SAARTHI ALERT\nNot verified with server — check again when online.', 'empty alert still honest');
+});
+
+test('QrRelay.jsx: identifier-only official alerts reach the picker (the no-QR bug)', () => {
+  const src = read('../src/components/QrRelay.jsx');
+  assert.ok(src.includes('a.identifier'), 'picker accepts CAP-style identifier ids');
+  assert.ok(src.includes('qrSimpleTab'), 'simple-QR mode toggle exists');
+  assert.ok(src.includes('alertPlainText'), 'simple mode encodes the plain-text summary');
+});
+
+test('QrScan.jsx: plain-text QR from any camera is received, not ignored', () => {
+  const src = read('../src/components/QrScan.jsx');
+  assert.ok(src.includes('qrPlainBadge'), 'plain-text receipt carries its own badge');
+  assert.ok(src.includes('saveAlertSnapshot'), 'plain-text receipt is cached on the phone');
+});
+
 test('QrRelay.jsx: bare mode avoids duplicate card titles when embedded', () => {
   const src = read('../src/components/QrRelay.jsx');
   assert.ok(src.includes('bare'), 'bare prop exists for embedding');
@@ -322,7 +347,7 @@ test('QrScan.jsx: P2P provenance badge and no-server-verification note are uncon
 
 test('p2pqr strings exist in all three languages', () => {
   const src = read('../src/strings/areas/p2pqr.js');
-  for (const key of ['qrTitle', 'qrViaP2p', 'qrReceivedSub', 'qrHopChip', 'qrChecksumFail', 'qrAckQueued']) {
+  for (const key of ['qrTitle', 'qrViaP2p', 'qrReceivedSub', 'qrHopChip', 'qrChecksumFail', 'qrAckQueued', 'qrSimpleTab', 'qrRelayTab', 'qrSimpleNote', 'qrPlainBadge']) {
     const occurrences = src.split(key + ':').length - 1;
     assert.equal(occurrences, 3, `string key ${key} must exist in en/hi/te`);
   }

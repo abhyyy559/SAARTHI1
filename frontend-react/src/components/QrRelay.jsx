@@ -1,17 +1,24 @@
-// QR relay — SENDER. Renders the chosen alert as ROTATING QR frames.
+// QR relay — SENDER. Two modes, both fully offline (no api prop, no fetch,
+// no network calls anywhere in this file — the `qrcode` lib is bundled, so
+// codes render with zero connectivity). The alert comes from the phone's own
+// saved data (props).
 //
-// Fully offline: no api prop, no fetch, no network calls anywhere in this
-// file. The alert comes from the phone's own saved data (props).
+// SIMPLE (default): the chosen alert as ONE static QR with plain human-
+// readable text. Any regular phone camera reads it — no app needed. This is
+// the offline data-sharing path.
 //
-// Hop honesty: the envelope carries hops/hop_limit. If this phone is already
-// at the limit (e.g. it received the alert 5 hops deep), it refuses to show
-// the QR instead of silently relaying past the limit.
+// APP RELAY: the envelope as ROTATING QR frames for the SAARTHI scanner on
+// another phone (checksum + hop limit). Hop honesty: the envelope carries
+// hops/hop_limit. If this phone is already at the limit (e.g. it received
+// the alert 5 hops deep), it refuses to show the QR instead of silently
+// relaying past the limit.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { t } from '../i18n';
 import Icon from './icons';
 import { Card } from './ui';
 import {
+  alertPlainText,
   buildEnvelope,
   canRelay,
   chunkEnvelope,
@@ -21,10 +28,13 @@ const FRAME_MS = 900;
 
 function alertLabel(a) {
   if (!a) return '';
-  return String(a.title || a.headline || a.hazard || a.event || a.id || a.alert_id || 'alert');
+  return String(a.title || a.headline || a.hazard || a.event || a.id || a.alert_id || a.identifier || 'alert');
 }
+// Canonical share id: official CAP alerts carry `identifier`, demo alerts
+// carry `id`. Dropping identifier-only alerts here was the "QR not
+// generating" bug — the list on screen never reached the picker.
 function alertId(a) {
-  return String((a && (a.id || a.alert_id)) || '');
+  return String((a && (a.id || a.alert_id || a.identifier)) || '');
 }
 
 export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', initialHops = 0, relayEnvelope = null, bare = false }) {
@@ -32,9 +42,10 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
   const [frameIdx, setFrameIdx] = useState(0);
   const [qrUrl, setQrUrl] = useState('');
   const [qrErr, setQrErr] = useState('');
+  const [mode, setMode] = useState('simple');
 
   const pickable = useMemo(
-    () => (alerts || []).filter((a) => a && (a.id || a.alert_id)),
+    () => (alerts || []).filter((a) => a && (a.id || a.alert_id || a.identifier)),
     [alerts],
   );
   useEffect(() => {
@@ -71,26 +82,35 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
   const envelope = built && built.ok ? built.envelope : null;
   const relayAllowed = envelope ? canRelay(envelope) : false;
 
-  // Rotate frames.
+  // Plain-text payload for the simple QR: one static code any camera reads.
+  const simpleText = useMemo(() => {
+    if (relayEnvelope && relayEnvelope.kind === 'saarthi-p2p-alert' && relayEnvelope.alert) {
+      return alertPlainText(relayEnvelope.alert);
+    }
+    return selected ? alertPlainText(selected) : '';
+  }, [relayEnvelope, selected]);
+
+  // Rotate frames (app-relay mode only — the simple QR never rotates).
   useEffect(() => {
     setFrameIdx(0);
-    if (!frames.length) return undefined;
+    if (mode !== 'relay' || !frames.length) return undefined;
     const id = setInterval(() => setFrameIdx((i) => (i + 1) % frames.length), FRAME_MS);
     return () => clearInterval(id);
-  }, [frames]);
+  }, [frames, mode]);
 
-  // Render the current frame to a QR data URL.
+  // Render the current payload to a QR data URL. Fully offline: the `qrcode`
+  // lib runs on-device, no network involved.
   const genToken = useRef(0);
+  const qrText = mode === 'simple' ? simpleText : frames[frameIdx];
   useEffect(() => {
     const my = ++genToken.current;
     setQrUrl('');
     setQrErr('');
-    const text = frames[frameIdx];
-    if (!text) return;
-    QRCode.toDataURL(text, { errorCorrectionLevel: 'M', width: 280, margin: 2 })
+    if (!qrText) return;
+    QRCode.toDataURL(qrText, { errorCorrectionLevel: 'M', width: 280, margin: 2 })
       .then((url) => { if (genToken.current === my) setQrUrl(url); })
       .catch(() => { if (genToken.current === my) setQrErr('qr-render'); });
-  }, [frames, frameIdx]);
+  }, [qrText]);
 
   const fill = (s, o) => t(lang, s).replace('{i}', String(o.i)).replace('{n}', String(o.n))
     .replace('{r}', String(o.r)).replace('{hops}', String(o.hops)).replace('{limit}', String(o.limit));
@@ -120,20 +140,62 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
             </>
           )}
 
-          {built && !built.ok && (
+          <div className="segmented" role="tablist" aria-label={t(lang, 'qrTitle')} style={{ margin: '8px 0' }}>
+            <button
+              type="button" role="tab" aria-selected={mode === 'simple'}
+              className={`seg-opt${mode === 'simple' ? ' is-active' : ''}`}
+              onClick={() => setMode('simple')}
+            >
+              {t(lang, 'qrSimpleTab')}
+            </button>
+            <button
+              type="button" role="tab" aria-selected={mode === 'relay'}
+              className={`seg-opt${mode === 'relay' ? ' is-active' : ''}`}
+              onClick={() => setMode('relay')}
+            >
+              {t(lang, 'qrRelayTab')}
+            </button>
+          </div>
+
+          {mode === 'simple' && simpleText && (
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              {qrErr ? (
+                <p className="sub" role="alert">{qrErr}</p>
+              ) : qrUrl ? (
+                <img
+                  src={qrUrl}
+                  alt={t(lang, 'qrTitle')}
+                  width={280}
+                  height={280}
+                  style={{ border: '2px solid #1a1a1a', borderRadius: 8, background: '#fff' }}
+                />
+              ) : (
+                <p className="sub" aria-live="polite">…</p>
+              )}
+              <p className="sub" style={{ marginTop: 8 }}>
+                <Icon name="eye" size={12} /> {t(lang, 'qrSimpleNote')}
+              </p>
+              <details style={{ marginTop: 8, textAlign: 'left' }}>
+                <summary className="sub">{t(lang, 'qrShowText')}</summary>
+                <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{simpleText}</pre>
+              </details>
+            </div>
+          )}
+
+          {mode === 'relay' && built && !built.ok && (
             <p className="sub" role="alert">
               <Icon name="close" size={14} /> {t(lang, 'qrTooLarge')}
             </p>
           )}
 
-          {envelope && !relayAllowed && (
+          {mode === 'relay' && envelope && !relayAllowed && (
             <p className="sub" role="alert">
               <Icon name="close" size={14} />{' '}
               {fill('qrHopRefused', { hops: envelope.hops, limit: envelope.hop_limit })}
             </p>
           )}
 
-          {envelope && relayAllowed && frames.length > 0 && (
+          {mode === 'relay' && envelope && relayAllowed && frames.length > 0 && (
             <div style={{ textAlign: 'center', marginTop: 12 }}>
               <div className="chip-row" style={{ justifyContent: 'center', marginBottom: 8 }}>
                 <span className="chip">
@@ -169,6 +231,9 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
               </div>
               <p className="sub" style={{ marginTop: 8 }}>
                 <Icon name="eye" size={12} /> {t(lang, 'qrKeepSteady')}
+              </p>
+              <p className="sub" style={{ marginTop: 4 }}>
+                <Icon name="info" size={12} /> {t(lang, 'qrRelayNote')}
               </p>
             </div>
           )}

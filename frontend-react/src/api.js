@@ -165,6 +165,10 @@ export const api = {
   status: () => j(`${V}/system/status`),
   resolveLocation: (lat, lon) => j(`${V}/location/resolve?lat=${lat}&lon=${lon}`).then((d) => d.location || d),
   searchLocation: (q) => j(`/api/location/search?q=${encodeURIComponent(q)}`).then((d) => d.results || []),
+  // Static district coordinate table for the schematic warning map. Pure
+  // geography — cached in localStorage by the caller, so the map renders
+  // offline after the first load.
+  districtCoords: () => j('/api/location/districts').then((d) => d.districts || []),
   current: (lat, lon) => j(`${V}/weather/current?lat=${lat}&lon=${lon}`),
   forecast: (lat, lon) => j(`${V}/weather/forecast?lat=${lat}&lon=${lon}`),
   warnings: (district, lat, lon) =>

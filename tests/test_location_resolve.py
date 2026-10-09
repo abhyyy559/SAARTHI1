@@ -88,6 +88,24 @@ def test_garbage_query_falls_back_to_coords():
     print("PASS: test_garbage_query_falls_back_to_coords")
 
 
+def test_districts_endpoint_serves_static_coords():
+    # The schematic map's coordinate table: every row named + placed, so the
+    # map can never blank for want of geometry.
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    with TestClient(app) as c:
+        r = c.get("/api/location/districts")
+    assert r.status_code == 200, r.text
+    rows = r.json()["districts"]
+    assert len(rows) >= 50, len(rows)
+    names = {d["district"] for d in rows}
+    assert {"Hyderabad", "Kakinada", "Visakhapatnam"} <= names, names
+    for d in rows:
+        assert isinstance(d["latitude"], (int, float)), d
+        assert isinstance(d["longitude"], (int, float)), d
+    print("PASS: test_districts_endpoint_serves_static_coords")
+
+
 if __name__ == "__main__":
     test_hyderabad_coords_resolve_hyderabad()
     test_mumbai_coords_resolve_mumbai()
@@ -100,4 +118,5 @@ if __name__ == "__main__":
     test_search_flags_suggestions_for_typos()
     test_exact_search_not_flagged_as_suggestion()
     test_garbage_query_falls_back_to_coords()
+    test_districts_endpoint_serves_static_coords()
     print("\nAll location resolve tests passed.")

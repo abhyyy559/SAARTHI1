@@ -176,7 +176,9 @@ def test_official_chain_logs_start_escalate_clear(official_chain):
     assert len(notes) == 1
     n = notes[0]
     assert n["kind"] == "start"
-    assert n["alert_id"] == "cap:cap-a"
+    # Raw CAP id (no namespace prefix): the push payload/deep-link contract in
+    # alert_watcher._official_alert_id requires the id the app matches rows on.
+    assert n["alert_id"] == "cap-a"
     assert n["district"] == DISTRICT
     assert n["severity"] == "ORANGE"
     assert n["at"]
@@ -226,7 +228,7 @@ def test_official_chain_same_level_new_bulletin_fires_updated(official_chain):
     assert len(notes) == 2
     newest = notes[0]
     assert newest["kind"] == "updated"
-    assert newest["alert_id"] == "cap:cap-b"
+    assert newest["alert_id"] == "cap-b"
     assert newest["severity"] == "ORANGE"
     assert "update" in newest["title"].lower()
 

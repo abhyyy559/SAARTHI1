@@ -80,7 +80,7 @@ test('removed routes have no registration, no public entry', () => {
 test('alerts fold detail inline; advisory folds the advisor', () => {
   // Agent 1's AlertsList is the one alerts surface: list + inline expansion.
   assert.match(views, /<AlertsList[\s\S]*?initialAlertId=\{initialId\}/);
-  assert.doesNotMatch(views, /<Emergency/, 'SOS left the Alerts route — it floats from the shell');
+  assert.doesNotMatch(views, /<Emergency/, 'SOS lives in the shell sheet, not the Alerts route');
   assert.match(shell, /SosFab/, 'the shell renders the floating SOS button on every view');
   assert.match(shell, /SosSheet/, 'the FAB opens the mayday console in a modal sheet');
   assert.doesNotMatch(views, /DetailsView/, 'no separate Details route');
@@ -144,15 +144,42 @@ test('tour is exactly five icon-led steps on the deduped IA', () => {
 });
 
 // --- admin invisibility -------------------------------------------------------
-// --- P2P has no page (conversational-first rebuild): QR relay is a background
-// capability only — no view route, no nav entry, no dedicated components.
-test('no P2P/offline page exists; QR relay stays a background capability', () => {
+// --- P2P has no standalone page: QR relay lives as a tabbed Show/Scan
+// section inside the Alerts view (reachable via the Alerts tab) — no separate
+// view route, no More-sheet row.
+test('no P2P/offline page exists; QR relay lives in the Alerts view', () => {
   assert.doesNotMatch(views, /OfflineView/, 'views.jsx must not route an offline view');
   assert.doesNotMatch(shell, /view: 'offline'/, 'shell must not carry an offline nav entry');
   assert.doesNotMatch(app, /OfflineView/, 'App must not register an offline view');
   const qr = read('../src/p2pqr.js');
   assert.ok(qr.length > 0, 'p2pqr.js background capability is kept');
-  assert.doesNotMatch(shell, /QrRelay|QrScan/, 'QR relay has no nav entry');
+  assert.doesNotMatch(shell, /QrRelay|QrScan/, 'QR relay has no shell nav entry');
+  const list = read('../src/components/AlertsList.jsx');
+  assert.match(list, /QrRelay/, 'Alerts view embeds the QR sender');
+  assert.match(list, /QrScan/, 'Alerts view embeds the QR scanner');
+  assert.match(list, /qrShowTab/, 'Show/Scan tabs switch the QR section');
+  assert.match(list, /qrScanTab/, 'Show/Scan tabs switch the QR section');
+  assert.match(list, /alerts_list/, 'Alerts view snapshots the list for offline QR sharing');
+  assert.match(list, /alertsCachedNote/, 'saved list is labelled as saved, never live');
+  assert.match(list, /<DistrictMap/, 'Alerts view opens with the schematic warning map');
+  assert.match(list, /openDistrictFirst/, 'map tap expands the district alert inline');
+
+// --- schematic warning map: SVG, no tile servers, honest about it -----------
+test('DistrictMap is offline-safe schematic, never tiles', () => {
+  const map = read('../src/components/DistrictMap.jsx');
+  assert.match(map, /<svg/, 'map renders inline SVG');
+  assert.doesNotMatch(map, /tile.openstreetmap|leaflet|mapbox|maplibre|googleapis.*maps/i, 'zero tile servers — airplane-mode safe');
+  assert.match(map, /mapSchematic/, 'schematic disclaimer always renders');
+  assert.match(map, /api\.districtCoords\(\)/, 'coordinates come from the static endpoint');
+  assert.match(map, /localStorage/, 'coordinates cached for offline');
+  assert.match(map, /DISTRICTS/, 'bundled fallback when the endpoint is unreachable');
+  assert.match(map, /onSelectDistrict/, 'tap opens the district alert');
+  assert.match(map, /isEnded/, 'ended alerts never colour the map');
+  for (const key of ['mapTitle', 'mapSub', 'mapSchematic', 'mapNoAlerts']) {
+    const src = read('../src/i18n.js');
+    assert.ok(src.includes(key + ':'), `map string ${key} must exist`);
+  }
+});
 });
 
 test('admin is absent from tabs, More sheet, and tour', () => {

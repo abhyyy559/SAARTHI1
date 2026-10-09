@@ -81,7 +81,7 @@ function AboutYou() {
 const endedState = (a) => String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
 
 function HomeAlerts() {
-  const { lang, loc, locReady, syncTick, setView, setSelectedAlert } = useApp();
+  const { lang, loc, locReady, syncTick, setView, setSelectedAlert, demoMode } = useApp();
   const [alerts, setAlerts] = useState(null); // null = loading
   const [failed, setFailed] = useState(false);
   const [tick, setTick] = useState(0);
@@ -93,9 +93,11 @@ function HomeAlerts() {
     let alive = true;
     setAlerts(null);
     setFailed(false);
+    // Same rule as AlertsList: the demo endpoint 403s outside demo mode by
+    // design, so only ask for demo alerts when demo fixtures are on.
     Promise.all([
       api.warnings(loc.district, loc.lat, loc.lon).catch(() => null),
-      demoAlertApi.list(loc.district).catch(() => null),
+      (demoMode ? demoAlertApi.list(loc.district).catch(() => null) : Promise.resolve(null)),
     ]).then(([w, d]) => {
       if (!alive) return;
       if (!w && !d) {
@@ -135,7 +137,7 @@ function HomeAlerts() {
     });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locReady, locKey, syncTick, tick]);
+  }, [locReady, locKey, syncTick, tick, demoMode]);
 
   const openAlert = (a) => {
     setSelectedAlert(a);

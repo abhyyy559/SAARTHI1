@@ -51,6 +51,7 @@ export default {
     // --- empty state 2: service did NOT reach us. Never a green tick ---
     alertsCannotTitle: 'Cannot check now',
     alertsCannotBody: 'The warning service did not answer. We cannot say it is safe.',
+    alertsCachedNote: 'Offline — showing what is saved on this phone. May be outdated.',
 
     // --- empty state 3: warnings exist, but for another district -------
     alertsNearbyTitle: 'Warnings nearby',
@@ -165,6 +166,7 @@ export default {
 
     alertsCannotTitle: 'अभी जाँच नहीं हो सकी',
     alertsCannotBody: 'चेतावनी सेवा ने जवाब नहीं दिया। हम यह नहीं कह सकते कि सब ठीक है।',
+    alertsCachedNote: 'ऑफ़लाइन — इस फ़ोन में सहेजी सूची दिख रही है। पुरानी हो सकती है।',
 
     alertsNearbyTitle: 'आस-पास चेतावनी',
     alertsNearbyBody: 'आपके राज्य में {n} सरकारी चेतावनियाँ हैं। ये आपके जिले की नहीं हैं।',
@@ -275,6 +277,7 @@ export default {
 
     alertsCannotTitle: 'ఇప్పుడు తనిఖీ చేయలేము',
     alertsCannotBody: 'హెచ్చరిక సేవ సమాధానం ఇవ్వలేదు. ఇది సురక్షితం అని చెప్పలేము.',
+    alertsCachedNote: 'ఆఫ్‌లైన్ — ఈ ఫోన్‌లో సేవ్ చేసిన జాబితా చూపుతున్నాం. పాతది కావచ్చు.',
 
     alertsNearbyTitle: 'సమీపంలో హెచ్చరికలు',
     alertsNearbyBody: 'మీ రాష్ట్రంలో {n} అధికారిక హెచ్చరికలు ఉన్నాయి. అవి మీ జిల్లాకు కావు.',

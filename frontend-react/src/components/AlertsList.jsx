@@ -17,6 +17,10 @@ import Icon from './icons';
 import { SevStamp } from './ui';
 import { relTime, mergeAlerts } from './inboxLogic';
 import AlertDetails from './AlertDetails';
+import DistrictMap from './DistrictMap';
+import QrRelay from './QrRelay';
+import QrScan from './QrScan';
+import { readCache, saveCache } from '../offline';
 
 // An alert is a demo/admin-dashboard alert: simulated content that must wear
 // the DEMO badge — never presented as a live official warning.
@@ -41,17 +45,73 @@ function alertKey(a) {
   return String(a.id || a.identifier || a.headline || Math.random());
 }
 
+// QR data sharing (Show QR / Scan QR) — the Alerts view is the reachable
+// entry point (bottom section, tabbed). Fully offline: the sender renders
+// from props with the bundled `qrcode` lib (no network), the scanner uses
+// the camera + local reassembly (only the optional ack sync needs network).
+// Previously the sender QR was buried inside the SOS sheet and the scanner
+// had no entry at all.
+function QrShareSection({ alerts }) {
+  const { lang, loc, device, online } = useApp();
+  const [qrTab, setQrTab] = useState('show');
+  const [forwardEnv, setForwardEnv] = useState(null);
+  return (
+    <>
+      <div className="alert-sec-title" style={{ marginTop: 16 }}>
+        <span className="kicker">{t(lang, 'qrTitle')}</span>
+      </div>
+      <p className="sub">{t(lang, 'qrSub')}</p>
+      <div className="segmented" role="tablist" aria-label={t(lang, 'qrTitle')} style={{ marginBottom: 12 }}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={qrTab === 'show'}
+          className={`seg-opt${qrTab === 'show' ? ' is-active' : ''}`}
+          onClick={() => setQrTab('show')}
+        >
+          {t(lang, 'qrShowTab')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={qrTab === 'scan'}
+          className={`seg-opt${qrTab === 'scan' ? ' is-active' : ''}`}
+          onClick={() => setQrTab('scan')}
+        >
+          {t(lang, 'qrScanTab')}
+        </button>
+      </div>
+      {qrTab === 'show' ? (
+        <QrRelay alerts={alerts} lang={lang} deviceLabel={device || ''} relayEnvelope={forwardEnv} />
+      ) : (
+        <QrScan
+          api={api}
+          lang={lang}
+          district={loc.district}
+          deviceId={device || ''}
+          deviceLabel={device || ''}
+          online={online}
+          onRelayFurther={(env) => { setForwardEnv(env); setQrTab('show'); }}
+        />
+      )}
+    </>
+  );
+}
+
 function alertTime(a) {
   return a.updated_at || a.issued_at || a.sent || a.created_at || '';
 }
 
 export default function AlertsList({ initialAlertId = null }) {
-  const { lang, loc, syncTick, speak } = useApp();
+  const { lang, loc, syncTick, speak, demoMode } = useApp();
   const [alerts, setAlerts] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
   const [openId, setOpenId] = useState(initialAlertId);
   const [tick, setTick] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  // `staleCache`: the server did not answer, so the list below is what this
+  // phone saved earlier — labelled as saved, never as live.
+  const [staleCache, setStaleCache] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 30000);
@@ -65,13 +125,29 @@ export default function AlertsList({ initialAlertId = null }) {
     // Reset on location/mode change so stale alerts never flash as current.
     setAlerts(null);
     setUnavailable(false);
+    // Demo alerts live behind a DEMO_MODE-gated endpoint: in imd/hybrid the
+    // backend 403s by design, so don't even ask — it only spams the console
+    // and wastes a round trip.
     Promise.all([
       api.warnings(loc.district, loc.lat, loc.lon).catch(() => null),
-      demoAlertApi.list(loc.district).catch(() => null),
+      (demoMode ? demoAlertApi.list(loc.district).catch(() => null) : Promise.resolve(null)),
     ]).then(([w, d]) => {
       if (!alive) return;
       if (!w && !d) {
-        // Both sources unreachable: say so honestly, never a fake all-clear.
+        // Both sources unreachable: fall back to what this phone saved
+        // earlier so QR sharing keeps working fully offline. The saved list
+        // is labelled as saved (staleCache), never as live — and an empty
+        // cache stays an honest "cannot check", never a fake all-clear.
+        let cached = null;
+        try {
+          const snap = (readCache().alerts_list || {}).data || null;
+          if (snap && Array.isArray(snap.alerts) && snap.alerts.length) cached = snap.alerts;
+        } catch { /* cache read is best-effort */ }
+        if (cached) {
+          setAlerts(cached);
+          setStaleCache(true);
+          return;
+        }
         setUnavailable(true);
         setAlerts([]);
         return;
@@ -113,10 +189,17 @@ export default function AlertsList({ initialAlertId = null }) {
       // Emergency alerts only, and only official sources: demo-store alerts
       // are admin-dashboard alerts (admitted, DEMO-badged); third-party chain
       // alerts (WeatherAPI.com, GDACS — official=false) never render here.
-      setAlerts(mergeAlerts(deduped, demo).filter(isOfficialSource));
+      const merged = mergeAlerts(deduped, demo).filter(isOfficialSource);
+      setAlerts(merged);
+      setStaleCache(false);
+      // Snapshot the list on this phone so the QR sender + offline view keep
+      // working with zero connectivity. Best-effort: never blocks render.
+      try {
+        if (merged.length) saveCache('alerts_list', { alerts: merged, district: loc.district, at: new Date().toISOString() });
+      } catch { /* storage unavailable — ignore */ }
     });
     return () => { alive = false; };
-  }, [locKey, loc.district, loc.lat, loc.lon, syncTick, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [locKey, loc.district, loc.lat, loc.lon, syncTick, tick, demoMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reload = useCallback(() => setTick((n) => n + 1), []);
 
@@ -125,27 +208,29 @@ export default function AlertsList({ initialAlertId = null }) {
   }
 
   if (unavailable) {
+    // Server unreachable AND nothing saved: the map (grey, honest) and the
+    // scanner below stay fully usable — receiving a QR is how this phone
+    // gets its first alert.
     return (
-      <div className="offline-panel" role="status">
-        <div className="display">{t(lang, 'alertsCannotTitle')}</div>
-        <p className="sub">{t(lang, 'alertsCannotBody')}</p>
-        <div className="row">
-          <button type="button" className="btn sm" style={{ minHeight: 44 }} onClick={reload}>
-            <Icon name="refresh" size={14} /> {t(lang, 'alertsRetry')}
-          </button>
+      <>
+        <DistrictMap alerts={[]} />
+        <div className="offline-panel" role="status">
+          <div className="display">{t(lang, 'alertsCannotTitle')}</div>
+          <p className="sub">{t(lang, 'alertsCannotBody')}</p>
+          <div className="row">
+            <button type="button" className="btn sm" style={{ minHeight: 44 }} onClick={reload}>
+              <Icon name="refresh" size={14} /> {t(lang, 'alertsRetry')}
+            </button>
+          </div>
         </div>
-      </div>
+        <QrShareSection alerts={[]} />
+      </>
     );
   }
 
-  if (alerts.length === 0) {
-    return (
-      <div role="status">
-        <div className="display">{t(lang, 'alertsNoneTitle')}</div>
-        <p className="sub">{t(lang, 'alertsNoneBody')}</p>
-      </div>
-    );
-  }
+  // No early return on empty: the main render below already shows the empty
+  // message inside the active section, and the QR share/scan section must stay
+  // visible even with zero alerts (the scanner is how this phone GETS one).
 
   // Ended alerts stay visible with their full lifecycle, but under their own
   // honest heading — an ENDED row under "Emergency alerts" reads as active.
@@ -226,8 +311,27 @@ export default function AlertsList({ initialAlertId = null }) {
         </div>
       );
   });
+  // Map tap → expand that district's first active alert inline (reuses the
+  // row-expansion machinery; no new navigation, no new state).
+  const openDistrictFirst = (name) => {
+    const want = String(name || '').toLowerCase();
+    const hit = activeAlerts.find((a) => String(a.district || a.areaDesc || a.area || '').toLowerCase() === want);
+    if (hit) {
+      setOpenId(alertKey(hit));
+      requestAnimationFrame(() => {
+        document.getElementById(`alert-row-active-${activeAlerts.indexOf(hit)}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    }
+  };
+
   return (
     <>
+      {staleCache && (
+        <p className="sub" role="status" style={{ marginBottom: 8 }}>
+          <Icon name="offline" size={14} /> {t(lang, 'alertsCachedNote')}
+        </p>
+      )}
+      <DistrictMap alerts={activeAlerts} onSelectDistrict={openDistrictFirst} />
       <div className="alert-sec-title">
         <span className="kicker">{t(lang, 'alertsEmergencyTitle')}</span>
       </div>
@@ -251,6 +355,7 @@ export default function AlertsList({ initialAlertId = null }) {
           </div>
         </>
       )}
+      <QrShareSection alerts={alerts} />
     </>
   );
 }

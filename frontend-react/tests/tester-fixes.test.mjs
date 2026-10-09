@@ -20,7 +20,10 @@ test('store showToast dispatches wgpt:toast so Shell actually renders it', () =>
   // permission-denied feedback was silent ("button does nothing" again).
   assert.match(
     s,
-    /showToast[\s\S]{0,400}?dispatchEvent\(new CustomEvent\('wgpt:toast'/,
+    // Window covers the explanatory comment between the definition and the
+    // dispatch (it grew past the old 400-char window — the dispatch itself
+    // never moved).
+    /showToast[\s\S]{0,600}?dispatchEvent\(new CustomEvent\('wgpt:toast'/,
     'showToast must dispatch the wgpt:toast DOM event Shell listens for'
   );
 });

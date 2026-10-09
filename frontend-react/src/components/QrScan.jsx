@@ -36,6 +36,7 @@ export default function QrScan({
   const [ignored, setIgnored] = useState(0);
   const [failed, setFailed] = useState(''); // '' | 'checksum'
   const [received, setReceived] = useState(null); // envelope
+  const [plainText, setPlainText] = useState(''); // plain-text QR from any regular camera
   const [acks, setAcks] = useState(() => readP2PAcks());
   const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState('');
@@ -67,6 +68,7 @@ export default function QrScan({
     setIgnored(0);
     setFailed('');
     setReceived(null);
+    setPlainText('');
     setSyncNote('');
   }, []);
 
@@ -74,6 +76,22 @@ export default function QrScan({
     if (doneRef.current) return;
     const p = parseFrame(decodedText);
     if (!p.ok) {
+      // Plain-text QR from any regular camera (the Simple-QR share mode):
+      // short human-readable text is a received note, not garbage. Only a
+      // truly empty/absurd payload counts as an ignored bad code.
+      const text = typeof decodedText === 'string' ? decodedText : '';
+      if (text && text.length <= 1500) {
+        doneRef.current = true;
+        setPlainText(text.slice(0, 1500));
+        try {
+          saveAlertSnapshot(
+            { id: `plain-${Date.now().toString(36)}`, title: text.split('\n')[0].slice(0, 140) || 'QR note', description: text.slice(0, 500), source: 'qr-plain', official: false },
+            district,
+          );
+        } catch { /* cache is best-effort */ }
+        stopCam();
+        return;
+      }
       // A random non-relay QR in view — count it, don't crash, don't block.
       setIgnored((c) => c + 1);
       return;
@@ -164,7 +182,7 @@ export default function QrScan({
 
   return (
     <Card title={t(lang, 'qrScanTitle')} sub={t(lang, 'qrScanSub')}>
-      {!received && !failed && (
+      {!received && !failed && !plainText && (
         <>
           <div
             id="p2pqr-reader"
@@ -204,6 +222,26 @@ export default function QrScan({
         <>
           <p className="sub" role="alert">
             <Icon name="close" size={14} /> {t(lang, 'qrChecksumFail')}
+          </p>
+          <div className="card-actions" style={{ marginTop: 12 }}>
+            <button type="button" className="btn btn-secondary" style={{ minHeight: 44 }} onClick={reset}>
+              <Icon name="refresh" size={16} /> <span>{t(lang, 'qrNewScan')}</span>
+            </button>
+          </div>
+        </>
+      )}
+
+      {plainText && !received && (
+        <>
+          <p className="sub" role="status" style={{ marginTop: 4 }}>
+            <Icon name="check" size={14} /> <strong>{t(lang, 'qrReceived')}</strong>
+          </p>
+          <div className="chip-row" style={{ margin: '8px 0' }}>
+            <span className="chip"><Icon name="user" size={12} /> {t(lang, 'qrPlainBadge')}</span>
+          </div>
+          <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{plainText}</pre>
+          <p className="sub" style={{ marginTop: 8 }}>
+            <Icon name="offline" size={12} /> {t(lang, 'qrReceivedSub')}
           </p>
           <div className="card-actions" style={{ marginTop: 12 }}>
             <button type="button" className="btn btn-secondary" style={{ minHeight: 44 }} onClick={reset}>

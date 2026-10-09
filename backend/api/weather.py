@@ -284,25 +284,38 @@ async def nowcast(district: str = "Hyderabad", lat: Optional[float] = None, lon:
     if config.DEMO_MODE:
         text = await s["imd"].get_district_nowcast(district)
         return {"district": district, "nowcast": text, "provenance": "DEMO", "generated_at": iso_now()}
-    loc = s["loc"].resolve(lat, lon)
+    if lat is not None and lon is not None:
+        loc = s["loc"].resolve(lat, lon)
+    else:
+        # No GPS fix: place the named district (same rule as /weather/warnings)
+        # so ?district=Kakinada returns Kakinada's nowcast — resolve() with no
+        # fix falls back to the default district and leaked Hyderabad here.
+        loc = s["loc"].lookup(district) or {"district": district}
+    district_name = loc.get("district", district)
     try:
-        data = await IMDService(adapter="live").get_district_nowcast(loc.get("district", district))
+        data = await IMDService(adapter="live").get_district_nowcast(district_name)
         prov = "LIVE"
     except AdapterUnavailable:
         if _official_only():
             return {
                 "status": "unavailable", "message": UNAVAILABLE_MSG,
                 "detail": "IMD unreachable — imd mode does not fall back to non-official sources",
-                "provenance": "UNAVAILABLE", "district": district, "generated_at": iso_now(),
+                "provenance": "UNAVAILABLE", "district": district_name, "generated_at": iso_now(),
+            }
+        if loc.get("latitude") is None or loc.get("longitude") is None:
+            return {
+                "status": "unavailable", "message": UNAVAILABLE_MSG,
+                "detail": "district could not be placed and IMD is unreachable",
+                "provenance": "UNAVAILABLE", "district": district_name, "generated_at": iso_now(),
             }
         try:
             data, prov = await openmeteo_adapter.get_nowcast(loc["latitude"], loc["longitude"])
         except AdapterUnavailable as exc:
             return {
                 "status": "unavailable", "message": UNAVAILABLE_MSG, "detail": str(exc),
-                "provenance": "UNAVAILABLE", "district": district, "generated_at": iso_now(),
+                "provenance": "UNAVAILABLE", "district": district_name, "generated_at": iso_now(),
             }
-    return {"district": loc.get("district", district), "nowcast": data, "provenance": prov, "generated_at": iso_now()}
+    return {"district": district_name, "nowcast": data, "provenance": prov, "generated_at": iso_now()}
 
 
 @router.get("/weather/warnings")

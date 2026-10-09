@@ -1,5 +1,5 @@
-// Floating quick actions — two round shortcuts stacked above the SOS FAB on
-// the right side, on every view. Notifications reuses the shell's
+// Floating quick actions — two round shortcuts on the right side, on every
+// view. Notifications reuses the shell's
 // 'wgpt:notifications-open' event (the one and only notifications home);
 // alerts routes to the Alerts view. Harbour Signal: 2px ink border, icon-only
 // at render size with icon + word on aria-label/title.

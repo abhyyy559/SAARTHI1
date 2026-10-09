@@ -87,6 +87,43 @@ export function sanitizeAlert(alert) {
   return out;
 }
 
+// Plain-text alert summary for a SINGLE static QR that any regular phone
+// camera can read — no app, no multi-frame rotation, no network. This is the
+// default share mode: it works fully offline (the `qrcode` lib is bundled)
+// and degrades gracefully (a camera that cannot parse it still shows the
+// text). Kept short (~50 chars/line, capped) so it always fits one easy-to-
+// scan code. Machine fields (ids, hop counts) are deliberately left out:
+// a human reading this needs hazard/severity/place/guidance, not protocol.
+export function alertPlainText(alert) {
+  if (!alert || typeof alert !== 'object') return '';
+  const get = (...keys) => {
+    for (const k of keys) {
+      const v = alert[k];
+      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+  };
+  const lines = ['SAARTHI ALERT'];
+  const title = get('title', 'headline', 'hazard', 'event');
+  if (title) lines.push(title.slice(0, 140));
+  const sev = get('severity', 'level');
+  if (sev) lines.push(`Severity: ${sev.toUpperCase()}`);
+  const district = get('district', 'area', 'areaDesc');
+  if (district) lines.push(`Where: ${district}`.slice(0, 80));
+  const validity = get('valid_until', 'expires', 'ends_at');
+  if (validity) lines.push(`Valid until: ${validity}`.slice(0, 80));
+  const desc = get('description', 'message');
+  if (desc) lines.push(desc.slice(0, 200));
+  const instr = get('instruction');
+  if (instr) lines.push(`Do: ${instr}`.slice(0, 200));
+  const source = get('source');
+  if (source) lines.push(`Source: ${source}`.slice(0, 80));
+  lines.push('Not verified with server — check again when online.');
+  // Capped for one fast low-density scan on any stock camera app: denser
+  // codes scan slower and fail in bad light — the failure mode on stage.
+  return lines.join('\n').slice(0, 600);
+}
+
 export function isOfficialAlert(alert) {
   // Fail closed: ONLY an explicit `official: true` flag on the sender's own
   // data counts. Source-name sniffing ("CAP" substring etc.) is a
