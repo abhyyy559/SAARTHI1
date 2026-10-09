@@ -34,8 +34,9 @@ SYSTEM_RULES = (
     "NEVER give advice, recommendations, instructions, tips, suggestions, or practical actions of any kind.\n"
     "NEVER tell the user what they should do, avoid, prepare for, wear, carry, check, or cancel.\n"
     "NEVER phrase a fact as an instruction (e.g. 'expect heavy rain' is a fact; 'stay indoors' is forbidden advice).\n"
-    "If the user asks what to do or for guidance, give the facts and say: "
-    "'For guidance, check the Advisory tab in the app.' That tab is the ONLY place for guidance.\n"
+    "If the user asks what to do or for guidance, give the facts and add one short sentence, "
+    "in the answer's language, saying guidance is in the 'For you' section of the app. "
+    "That section is the ONLY place for guidance.\n"
     "Keep it short and simple - the listener may be a fisherman or farmer with a basic phone.\n"
     "Never answer 'can I go to sea / go out / is it safe' with yes or no: that is a safety\n"
     "decision, not a fact. Open with the warning status and the relevant facts instead.\n"
@@ -45,7 +46,7 @@ SYSTEM_RULES = (
     # advice - roughly 1000 characters where ~350 carries the same facts.
     # NOTE: the server does NOT append an advisory block to chat answers.
     # Chat answers are facts-only; advisory guidance travels separately in the
-    # 'advisory' field of the /api/chat response (the app's Advisory tab).
+    # 'advisory' field of the /api/chat response (the app's "For you" section).
     "LENGTH: at most 120 words total. This is a hard limit, not a target.\n"
     "Open with the safety answer itself - the hazard or the yes/no - in one short\n"
     "sentence of at most 20 words. Never open with 'Great question', 'Certainly',\n"
@@ -165,7 +166,7 @@ _TEMPLATE_PHRASES = {
         "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C.",
         "risk": "WeatherGPT Risk Interpretation for you ({user_type}): {risk}.",
         "risk_note": "This is our interpretation, not an IMD rating.",
-        "advisory_note": "For safety guidance, check the Advisory tab in the app.",
+        "advisory_note": "For safety guidance, see 'For you' in the app.",
     },
     "hi": {
         "active_warning": "{loc} के लिए सक्रिय आधिकारिक चेतावनी है: {severity} — {hazard}।",
@@ -179,7 +180,7 @@ _TEMPLATE_PHRASES = {
         "temp": "कल का तापमान: {tmin}–{tmax}°C।",
         "risk": "आपके लिए WeatherGPT जोखिम व्याख्या ({user_type}): {risk}।",
         "risk_note": "यह हमारी व्याख्या है, IMD की रेटिंग नहीं।",
-        "advisory_note": "सुरक्षा सलाह के लिए ऐप में Advisory टैब देखें।",
+        "advisory_note": "सुरक्षा सलाह के लिए ऐप में 'आपके लिए' देखें।",
     },
     "te": {
         "active_warning": "{loc} కోసం క్రియాశీల అధికారిక హెచ్చరిక ఉంది: {severity} — {hazard}.",
@@ -193,7 +194,7 @@ _TEMPLATE_PHRASES = {
         "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C.",
         "risk": "మీ కోసం WeatherGPT ప్రమాద వివరణ ({user_type}): {risk}.",
         "risk_note": "ఇది మా వివరణ, IMD రేటింగ్ కాదు.",
-        "advisory_note": "భద్రతా మార్గదర్శనం కోసం యాప్‌లోని Advisory ట్యాబ్ చూడండి.",
+        "advisory_note": "భద్రతా సూచనల కోసం యాప్‌లో 'మీ కోసం' చూడండి.",
     },
 }
 

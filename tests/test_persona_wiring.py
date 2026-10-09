@@ -19,48 +19,37 @@ def _read(name: str) -> str:
         return f.read()
 
 
-def test_store_exposes_persona_and_district():
-    store = _read('store.jsx')
-    assert "setPersona" in store and "persona, setPersona" in store
-    assert "loc, setDistrict, districts" in store  # context value carries location
+def test_store_exposes_persona_and_location():
+    # Frontend rebuild (2026-10-09): App.jsx owns the store; prefs persist.
+    app = _read('App.jsx')
+    assert "setPersona = useCallback" in app and "writePref('persona'" in app
+    assert re.search(r"persona: persona \|\| 'general',[^}]*setPersona, loc, setLoc", app), \
+        "context value must carry persona and location"
 
 
-def test_persona_role_grid_writes_to_store():
-    # Persona selection moved out of Advisory into Settings (the profile row).
-    # Pin the new wiring so a persona tap can never silently become cosmetic
-    # again.
-    settings = _read(os.path.join('components', 'SettingsPanel.jsx'))
-    assert re.search(r"onPick=\{setPersona\}", settings), \
-        "Settings role grid must wire onPick to the store's setPersona"
-    assert re.search(r"className=\"role-grid\"", settings), \
-        "the persona role grid must render inside SettingsPanel"
-    advisor = _read(os.path.join('components', 'Advisor.jsx'))
-    assert "className=\"role-grid\"" not in advisor, \
-        "Advisor must no longer render the persona role grid"
-    assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*onPick\(ut\.id\)", advisor), \
-        "role card tap must call onPick with the user type"
-    # District selection likewise moved out of the topbar — it now lives in
-    # the location prompt's manual district chips.
-    loc = _read(os.path.join('components', 'LocationPrompt.jsx'))
-    assert re.search(r"onClick=\{\s*\(\s*\)\s*=>\s*setDistrict\(r\)", loc), \
-        "district chip must write location to store"
+def test_persona_pickers_write_to_store():
+    # Both role pickers (Today's "For you" row, Setup/Settings grid) must call
+    # the store's setPersona, so a role tap can never become cosmetic.
+    today = _read(os.path.join('screens', 'Today.jsx'))
+    assert re.search(r"onClick=\{\(\) => setPersona\(r\.id\)\}", today)
+    setup = _read(os.path.join('components', 'Setup.jsx'))
+    assert re.search(r"setPersona\(r\.id\)", setup)
+    # A picked place writes the store's location.
+    assert re.search(r"setLoc\(\{ district: p\.district", setup)
 
 
-def test_homechat_sends_persona_and_location():
-    # Phase 0 (2026-09-21): ChatPanel.jsx was dead code (nothing rendered it);
-    # HomeChat.jsx is the live chat. The persona/location wiring contract is
-    # unchanged — only the owner moved.
-    chat = _read(os.path.join('components', 'HomeChat.jsx'))
-    assert "user_type: persona" in chat, "chat must send the selected persona"
-    assert "latitude: loc && loc.lat" in chat, "chat must send the selected district coords"
-    assert "language: lang" in chat, "chat must send the selected language"
-    assert "PERSONA_LABELS" in chat, "chat header must show who is being answered"
+def test_chat_sends_persona_location_language():
+    ask = _read(os.path.join('screens', 'Ask.jsx'))
+    assert "user_type: persona" in ask, "chat must send the selected persona"
+    assert "latitude: loc.lat, longitude: loc.lon" in ask, "chat must send the selected place"
+    assert "language: lang" in ask, "chat must send the selected language"
+    api = _read(os.path.join('lib', 'api.js'))
+    assert "user_type: persona, language: lang" in api, "advisory must follow persona + language"
 
 
 def test_persona_chips_differ_by_persona():
-    # Phase 0 (2026-09-21): see above — ChatPanel.jsx deleted, HomeChat.jsx live.
-    chat = _read(os.path.join('components', 'HomeChat.jsx'))
-    assert "PERSONA_QUESTIONS[persona]" in chat, "question chips must follow persona"
+    ask = _read(os.path.join('screens', 'Ask.jsx'))
+    assert "CHIPS[persona]" in ask, "question chips must follow persona"
 
 
 def test_backend_advisory_differs_per_persona():

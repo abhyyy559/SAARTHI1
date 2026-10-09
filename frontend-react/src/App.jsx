@@ -1,77 +1,109 @@
-import { Component, Suspense } from 'react';
-import { AppProvider, useApp } from './store';
-import { t } from './i18n';
-import Shell from './components/Shell';
-import FirstRunOnboarding from './components/FirstRunOnboarding';
-import { HomeView, AlertsView, NotificationsView, AdvisoryView, TrustSourcesView, SettingsView } from './views';
-import { Loading } from './components/ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AppCtx, readPref, useApp, writePref } from './lib/appState';
+import { useOnline } from './lib/useData';
+import { LANGS, t } from './lib/i18n';
+import { stopSpeaking } from './lib/voice';
+import { Icon } from './components/Icons';
+import Setup, { LangPicker, PlacePicker, RoleGrid } from './components/Setup';
+import Today from './screens/Today';
+import Ask from './screens/Ask';
+import Alerts from './screens/Alerts';
+import Share from './screens/Share';
 
-// Every id the store's `?view=` whitelist accepts must be registered here.
-// IA dedup (2026-09-20): ask/advisor/details/sources are gone — their content
-// was folded into Home (chat), Advisory, and Alerts (inline detail). Aviation
-// is a profile, not a route — its briefing renders on Home for the aviation
-// persona. A stale deep link to one of them falls back to Home; there is no
-// public route.
-const VIEWS = {
-  home: HomeView,
-  alerts: AlertsView,
-  notifications: NotificationsView,
-  advisory: AdvisoryView,
-  trust: TrustSourcesView,
-  settings: SettingsView,
-};
+const TABS = [
+  { id: 'today', icon: 'home', key: 'tabToday', View: Today },
+  { id: 'ask', icon: 'mic', key: 'tabAsk', View: Ask },
+  { id: 'alerts', icon: 'bell', key: 'tabAlerts', View: Alerts },
+  { id: 'share', icon: 'qr', key: 'tabShare', View: Share },
+];
 
-/** One broken view must never take the console down - and never fake data. */
-class Boundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { err: null };
-  }
-
-  static getDerivedStateFromError(err) {
-    return { err };
-  }
-
-  render() {
-    if (!this.state.err) return this.props.children;
-    const { lang } = this.props;
-    return (
-      <div className="card">
-        <h2 className="card-title">{t(lang, 'boundaryTitle')}</h2>
-        <p className="sub">{t(lang, 'boundaryBody')}</p>
-        <pre className="mono" style={{ whiteSpace: 'pre-wrap' }}>
-          {String(this.state.err.message || this.state.err)}
-        </pre>
-      </div>
-    );
-  }
-}
-
-function Console() {
-  const { view, lang } = useApp();
-  const Active = VIEWS[view] || HomeView;
+function Settings({ onClose }) {
+  const { lang } = useApp();
   return (
-    <Shell>
-      {/* First-run welcome + permission flow. One-time; the spotlight tour
-          launches from its finish step, so they never overlap. */}
-      <FirstRunOnboarding />
-      {/* Keyed by view: without this, one view that threw kept the boundary
-          in its failed state for the whole session, so every other view —
-          which was working — appeared broken too. A new view must get a
-          fresh boundary. */}
-      <Boundary key={view} lang={lang}>
-        <Suspense fallback={<Loading />}>
-          <Active />
-        </Suspense>
-      </Boundary>
-    </Shell>
+    <div className="sheet-wrap" role="dialog" aria-modal="true" aria-label={t(lang, 'settings')} onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <h2><Icon name="gear" size={22} /> {t(lang, 'settings')}</h2>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label={t(lang, 'done')}><Icon name="close" size={24} /></button>
+        </div>
+        <h3><Icon name="globe" size={18} /> {t(lang, 'language')}</h3>
+        <LangPicker />
+        <h3><Icon name="pin" size={18} /> {t(lang, 'place')}</h3>
+        <PlacePicker onPicked={onClose} />
+        <h3><Icon name="user" size={18} /> {t(lang, 'role')}</h3>
+        <RoleGrid />
+        <button type="button" className="btn-big" onClick={onClose}><Icon name="check" size={24} /> {t(lang, 'done')}</button>
+      </div>
+    </div>
   );
 }
 
 export default function App() {
+  const [lang, setLangState] = useState(() => readPref('lang', 'en'));
+  const [persona, setPersonaState] = useState(() => readPref('persona', null));
+  const [loc, setLocState] = useState(() => readPref('loc', null));
+  const [tab, setTab] = useState(() => {
+    const v = new URLSearchParams(window.location.search).get('tab');
+    return TABS.some((x) => x.id === v) ? v : 'today';
+  });
+  const [pendingQuestion, setPending] = useState(null);
+  const [settings, setSettings] = useState(false);
+  const [setupDone, setSetupDone] = useState(() => !!(readPref('loc') && readPref('persona')));
+  const online = useOnline();
+
+  const setLang = useCallback((v) => { setLangState(v); writePref('lang', v); }, []);
+  const setPersona = useCallback((v) => { setPersonaState(v); writePref('persona', v); }, []);
+  const setLoc = useCallback((v) => { setLocState(v); writePref('loc', v); }, []);
+  const askAbout = useCallback((q) => { setPending(q); setTab('ask'); }, []);
+  const clearPending = useCallback(() => setPending(null), []);
+
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  useEffect(() => { stopSpeaking(); window.scrollTo(0, 0); }, [tab]);
+
+  const ctx = useMemo(() => ({
+    lang, setLang, persona: persona || 'general', personaChosen: !!persona, setPersona, loc, setLoc,
+    pendingQuestion, clearPending, askAbout,
+  }), [lang, setLang, persona, setPersona, loc, setLoc, pendingQuestion, clearPending, askAbout]);
+
+  if (!setupDone || !loc) {
+    return (
+      <AppCtx.Provider value={ctx}>
+        <Setup onDone={() => setSetupDone(true)} />
+      </AppCtx.Provider>
+    );
+  }
+
+  const Active = (TABS.find((x) => x.id === tab) || TABS[0]).View;
+  const langGlyph = (LANGS.find((l) => l.id === lang) || LANGS[0]).glyph;
+
   return (
-    <AppProvider>
-      <Console />
-    </AppProvider>
+    <AppCtx.Provider value={ctx}>
+      <div className="app">
+        <header className="top">
+          <button type="button" className="place-chip" onClick={() => setSettings(true)} aria-label={t(lang, 'place')}>
+            <Icon name="pin" size={20} /> <b>{loc.district}</b>
+          </button>
+          <div className="top-right">
+            {!online ? <span className="net-off" title={t(lang, 'offline')}><Icon name="offline" size={22} /></span> : null}
+            <button type="button" className="lang-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'language')}>{langGlyph}</button>
+            <button type="button" className="icon-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'settings')}><Icon name="gear" size={24} /></button>
+          </div>
+        </header>
+        {!online ? <div className="offline-bar"><Icon name="offline" size={18} /> {t(lang, 'offline')}</div> : null}
+        <main key={`${tab}-${loc.district}`}>
+          <Active />
+        </main>
+        <nav className="tabs" aria-label="WeatherGPT">
+          {TABS.map((x) => (
+            <button key={x.id} type="button" className={`tab ${tab === x.id ? 'is-on' : ''}`}
+              aria-current={tab === x.id ? 'page' : undefined} onClick={() => setTab(x.id)}>
+              <Icon name={x.icon} size={28} />
+              <span>{t(lang, x.key)}</span>
+            </button>
+          ))}
+        </nav>
+        {settings ? <Settings onClose={() => setSettings(false)} /> : null}
+      </div>
+    </AppCtx.Provider>
   );
 }
