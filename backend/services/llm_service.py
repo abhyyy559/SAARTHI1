@@ -10,6 +10,7 @@ import re
 import httpx
 
 from .. import config
+from ..utils.http import TLS
 
 SYSTEM_RULES = (
     "You are the conversational intelligence layer of WeatherGPT.\n"
@@ -369,6 +370,15 @@ def _budget() -> dict:
     return {"max_tokens": 240}
 
 
+def _model_chain() -> list[str]:
+    """The configured model, then the rate-limit spill-over model (if any)."""
+    chain = [config.LLM_MODEL]
+    extra = (getattr(config, "LLM_FALLBACK_MODEL", "") or "").strip()
+    if extra and extra != config.LLM_MODEL:
+        chain.append(extra)
+    return chain
+
+
 def _template_answer(evidence: dict, question: str = "", language: str = "en") -> str:
     """Question-aware rule-based answer. Used when the LLM is disabled/unreachable.
 
@@ -517,23 +527,30 @@ class LLMService:
             "Answer from the data above. If a fact is missing, say it is not available.\n"
             f"{LANG_REMINDER.get(language, '')}"
         )
+        content = ""
         try:
-            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
-                resp = await client.post(
-                    f"{config.LLM_BASE_URL}/chat/completions",
-                    headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
-                    json={
-                        "model": config.LLM_MODEL,
-                        "messages": [
-                            {"role": "system", "content": system},
-                            {"role": "user", "content": user},
-                        ],
-                        "temperature": 0.2,
-                        **_budget(),
-                    },
-                )
-                resp.raise_for_status()
-                content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
+            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT, verify=TLS) as client:
+                chain = _model_chain()
+                for i, model in enumerate(chain):
+                    resp = await client.post(
+                        f"{config.LLM_BASE_URL}/chat/completions",
+                        headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "system", "content": system},
+                                {"role": "user", "content": user},
+                            ],
+                            "temperature": 0.2,
+                            **_budget(),
+                        },
+                    )
+                    # Rate-limited: the next model has its own budget.
+                    if resp.status_code == 429 and i + 1 < len(chain):
+                        continue
+                    resp.raise_for_status()
+                    content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
+                    break
         except Exception:
             return _template_answer(evidence, question, language), True
 
@@ -591,14 +608,20 @@ class LLMService:
             "stream": True,
         }
         sent_any = False
+        chain = _model_chain()
         try:
-            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT, verify=TLS) as client:
+              for i, model in enumerate(chain):
+                payload["model"] = model
                 async with client.stream(
                     "POST",
                     f"{config.LLM_BASE_URL}/chat/completions",
                     headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
                     json=payload,
                 ) as resp:
+                    # Rate-limited before any token: the next model has its own budget.
+                    if resp.status_code == 429 and i + 1 < len(chain):
+                        continue
                     resp.raise_for_status()
                     buf = ""
                     thinking = False
@@ -650,6 +673,7 @@ class LLMService:
                     if not thinking and buf:
                         sent_any = True
                         yield {"type": "token", "text": buf}
+                break  # answered: no second model
         except Exception:
             if not sent_any:
                 yield {"type": "token", "text": _template_answer(evidence, question, language)}

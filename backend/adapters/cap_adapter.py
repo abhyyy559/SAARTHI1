@@ -18,6 +18,7 @@ import httpx
 from .. import config
 from ..utils.time import IST
 from .registry import CACHED, DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
+from ..utils.http import TLS
 
 SOURCE = "NDMA-Sachet-CAP"
 _FIXTURE = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures" / "cap_alert.json"
@@ -294,7 +295,7 @@ async def _fetch_alerts_uncached(urls: list[str]) -> tuple[list[dict[str, Any]],
             _feed_cache[url] = (_time.monotonic(), [dict(a) for a in feed])
             return feed
 
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=12.0, verify=TLS) as client:
             # Feeds in parallel: sequentially a new state paid four feeds'
             # round trips (plus their linked CAP files) back to back.
             results = await asyncio.gather(*(one(client, u) for u in urls), return_exceptions=True)

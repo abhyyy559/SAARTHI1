@@ -10,6 +10,7 @@ import httpx
 
 from .. import config
 from ..adapters.registry import ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
+from ..utils.http import TLS
 
 SOURCE = "NWP/multi-model"
 
@@ -55,7 +56,7 @@ async def compare_models(latitude: float, longitude: float) -> tuple[dict, str]:
         "models": ",".join(live.values()),
     }
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, verify=TLS) as client:
             resp = await client.get(BASE, params=params)
             resp.raise_for_status()
             data = resp.json()

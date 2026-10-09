@@ -635,11 +635,55 @@ def _finalize_answer(ctx: dict, raw: str, fallback: bool = False) -> tuple[str, 
     return answer, fallback
 
 
+# Same question, same place, same data, within 10 minutes: the same answer.
+# Judges tap the same chip questions; on Groq's free tier (8,000 tokens a
+# minute, ~1,900 per answer) every repeat would otherwise spend the budget and
+# push the next new question onto the plainer template answer. The key holds
+# the facts the answer was built from, so any change in them asks again.
+_ANSWER_TTL_S = 600
+_ANSWER_MAX = 300
+_answers: dict[tuple, tuple[float, str]] = {}
+
+
+def _answer_key(ctx: dict) -> tuple:
+    cur = ctx.get("current_dict") or {}
+    days = (ctx.get("forecast_dict") or {}).get("days") or []
+    tomorrow = days[1] if len(days) > 1 else {}
+    v = ctx.get("verdict") or {}
+    loc = ctx.get("loc") or {}
+    return (" ".join(str(ctx.get("message") or "").lower().split()), loc.get("district"), loc.get("state"),
+            ctx.get("language"), ctx.get("user_type"), v.get("level"), v.get("severity"), v.get("hazard"),
+            cur.get("temperature"), cur.get("condition"), tomorrow.get("rainfall"),
+            tuple((ctx.get("evidence") or {}).get("earlier_questions") or ()),
+            str((ctx.get("evidence") or {}).get("climate_trend") or ""))
+
+
+def _cached_answer(ctx: dict) -> str | None:
+    hit = _answers.get(_answer_key(ctx))
+    if hit and time.monotonic() - hit[0] < _ANSWER_TTL_S:
+        return hit[1]
+    return None
+
+
+def _remember_answer(ctx: dict, answer: str) -> None:
+    while len(_answers) >= _ANSWER_MAX:
+        _answers.pop(next(iter(_answers)))
+    _answers[_answer_key(ctx)] = (time.monotonic(), answer)
+
+
 async def _handle(req: ChatRequest) -> ChatResponse:
     t0 = time.perf_counter()
     ctx = await _prepare(req)
     if ctx["early"] is not None:
         return ctx["early"]
+
+    cached = _cached_answer(ctx)
+    if cached is not None:
+        return _build_response(ctx["loc"], ctx["verified_dict"], ctx["risk"], ctx["current_dict"] or {},
+                               ctx["forecast_dict"] or {}, cached, ctx["advisory"], ctx["language"],
+                               ctx["weather_block"], ctx["ev"], False,
+                               user_type=ctx["user_type"], verdict=ctx["verdict"],
+                               response_time_ms=int((time.perf_counter() - t0) * 1000))
 
     llm = LLMService()
     model_error = ""
@@ -657,6 +701,8 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
     # guidance lives in the separate Advisory surface (see ChatResponse.advisory).
     answer, fallback = _finalize_answer(ctx, answer, fallback)
+    if not fallback:
+        _remember_answer(ctx, answer)
 
     response_time_ms = int((time.perf_counter() - t0) * 1000)
     return _build_response(ctx["loc"], ctx["verified_dict"], ctx["risk"], ctx["current_dict"] or {},
@@ -703,6 +749,13 @@ async def chat_stream(req: ChatRequest):
         d.pop("answer", None)
         yield _ndjson({"type": "meta", **d})
 
+        cached = _cached_answer(ctx)
+        if cached is not None:
+            yield _ndjson({"type": "token", "text": cached})
+            yield _ndjson({"type": "done", "structured_fallback": False, "model_error": "",
+                           "response_time_ms": int((time.perf_counter() - t0) * 1000)})
+            return
+
         llm = LLMService()
         parts: list[str] = []
         fallback = False
@@ -726,6 +779,8 @@ async def chat_stream(req: ChatRequest):
             fallback = True
         answer, validated_fallback = _finalize_answer(ctx, raw)
         fallback = fallback or validated_fallback
+        if not fallback:
+            _remember_answer(ctx, answer)
         # Compare against what the client actually saw, not the substituted
         # raw: on truncation the client holds partial text, so it must get a
         # `final` event carrying the complete template answer to swap in.

@@ -18,6 +18,7 @@ import httpx
 from .. import config
 from ..utils.time import IST
 from .registry import ERROR, LIVE, report
+from ..utils.http import TLS
 
 UNAVAILABLE = "UNAVAILABLE"  # matches the literal used across the warnings API
 
@@ -108,7 +109,7 @@ async def _from_weatherintouch(lat: float, lon: float, district: str) -> list[di
                    "arguments": {"place": district or "Hyderabad"}},
     }
     headers = {"Accept": "application/json, text/event-stream"}
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=_TIMEOUT, verify=TLS) as client:
         r = await client.post("https://api.weatherintouch.com/api/mcp",
                               json=body, headers=headers)
         r.raise_for_status()
@@ -147,7 +148,7 @@ async def _from_weatherapi(lat: float, lon: float, district: str) -> list[dict[s
     key = config.WEATHERAPI_KEY
     if not key:
         raise RuntimeError("WEATHERAPI_KEY not configured")
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=_TIMEOUT, verify=TLS) as client:
         r = await client.get("https://api.weatherapi.com/v1/alerts.json",
                              params={"key": key, "q": f"{lat},{lon}"})
         r.raise_for_status()
@@ -181,7 +182,7 @@ async def _from_gdacs(lat: float, lon: float, district: str) -> list[dict[str, A
     footprint estimate used ONLY for relevance, never shown as precision."""
     from ..services.gis_service import haversine_km
 
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=_TIMEOUT, verify=TLS) as client:
         r = await client.get("https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH",
                              params={"country": "India", "alertlevel": "Orange;Red"})
         r.raise_for_status()

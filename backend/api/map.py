@@ -21,6 +21,7 @@ from ..services import district_service
 from ..services.location_service import GAZETTEER
 from ..services.verdict_service import _is_expired
 from ..utils.time import iso_now
+from ..utils.http import TLS
 
 router = APIRouter(prefix="/api/map")
 
@@ -129,7 +130,7 @@ async def map_grid() -> dict:
         return {**_grid_cache["value"], "status": "ok", "provenance": "CACHED", "generated_at": iso_now()}
     pts = _grid_points()
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, verify=TLS) as client:
             r = await client.get("https://api.open-meteo.com/v1/forecast", params={
                 "latitude": ",".join(str(p[0]) for p in pts),
                 "longitude": ",".join(str(p[1]) for p in pts),

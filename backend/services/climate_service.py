@@ -11,6 +11,7 @@ import httpx
 
 from ..adapters.registry import DEMO, ERROR, LIVE, AdapterUnavailable, report
 from ..utils.time import IST, now_ist
+from ..utils.http import TLS
 
 SOURCE = "ERA5 (Open-Meteo archive)"
 BASE = "https://archive-api.open-meteo.com/v1/archive"
@@ -72,7 +73,7 @@ async def trends(latitude: float, longitude: float, years: int = 20) -> tuple[di
     end = date(now_ist().year - 1, 12, 31)
     start = date(end.year - years + 1, 1, 1)
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, verify=TLS) as client:
             resp = await client.get(BASE, params={
                 "latitude": latitude, "longitude": longitude,
                 "start_date": start.isoformat(), "end_date": end.isoformat(),

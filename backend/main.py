@@ -44,14 +44,44 @@ async def lifespan(app: FastAPI):
     log.info("alert watcher task started (tick=%ss, network=%ss)", tick, interval)
     warm = asyncio.create_task(_keep_sachet_warm())
     map_warm = asyncio.create_task(_keep_map_warm())
+    places_warm = asyncio.create_task(_keep_places_warm())
     try:
         yield
     finally:
-        for t in (task, warm, map_warm):
+        for t in (task, warm, map_warm, places_warm):
             t.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await t
         log.info("alert watcher task stopped")
+
+
+async def _keep_places_warm(every_s: float = 240.0) -> None:
+    """The places the team demos answer at full speed from the first question:
+    their weather, forecast and official alerts are fetched at start-up and
+    refreshed inside the 5-minute caches. Failures are ignored: this is only
+    a head start, never a source of data."""
+    from .api import chat as chat_api, weather as weather_api
+    from .services.alert_service import gather_alerts
+    from .services.location_service import LocationService
+
+    names = [n.strip() for n in (config.WARM_DISTRICTS or "").split(",") if n.strip()]
+    if not names:
+        return
+    await asyncio.sleep(1)
+    while True:
+        for name in names:
+            loc = LocationService().lookup(name)
+            if not loc:
+                continue
+            lat, lon = loc["latitude"], loc["longitude"]
+            with contextlib.suppress(Exception):
+                await asyncio.gather(
+                    chat_api._fetch_current_safe(lat, lon),
+                    chat_api._fetch_forecast_safe(lat, lon),
+                    gather_alerts(lat=lat, lon=lon, district=loc["district"], state=loc.get("state") or ""),
+                    weather_api.warnings(loc["district"], lat, lon),
+                )
+        await asyncio.sleep(every_s)
 
 
 async def _keep_map_warm(every_s: float = 600.0) -> None:

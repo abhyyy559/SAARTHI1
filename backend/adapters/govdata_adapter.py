@@ -13,6 +13,7 @@ import httpx
 
 from .. import config
 from .registry import DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
+from ..utils.http import TLS
 
 SOURCE = "data.gov.in"
 _FIXTURE = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures" / "govdata_rainfall.json"
@@ -26,7 +27,7 @@ async def fetch_records(limit: int = 10) -> tuple[list[dict], str]:
         raise AdapterUnavailable("data.gov.in unconfigured (needs API key + resource id)")
     url = f"https://api.data.gov.in/resource/{resource}"
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=12.0, verify=TLS) as client:
             resp = await client.get(url, params={"api-key": key, "format": "json", "limit": limit})
             resp.raise_for_status()
             payload = resp.json()

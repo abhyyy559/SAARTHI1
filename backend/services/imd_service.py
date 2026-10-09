@@ -12,6 +12,7 @@ from ..adapters.registry import OFFLINE, UNCONFIGURED, AdapterUnavailable, repor
 from ..models.weather import WeatherObservation, WeatherForecast, WeatherWarning
 from ..utils.time import IST, now_ist
 from . import district_demo
+from ..utils.http import TLS
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures"
 
@@ -103,7 +104,7 @@ class IMDService:
         headers = {"Authorization": f"Bearer {config.IMD_API_KEY}"}
         url = f"{config.IMD_BASE_URL}/{path}"
         try:
-            async with httpx.AsyncClient(timeout=6.0) as client:
+            async with httpx.AsyncClient(timeout=6.0, verify=TLS) as client:
                 resp = await client.get(url, params=params, headers=headers)
         except httpx.HTTPError as exc:  # timeout, DNS, refused
             _skip_until, _skip_reason = time.monotonic() + _ERROR_COOLDOWN_S, type(exc).__name__

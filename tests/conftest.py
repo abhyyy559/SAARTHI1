@@ -37,6 +37,9 @@ os.environ.pop("DATABASE_URL", None)
 # SACHET feeds are on by default in config; tests opt in by monkeypatching
 # config.CAP_FEED_URLS, so the suite never depends on the live NDMA feed.
 os.environ["CAP_FEED_URLS"] = "off"
+# No start-up warm-up of real places, and no second LLM model, in tests.
+os.environ["WARM_DISTRICTS"] = ""
+os.environ["LLM_FALLBACK_MODEL"] = ""
 
 # A developer's .env must not leak into the suite: config loads it with
 # override=False, so empty values set here win. Tests that need a key
@@ -94,6 +97,11 @@ def _clear_module_caches():
         try:
             from backend.services import imd_service as _imd
             _imd.reset_breaker()  # one test's rejected IMD must not skip IMD in the next
+        except Exception:
+            pass
+        try:
+            from backend.api import chat as _chat
+            _chat._answers.clear()  # a remembered answer must not leak into the next test
         except Exception:
             pass
 

@@ -143,6 +143,11 @@ LLM_BASE_URL = _get("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"
 # openai/gpt-oss-120b and qwen/qwen3.6-27b.)
 LLM_MODEL = _get("LLM_MODEL", "openai/gpt-oss-120b")
 LLM_TIMEOUT = float(_get("LLM_TIMEOUT", "25"))
+# Second model, used only when the first is rate-limited (HTTP 429). On Groq's
+# free tier each model has its own tokens-per-minute budget (8,000 for
+# gpt-oss-120b; one answer is ~1,900 tokens), so a burst of questions spills
+# over here instead of dropping to the plainer template answer. Empty = off.
+LLM_FALLBACK_MODEL = _get("LLM_FALLBACK_MODEL", "openai/gpt-oss-20b")
 
 # Model IDs we know Groq actually serves. A custom LLM_BASE_URL means custom
 # model names, so the check only applies to the default Groq endpoint.
@@ -197,3 +202,7 @@ FRONTEND_ORIGINS = _get("FRONTEND_ORIGINS", "")
 # needs this token in the X-Admin-Token header. Empty = disabled. A device
 # can always send a test push to itself (by its own endpoint).
 PUSH_ADMIN_TOKEN = _get("PUSH_ADMIN_TOKEN", "")
+# Places kept warm from start-up (weather, forecast, official alerts), so the
+# first question about them is answered at full speed. Comma-separated
+# district names; empty = none.
+WARM_DISTRICTS = _get("WARM_DISTRICTS", "Hyderabad,Medchal Malkajgiri,Visakhapatnam")

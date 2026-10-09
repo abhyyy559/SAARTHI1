@@ -14,6 +14,7 @@ from typing import Any
 import httpx
 
 from .registry import AdapterUnavailable
+from ..utils.http import TLS
 
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
@@ -38,7 +39,7 @@ async def sea_state(lat: float, lon: float, days: int = 3) -> dict:
         return hit[1]
     common = {"latitude": lat, "longitude": lon, "timezone": "Asia/Kolkata", "forecast_days": days}
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, verify=TLS) as client:
             marine, wind = await asyncio.gather(
                 client.get(MARINE_URL, params={**common, "current": "wave_height",
                                                "daily": "wave_height_max,swell_wave_height_max"}),

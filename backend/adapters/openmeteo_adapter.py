@@ -11,6 +11,7 @@ import httpx
 from ..models.weather import ForecastDay, WeatherForecast, WeatherObservation
 from ..utils.time import IST
 from .registry import LIVE, OFFLINE, AdapterUnavailable, report
+from ..utils.http import TLS
 
 BASE = "https://api.open-meteo.com/v1/forecast"
 SOURCE = "Open-Meteo"
@@ -32,7 +33,7 @@ def _condition(code: int | None) -> str:
 
 async def _fetch(params: dict) -> dict:
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=12.0, verify=TLS) as client:
             resp = await client.get(BASE, params=params)
             resp.raise_for_status()
             return resp.json()
