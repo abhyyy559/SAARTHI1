@@ -377,7 +377,7 @@ export default function AlertsList({ initialAlertId = null }) {
           </div>
         </>
       )}
-      <QrShareSection alerts={alerts} />
+      <QrShareSection alerts={[...(alerts || []), ...nearbyAlerts]} />
     </>
   );
 }

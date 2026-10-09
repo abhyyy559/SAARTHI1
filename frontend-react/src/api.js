@@ -18,8 +18,11 @@ let demoForbiddenHandler = null;
 let lastDemo403 = 0;
 export const onDemoForbidden = (fn) => { demoForbiddenHandler = fn; };
 
-/** Max time for any server round-trip: 5 seconds, never infinite (B3). */
-export const FETCH_TIMEOUT_MS = 5000;
+/** Max time for any server round-trip: 20 seconds, never infinite (B3).
+ * 5s was aborting real answers on phone networks (warnings ~4.6s, chat ~7s
+ * with LLM) — the app read as "data not loading" when the server was still
+ * working. 20s keeps a ceiling while letting slow-but-live calls finish. */
+export const FETCH_TIMEOUT_MS = 20000;
 
 // Offline queue for mutations when offline-sim is on
 const offlineQueue = [];
