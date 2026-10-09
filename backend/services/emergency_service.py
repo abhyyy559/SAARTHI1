@@ -11,6 +11,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -39,6 +40,8 @@ _STORE = Path(
 REPLAY_WINDOW = timedelta(hours=72)
 MAX_HOPS = 10
 
+log = logging.getLogger("weathergpt.emergency")
+
 _key_cache: bytes | None = None
 
 
@@ -51,7 +54,8 @@ def _fernet() -> Fernet:
             try:
                 _key_cache = raw.encode()
                 Fernet(_key_cache)  # validate format now, fail fast
-            except Exception:
+            except Exception as exc:  # noqa: BLE001 - fall back to ephemeral key, but log it
+                log.warning("bad EMERGENCY_KEY, using ephemeral per-process key: %s: %s", type(exc).__name__, exc)
                 _key_cache = Fernet.generate_key()
         else:
             _key_cache = Fernet.generate_key()
@@ -66,15 +70,16 @@ def _hmac_key() -> bytes:
 def _load_store() -> dict:
     try:
         return json.loads(_STORE.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - corrupt store reads as empty, but log it
+        log.warning("emergency store load failed (%s), returning empty: %s: %s", _STORE, type(exc).__name__, exc)
         return {"messages": {}, "outbox": []}
 
 
 def _save_store(data: dict) -> None:
     try:
         _STORE.write_text(json.dumps(data, default=str), encoding="utf-8")
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001 - failed persist must not raise, but log it
+        log.warning("emergency store save failed (%s): %s: %s", _STORE, type(exc).__name__, exc)
 
 
 def seal(sender_id: str, payload: dict[str, Any]) -> EmergencyMessage:

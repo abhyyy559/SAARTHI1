@@ -1,5 +1,6 @@
 """Advisory endpoint — persona guidance, explicitly NOT an official instruction (§38)."""
 import asyncio
+import logging
 from typing import Optional
 
 from fastapi import APIRouter
@@ -13,6 +14,8 @@ from ..services.location_service import LocationService
 from ..utils.time import iso_now
 
 router = APIRouter(prefix="/api")
+
+log = logging.getLogger("weathergpt.advisory")
 
 
 def _grounding_summary(current, forecast, alerts, verdict,
@@ -28,7 +31,8 @@ def _grounding_summary(current, forecast, alerts, verdict,
     try:
         from ..services.advisory_service import observation_numbers
         observed = observation_numbers(current) if current else {}
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - grounding degrades to empty, but log it
+        log.warning("advisory grounding summary failed: %s: %s", type(exc).__name__, exc)
         observed = {}
     observed = observed if isinstance(observed, dict) else {}
     days = forecast.get("days") if isinstance(forecast, dict) else None
@@ -94,7 +98,8 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
             # take the whole cards response down with it.
             try:
                 return await weather_mod.warnings(district, lat, lon)
-            except Exception:
+            except Exception as exc:  # noqa: BLE001 - intentional fallback, but log it
+                log.warning("advisory cards warnings fallback to empty: %s: %s", type(exc).__name__, exc)
                 return {}
 
         # LATENCY: current + forecast + alerts are independent, so they run

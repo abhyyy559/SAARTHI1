@@ -18,6 +18,9 @@ import httpx
 from .. import config
 from ..utils.time import IST
 from .registry import CACHED, DEMO, ERROR, LIVE, UNCONFIGURED, AdapterUnavailable, report
+import logging
+
+log = logging.getLogger("weathergpt.cap")
 
 SOURCE = "NDMA-Sachet-CAP"
 _FIXTURE = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures" / "cap_alert.json"
@@ -42,7 +45,8 @@ def parse_cap(payload: str) -> list[dict[str, Any]]:
         try:
             data = json.loads(text)
             return [_normalize(a) for a in (data.get("alerts") or []) if isinstance(a, dict)]
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - bad JSON reads as empty, but log it
+            log.warning("cap parse: bad JSON payload: %s: %s", type(exc).__name__, exc)
             return []
     try:
         root = ET.fromstring(text)
@@ -194,7 +198,8 @@ async def _fetch_linked(client: "httpx.AsyncClient", link: str) -> list[dict[str
         r = await client.get(link)
         r.raise_for_status()
         return parse_cap(r.text)
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - one bad linked doc reads as empty, but log it
+        log.warning("cap linked fetch failed (%s): %s: %s", link, type(exc).__name__, exc)
         return []
 
 
@@ -214,7 +219,8 @@ def _feed_has_cap_shape(payload: str) -> bool:
     if text.startswith("{"):
         try:
             data = json.loads(text)
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - unparseable JSON is a failed feed shape
+            log.warning("cap shape check: bad JSON: %s: %s", type(exc).__name__, exc)
             return False
         return isinstance(data, dict) and isinstance(data.get("alerts"), list)
     try:
@@ -265,7 +271,8 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
                         if ident not in seen:
                             seen.add(ident)
                             alerts.append(a)
-                except Exception:
+                except Exception as exc:  # noqa: BLE001 - one bad feed never kills the others, but log it
+                    log.warning("cap feed failed (%s): %s: %s", url, type(exc).__name__, exc)
                     failed += 1
                     continue  # one bad feed never kills the others
     except AdapterUnavailable:
@@ -277,7 +284,8 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
         try:
             from ..services.cache_service import CacheService
             CacheService().set("cap_alerts", alerts, timedelta(minutes=30))
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - cache failure must not fail the feed, but log it
+            log.warning("cap cache set failed: %s: %s", type(exc).__name__, exc)
             pass
         report("cap", LIVE, f"{len(alerts)} active alerts")
         return alerts, LIVE
@@ -292,7 +300,8 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
                     a["stale_note"] = "Showing last retrieved information; may be outdated."
                 report("cap", CACHED, f"{len(cached)} cached alerts (feeds failing)")
                 return cached, CACHED
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - cache read failure falls through to ERROR, but log it
+            log.warning("cap cache read failed: %s: %s", type(exc).__name__, exc)
             pass
         report("cap", ERROR, "all CAP feeds failing, no cache — check CAP_FEED_URL / network")
         raise AdapterUnavailable("CAP feeds unreachable and no cached alerts")
@@ -314,7 +323,8 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
     try:
         from ..services import district_demo
         preset_alerts = district_demo.demo_cap_alerts(district)
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - preset failure falls back to fixture, but log it
+        log.warning("cap preset lookup failed (%s): %s: %s", district, type(exc).__name__, exc)
         preset_alerts = None
     if preset_alerts is not None:
         alerts = [_normalize(a) for a in preset_alerts]
@@ -327,7 +337,8 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
     try:
         raw = json.loads(_FIXTURE.read_text(encoding="utf-8"))
         alerts = [_normalize(a) for a in (raw.get("alerts") or [])]
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - bad fixture reads as empty, but log it
+        log.warning("cap fixture load failed: %s: %s", type(exc).__name__, exc)
         alerts = []
     if district and district.lower() != "hyderabad":
         # Keep the state suffix truthful (fixture says Telangana): resolve it
@@ -336,7 +347,8 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
         try:
             from ..services.location_service import LocationService
             state = (LocationService().resolve(None, None, district).get("state") or "")
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - gazetteer failure omits state, but log it
+            log.warning("cap state resolve failed (%s): %s: %s", district, type(exc).__name__, exc)
             state = ""
         area = f"{district} district" + (f", {state}" if state else "")
         for a in alerts:

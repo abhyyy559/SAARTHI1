@@ -59,6 +59,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="WeatherGPT", version="1.0.0", lifespan=lifespan)
 
 
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception):  # noqa: BLE001 - last-resort envelope only
+    log.exception("unhandled error on %s: %s", request.url.path, exc)
+    return JSONResponse(status_code=500, content={"error": f"{type(exc).__name__}: {exc}", "status": 500})
+
+
 def _cors_origins() -> list:
     """Env-driven allowlist + always-on local dev origins."""
     origins = {
@@ -200,19 +206,20 @@ async def set_mode(payload: dict) -> dict:
 
 
 @app.websocket("/ws/warnings")
-async def ws_warnings(websocket: WebSocket):
+async def ws_warnings(websocket: WebSocket, district: str = "Hyderabad"):
     """Live warning push (§26). Sends snapshot on connect, then refreshes. Demo-safe."""
     from .services.imd_service import IMDService
     from .services.validation_service import ValidationService
     from .services.verdict_service import build_verdict
 
+    district = (district or "Hyderabad").strip() or "Hyderabad"
     await websocket.accept()
     imd = IMDService()
     try:
         while True:
             try:
-                w = await imd.get_district_warning("Hyderabad")
-                verified = ValidationService(imd).validate_warning(w, "Hyderabad") if w else None
+                w = await imd.get_district_warning(district)
+                verified = ValidationService(imd).validate_warning(w, district) if w else None
                 warning_d = w.model_dump(mode="json") if w else None
                 verified_d = verified.model_dump(mode="json") if verified else None
                 payload = {
