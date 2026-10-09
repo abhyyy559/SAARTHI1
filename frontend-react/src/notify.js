@@ -68,9 +68,26 @@ export const pushReasonKey = (r) => PUSH_REASON_KEYS[r] || 'rsnFailed';
 // no toast and no state change. Every service-worker wait below is bounded.
 const SW_READY_TIMEOUT_MS = 8000;
 
+// Browser push-API calls below the service-worker wait (getSubscription,
+// subscribe, unsubscribe) and the Notification permission prompt have no
+// built-in bound: when the browser never settles them, the enable flow hangs
+// forever and the onboarding buttons stay disabled (ntfBusy/ctaBusy stuck
+// true). PUSH_OP_TIMEOUT_MS / NOTIFY_PERM_TIMEOUT_MS bound those waits so
+// every path settles and the UI always frees the button.
+const PUSH_OP_TIMEOUT_MS = 10000;
+// Generous on purpose: the native permission prompt needs human time. It only
+// fires when the browser never settles the prompt at all.
+const NOTIFY_PERM_TIMEOUT_MS = 30000;
+
 function timeoutError(ms) {
   const err = new Error(`service worker not ready after ${ms}ms`);
   err.name = 'SWTimeoutError';
+  return err;
+}
+
+function opTimeoutError(ms) {
+  const err = new Error(`push operation timed out after ${ms}ms`);
+  err.name = 'PushOpTimeoutError';
   return err;
 }
 
@@ -78,6 +95,14 @@ function withTimeout(promise, ms) {
   let id = 0;
   const gate = new Promise((_, reject) => {
     id = setTimeout(() => reject(timeoutError(ms)), ms);
+  });
+  return Promise.race([promise, gate]).finally(() => clearTimeout(id));
+}
+
+function withOpTimeout(promise, ms) {
+  let id = 0;
+  const gate = new Promise((_, reject) => {
+    id = setTimeout(() => reject(opTimeoutError(ms)), ms);
   });
   return Promise.race([promise, gate]).finally(() => clearTimeout(id));
 }
@@ -113,13 +138,18 @@ function urlBase64ToUint8Array(base64) {
  * Returns { ok, reason, endpoint }. Every failure is reported rather than
  * swallowed: "notifications are on" must never be shown when the device cannot
  * actually be reached while the app is closed. Never hangs: every
- * service-worker wait is bounded (see SW_READY_TIMEOUT_MS).
+ * service-worker wait is bounded (see SW_READY_TIMEOUT_MS), and the
+ * pushManager calls below are bounded too (see PUSH_OP_TIMEOUT_MS) —
+ * otherwise a browser that never settles them sticks the onboarding Allow
+ * button disabled forever (ntfBusy/ctaBusy never reset).
  *
  * opts.readyTimeoutMs overrides the bound (tests, very slow devices).
+ * opts.opTimeoutMs overrides the bound on the pushManager calls below.
  */
 export async function subscribeToPush({ api, district, language, persona }, opts = {}) {
   if (!pushSupported()) return { ok: false, reason: PUSH_REASONS.UNSUPPORTED };
   const readyMs = Number(opts.readyTimeoutMs) > 0 ? Number(opts.readyTimeoutMs) : SW_READY_TIMEOUT_MS;
+  const opMs = Number(opts.opTimeoutMs) > 0 ? Number(opts.opTimeoutMs) : PUSH_OP_TIMEOUT_MS;
 
   try {
     const { public_key: publicKey, available } = await api.pushVapid();
@@ -128,13 +158,16 @@ export async function subscribeToPush({ api, district, language, persona }, opts
     const reg = await withTimeout(pushRegistration(), readyMs);
     if (!reg || !reg.pushManager) return { ok: false, reason: PUSH_REASONS.SW_MISSING };
 
-    let sub = await reg.pushManager.getSubscription();
+    // Both pushManager calls are browser-API waits with no built-in timeout;
+    // unbounded they hang the enable flow (and the onboarding Allow button)
+    // forever when the browser never settles them.
+    let sub = await withOpTimeout(reg.pushManager.getSubscription(), opMs);
     if (!sub) {
-      sub = await reg.pushManager.subscribe({
+      sub = await withOpTimeout(reg.pushManager.subscribe({
         // Required by Chrome: every push must be shown to the user.
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
+      }), opMs);
     }
 
     const r = await api.pushSubscribe({
@@ -148,19 +181,23 @@ export async function subscribeToPush({ api, district, language, persona }, opts
     // failure. Either way the caller shows the honest reason, not a false "on".
     if (err?.name === 'NotAllowedError') return { ok: false, reason: PUSH_REASONS.DENIED };
     if (err?.name === 'SWTimeoutError') return { ok: false, reason: PUSH_REASONS.SW_MISSING };
+    if (err?.name === 'PushOpTimeoutError') return { ok: false, reason: PUSH_REASONS.FAILED };
     return { ok: false, reason: PUSH_REASONS.FAILED };
   }
 }
 
-/** Stop background push for this device, on both sides. */
-export async function unsubscribeFromPush(api) {
+/** Stop background push for this device, on both sides. Never hangs: the
+ *  pushManager waits are bounded like the subscribe path, so the toggle-off
+ *  half of the onboarding Allow button cannot stick busy either. */
+export async function unsubscribeFromPush(api, opts = {}) {
   if (!pushSupported()) return { ok: false, reason: PUSH_REASONS.UNSUPPORTED };
+  const opMs = Number(opts?.opTimeoutMs) > 0 ? Number(opts.opTimeoutMs) : PUSH_OP_TIMEOUT_MS;
   try {
     const reg = await withTimeout(pushRegistration(), SW_READY_TIMEOUT_MS);
-    const sub = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null;
+    const sub = reg && reg.pushManager ? await withOpTimeout(reg.pushManager.getSubscription(), opMs) : null;
     if (!sub) return { ok: true, reason: PUSH_REASONS.NONE };
     const endpoint = sub.endpoint;
-    await sub.unsubscribe().catch(() => { /* server cleanup still worth trying */ });
+    await withOpTimeout(sub.unsubscribe().catch(() => { /* server cleanup still worth trying */ }), opMs);
     await api.pushUnsubscribe(endpoint).catch(() => { /* best effort */ });
     return { ok: true, reason: PUSH_REASONS.UNSUBSCRIBED };
   } catch {
@@ -171,12 +208,13 @@ export async function unsubscribeFromPush(api) {
 /** Whether this device currently holds a push subscription. Never hangs: the
  *  registration wait is bounded, so the app-load check cannot dangle forever
  *  on a page whose worker never registers (e.g. the dev server). */
-export async function hasPushSubscription() {
+export async function hasPushSubscription(opts = {}) {
   if (!pushSupported()) return false;
+  const opMs = Number(opts?.opTimeoutMs) > 0 ? Number(opts.opTimeoutMs) : PUSH_OP_TIMEOUT_MS;
   try {
     const reg = await withTimeout(pushRegistration(), SW_READY_TIMEOUT_MS);
     if (!reg || !reg.pushManager) return false;
-    return !!(await reg.pushManager.getSubscription());
+    return !!(await withOpTimeout(reg.pushManager.getSubscription(), opMs));
   } catch {
     return false;
   }
@@ -188,13 +226,18 @@ export function notifySupport() {
   return Notification.permission; // 'default' | 'granted' | 'denied'
 }
 
-export async function askNotifyPermission() {
+export async function askNotifyPermission(opts = {}) {
   if (notifySupport() === 'unsupported') return 'unsupported';
   if (Notification.permission !== 'default') return Notification.permission;
+  // The native prompt has no built-in bound: while it pends, the onboarding
+  // Allow button sits disabled, and a browser that never settles the prompt
+  // sticks it that way forever. Race a generous timeout; on timeout report
+  // the live permission so the caller frees the button and the user can retry.
+  const ms = Number(opts?.timeoutMs) > 0 ? Number(opts.timeoutMs) : NOTIFY_PERM_TIMEOUT_MS;
   try {
-    return await Notification.requestPermission();
+    return await withOpTimeout(Notification.requestPermission(), ms);
   } catch {
-    return 'denied';
+    try { return Notification.permission || 'denied'; } catch { return 'denied'; }
   }
 }
 

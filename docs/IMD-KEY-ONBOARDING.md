@@ -52,20 +52,20 @@ key can be added without silently switching the demo to live data.
 ## 2. Restart the backend
 
 ```bash
-cd SAARTHI && python -m uvicorn backend.main:app --port 8003
+cd SAARTHI && python -m uvicorn backend.main:app --port 8000
 ```
 
 Then check the switch actually took:
 
 ```bash
-curl -s localhost:8003/api/sources | python -m json.tool | grep -A2 '"imd"'
+curl -s localhost:8000/api/sources | python -m json.tool | grep -A2 '"imd"'
 ```
 
 Then prove live data (needs the key — without it IMD reports UNCONFIGURED
 and hybrid serves SACHET/CAP + Open-Meteo instead):
 
 ```bash
-curl -s "localhost:8003/api/weather/warnings?district=Hyderabad" | python -m json.tool | grep -i provenance
+curl -s "localhost:8000/api/weather/warnings?district=Hyderabad" | python -m json.tool | grep -i provenance
 ```
 
 Expected: `"warning_provenance": "LIVE"` with an IMD `Day_1` warning, or

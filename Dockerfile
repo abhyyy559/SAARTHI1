@@ -16,8 +16,8 @@ COPY demo ./demo
 COPY --from=web /web/dist ./frontend-react/dist
 # Writable runtime stores (JSON cache, emergency inbox, reports)
 VOLUME ["/app/data"]
-ENV CACHE_FILE=/app/data/weathergpt_cache.json DEMO_MODE=false PORT=8003
-EXPOSE 8003
+ENV CACHE_FILE=/app/data/weathergpt_cache.json DEMO_MODE=false PORT=8000
+EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://localhost:%d/api/health' % int(os.environ.get('PORT','8003')))"
-CMD ["sh", "-c", "cd /app && DEMO_MODE=${DEMO_MODE:-false} CACHE_FILE=${CACHE_FILE} python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8003}"]
+  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://localhost:%d/api/health' % int(os.environ.get('PORT','8000')))"
+CMD ["sh", "-c", "cd /app && DEMO_MODE=${DEMO_MODE:-false} CACHE_FILE=${CACHE_FILE} python -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

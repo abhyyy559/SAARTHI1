@@ -69,9 +69,13 @@ def _initial_state(name: str) -> tuple[str, str]:
             return (READY, "configured (data.gov.in) — verified on first use")
         return (UNCONFIGURED, "needs DATAGOV_API_KEY + DATAGOV_RESOURCE_ID (data.gov.in)")
     if name == "cap":
-        if config.CAP_FEED_URL:
+        # Mirror cap_adapter.fetch_alerts() resolution (CAP_FEED_URLS wins, the
+        # singular CAP_FEED_URL is the fallback): .env.example ships the plural
+        # feeds with the singular empty, so checking only the singular reported
+        # a configured box UNCONFIGURED on fresh boot.
+        if getattr(config, "CAP_FEED_URLS", None) or config.CAP_FEED_URL:
             return (READY, "CAP feed configured — verified on first use")
-        return (UNCONFIGURED, "needs CAP_FEED_URL (NDMA-Sachet / IMD CAP feed)")
+        return (UNCONFIGURED, "needs CAP_FEED_URLS or CAP_FEED_URL (NDMA-Sachet / IMD CAP feed)")
     if name == "owm":
         if config.OWM_API_KEY:
             return (READY, "configured (OpenWeatherMap) — verified on first use")
