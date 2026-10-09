@@ -19,7 +19,7 @@ export function useOnline() {
 
 // Saved copy paints instantly; the live fetch replaces it when it lands.
 // Refetches on reconnect and every `refreshMs` while the screen is open.
-export function useData(key, fetcher, { refreshMs = 10 * 60 * 1000, enabled = true } = {}) {
+export function useData(key, fetcher, { refreshMs = 10 * 60 * 1000, enabled = true, maxAgeMs = 0 } = {}) {
   const online = useOnline();
   const [state, setState] = useState(() => {
     const hit = key ? cache.read(key) : null;
@@ -33,11 +33,17 @@ export function useData(key, fetcher, { refreshMs = 10 * 60 * 1000, enabled = tr
 
   const load = useCallback(async () => {
     if (!key || !enabled) return;
+    // Slow-changing data (20-year climate): a fresh saved copy is the answer.
+    const hit = maxAgeMs ? cache.read(key) : null;
+    if (hit && Date.now() - hit.savedAt < maxAgeMs) {
+      setState({ data: hit.data, savedAt: hit.savedAt, source: 'saved', loading: false, error: null });
+      return;
+    }
     const mine = ++seq.current;
     setState((s) => ({ ...s, loading: true }));
     const r = await fetchWithCache(key, () => fetcherRef.current());
     if (mine === seq.current) setState({ ...r, loading: false });
-  }, [key, enabled]);
+  }, [key, enabled, maxAgeMs]);
 
   // New key (district / language / role changed): show its saved copy first,
   // derived during render so no extra pass is needed.

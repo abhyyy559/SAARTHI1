@@ -147,6 +147,12 @@ _LEADING_MARKUP_RE = re.compile(r"^[\s#>*_`\-]+")
 _LEADING_YESNO_RE = re.compile(rf"^{_YESNO}", re.I)
 
 
+# A rain word with an amount ("వర్షం ... 0.6 mm") already answers the question.
+_RAIN_AMOUNT_RE = re.compile(
+    r"(?:rain|barish|वर्षा|వర్షం|బారిష్|बारिश|వర్షపాతం)[\s\S]{0,60}?\d+(?:\.\d+)?\s*(?:mm|మి\.?మీ|मिमी|millimet)",
+    re.I)
+
+
 def _answer_already_given(answer: str) -> bool:
     """True when the answer already commits to a rain yes/no (pure).
 
@@ -157,6 +163,8 @@ def _answer_already_given(answer: str) -> bool:
     """
     head = (answer or "")[:_RAIN_ANSWER_WINDOW]
     if _RAIN_ANSWER_RE.search(head):
+        return True
+    if _RAIN_AMOUNT_RE.search(head):
         return True
     return bool(_LEADING_YESNO_RE.match(_LEADING_MARKUP_RE.sub("", answer or "")))
 

@@ -247,11 +247,34 @@ async def _fetch_feed(client: "httpx.AsyncClient", url: str) -> list[dict[str, A
     return alerts
 
 
+# One live SACHET read serves every district for a few minutes. Each read
+# fetches the RSS feeds plus every linked CAP file (dozens of requests), and
+# was repeated per district and per request: the main cold-start cost.
+# Callers get copies, because they annotate alerts per district.
+_SHARED_TTL_S = 180.0
+_shared: dict[str, Any] = {"at": 0.0, "urls": (), "alerts": None}
+
+
+def reset_shared_cache() -> None:
+    _shared.update(at=0.0, urls=(), alerts=None)
+
+
 async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
     urls = list(getattr(config, "CAP_FEED_URLS", None) or ([config.CAP_FEED_URL] if config.CAP_FEED_URL else []))
     if not urls:
         report("cap", UNCONFIGURED, "CAP_FEED_URL not set")
         raise AdapterUnavailable("CAP feed unconfigured (needs CAP_FEED_URL)")
+    import time as _time
+    if (_shared["alerts"] is not None and _shared["urls"] == tuple(urls)
+            and _time.monotonic() - _shared["at"] < _SHARED_TTL_S):
+        return [dict(a) for a in _shared["alerts"]], LIVE
+    alerts, prov = await _fetch_alerts_uncached(urls)
+    if prov == LIVE:
+        _shared.update(at=_time.monotonic(), urls=tuple(urls), alerts=[dict(a) for a in alerts])
+    return alerts, prov
+
+
+async def _fetch_alerts_uncached(urls: list[str]) -> tuple[list[dict[str, Any]], str]:
     from datetime import timedelta
     try:
         alerts: list[dict[str, Any]] = []

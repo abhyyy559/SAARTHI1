@@ -41,13 +41,27 @@ async def lifespan(app: FastAPI):
     tick = int(getattr(config, "WATCH_TICK", alert_watcher.WATCH_TICK_DEFAULT))
     task = asyncio.create_task(alert_watcher.run_forever(interval, tick))
     log.info("alert watcher task started (tick=%ss, network=%ss)", tick, interval)
+    warm = asyncio.create_task(_keep_sachet_warm())
     try:
         yield
     finally:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        for t in (task, warm):
+            t.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await t
         log.info("alert watcher task stopped")
+
+
+async def _keep_sachet_warm(every_s: float = 150.0) -> None:
+    """Refresh the shared SACHET read before it expires: the first person to
+    open the app after a quiet spell no longer waits for dozens of CAP files."""
+    from .adapters import cap_adapter
+    while True:
+        try:
+            await cap_adapter.fetch_alerts()
+        except Exception:  # noqa: BLE001 - unconfigured or down: just try later
+            pass
+        await asyncio.sleep(every_s)
 
 
 app = FastAPI(title="WeatherGPT", version="1.0.0", lifespan=lifespan)

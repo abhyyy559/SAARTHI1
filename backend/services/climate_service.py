@@ -67,8 +67,10 @@ def analyze_series(daily_time: list[str], tmean: list[float | None], rain: list[
 
 
 async def trends(latitude: float, longitude: float, years: int = 20) -> tuple[dict, str]:
-    end = now_ist().date() - timedelta(days=5)  # ERA5 lags a few days
-    start = date(end.year - years, 1, 1)
+    # Complete calendar years only: the current year is partial, and its rain
+    # total compared with full-year normals read as a drought every time.
+    end = date(now_ist().year - 1, 12, 31)
+    start = date(end.year - years + 1, 1, 1)
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(BASE, params={

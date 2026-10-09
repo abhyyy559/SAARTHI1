@@ -61,6 +61,13 @@ export const api = {
   search: (text) => get(`/api/location/search?${q({ q: text })}`).then((d) => d.results || []),
   sources: () => get('/api/sources'),
   stats: () => get('/api/stats', 30000),
+  models: (loc) => get(`/api/weather/models?${q({ lat: loc.lat, lon: loc.lon })}`, 30000),
+  climate: (loc) => get(`/api/climate/trends?${q({ lat: loc.lat, lon: loc.lon })}`, 40000),
+  nowcast: (loc) => get(`/api/weather/nowcast?${q({ district: loc.district, lat: loc.lat, lon: loc.lon })}`),
+  pushVapid: () => get('/api/push/vapid'),
+  pushSubscribe: (payload) => post('/api/push/subscribe', payload),
+  pushUnsubscribe: (endpoint) => post('/api/push/unsubscribe', { endpoint }),
+  pushTest: (payload) => post('/api/push/test', payload),
   voiceStatus: () => get('/api/voice/status', 4000),
   synthesize: (text, language) => post('/api/voice/synthesize', { text, language }, 20000),
   transcribe: async (blob, language) => {

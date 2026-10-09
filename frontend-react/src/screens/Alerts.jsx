@@ -5,6 +5,7 @@ import { fmtDateTime, t } from '../lib/i18n';
 import { activeAlerts, hazardIcon, senderLabel, severityTone, sourceLabel } from '../lib/weather';
 import { Icon } from '../components/Icons';
 import { Empty, Fresh, Skeleton, SpeakButton } from '../components/ui';
+import { PushToggle } from '../components/Toggles';
 
 function AlertRow({ a }) {
   const { lang, askAbout } = useApp();
@@ -52,6 +53,7 @@ export default function Alerts() {
         <h1><Icon name="bell" size={26} /> {t(lang, 'tabAlerts')}</h1>
         <Fresh {...warn} lang={lang} />
       </div>
+      <PushToggle />
       <h2 className="group"><Icon name="pin" size={18} /> {t(lang, 'yourDistrict')} · {loc.district}</h2>
       {mine.length ? mine.map((a) => <AlertRow key={a.identifier || a.headline} a={a} />) : (
         <div className={`alert-none tone-${d.verdict?.level === 'UNKNOWN' ? 'grey' : 'green'}`}>

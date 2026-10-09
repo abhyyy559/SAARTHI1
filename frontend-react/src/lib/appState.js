@@ -27,6 +27,9 @@ export const keys = {
   advisory: (loc, persona, lang) => `adv:${loc.district}:${persona}:${lang}`,
   cards: (loc, persona, lang) => `cards:${loc.district}:${persona}:${lang}`,
   stats: 'stats',
+  models: (loc) => `models:${loc.district}`,
+  climate: (loc) => `climate:${loc.district}`,
+  nowcast: (loc) => `nowcast:${loc.district}`,
   chat: 'chat:history',
   queue: 'chat:queue',
 };

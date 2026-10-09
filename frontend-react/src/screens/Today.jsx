@@ -1,14 +1,15 @@
 import { useEffect, useMemo } from 'react';
 import { api } from '../lib/api';
-import { keys, useApp } from '../lib/appState';
+import { keys, readPref, useApp } from '../lib/appState';
 import { useData } from '../lib/useData';
 import { condText, dayName, t } from '../lib/i18n';
 import { CARD_ICON, ROLES, conditionIcon, hazardIcon, levelIcon, sourceLabel, toneOf } from '../lib/weather';
-import { warmSpeech } from '../lib/voice';
+import { speak, warmSpeech } from '../lib/voice';
 import { Icon } from '../components/Icons';
 import { Empty, Fresh, Skeleton, SpeakButton } from '../components/ui';
 
 const r0 = (n) => (n == null ? '–' : Math.round(Number(n)));
+const SPOKEN = new Set(); // auto-spoken this session: place|language|level
 const r1 = (n) => (n == null ? '–' : Math.round(Number(n) * 10) / 10);
 
 // What the big speaker on the safety card says.
@@ -29,7 +30,10 @@ export function useTodayData() {
   const fc = useData(keys.forecast(loc), () => api.forecast(loc));
   const adv = useData(keys.advisory(loc, persona, lang), () => api.advisory(loc, persona, lang));
   const cards = useData(keys.cards(loc, persona, lang), () => api.cards(loc, persona, lang));
-  return { warn, now, fc, adv, cards };
+  const models = useData(keys.models(loc), () => api.models(loc), { refreshMs: 30 * 60 * 1000, maxAgeMs: 30 * 60 * 1000 });
+  const climate = useData(keys.climate(loc), () => api.climate(loc), { refreshMs: 0, maxAgeMs: 24 * 3600 * 1000 });
+  const nowcast = useData(keys.nowcast(loc), () => api.nowcast(loc));
+  return { warn, now, fc, adv, cards, models, climate, nowcast };
 }
 
 function SafetyCard({ warn, current, days }) {
@@ -70,9 +74,10 @@ function SafetyCard({ warn, current, days }) {
   );
 }
 
-function NowCard({ now }) {
+function NowCard({ now, nowcast }) {
   const { lang } = useApp();
   const c = now.data?.current;
+  const p3 = nowcast?.data?.nowcast?.next_3h_precip_probability_max;
   if (!c) return now.loading ? <Skeleton h={150} /> : <Empty lang={lang} offline={!navigator.onLine} onRetry={now.reload} />;
   const said = `${t(lang, 'now')}: ${r0(c.temperature)}°C, ${condText(c.condition, lang)}. ${t(lang, 'rain')} ${r1(c.rainfall)} mm. ${t(lang, 'wind')} ${r0(c.wind_speed)} km/h. ${t(lang, 'humidity')} ${r0(c.humidity)}%.`;
   return (
@@ -93,6 +98,9 @@ function NowCard({ now }) {
         <div className="stat"><Icon name="wind" size={30} /><b>{r0(c.wind_speed)}</b><span>km/h · {t(lang, 'wind')}</span></div>
         <div className="stat"><Icon name="humidity" size={30} /><b>{r0(c.humidity)}%</b><span>{t(lang, 'humidity')}</span></div>
       </div>
+      {p3 != null ? (
+        <p className="next3h"><Icon name={p3 >= 50 ? 'rain' : 'drizzle'} size={26} /> {t(lang, 'next3h', { p: r0(p3) })}</p>
+      ) : null}
       <div className="card-foot">
         <span className="src-note">{t(lang, 'source')}: {sourceLabel(c.source)}</span>
         <SpeakButton text={said} lang={lang} id="now" />
@@ -125,6 +133,81 @@ function DaysCard({ fc }) {
       <div className="card-foot">
         <span className="src-note">{t(lang, 'forecastBy')}: {sourceLabel(fc.data?.forecast?.source)}</span>
         <SpeakButton text={said} lang={lang} id="days" />
+      </div>
+    </section>
+  );
+}
+
+// "3 of 4 models": the NWP comparison (GFS, ECMWF, GEM, ICON) as pictures.
+// A rainy day is >= 2.5 mm, IMD's definition.
+function ModelsCard({ models }) {
+  const { lang } = useApp();
+  const m = models.data?.comparison?.models;
+  if (!m) return models.loading ? <Skeleton h={150} /> : null;
+  const list = Object.entries(m).filter(([, v]) => v && v.rain_day1 != null);
+  if (!list.length) return null;
+  const rainy = list.filter(([, v]) => v.rain_day1 >= 2.5).length;
+  const wet = rainy * 2 > list.length;
+  const summary = t(lang, wet ? 'modelsRain' : 'modelsDry', { n: wet ? rainy : list.length - rainy, m: list.length });
+  const temps = list.map(([, v]) => v.tmax_day1).filter((x) => x != null);
+  const tempLine = temps.length ? t(lang, 'modelsTemp', { a: r0(Math.min(...temps)), b: r0(Math.max(...temps)) }) : '';
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>{t(lang, 'modelsTitle')}</h2>
+        <Fresh {...models} lang={lang} />
+      </div>
+      <p className="models-sum"><Icon name={wet ? 'rain' : 'sun'} size={36} /> <b>{summary}</b></p>
+      <div className="models">
+        {list.map(([name, v]) => (
+          <div className={`model ${v.rain_day1 >= 2.5 ? 'is-wet' : ''}`} key={name}>
+            <Icon name={v.rain_day1 >= 2.5 ? 'rain' : v.rain_day1 > 0.2 ? 'drizzle' : 'sun'} size={40} />
+            <b>{r1(v.rain_day1)}</b>
+            <span>{name.replace('-IFS', '')}</span>
+          </div>
+        ))}
+      </div>
+      <div className="card-foot">
+        <span className="src-note">{tempLine}{tempLine ? ' · ' : ''}{t(lang, 'modelsNote')}</span>
+        <SpeakButton text={`${summary}. ${tempLine}`} lang={lang} id="models" />
+      </div>
+    </section>
+  );
+}
+
+// 20 years of ERA5: last complete year against the earlier-years normal.
+function ClimateCard({ climate }) {
+  const { lang } = useApp();
+  const tr = climate.data?.trends;
+  const years = tr?.yearly || [];
+  if (!tr || years.length < 6 || tr.latest_rain_mm == null || !tr.baseline_rain_mm) {
+    return climate.loading ? <Skeleton h={140} /> : null;
+  }
+  const last = years[years.length - 1].year;
+  const rainPct = Math.round(((tr.latest_rain_mm - tr.baseline_rain_mm) / tr.baseline_rain_mm) * 100);
+  const dT = tr.temp_anomaly_c;
+  const sign = (x) => (x > 0 ? '+' : '');
+  const rainLine = t(lang, 'climateRain', { y: last, v: r0(tr.latest_rain_mm), n: r0(tr.baseline_rain_mm) });
+  const tempLine = dT == null ? '' : t(lang, 'climateTemp', { y: last, d: `${sign(dT)}${r1(dT)}` });
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>{t(lang, 'climateTitle')}</h2>
+        <Fresh {...climate} lang={lang} />
+      </div>
+      <div className="clim-row">
+        <Icon name="drop" size={38} />
+        <div><b className={`delta ${rainPct >= 0 ? 'wet' : 'dry'}`}>{sign(rainPct)}{rainPct}%</b><span>{rainLine}</span></div>
+      </div>
+      {dT != null ? (
+        <div className="clim-row">
+          <Icon name="thermo" size={38} />
+          <div><b className={`delta ${dT > 0 ? 'hot' : 'cool'}`}>{sign(dT)}{r1(dT)}°C</b><span>{tempLine}</span></div>
+        </div>
+      ) : null}
+      <div className="card-foot">
+        <span className="src-note">{t(lang, 'climateNote', { a: years[0].year, b: years[Math.max(0, years.length - 6)].year })}</span>
+        <SpeakButton text={`${rainLine}. ${tempLine}`} lang={lang} id="climate" />
       </div>
     </section>
   );
@@ -182,8 +265,8 @@ function ForYou({ adv, cards }) {
 }
 
 export default function Today() {
-  const { lang } = useApp();
-  const { warn, now, fc, adv, cards } = useTodayData();
+  const { lang, loc } = useApp();
+  const { warn, now, fc, adv, cards, models, climate, nowcast } = useTodayData();
   const days = fc.data?.forecast?.days;
   const verdict = warn.data?.verdict;
   const current = now.data?.current;
@@ -191,12 +274,25 @@ export default function Today() {
   // Fetch the spoken summary in the background so the speaker answers
   // instantly, and keeps working offline.
   useEffect(() => { if (summary && warn.source === 'live') warmSpeech(summary, lang); }, [summary, lang, warn.source]);
+  // Speak on open: read the safety card once per place/language/level, so a
+  // person who cannot read hears it without finding the button. Browsers may
+  // block sound before the first tap; the Listen button stays as the fallback.
+  const level = verdict?.level;
+  useEffect(() => {
+    if (!summary || warn.loading || !readPref('autoSpeak', true)) return;
+    const key = `${loc.district}|${lang}|${level}`;
+    if (SPOKEN.has(key)) return;
+    SPOKEN.add(key);
+    speak(summary, lang, 'safety');
+  }, [summary, warn.loading, lang, loc.district, level]);
   return (
     <div className="screen">
       <SafetyCard warn={warn} current={current} days={days} />
-      <NowCard now={now} />
+      <NowCard now={now} nowcast={nowcast} />
       <DaysCard fc={fc} />
+      <ModelsCard models={models} />
       <ForYou adv={adv} cards={cards} />
+      <ClimateCard climate={climate} />
       <p className="note center"><Icon name="sparkle" size={14} /> {t(lang, 'aiNote')}</p>
     </div>
   );

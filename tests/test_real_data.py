@@ -226,3 +226,29 @@ def test_stats_list_keyless_open_meteo_before_first_use(monkeypatch):
     with TestClient(app) as client:
         body = client.get("/api/stats").json()
     assert {s["name"]: s["live"] for s in body["sources"]}["Open-Meteo"] is True
+
+
+def test_sachet_read_is_shared_and_callers_get_copies(monkeypatch):
+    import asyncio
+    from backend.adapters import cap_adapter
+    calls = []
+
+    async def fake(urls):
+        calls.append(urls)
+        return [{"identifier": "a1", "severity": "ORANGE"}], "LIVE"
+
+    monkeypatch.setattr(config, "CAP_FEED_URLS", ["https://sachet.example/rss.xml"])
+    monkeypatch.setattr(cap_adapter, "_fetch_alerts_uncached", fake)
+    first, _ = asyncio.run(cap_adapter.fetch_alerts())
+    first[0]["relevance"] = {"district": "Hyderabad"}  # a caller annotating its copy
+    second, prov = asyncio.run(cap_adapter.fetch_alerts())
+    assert len(calls) == 1 and prov == "LIVE"
+    assert "relevance" not in second[0], "one district's annotations must not leak to the next"
+
+
+def test_quantified_rain_statement_gets_no_second_rain_lead():
+    fc = {"days": [{"rainfall": 0}, {"rainfall": 0.6}]}
+    te = "రేపు వర్షం పడుతుంది, 0.6 మిమీ.\n\nఅధికారిక హెచ్చరికలు లేవు."
+    assert chat._ensure_rain_lead("రేపు వర్షం పడుతుందా?", fc, te, "te") == te
+    en = "Light drizzle tomorrow: rain about 0.6 mm."
+    assert chat._ensure_rain_lead("Will it rain tomorrow?", fc, en, "en") == en

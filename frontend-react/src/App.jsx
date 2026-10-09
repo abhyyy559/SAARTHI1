@@ -5,6 +5,9 @@ import { LANGS, t } from './lib/i18n';
 import { stopSpeaking } from './lib/voice';
 import { Icon } from './components/Icons';
 import Setup, { LangPicker, PlacePicker, RoleGrid } from './components/Setup';
+import { SosButton } from './components/Sos';
+import { AutoSpeakToggle, PushToggle } from './components/Toggles';
+import { pushSync } from './lib/push';
 import Landing from './screens/Landing';
 import Today from './screens/Today';
 import Ask from './screens/Ask';
@@ -33,6 +36,9 @@ function Settings({ onClose }) {
         <PlacePicker onPicked={onClose} />
         <h3><Icon name="user" size={18} /> {t(lang, 'role')}</h3>
         <RoleGrid />
+        <h3><Icon name="bell" size={18} /> {t(lang, 'tabAlerts')}</h3>
+        <PushToggle />
+        <AutoSpeakToggle />
         <button type="button" className="btn-big" onClick={onClose}><Icon name="check" size={24} /> {t(lang, 'done')}</button>
       </div>
     </div>
@@ -45,7 +51,8 @@ export default function App() {
   const [loc, setLocState] = useState(() => readPref('loc', null));
   const [setupDone, setSetupDone] = useState(() => !!(readPref('loc') && readPref('persona')));
   const [tab, setTab] = useState(() => {
-    const v = new URLSearchParams(window.location.search).get('tab');
+    const p = new URLSearchParams(window.location.search);
+    const v = p.get('tab') || p.get('view'); // push taps open /?view=alerts
     return TABS.some((x) => x.id === v) ? v : 'today';
   });
   // landing | setup | app. First run opens on the landing; returning users
@@ -67,6 +74,9 @@ export default function App() {
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   useEffect(() => { stopSpeaking(); window.scrollTo(0, 0); }, [tab, view]);
+  useEffect(() => {
+    if (loc) pushSync({ district: loc.district, language: lang, persona: persona || 'general' });
+  }, [loc, lang, persona]);
 
   const ctx = useMemo(() => ({
     lang, setLang, persona: persona || 'general', personaChosen: !!persona, setPersona, loc, setLoc,
@@ -98,6 +108,7 @@ export default function App() {
           </button>
           <div className="top-right">
             {!online ? <span className="net-off" title={t(lang, 'offline')}><Icon name="offline" size={22} /></span> : null}
+            <SosButton />
             <button type="button" className="icon-btn lang-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'language')}>{langGlyph}</button>
             <button type="button" className="icon-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'settings')}><Icon name="gear" size={22} /></button>
           </div>
