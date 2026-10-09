@@ -90,15 +90,23 @@ Same-origin needs no FRONTEND_ORIGINS. See docs/IMD-KEY-ONBOARDING.md.
 
 ## 5. Run (one container serves API + PWA)
 
+Do NOT set WGPT_PORT: the app must stay on the default host port 8000 and
+Caddy owns 80/443 (it needs 80 free for the ACME challenge; proxying to
+:8000 while the app binds :80 is a guaranteed 502).
+
 ```bash
-WGPT_PORT=80 docker compose up -d --build
-sleep 8
-curl -s http://localhost/api/health
-curl -s http://localhost/api/sources | head -c 600; echo
+docker compose up -d --build
+for i in {1..60}; do
+  if curl -sf http://localhost:8000/api/health >/dev/null; then
+    echo "UP after ${i}0s"; break
+  fi
+  sleep 10
+done
+curl -s http://localhost:8000/api/sources | head -c 600; echo
 ```
 
 Expect /api/health 200 ok. For HTTPS (mic/geo/PWA need secure context)
-use Caddy reverse_proxy 127.0.0.1:8000 with WGPT_PORT=8000.
+use Caddy `reverse_proxy 127.0.0.1:8000`.
 
 ## 6. Capture the static egress IP (this is the IMD field)
 
