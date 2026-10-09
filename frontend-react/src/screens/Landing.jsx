@@ -32,6 +32,7 @@ export const NAV = [
   { id: 'today', key: 'tabToday', icon: 'partly' },
   { id: 'ask', key: 'tabAsk', icon: 'mic' },
   { id: 'alerts', key: 'tabAlerts', icon: 'bell' },
+  { id: 'map', key: 'tabMap', icon: 'globe' },
   { id: 'share', key: 'tabShare', icon: 'qr' },
 ];
 

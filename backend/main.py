@@ -15,6 +15,7 @@ from .utils.time import iso_now
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
                   push, notifications, aviation)
+from .api import map as map_api
 from .utils.logging import RequestLoggingMiddleware
 
 log = logging.getLogger("weathergpt.main")
@@ -42,14 +43,28 @@ async def lifespan(app: FastAPI):
     task = asyncio.create_task(alert_watcher.run_forever(interval, tick))
     log.info("alert watcher task started (tick=%ss, network=%ss)", tick, interval)
     warm = asyncio.create_task(_keep_sachet_warm())
+    map_warm = asyncio.create_task(_keep_map_warm())
     try:
         yield
     finally:
-        for t in (task, warm):
+        for t in (task, warm, map_warm):
             t.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await t
         log.info("alert watcher task stopped")
+
+
+async def _keep_map_warm(every_s: float = 600.0) -> None:
+    """The all-India alert map reads 36 state feeds (about 25 s cold): keep it
+    ready so the Map screen opens at once. Starts after the app is up."""
+    from .api import map as map_api
+    await asyncio.sleep(20)
+    while True:
+        try:
+            await map_api.map_alerts()
+        except Exception:  # noqa: BLE001
+            pass
+        await asyncio.sleep(every_s)
 
 
 async def _keep_sachet_warm(every_s: float = 150.0) -> None:
@@ -124,6 +139,7 @@ app.include_router(voice.router)
 app.include_router(location.router)
 app.include_router(sources.router)
 app.include_router(climate.router)
+app.include_router(map_api.router)
 app.include_router(advisory.router)
 app.include_router(v1.router)
 app.include_router(push.router)

@@ -61,6 +61,8 @@ export const api = {
   search: (text) => get(`/api/location/search?${q({ q: text })}`).then((d) => d.results || []),
   sources: () => get('/api/sources'),
   stats: () => get('/api/stats', 30000),
+  mapAlerts: () => get('/api/map/alerts', 60000),
+  mapGrid: () => get('/api/map/grid', 45000),
   models: (loc) => get(`/api/weather/models?${q({ lat: loc.lat, lon: loc.lon })}`, 30000),
   climate: (loc) => get(`/api/climate/trends?${q({ lat: loc.lat, lon: loc.lon })}`, 40000),
   marine: (loc) => get(`/api/weather/marine?${q({ district: loc.district, lat: loc.lat, lon: loc.lon })}`, 20000),

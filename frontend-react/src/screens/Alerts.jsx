@@ -55,14 +55,14 @@ export default function Alerts() {
       </div>
       <PushToggle />
       <h2 className="group"><Icon name="pin" size={18} /> {t(lang, 'yourDistrict')} · {loc.district}</h2>
-      {mine.length ? mine.map((a) => <AlertRow key={a.identifier || a.headline} a={a} />) : (
+      {mine.length ? <div className="alert-list">{mine.map((a) => <AlertRow key={a.identifier || a.headline} a={a} />)}</div> : (
         <div className={`alert-none tone-${d.verdict?.level === 'UNKNOWN' ? 'grey' : 'green'}`}>
           <Icon name={d.verdict?.level === 'UNKNOWN' ? 'question' : 'shield-ok'} size={40} />
           <p>{t(lang, `lv${d.verdict?.level === 'UNKNOWN' ? 'UNKNOWN' : 'LOW'}`)}</p>
         </div>
       )}
       <h2 className="group"><Icon name="globe" size={18} /> {t(lang, 'elsewhere')}{loc.state ? ` · ${loc.state}` : ''}</h2>
-      {state.length ? state.map((a) => <AlertRow key={a.identifier || a.headline} a={a} />) : (
+      {state.length ? <div className="alert-list">{state.map((a) => <AlertRow key={a.identifier || a.headline} a={a} />)}</div> : (
         <p className="muted pad">{t(lang, 'alertsNone')}</p>
       )}
     </div>

@@ -280,7 +280,7 @@ function ForYou({ adv, cards }) {
   const text = adv.data?.advisory;
   const list = cards.data?.cards || [];
   return (
-    <section className="card">
+    <section className="card for-you">
       <div className="card-head">
         <h2>{t(lang, 'forYou')}</h2>
         <Fresh {...adv} lang={lang} />
@@ -333,7 +333,7 @@ export default function Today() {
     speak(summary, lang, 'safety');
   }, [summary, warn.loading, lang, loc.district, level]);
   return (
-    <div className="screen">
+    <div className="screen today">
       <SafetyCard warn={warn} current={current} days={days} />
       {wantSea && fisher ? <SeaCard marine={marine} /> : null}
       <NowCard now={now} nowcast={nowcast} />

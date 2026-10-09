@@ -267,3 +267,36 @@ def test_marine_endpoint_reports_unavailable_never_calm(monkeypatch):
         body = client.get("/api/weather/marine", params={"lat": 19.81, "lon": 85.83}).json()
     assert body["marine"]["days"][0]["wave_height_max_m"] == 1.1
     assert "Not an INCOIS or IMD" in body["marine"]["note"]
+
+
+def test_map_alerts_are_placed_on_named_districts(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+    from backend.adapters import cap_adapter
+    from backend.api import map as map_api
+    iso = lambda h: (datetime.now(timezone.utc) + timedelta(hours=h)).isoformat()
+    monkeypatch.setattr(config, "CAP_FEED_URLS", ["https://sachet.example/rss_india.xml"])
+
+    async def fake(urls=None):
+        if urls and "rss_odisha" in urls[0]:
+            return [{"identifier": "o1", "severity": "ORANGE", "hazard": "Lightning", "expires": iso(3),
+                     "areaDesc": "Puri, Ganjam districts"},
+                    {"identifier": "o2", "severity": "RED", "hazard": "Flood", "expires": iso(-2),
+                     "areaDesc": "Cuttack"},
+                    {"identifier": "o3", "severity": "YELLOW", "hazard": "Rain", "expires": iso(5),
+                     "areaDesc": "coastal belt"}], "LIVE"
+        return [], "LIVE"
+
+    monkeypatch.setattr(cap_adapter, "fetch_alerts", fake)
+    with TestClient(app) as client:
+        body = client.get("/api/map/alerts").json()
+    assert body["status"] == "ok" and body["alerts"] == 2, body  # the expired one is dropped
+    named = {(p["district"], p["severity"]) for p in body["points"] if not p["approx"]}
+    assert ("Puri", "ORANGE") in named and ("Ganjam", "ORANGE") in named
+    approx = [p for p in body["points"] if p["approx"]]
+    assert len(approx) == 1 and approx[0]["state"] == "Odisha", "unnamed area sits at the state centre, flagged"
+
+
+def test_map_alerts_off_when_sachet_is_off():
+    with TestClient(app) as client:
+        body = client.get("/api/map/alerts").json()
+    assert body["status"] == "unavailable"

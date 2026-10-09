@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppCtx, readPref, useApp, writePref } from './lib/appState';
 import { useOnline } from './lib/useData';
 import { LANGS, t } from './lib/i18n';
@@ -13,11 +13,16 @@ import Today from './screens/Today';
 import Ask from './screens/Ask';
 import Alerts from './screens/Alerts';
 import Share from './screens/Share';
+import { Skeleton } from './components/ui';
+
+// Leaflet is ~150 KB: load the Map screen only when it is opened.
+const MapScreen = lazy(() => import('./screens/MapScreen'));
 
 const TABS = [
   { id: 'today', icon: 'home', key: 'tabToday', View: Today },
   { id: 'ask', icon: 'mic', key: 'tabAsk', View: Ask },
   { id: 'alerts', icon: 'bell', key: 'tabAlerts', View: Alerts },
+  { id: 'map', icon: 'globe', key: 'tabMap', View: MapScreen },
   { id: 'share', icon: 'qr', key: 'tabShare', View: Share },
 ];
 
@@ -127,7 +132,9 @@ export default function App() {
         </header>
         {!online ? <div className="offline-bar"><Icon name="offline" size={18} /> {t(lang, 'offline')}</div> : null}
         <main key={`${tab}-${loc.district}`}>
-          <Active />
+          <Suspense fallback={<div className="screen"><Skeleton h={420} /></div>}>
+            <Active />
+          </Suspense>
         </main>
         <nav className="tabs" aria-label="WeatherGPT">
           {TABS.map((x) => (

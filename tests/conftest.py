@@ -71,6 +71,12 @@ def _clear_module_caches():
         except Exception:
             pass
         try:
+            from backend.api import map as _map
+            _map._alerts_cache.update(at=0.0, value=None)
+            _map._grid_cache.update(at=0.0, value=None)
+        except Exception:
+            pass
+        try:
             from backend.adapters import marine_adapter as _mar
             _mar._cache.clear()
         except Exception:
