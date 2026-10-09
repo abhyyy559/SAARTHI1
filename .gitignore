@@ -40,3 +40,9 @@ delivery_ledger.json
 demo_alerts.json
 notification_log.json
 push_subscriptions.json
+
+# Local helper binaries (cloudflared for the HTTPS demo tunnel).
+tools/
+
+# Demo-day logs (scripts/demo-https.ps1).
+logs/

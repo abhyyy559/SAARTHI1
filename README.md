@@ -72,8 +72,11 @@ the true source.
 
 ## Docs
 
+- [docs/DEMO-READY.md](docs/DEMO-READY.md) — demo-day checklist: HTTPS for phones in one command, phone test, what to claim
+- [docs/DEMO-SCRIPT.md](docs/DEMO-SCRIPT.md) — the 6-minute stage demo, step by step
+- [docs/jury-questions.md](docs/jury-questions.md) — jury questions with answers true of today's app
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how it is built: sources, request flows, files
 - [docs/project-qa.md](docs/project-qa.md) — everything about the project, Q&A form
-- [docs/jury-questions.md](docs/jury-questions.md) — anticipated jury questions + sharp answers
 - [DEPLOY.md](DEPLOY.md) — Render + Vercel deployment
 
 ## Repo layout

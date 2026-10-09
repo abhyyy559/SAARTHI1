@@ -1,5 +1,8 @@
 # WeatherGPT — Production & API-Key Guide
 
+> Demo day (HTTPS address for phones in one command, phone checklist):
+> see [docs/DEMO-READY.md](docs/DEMO-READY.md).
+
 ## 0. Persistent storage (DATABASE_URL) — Round 2
 
 Every store that must survive a deploy or restart now goes through one layer
@@ -7,7 +10,6 @@ Every store that must survive a deploy or restart now goes through one layer
 
 | Store | Survives a redeploy? |
 |---|---|
-| Demo alerts (Admin panel) | with DATABASE_URL: yes |
 | Notification log (Notification Center) | yes |
 | Delivery ledger + coverage | yes |
 | Push subscriptions | yes |
@@ -23,8 +25,6 @@ Every store that must survive a deploy or restart now goes through one layer
 - **Render free tier:** create a PostgreSQL instance, copy the *Internal
   Database URL* into the service env as `DATABASE_URL`, redeploy. Verify via
   `GET /api/v1/system/status` -> `"database": {"backend": "postgres", ...}`.
-- The P2P relay store (`emergency_store.json`) stays file-based on purpose: it
-  models device-local storage.
 
 ## 1. API keys: where they live, where to get them
 
@@ -35,12 +35,11 @@ to the frontend). After adding a key, restart the server and check
 | Env var | Get it here | Steps | Unlocks |
 |---|---|---|---|
 | `OWM_API_KEY` | https://openweathermap.org → **Sign Up** (free) | Confirm email → **API keys** tab → copy default key (free tier: 60 calls/min) | Second-opinion disagree panel |
-| `LLM_API_KEY` | https://console.groq.com → **API Keys** → Create key | Paste into `.env` (model defaults to `qwen/qwen3.8-27b`; override with `LLM_MODEL`) | Real conversational answers in EN/HI/TE — without it the app uses the rule-based template |
+| `LLM_API_KEY` | https://console.groq.com → **API Keys** → Create key | Paste into `.env` (model defaults to `openai/gpt-oss-120b`, spill-over `LLM_FALLBACK_MODEL=openai/gpt-oss-20b`) | Real conversational answers in EN/HI/TE — without it the app uses the rule-based template |
 | `DATAGOV_API_KEY` | https://data.gov.in → **Register/Login** | **My Account → API** → Generate token | Official records |
 | `DATAGOV_RESOURCE_ID` | same site | Search dataset (e.g. “IMD rainfall district”) → open it → **API** tab → copy the `resource_id` from the sample URL (`…/resource/<id>`) | Pairs with the key above |
 | `SARVAM_API_KEY` | https://dashboard.sarvam.ai → **Sign up** | **API Keys** → create subscription key (check current free credits on the site) | Server Telugu/Hindi/English STT (`saarika`) + TTS (`bulbul`); without it the app uses browser voice + shows the fallback badge |
 | `CAP_FEED_URL` | NDMA-Sachet ops centre / state emergency cell / IMD WIS2 discovery | Paste the CAP XML/JSON feed URL when issued | Live emergency alerts → GIS intersection |
-| `EMERGENCY_KEY` | **already generated** in `.env` | Rotate anytime: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` | E2E encryption of emergency packets |
 
 No key today? Everything real still works keyless (Open-Meteo, ERA5, NWP models, map).
 
@@ -72,13 +71,13 @@ require secure contexts).
       (`git check-ignore .env` must print the path)
 - [ ] `/api/health` → 200, `/api/sources` honest, `/api/v1/system/status` → LIVE/LIMITED
 - [ ] Logs show request IDs; errors return honest UNAVAILABLE, never stack traces
-- [ ] `wgpt-data` volume backed up (cache JSON, emergency inbox, community reports)
+- [ ] `wgpt-data` volume backed up (cache JSON and the `store/` folder)
 - [ ] CORS tightened in `backend/main.py` if frontend is hosted separately
 - [ ] Postgres+PostGIS migration applied from `migrations/001_init.sql` when traffic grows
-- [ ] Jury path rehearsed from `demo/jury-script.md` on the deployed URL
+- [ ] Jury path rehearsed from `docs/DEMO-SCRIPT.md` on the deployed URL
 
 ## 5. Scaling notes
 
-Stateless except three JSON stores (cache, emergency inbox, reports) — all keyed,
+Stateless except the JSON cache and `store/` (push subscriptions, watcher state, notification log) — all keyed,
 deduplicated and timestamped, so they migrate cleanly to Postgres (schema ready).
-WebSocket + polling both supported; prefer polling behind cheap hosting.
+Chat streams NDJSON over plain HTTPS; no WebSocket is needed.

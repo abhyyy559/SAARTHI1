@@ -1,85 +1,92 @@
-# SAARTHI — Live Demo Choreography (Round 2 Stage Script)
+# WeatherGPT — Stage demo (about 6 minutes)
 
-**Total: ~6 minutes. Every step uses the real pipeline — no mocks.**
+Everything below is the real app on live data: no admin panel, no seeded
+scenarios, no simulated steps. What you show depends on today's weather and
+today's official alerts, so check them 10 minutes before (step 0).
 
-Pre-demo setup (2 min before):
-1. Backend: `DEMO_MODE=true` running. Frontend open at `?view=home`.
-2. Admin panel: hit **Reset demo** so the stage starts clean.
-3. District: set to **Kakinada** (the cyclone scenario's district) — or seed the
-   thunderstorm scenario for Hyderabad if you prefer your home district.
-4. Have a second phone/browser tab ready for the P2P hop story (optional).
+**Hook (say it first):** "Every weather app gives you a number. We give you a
+decision, in your language, from official sources, even with no internet."
 
----
+## 0. Ten minutes before
 
-## Act 1 — The hook (45 sec)
+1. `powershell -ExecutionPolicy Bypass -File scripts\demo-https.ps1` and put
+   the printed QR on the projector (see `docs/DEMO-READY.md`).
+2. On the laptop, open the HTTPS address. On the phone, scan the QR.
+3. Open **Map → Alerts** and note one district with an official alert today
+   (orange/red dots). You will ask about it in step 3. If there are none,
+   use "Will it rain in Patna tomorrow?" with any city.
+4. Phone: Telugu, your district, role *Farmer*. Laptop: English.
 
-> "While researching this project, the team found a current warning telling
-> fishermen not to go to sea. It existed on an official portal — and the team
-> itself had no idea it was there. There is no cyclone today — but what if
-> there were? This is the gap SAARTHI closes."
+## 1. First run, for someone who cannot read (45 s) — laptop
 
-Open **Home**. Point at the situation banner: *"Warnings first, then answers."*
+- Landing → **Get Started** → pick a language (it speaks the language name),
+  **Find my place**, pick a role from pictures.
+- Say: "Three taps, all pictures. Nothing is assumed — no default place, no
+  default role."
 
-## Act 2 — The alert lifecycle (2 min) — `?view=admin`
+## 2. Today: one colour, one picture, one button (60 s)
 
-1. Click **🌀 CYCLONE** (Kakinada · RED). Say: *"One tap. No slides — watch the
-   real system."*
-2. Within seconds: the **PRE-ALERT** notification fires. Flip to
-   **Notifications** — show the unread badge and the timeline entry.
-3. ~40s later it goes **ACTIVE**. Flip to **Home** — the alert card is there
-   with the ACTIVE chip. Flip to **Alerts** — point at the lifecycle stepper
-   rail (detected → issued → live → resolved).
-4. Back in **Admin**, hit **Update** — new notification. Hit **Extend** — new
-   notification. Say: *"Every transition is the real pipeline: store →
-   notify → push → ledger. If a step didn't fire, you'd see it missing here."*
-5. Open the alert's **History** — the full timeline.
+- Point at the big safety card: colour + icon = the official verdict. Tap
+  **Listen**.
+- Point at the chips under it: *Checked: NDMA SACHET*, *IMD not connected*.
+  Say: "We say exactly what we checked. If nothing could be checked the card
+  is grey — never green. Absence of data is never shown as safety."
+- Scroll: weather now, next 3 days, **Do weather models agree?** (GFS,
+  ECMWF, GEM, ICON — the NWP feature), **For you** (role-specific guidance,
+  general not official), **20 years at this place** (ERA5 climate).
 
-## Act 3 — Offline + P2P (1.5 min) — the differentiator
+## 3. Ask by voice, in Telugu (90 s) — phone
 
-1. On the live cyclone alert, click **📡 P2P relay**. The hop story appears:
-   *you → relay-a → delivered*, labelled **SIMULATED** (honest badge — the jury
-   will respect this).
-2. Say: *"Severe weather knocks out the network exactly when warnings matter
-   most. Our degradation ladder: cloud → cache → on-device rules → P2P relay
-   → sync. The alert hops phone-to-phone with no internet."*
-3. Toggle **Simulate offline** (topbar cloud icon). Reload **Home** — the cached
-   verdict and alert snapshot still render, stamped **CACHED**, never presented
-   as fresh. Say: *"Absence of data is never shown as safety. It says what it
-   can't confirm."*
+- Tap the mic, say: "రేపు వర్షం పడుతుందా?" (Will it rain tomorrow?). The answer
+  is spoken back in Telugu.
+- Type or say a question about another place: "Will it rain in Patna
+  tomorrow?" — the bubble is labelled *Patna, Bihar*. Then: "What about
+  tomorrow there?" — it remembers the place.
+- Ask "Was last year hotter than usual here?" — answered from the 20-year
+  record, with the years it compared.
+- Say: "The AI only phrases facts we fetched. A validator blocks invented
+  warnings and numbers, and rain under 2.5 mm is called very light, as IMD
+  defines it — never 'yes, it will rain'. Each answer says what it is based on."
 
-## Act 4 — Ask + Advisory (1 min) — `?view=ask`, `?view=advisory`
+## 4. Alerts and the map (60 s) — laptop
 
-1. Ask: *"Is there a cyclone warning for Kakinada?"* — the answer cites the
-   alert with provenance chips (source, when fetched).
-2. Ask: *"What should I do?"* — the chat **refuses to give advice** and points
-   to Advisory. Flip to **Advisory**: persona-tuned guidance (fisherman in
-   Kakinada gets sea guidance; the same persona in Hyderabad is told sea
-   warnings don't apply there).
-3. Say: *"The AI explains. It never invents a warning, never changes a
-   severity, never advises in chat. Severity is owned by the backend — the
-   frontend is forbidden from deriving it, and tests enforce that."*
+- **Alerts** tab: your district first, then elsewhere in the state, worst
+  first, each with expiry time and the issuing authority. Tap **Explain** on
+  one: the chatbot explains it in simple words.
+- **Map**: all 36 state feeds as a heatmap; switch to **Rain tomorrow** and
+  **Heat tomorrow**; tap **Listen** for the spoken summary with the nearest
+  alert and its distance.
 
-## Act 5 — Trust (30 sec) — `?view=trust`
+## 5. No internet, no app (90 s) — the differentiator
 
-Show the source status cards: every source reports its own status verbatim —
-LIVE, CACHED, DEMO, UNCONFIGURED. *"Nothing is labelled LIVE unless it is.
-   In our prototype the IMD key wasn't available on a Sunday — so the IMD
-   adapter says DEMO, honestly, instead of pretending."*
+- Phone: **Share** → show the QR to the audience. Anyone scans it with a
+  normal camera: the page opens with the snapshot and its time — no app,
+  no login.
+- Switch to **Text: no internet needed**: a camera shows the words even with
+  no network at all.
+- Second phone (or the laptop camera): **Receive from a phone** → scan → it
+  appears under *Received* with **Pass it on** (phone to phone, up to 5 hops).
+- Phone to airplane mode: reopen Today — every card says *Saved · n min ago*.
+  Ask a question — it answers from saved data and sends it when the network
+  is back.
+- Say: "Disasters cut networks exactly when warnings matter. Saved data
+  always shows its age; it is never passed off as live."
 
-## Close (15 sec)
+## 6. Close (30 s)
 
-> "Four things, live: the alert lifecycle, notifications, offline survival,
-> and phone-to-phone relay. The production design adds the IMD API, WIS 2.0
-> and PostgreSQL — the prototype proves the trust architecture with zero
-> infrastructure."
+- Tap **SOS**: 112 / 108 / 1077 / 1070 through the dialler, and *Send my
+  location* by SMS — both work without internet.
+- Close: "It's not a chatbot guessing at weather — it's a decision engine
+  built on verified data, in the user's own language, and it keeps working
+  when the network doesn't."
 
-End on the **Admin → Reset demo** for a clean handoff.
+## If something goes wrong
 
----
-
-## If something goes wrong on stage
-- Backend unreachable → the app shows "Reconnecting…" and serves cached data;
-  narrate it as the offline story (it's a feature, not a bug).
-- Scenario already seeded → Admin → Reset demo, re-seed.
-- Push blocked in browser → the notification center still shows everything;
-  say "browser blocked system push, the in-app trail is the source of truth."
+- **Plain answer ending in "WeatherGPT Risk Interpretation for you…":** the LLM is
+  rate-limited; say "this is our grounded fallback — same facts, no AI" and
+  ask again in 30 s.
+- **IMD shows Not reachable:** true — IMD has not activated our key. "Every
+  chain tries IMD first; SACHET carries the official alerts meanwhile."
+- **Tunnel down:** rerun the script, or present from the laptop.
+- **No alert anywhere today:** good news; show the green card and explain that
+  grey would mean "could not check".

@@ -1,238 +1,158 @@
-# SAARTHI — Complete Architecture & Working Guide
+# WeatherGPT — Architecture (as built, 9 Oct 2026)
 
-> **SAARTHI** (built on the WeatherGPT prototype) is a **public-safety weather
-> verification layer** for India. It sits between official meteorological data
-> (IMD, NDMA-SACHET CAP alerts, global models) and people — validating,
-> locating, and explaining warnings, never inventing them.
+WeatherGPT (repo: SAARTHI) answers "what does the weather mean for me?" in
+English, Hindi and Telugu, by voice or text, from official and model data,
+and keeps working with poor or no internet. It is a React PWA in front of one
+FastAPI service.
 
----
+Rules the code enforces (tests fail if they break):
 
-## 1. The working analogy — how it all fits together
-
-Think of SAARTHI as a **newsroom with a strict fact-checking desk**, built for
-weather emergencies:
-
-| Newsroom role | SAARTHI equivalent | What it does |
-|---|---|---|
-| Wire services | **Adapters** (`backend/adapters/`) | Fetch raw data from IMD, SACHET-CAP, Open-Meteo, data.gov.in, OpenWeatherMap. Each adapter speaks one source's protocol and normalizes it. |
-| Assignment desk | **Alert service** (`backend/services/alert_service.py`) | Decides which alerts matter for *your district* by matching alert geography against the district gazetteer. |
-| Fact-check desk | **Verdict service** (`backend/services/verdict_service.py`) | Produces the single official safety verdict. **Severity is server-owned**: the frontend is forbidden from deriving or recolouring it (enforced by tests). |
-| Standards editor | **Response validator** (`backend/services/response_validator.py`) + LLM rules | The AI may only explain; it may never invent a warning, change a severity, or give advice in chat. Advice lives only in the Advisory section. |
-| Printing press | **Delivery service** (`backend/services/delivery_service.py`) + **Push service** (`backend/services/push_service.py`) | Fan-out: in-app notifications, notification log, delivery ledger, and Web Push (VAPID) even when the app is closed. |
-| Stringers in the field | **P2P / community layer** | Phones relay alerts to each other (Bluetooth-style demo via `P2PDemo`), so warnings survive network loss. Community observations are always labelled COMMUNITY, never official. |
-| The front page | **Frontend** (`frontend-react/`) | Eight views: Home (situation), Ask (verified Q&A), Alerts, Notifications, Advisory (guidance), Admin (demo console), Trust (sources & how-it-works). |
-| The archive | **Cache + stores** (`backend/services/cache_service.py`, `demo_alert_store.py`, `store_bridge.py`) | Every adapter result is cached with a timestamp; stale data is labelled CACHED/STALE, never presented as fresh. |
-
-**The golden rule, end to end:** *absence of data is never rendered as safety.*
-If a source is unreachable, the UI says "cannot confirm" — it never says "all clear."
+1. **No number without a source.** The server fetches every fact; the language
+   model only phrases them and never computes.
+2. **Severity is the server's.** One function (`verdict_service.build_verdict`)
+   decides the level; the app only colours it. Unknown is grey, never green.
+3. **Absence of data is not safety.** An unreachable warning service gives
+   "could not check", never "no warning".
+4. **Saved data shows its age.** Nothing saved is shown as live.
 
 ---
 
-## 2. System map
+## 1. System map
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        FRONTEND (React + Vite)                   │
-│  Home · Ask · Alerts · Notifications · Advisory · Admin · Trust   │
-│  store.jsx (view/lang/persona/location/mode) · i18n (en/hi/te)    │
-│  Voice: mic → STT → answer → TTS replay · PWA + service worker   │
-└───────────────▲───────────────────────────────▲─────────────────┘
-                │ REST + WebSocket              │ Web Push (VAPID)
-┌───────────────┴───────────────────────────────┴─────────────────┐
-│                     BACKEND (FastAPI, :8003)                     │
-│  ┌─ API routers ───────────────────────────────────────────┐    │
-│  │ /api/weather  /api/chat  /api/voice  /api/advisory        │    │
-│  │ /api/v1/* (warnings, system status)  /api/demo/*          │    │
-│  │ /api/notifications  /api/push  /api/sources  /ws/warnings │    │
-│  └──────────────────────────┬──────────────────────────────┘    │
-│  ┌─ Services ────────────────┴──────────────────────────────┐    │
-│  │ verdict · alert · advisory · notification · delivery      │    │
-│  │ llm (Groq) · rag · risk · impact · gis · climate (ERA5)   │    │
-│  │ location · district · emergency (SOS) · cache · demo store│    │
-│  └──────────────────────────┬──────────────────────────────┘    │
-│  ┌─ Adapters ────────────────┴──────────────────────────────┐    │
-│  │ cap (NDMA-SACHET) · imd · open-meteo · govdata · owm      │    │
-│  │ wis2 · stt · tts          ▲ each reports LIVE/CACHED/     │    │
-│  └──────────────────────────┼──────────────────────────────┘    │
-└──────────────────────────────┼──────────────────────────────────┘
-                               │ HTTP / CAP-XML / RSS / JSON
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-        NDMA-SACHET        IMD / models    data.gov.in …
-        (CAP alerts)    (weather, NWP)      (bulletins)
+ Phone / browser (PWA, frontend-react)                 FastAPI (backend/)
+ ┌──────────────────────────────────────┐   HTTPS   ┌─────────────────────────────────────────┐
+ │ Landing · Setup · Today · Ask ·       │ ───────▶ │ api/  weather · v1 · chat · voice ·     │
+ │ Alerts · Map · Share · SOS · Settings │ ◀─────── │       location · advisory · climate ·   │
+ │                                       │  JSON /  │       map · push · sources · ack        │
+ │ lib/cache + useData: saved copies     │  NDJSON  │ services/  verdict · alert · chat path  │
+ │ sw.js: offline shell + push           │          │       llm · validator · advisory · push │
+ │ share/relay: snapshot QR, no server   │          │ adapters/  CAP(SACHET) · Open-Meteo ·   │
+ └──────────────────────────────────────┘          │       IMD · OWM · marine · Sarvam       │
+          ▲  lock-screen push (VAPID)               └───────┬─────────────────────────────────┘
+          └──────────────── alert_watcher ◀─────────────────┘
+                                                   ▼ outgoing (one shared TLS context, utils/http.py)
+      NDMA SACHET (36 state CAP feeds) · Open-Meteo (forecast, nowcast, marine, models, ERA5 archive)
+      IMD API (key not yet accepted) · OpenWeatherMap (backup) · Sarvam (STT/TTS) · Groq (LLM)
 ```
 
----
+The built app (`frontend-react/dist`) is served by FastAPI at `/`, so one
+address serves the app and the API (`scripts/demo-https.ps1`, `Dockerfile`).
 
-## 3. The three modes
+## 2. Data sources
 
-| Mode | Weather from | Warnings from | Used for |
+| Source | Used for | Labelled as | Notes |
 |---|---|---|---|
-| **DEMO** | Scripted fixtures | Scripted fixtures + demo alert store | Stage demos, no internet needed |
-| **HYBRID** | Live adapters (Open-Meteo/IMD) | Live SACHET-CAP + demo overlays | Real-data testing |
-| **IMD** | Official-only (IMD adapters) | Live SACHET-CAP, reports UNAVAILABLE rather than backfilling | Production with API access |
+| NDMA SACHET CAP RSS, all 36 states/UTs | Official alerts, the verdict, the map | Official | Keyless. Per-feed cache 3 min; the state feed is shared by every user in that state. |
+| IMD API | Tried first for weather and warnings | Official | Key + whitelisted IP, still rejected by IMD; a circuit breaker skips it for 10 min after a rejection. |
+| Open-Meteo forecast / nowcast | Now, next 3 days, next 3 hours | Model forecast | Best-match NWP models for the point. |
+| Open-Meteo models | "Do weather models agree?" | Model forecast | GFS, ECMWF IFS, GEM, ICON; rainy day = 2.5 mm (IMD). |
+| Open-Meteo marine | Sea card (coast, fishers) | Model, "not an INCOIS/IMD sea warning" | Wave height, gusts. |
+| Open-Meteo archive (ERA5) | "20 years at this place", climate questions | Reanalysis | Complete years only; normal = all but the last 5 years. |
+| OpenWeatherMap | Backup weather | Backup | Off unless `OWM_API_KEY` is set. |
+| GeoNames ADM2 + surveyed TG/AP list | 763 districts, coast flags, search | — | CC BY 4.0. |
+| Sarvam | Speech to text (`saarika`), text to speech (`bulbul`) | — | Browser speech is the fallback. |
+| Groq | Phrasing answers | "AI explains, never makes up warnings" | `openai/gpt-oss-120b`, spill-over `openai/gpt-oss-20b` on HTTP 429. |
 
-P2P is **not** a source mode — it is a separate resilience layer (simulated
-device-to-device alert relay, labelled "Demo only. Simulated." in the UI) that
-rides on top of any mode.
+## 3. Main request flows
 
-The mode banner names the sources actually carrying the answer — "HYBRID"
-alone tells a fisherman nothing. Source mode can be switched live from the UI
-(`POST /api/mode`); demo-only routes return **403** outside demo mode.
+### Today screen (each card is its own request, saved on the phone)
 
----
-
-## 4. Alert lifecycle (the Round-2 story)
-
-Demo/official alerts move through a state machine — this is the product's
-centrepiece, driven live from the **Admin console** (`?view=admin`):
-
-```
-UPCOMING → PRE-ALERT → ACTIVE → UPDATED ─┬─→ EXTENDED ─→ ENDED
-                                         └→ (update loop)   ↘
-                                                              CANCELLED
-```
-
-- Every transition fires the **same pipeline** a real alert would travel:
-  demo store → push → notification log → delivery ledger. The Admin panel is
-  not a mock — if a button moved state without a notification, the
-  notification centre would visibly miss it.
-- Each transition is recorded in the alert's **history timeline**, visible on
-  the admin row and the alert details view.
-- Live alerts (ACTIVE/UPDATED/EXTENDED) can be **relayed over P2P** and
-  **re-notified**; ENDED/CANCELLED alerts drop off Home automatically.
-
----
-
-## 5. Backend deep-dive
-
-### 5.1 API routers (`backend/api/`)
-| Router | Prefix | Purpose |
+| Card | Endpoint | Backend |
 |---|---|---|
-| `weather.py` | `/api/weather` | Current weather + forecast (multi-source) |
-| `chat.py` | `/api/chat` | Ask endpoint — grounded answers with provenance |
-| `voice.py` | `/api/voice` | Speech-to-text in, text-to-speech out (10 MB / 2,000-char limits) |
-| `advisory.py` | `/api/advisory` | Persona guidance (farmer/fisher/driver/general) — the ONLY place advice is generated |
-| `v1.py` | `/api/v1` | Warnings, warning detail, system status |
-| `demo_alerts.py` | `/api/demo` | Demo alert CRUD + lifecycle actions (demo mode only) |
-| `notifications.py` | `/api/notifications` | Notification log + unread counts + acknowledgement |
-| `push.py` | `/api/push` | Web Push subscriptions (VAPID) |
-| `sources.py` | `/api/sources` | Adapter status strip data (LIVE/CACHED/DEMO/ERROR/UNCONFIGURED…) |
-| `climate.py` | `/api/climate` | ERA5 20-year trends — context, never a warning |
-| `location.py` | `/api/location` | District resolution (GPS → district gazetteer) |
-| `ack.py` | `/api` | Alert acknowledgement receipts |
+| Safety verdict | `GET /api/v1/warnings` | `alert_service.gather_alerts` (SACHET, matched to the district by name and area) + `imd_service` → `verdict_service.build_verdict` (level, hazard, `checked_sources`, `unchecked_sources`) |
+| Now / next days | `GET /api/v1/weather/current`, `/forecast` | `api/weather.py`: IMD → Open-Meteo → OpenWeatherMap → file cache, 5-min front cache |
+| Next 3 hours | `GET /api/weather/nowcast` | Open-Meteo |
+| Sea | `GET /api/weather/marine` | `adapters/marine_adapter.py` |
+| Models | `GET /api/weather/models` | `services/nwp_service.py` |
+| For you | `GET /api/v1/advisories`, `GET /api/advisory/cards` | `advisory_service` (role rules from the verdict + weather), `advisory_cards_service` |
+| 20 years | `GET /api/climate/trends` | `climate_service` (ERA5), 12-h cache |
 
-Plus `GET /api/health`, `GET/POST /api/mode`, and `WS /ws/warnings` (live push).
+### Ask (`POST /api/chat/stream`, NDJSON: `meta`, `token`…, `final?`, `done`)
 
-### 5.2 Key services (`backend/services/`)
-- **`verdict_service.py`** — owns severity. The single official verdict per
-  district; the frontend renders it verbatim.
-- **`alert_service.py`** — gathers alerts from adapters, geo-matches to
-  districts, applies the honesty policy (unavailable ≠ safe).
-- **`advisory_service.py`** — persona-based preparedness guidance. Strictly
-  separated from chat: the LLM system prompt forbids advice in chat and
-  redirects to Advisory.
-- **`llm_service.py`** — Groq (`openai/gpt-oss-120b`); invalid models degrade
-  visibly to a grounded fallback instead of HTTP 500.
-- **`rag_service.py`** — retrieval grounding for chat answers.
-- **`notification_service.py` / `delivery_service.py` / `push_service.py`** —
-  the fan-out pipeline + delivery ledger + VAPID web push.
-- **`demo_alert_store.py`** — the demo alert state machine + history.
-- **`cache_service.py`** — TTL cache; stale reads are labelled, never silent.
-- **`risk_service.py`, `impact_service.py`** — risk assessment ("WeatherGPT
-  view — not an IMD rating") and impact estimation.
-- **`gis_service.py`, `location_service.py`, `district_service.py`** — warning
-  geography, GPS→district, Telangana district gazetteer (incl. TGiCCC acronym
-  expansion: HYD→Hyderabad, KMR→Karimnagar…).
-- **`emergency_service.py`** — SOS flow.
-- **`nwp_service.py`, `climate_service.py`** — multi-model comparison, ERA5 trends.
-- **`translation_service.py`, `stt/tts providers`** — hi/te + voice.
+1. `place_parser.asked_place`: a district named in the question ("in Patna",
+   "patna mein", Telugu/Hindi city names) or in the previous question for a
+   short follow-up; exact names only. Otherwise the saved place.
+2. Parallel fetch: current, forecast, IMD warning, SACHET alerts → verdict.
+3. Evidence: facts with units, IMD rain category per day, the place asked
+   about, earlier questions (context only), and for climate questions the ERA5
+   block.
+4. Answer cache: same question + place + data within 10 min → reuse.
+5. LLM (Groq) phrases the evidence; on 429 the second model; on failure the
+   grounded template (`llm_service._template_answer`, all three languages).
+6. Checks: `response_validator.validate` (severity escalation, invented
+   percentages, unverified warnings, false all-clear), language script check,
+   rain lead (IMD categories), inland-sea lead, no yes/no on safety questions.
 
-### 5.3 Adapters (`backend/adapters/`)
-Each adapter normalizes one source and reports its own status verbatim to
-`/api/sources` (the UI renders it unedited: LIVE, CACHED, DEMO, READY,
-UNCONFIGURED, OFFLINE, ERROR):
+### Alerts, map, share
 
-- **`cap_adapter.py`** — NDMA-SACHET CAP XML/RSS. Parses the CAP §9 field set;
-  garbage payloads (login pages, WAF blocks) count as *failed feeds*, never
-  "0 active alerts". All feeds failing + no cache → honest ERROR.
-- **`imd.py` / `imd_service.py`** — IMD data (needs API key — requested).
-- **`openmeteo_adapter.py`, `owm_adapter.py`, `govdata_adapter.py`** — model
-  and bulletin sources. **`wis2_adapter.py`** — WMO WIS 2.0 feed.
+- **Alerts** reuses `/api/v1/warnings`: your district's alerts, then the rest
+  of the state, in force only, worst first. *Explain* sends the alert to Ask.
+- **Map**: `GET /api/map/alerts` (all 36 feeds, placed on the districts each
+  alert names, or the state centre marked approximate; 15-min cache) and
+  `GET /api/map/grid` (Open-Meteo multi-point rain/heat for tomorrow; 1-h
+  cache). Leaflet + OpenStreetMap tiles.
+- **Share** never calls the server: the snapshot is compressed into the link
+  after `#` (`lib/share.js`), which browsers never send to a server. A text
+  QR carries plain words. `lib/relay.js` stores codes scanned in the app and
+  passes them on, up to 5 hops.
 
----
+### Push alerts
 
-## 6. Frontend deep-dive (`frontend-react/`)
+`POST /api/push/subscribe` stores the push endpoint with district, state,
+language and role (no coordinates, no identity). `services/alert_watcher.py`
+runs every 5 minutes per subscribed district + state, computes the same
+verdict, and on start / escalate / update / end sends one push per phone in
+its own language (`push_service.broadcast`), logs it
+(`notification_service`) and records delivery (`delivery_service`).
+`/api/ack` and `/api/coverage` hold acknowledgement counts (no screen yet).
 
-### 6.1 Views (`src/views.jsx`, routed by `store.jsx` `?view=`)
-| View | Route | Purpose |
-|---|---|---|
-| Home | `home` | Situation dashboard: connection strip, safety verdict hero, active alerts, weather strip, action tiles, recent notifications |
-| Ask | `ask` | Verified Q&A — facts only, every fact carries provenance |
-| Alerts | `alerts` | Official warnings in full + SOS / resilient network |
-| Notifications | `notifications` | Alert lifecycle trail + acknowledgement |
-| Advisory | `advisory` | Persona guidance (the only place advice appears) |
-| Advisor | `advisor` | Legacy advice view (kept for deep links) |
-| Admin | `admin` | **Demo console** — seed scenarios, drive the alert lifecycle, relay via P2P, resend notifications, authority & coverage dashboards |
-| Trust | `trust` | Source statuses, GIS/WIS 2.0 explainer, safety architecture |
-| Details / Sources | `?view=details`, `?view=sources` | Deep-link-only views |
+### Background tasks (started in `main.py`)
 
-### 6.2 State (`src/store.jsx`)
-Single `AppProvider`: `view`, `lang` (en/hi/te), `persona`
-(fisherman/farmer/driver/general), `loc` (district/lat/lon), `sourceMode`,
-`netState`, `toast`, theme, notification + offline-sim toggles. Deep links via
-`?view=` (whitelist must match the `VIEWS` registry in `App.jsx`).
+Alert watcher; SACHET warm-up every 150 s; map warm-up every 10 min; demo
+places (`WARM_DISTRICTS`) warm-up every 4 min.
 
-### 6.3 Honesty architecture (enforced, not aspirational)
-- Chat is **facts-only**; the LLM system prompt bans advice there.
-- Severity comes from `warn.verdict` (backend) — `format.js` contains no
-  severity mapping; tests fail the build if one creeps back in.
-- Unavailable services render "cannot confirm", never "all clear".
-- One broken view can't take the console down (`Boundary` per view, keyed).
-- Provenance labels (LIVE/CACHED/DEMO/COMMUNITY/UNAVAILABLE) render verbatim.
+## 4. Frontend (`frontend-react/`)
 
----
+| Screen | File |
+|---|---|
+| Landing (video backdrop, live numbers from `/api/stats`) | `screens/Landing.jsx` |
+| Setup: language, place, role (pictures) | `components/Setup.jsx` |
+| Today | `screens/Today.jsx` |
+| Ask (mic, chips, streamed answers, guardrail line) | `screens/Ask.jsx` |
+| Alerts | `screens/Alerts.jsx` |
+| Map | `screens/MapScreen.jsx` (lazy) |
+| Share / Receive / Pass it on | `screens/Share.jsx`, `components/Scanner.jsx` |
+| Page for a scanned QR (no app needed) | `screens/SharePage.jsx` |
+| SOS | `components/Sos.jsx` |
+| Settings: language, place, role, alerts, speak on open, sunlight mode, data sources | `App.jsx`, `components/Toggles.jsx`, `components/Sources.jsx` |
 
-## 7. Two end-to-end flows
+Libraries: `lib/cache.js` + `lib/useData.js` (saved copy first, live refresh,
+retry back-off; keys include district and state), `lib/voice.js` (Sarvam/
+browser speech, clips cached for offline, units in the listener's language),
+`lib/i18n.js` (all labels in en/hi/te, hazard names, sky conditions),
+`lib/push.js`, `sw.js` (precached shell, offline navigation, push display).
 
-### 7.1 "Is there a red alert for Hyderabad?"
-1. Ask view → `POST /api/chat` with district + persona + lang.
-2. `alert_service` gathers CAP alerts, geo-matches to Hyderabad.
-3. `verdict_service` computes the official verdict (severity server-owned).
-4. `llm_service` (Groq) explains **only** — grounded in the retrieved facts;
-   `response_validator` rejects invented warnings or advice.
-5. UI renders the answer + verdict card + provenance chips (which source,
-   when fetched). Voice: TTS replays it.
+## 5. Configuration (`.env`, never committed; see `.env.example`)
 
-### 7.2 Demo: cyclone alert lifecycle (the stage story)
-1. Admin console (`?view=admin`) → seed **Cyclone** scenario (Kakinada · RED).
-2. Alert enters `UPCOMING`; Home shows it with a state chip.
-3. Advance: PRE-ALERT → ACTIVE — each step pushes a notification, writes the
-   delivery ledger, and appends the history timeline.
-4. **Relay via P2P** → the alert hops phone-to-phone (works offline).
-5. UPDATE/EXTEND as the story evolves; END when it passes — Home drops it,
-   Notifications keeps the full trail for acknowledgement.
+`LLM_API_KEY`, `LLM_MODEL`, `LLM_FALLBACK_MODEL`, `SARVAM_API_KEY`,
+`IMD_API_KEY`, `OWM_API_KEY`, `CAP_FEED_URLS` (default: SACHET),
+`WARM_DISTRICTS`, `PUSH_ADMIN_TOKEN`, `VAPID_*`, `FRONTEND_ORIGINS`,
+`DATABASE_URL` (optional Postgres; JSON files otherwise, under `store/`, not
+in git). Frontend build: `VITE_API_URL` (separate backend), `VITE_PUBLIC_URL`
+(share links when not opened from the public address).
 
----
+## 6. Tests
 
-## 8. Deployment & environments
+- Backend: `python -m pytest` — 393 tests (verdict, validator, chat place and
+  rain rules, push language/state, rate-limit spill-over, offline-safe
+  defaults, data adapters with fakes; no network).
+- Frontend: `npm test` — 23 node tests (cache, QR codec, relay, i18n coverage,
+  hazard names); `npm run lint`; `npm run build`.
 
-- **Backend:** Render (or any FastAPI host). `DEMO_MODE=true` for the demo;
-  `FRONTEND_ORIGINS` must include the frontend URL (CORS is restricted);
-  per-IP rate limiting on public POST; `CAP_FEED_URL` for live SACHET.
-- **Frontend:** Vercel. `VITE_API_URL` must point at the deployed backend.
-- **Push:** VAPID keys — the committed key was exposed and must be rotated;
-  `vapid_keys.json` is git-ignored and never tracked.
-- **Modes:** `POST /api/mode` switches demo/imd/hybrid live.
+## 7. Running it
 
----
-
-## 9. Test map
-
-- **Backend:** `pytest tests/` (272 tests) — adapters, services, alert
-  lifecycle, risk assessment, QA safety invariants, source modes.
-- **Frontend:** `npm test` (`node:test`, ~40 tests) — source-level contracts:
-  verdict ownership, chat identity keys, view registry, i18n fallbacks.
-- **Behavioural:** scripted checks (22/22) against the running app.
-- **Rule:** reviewer agent + tester agent over every change before any commit;
-  no commits without Abhiram's approval.
+- Laptop: `start-saarthi.bat` (backend :8003 + Vite :5173).
+- Phones / demo: `scripts\demo-https.ps1` (HTTPS address + QR).
+- Permanent: `render.yaml` + `Dockerfile` (one service), or `vercel.json` for
+  the frontend alone. Details: `docs/DEMO-READY.md`.
