@@ -1,5 +1,6 @@
 """Simple persistent local cache (memory + JSON file). No external deps for hackathon reliability."""
 import json
+import logging
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -7,6 +8,8 @@ from typing import Any, Optional
 
 from .. import config as cfg
 from ..utils.time import now_ist
+
+log = logging.getLogger("weathergpt.cache")
 
 TTLS = {"current": timedelta(minutes=30), "forecast": timedelta(hours=3), "warning": timedelta(hours=6)}
 
@@ -30,15 +33,16 @@ class CacheService:
         try:
             if self.path.exists():
                 self._data = json.loads(self.path.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - corrupt cache falls back to empty, but log it
+            log.warning("cache load failed (%s), falling back to empty: %s: %s", self.path, type(exc).__name__, exc)
             self._data = {}
 
     def _save(self) -> None:
         try:
             with self._lock:
                 self.path.write_text(json.dumps(self._data, default=str), encoding="utf-8")
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 - failed persist must not raise, but log it
+            log.warning("cache save failed (%s): %s: %s", self.path, type(exc).__name__, exc)
 
     def get(self, key: str) -> Optional[dict]:
         with self._lock:
