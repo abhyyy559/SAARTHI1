@@ -34,6 +34,18 @@ os.environ["EMERGENCY_STORE_FILE"] = os.path.join(_TMP, "emergency_store.json")
 # SAARTHI_STORE_DIR is consulted.
 os.environ.pop("DATABASE_URL", None)
 
+# SACHET feeds are on by default in config; tests opt in by monkeypatching
+# config.CAP_FEED_URLS, so the suite never depends on the live NDMA feed.
+os.environ["CAP_FEED_URLS"] = "off"
+
+# A developer's .env must not leak into the suite: config loads it with
+# override=False, so empty values set here win. Tests that need a key
+# monkeypatch config directly.
+for _key in ("IMD_API_KEY", "IMD_KEY", "LLM_API_KEY", "SARVAM_API_KEY", "STT_API_KEY",
+             "TTS_API_KEY", "OWM_API_KEY", "DATAGOV_API_KEY", "WEATHERAPI_KEY",
+             "WEATHERUNION_KEY", "DEMO_MODE"):
+    os.environ[_key] = ""
+
 
 import pytest  # noqa: E402
 

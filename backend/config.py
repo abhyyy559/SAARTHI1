@@ -14,7 +14,8 @@ def _get(key: str, default: str = "") -> str:
     return os.environ.get(key, default)
 
 
-IMD_API_KEY = _get("IMD_API_KEY", "")
+# IMD_KEY accepted as an alias: the key IMD issues is often saved under that name.
+IMD_API_KEY = _get("IMD_API_KEY", "") or _get("IMD_KEY", "")
 LLM_API_KEY = _get("LLM_API_KEY", "")
 DATABASE_URL = _get("DATABASE_URL", "")
 REDIS_URL = _get("REDIS_URL", "")
@@ -66,12 +67,11 @@ WATCH_TICK = int(_get("WATCH_TICK", "10") or 10)
 # or returns nothing. Provenance always names the source that actually
 # supplied the numbers — never IMD for a fallback number.
 #
-# (2026-09-27) The chat keeps its IMD-fixture path behind DEMO_MODE so its
-# answers stay rich while IMD credentials are unavailable. Every other
-# endpoint uses the live chain above. /api/mode reports demo_mode:false —
-# that payload is hardcoded in api/sources.py and api/v1.py and does not
-# read this flag.
-DEMO_MODE = True
+# DEMO_MODE only switches the chat to the labelled fixture path (rehearsals,
+# no-network stages). It defaults OFF: with it on, chat answered from a
+# September fixture and reported a "verified YELLOW Thunderstorm" from IMD that
+# no source had issued. Set DEMO_MODE=true explicitly to rehearse offline.
+DEMO_MODE = _get("DEMO_MODE", "false").strip().lower() in ("1", "true", "yes")
 
 IMD_ADAPTER = "live"
 
@@ -85,11 +85,22 @@ OWM_API_KEY = _get("OWM_API_KEY", "")
 DATAGOV_API_KEY = _get("DATAGOV_API_KEY", "")
 DATAGOV_RESOURCE_ID = _get("DATAGOV_RESOURCE_ID", "")
 CAP_FEED_URL = _get("CAP_FEED_URL", "")
-# Extra SACHET state feeds, comma-separated. A fisherman in Visakhapatnam is
-# covered by the Andhra feed, not the Telangana one — one feed is not enough.
-CAP_FEED_URLS = [u.strip() for u in _get("CAP_FEED_URLS", "").split(",") if u.strip()] or (
-    [CAP_FEED_URL] if CAP_FEED_URL else []
-)
+# NDMA SACHET public CAP feeds: keyless, official (state SDMAs and IMD centres
+# issue through them). The all-India feed carries only the latest ~10 alerts,
+# so the state feeds for the districts in our gazetteer are read too. A
+# fisherman in Visakhapatnam is covered by the Andhra feed, not Telangana's.
+SACHET_RSS = "https://sachet.ndma.gov.in/cap_public_website/rss/rss_{}.xml"
+DEFAULT_CAP_FEED_URLS = [SACHET_RSS.format(s) for s in ("india", "telangana", "andhra")]
+# CAP_FEED_URLS: comma-separated override; "off" disables CAP (tests, offline).
+_cap_env = _get("CAP_FEED_URLS", "").strip()
+if _cap_env.lower() == "off":
+    CAP_FEED_URLS = []
+elif _cap_env:
+    CAP_FEED_URLS = [u.strip() for u in _cap_env.split(",") if u.strip()]
+elif CAP_FEED_URL:
+    CAP_FEED_URLS = [CAP_FEED_URL]
+else:
+    CAP_FEED_URLS = list(DEFAULT_CAP_FEED_URLS)
 # Multi-source alert chain (adapters/alert_sources.py)
 WEATHERAPI_KEY = _get("WEATHERAPI_KEY", "")   # free key, weatherapi.com
 WEATHERUNION_KEY = _get("WEATHERUNION_KEY", "")  # free key, Zomato Weather Union

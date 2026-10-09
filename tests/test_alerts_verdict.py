@@ -50,7 +50,7 @@ def _cap(severity, area="Hyderabad district, Telangana", identifier="cap-1",
 
 
 def _install_live(monkeypatch, *, imd_raises=False, imd_warning=None,
-                  caps=(), chain=()):
+                  caps=(), chain=(), cap_down=False):
     """Force the live branch with deterministic, offline sources."""
     # New mocks = new data: drop any cached gather result from a previous
     # section, otherwise the 5-min positive cache serves stale mock data.
@@ -65,6 +65,8 @@ def _install_live(monkeypatch, *, imd_raises=False, imd_warning=None,
     monkeypatch.setattr(IMDService, "get_district_warning", fake_warning)
 
     async def fake_fetch():
+        if cap_down:
+            raise AdapterUnavailable("SACHET unreachable")
         return list(caps), "LIVE"
 
     monkeypatch.setattr(cap_adapter, "fetch_alerts", fake_fetch)
@@ -102,7 +104,7 @@ def test_live_cap_orange_imd_down_is_high(monkeypatch):
 
 # 2. REGRESSION: nothing found AND we could not check -> UNKNOWN, never LOW.
 def test_live_imd_down_nothing_found_is_unknown(monkeypatch):
-    _install_live(monkeypatch, imd_raises=True)
+    _install_live(monkeypatch, imd_raises=True, cap_down=True)
     data = _get(district="Hyderabad", lat=17.385, lon=78.4867)
     v = data["verdict"]
     assert v["level"] == "UNKNOWN", v
@@ -112,11 +114,23 @@ def test_live_imd_down_nothing_found_is_unknown(monkeypatch):
     assert data["status"] == "unavailable"
 
 
+# 2b. IMD down but SACHET answered live with nothing for the district: a calm
+#     that says exactly what was checked — never the false "unreachable".
+def test_imd_down_sachet_checked_is_calm_and_names_sources(monkeypatch):
+    _install_live(monkeypatch, imd_raises=True)
+    data = _get(district="Hyderabad", lat=17.385, lon=78.4867)
+    v = data["verdict"]
+    assert v["level"] == "LOW", v
+    assert v["checked_sources"] == ["NDMA-SACHET"], v
+    assert v["unchecked_sources"] == ["IMD"], v
+    assert "unreachable" not in v["detail"], v
+
+
 # 3. Nearby state-level alerts are context, never this district's calm.
 def test_nearby_alerts_never_calm_the_district(monkeypatch):
     nearby = [_cap("ORANGE", area="Warangal district, Telangana",
                    identifier=f"near-{i}") for i in range(5)]
-    _install_live(monkeypatch, imd_raises=True, chain=nearby)
+    _install_live(monkeypatch, imd_raises=True, chain=nearby, cap_down=True)
     data = _get(district="Hyderabad", lat=17.385, lon=78.4867)
     v = data["verdict"]
     assert v["level"] == "UNKNOWN", v
@@ -131,7 +145,7 @@ def test_status_key_present_in_every_branch(monkeypatch):
         demo = _get(path, district="Hyderabad")
         assert "status" in demo and "verdict" in demo, (path, demo)
 
-    _install_live(monkeypatch, imd_raises=True)
+    _install_live(monkeypatch, imd_raises=True, cap_down=True)
     for path in ("/api/v1/warnings", "/api/weather/warnings"):
         unreachable = _get(path, district="Hyderabad", lat=17.385, lon=78.4867)
         assert unreachable["status"] == "unavailable"
@@ -155,14 +169,17 @@ def test_verified_yellow_is_moderate(monkeypatch):
     assert data["status"] == "ok"
 
 
-# v1 regression: a live CAP feed must not make an unreachable IMD look checked.
-def test_advisories_reports_unreachable_when_only_cap_feed_is_live(monkeypatch):
+# v1: with IMD down, the advisory follows what SACHET actually said. Live and
+# quiet for this district -> no false "unreachable"; SACHET down too -> it is.
+def test_advisories_follow_what_was_checked_when_imd_is_down(monkeypatch):
+    params = {"district": "Hyderabad", "lat": 17.385, "lon": 78.4867}
     _install_live(monkeypatch, imd_raises=True,
                   caps=[_cap("ORANGE", area="Warangal district, Telangana")])
-    r = TestClient(app).get("/api/v1/advisories",
-                            params={"district": "Hyderabad", "lat": 17.385, "lon": 78.4867})
-    assert r.status_code == 200, r.text
-    body = r.json()
+    body = TestClient(app).get("/api/v1/advisories", params=params).json()
+    assert "unreachable" not in body["advisory"].lower(), body["advisory"]
+
+    _install_live(monkeypatch, imd_raises=True, cap_down=True)
+    body = TestClient(app).get("/api/v1/advisories", params=params).json()
     assert "unreachable" in body["advisory"].lower(), body["advisory"]
 
 
@@ -208,22 +225,31 @@ def _iso(**delta):
 
 
 def test_expired_alert_does_not_raise_the_verdict():
-    v = build_verdict(cap_alerts=[_expiring_cap("ORANGE", _iso(days=-1))],
-                      warning_service_available=True)
-    assert v["level"] != "HIGH", v
-    assert v["confirmed"] is False, v
-    assert v["basis"] == "unavailable", v
+    for available in (True, False):
+        v = build_verdict(cap_alerts=[_expiring_cap("ORANGE", _iso(days=-1))],
+                          warning_service_available=available)
+        assert v["level"] != "HIGH", v
+        assert v["severity"] != "ORANGE", v
 
 
 def test_expired_alert_is_not_turned_into_a_calm():
-    """The dangerous alternative: drop the expired alert and report "no active
-    warning". We cannot know that from a feed whose newest entry has lapsed."""
+    """With no source reachable, a lapsed alert must not become "no active
+    warning": a feed whose newest entry has lapsed cannot say what is in force."""
     v = build_verdict(cap_alerts=[_expiring_cap("ORANGE", _iso(days=-1))],
-                      warning_service_available=True)
+                      warning_service_available=False)
     assert v["level"] != "LOW", v
     assert v["basis"] != "none", v
     assert v["level"] == "UNKNOWN", v
     assert "expired" in v["detail"].lower(), v
+
+
+def test_expired_alert_with_a_live_check_is_history():
+    """When a source answered just now, its current list is the answer: a lapsed
+    bulletin is history, not a reason to call the district unknown."""
+    v = build_verdict(cap_alerts=[_expiring_cap("ORANGE", _iso(days=-1))],
+                      warning_service_available=True, checked_sources=["NDMA-SACHET"])
+    assert v["level"] == "LOW", v
+    assert v["checked_sources"] == ["NDMA-SACHET"], v
 
 
 def test_active_alert_still_raises_the_verdict():

@@ -318,8 +318,6 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
     except AdapterUnavailable:
         warning, verified_d, warn_prov = None, None, "UNAVAILABLE"
 
-    warning_service_available = warn_call_ok
-
     # A warning for a different district is context, not this district's warning.
     # The validation layer already ran the location check; read its verdict.
     warn_matches_location = (
@@ -334,6 +332,12 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
     cap_alerts = gathered["relevant"]
     nearby_alerts = gathered["nearby"]
     cap_prov = gathered["provenance"]
+    # Warnings were checked if IMD answered OR the official SACHET feed answered
+    # live. An unconfigured IMD key is not an outage when SACHET was read.
+    warning_service_available = warn_call_ok or bool(gathered.get("official_available"))
+    checked = (["IMD"] if warn_call_ok else []) + (
+        ["NDMA-SACHET"] if gathered.get("official_available") else [])
+    unchecked = [] if warn_call_ok else ["IMD"]
 
     # Truly nothing to report AND we could not check: honest unavailable.
     # If the service answered and simply had nothing, that is a reachable, calm
@@ -347,6 +351,7 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
                 nearby_alerts=nearby_alerts,
                 warning_service_available=warning_service_available,
                 warning_matches_location=warn_matches_location,
+                checked_sources=checked, unchecked_sources=unchecked,
             ),
             "generated_at": iso_now(),
         }
@@ -361,6 +366,7 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
             nearby_alerts=nearby_alerts,
             warning_service_available=warning_service_available,
             warning_matches_location=warn_matches_location,
+            checked_sources=checked, unchecked_sources=unchecked,
         ),
         "generated_at": iso_now(),
     }

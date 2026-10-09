@@ -46,9 +46,15 @@ IMD → SACHET/CAP (+ commercial chain: InTouch → WeatherAPI → GDACS)
 - `GET /api/mode` is read-only and always reports `mode: "imd"`,
   `demo_mode: false`, plus the `weather_chain` and `warning_chain`.
 - `POST /api/mode` does not exist.
-- `config.DEMO_MODE` remains `True` internally **solely** as a compatibility
-  flag for the untouched `backend/api/chat.py` fixture path. It is not a
-  user-facing mode; every public payload reports `demo_mode: false`.
+- `config.DEMO_MODE` defaults to `false` (env `DEMO_MODE`). When `true`, the
+  chat answers from labelled fixtures, for offline rehearsals only. It used to
+  be hardcoded `true`, which made chat report a fixture "IMD YELLOW
+  Thunderstorm" that no source had issued.
+- SACHET is on by default (`config.DEFAULT_CAP_FEED_URLS`). When IMD is not
+  reachable but SACHET answered live with nothing for the district, the
+  verdict is `LOW` and names what was checked: `checked_sources:
+  ["NDMA-SACHET"]`, `unchecked_sources: ["IMD"]`. Only when no source
+  answered is it `UNKNOWN`.
 
 ## Provenance honesty
 

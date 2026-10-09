@@ -61,6 +61,8 @@ def _chat_verdict(verified_dict: dict, notes: dict) -> dict:
         nearby_alerts=notes.get("nearby_alerts") or [],
         warning_service_available=bool(available),
         warning_matches_location=notes.get("warning_matches_location", True),
+        checked_sources=notes.get("checked_sources"),
+        unchecked_sources=notes.get("unchecked_sources"),
     )
 
 
@@ -102,6 +104,20 @@ def _llm_warning_view(verified_dict: dict, verdict: dict) -> dict:
                 "safe. Do not state or imply that there is no warning; say the warning "
                 "status could not be checked and tell the user to confirm with IMD or "
                 "local authorities."
+            ),
+        }
+    if verdict.get("basis") == "none":
+        # Checked and calm. The IMD call may have failed (verified_dict then
+        # carries warning_service: unavailable), but the official SACHET feed
+        # answered, so "could not be checked" would now be the false statement.
+        return {
+            "verified": False,
+            "active_warning": False,
+            "checked": True,
+            "nearby_official_alerts_in_state": verdict.get("nearby_count", 0),
+            "note": (
+                "Official warning feeds (NDMA SACHET) were checked and have no active "
+                "warning for this district."
             ),
         }
     return verified_dict
@@ -221,6 +237,24 @@ def _ensure_sea_lead(message: str, loc: dict | None, answer: str, language: str 
     if lead in answer:
         return answer
     return f"{lead}\n\n{answer}"
+
+
+# "Can I go to sea / is it safe" is a safety decision, not a yes/no weather fact.
+# A spoken "Yes" opening the answer reads as permission even when it answers
+# something else ("Yes, 0.6 mm rain tomorrow" — shipped, in Telugu, to a
+# fisherman). Such answers must open with the facts instead.
+_PERMISSION_WORDS = _SEA_WORDS + ("safe", "सुरक्षित", "సురక్షిత", "fishing", "मछली", "చేపల")
+# Only a STANDALONE yes/no (punctuation after it) is an answer. "No warning is
+# active" is a fact whose "No" must never be stripped — that flips its meaning.
+_LEADING_YESNO_ANY = re.compile(rf"^(\W*?)(?:{_YESNO_TOKENS})(?!\w)\s*[,.!:;\-—–]+\s*", re.I)
+
+
+def _drop_permission_yesno(message: str, answer: str) -> str:
+    """Strip a leading yes/no from answers to safety-permission questions."""
+    msg = (message or "").lower()
+    if not any(w in msg for w in _PERMISSION_WORDS) or any(w in msg for w in _RAIN_WORDS):
+        return answer
+    return _LEADING_YESNO_ANY.sub(lambda m: m.group(1), answer, count=1)
 
 
 def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answer,
@@ -365,13 +399,18 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
                    "issued_at": a.get("sent"), "valid_until": a.get("expires"),
                    "provenance": a.get("provenance") or gathered["provenance"]})
 
-    # imd mode serves IMD facts or nothing, so the phrasing layer must not name
-    # Open-Meteo as the source of an IMD observation (docs/SOURCE-MODES.md).
-    source_name = "IMD" if config.current_source_mode() == "imd" else "Open-Meteo"
+    # Name the source that actually supplied the numbers. The chain falls
+    # through IMD -> Open-Meteo -> OWM, so "imd mode" does not mean IMD data.
+    source_name = ((current_dict or {}).get("source")
+                   or (forecast_dict or {}).get("source") or "Open-Meteo")
     notes = {"source_name": source_name, **prov_notes,
              "cap_alerts": cap_alerts, "nearby_alerts": nearby_alerts,
              "warning_raw": warning_d,
-             "warning_service_available": warn_call_ok,
+             # Checked = IMD answered, or SACHET answered live (see weather.py).
+             "warning_service_available": warn_call_ok or bool(gathered.get("official_available")),
+             "checked_sources": (["IMD"] if warn_call_ok else []) + (
+                 ["NDMA-SACHET"] if gathered.get("official_available") else []),
+             "unchecked_sources": [] if warn_call_ok else ["IMD"],
              "warning_matches_location": warn_matches_location}
     return current_dict, forecast_dict, verified_dict, ev, notes
 
@@ -488,6 +527,7 @@ def _finalize_answer(ctx: dict, raw: str, fallback: bool = False) -> tuple[str, 
     answer = _ensure_rain_lead(ctx["message"], ctx["forecast_dict"], answer, ctx["language"])
     # Sea questions from an inland district lead with the no-coast fact.
     answer = _ensure_sea_lead(ctx["message"], ctx.get("loc"), answer, ctx["language"])
+    answer = _drop_permission_yesno(ctx["message"], answer)
     return answer, fallback
 
 

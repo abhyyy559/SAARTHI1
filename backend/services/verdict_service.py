@@ -135,6 +135,8 @@ def build_verdict(
     nearby_alerts: Optional[list[dict[str, Any]]] = None,
     warning_service_available: bool = True,
     warning_matches_location: bool = True,
+    checked_sources: Optional[list[str]] = None,
+    unchecked_sources: Optional[list[str]] = None,
 ) -> dict[str, Any]:
     """Compute the one verdict every view renders.
 
@@ -146,6 +148,11 @@ def build_verdict(
     for some *other* district. Such a warning is context, not this district's
     warning, so it must not raise this district's level — otherwise a feed that
     routinely returns neighbouring districts would mark everywhere UNKNOWN.
+
+    `checked_sources` / `unchecked_sources` name which warning sources answered
+    and which did not. A calm carries both, so the UI says exactly what was
+    checked ("NDMA SACHET checked · IMD not connected") instead of a bare
+    all-clear or a false "unreachable".
     """
     cap_alerts = list(cap_alerts or [])
     nearby_alerts = list(nearby_alerts or [])
@@ -223,7 +230,10 @@ def build_verdict(
     #     closed its window cannot tell us whether a warning is in force now.
     #     Reporting "no active warning" here would be a calm built on stale data,
     #     which is the one thing this product must never emit.
-    if expired_cap and not active_cap:
+    #     When the warning service DID answer just now (IMD, or SACHET live),
+    #     its current list is the answer and a lapsed bulletin is history, so
+    #     this branch only applies when nothing was reachable.
+    if expired_cap and not active_cap and not warning_service_available:
         newest = max(expired_cap, key=_expiry_raw)
         return {
             "level": "UNKNOWN",
@@ -275,6 +285,8 @@ def build_verdict(
 
     # 4. Service reachable, nothing relevant for this district.
     return {
+        "checked_sources": list(checked_sources or []),
+        "unchecked_sources": list(unchecked_sources or []),
         "level": "LOW",
         "basis": "none",
         "confirmed": True,

@@ -79,7 +79,8 @@ def _warning(district="Hyderabad", severity="YELLOW"):
     )
 
 
-def _install_chat_live(monkeypatch, *, imd_raises=False, imd_warning=None, caps=(), weather=False):
+def _install_chat_live(monkeypatch, *, imd_raises=False, imd_warning=None, caps=(), weather=False,
+                       cap_down=False):
     """Force the chat live branch with deterministic, offline sources."""
     monkeypatch.setattr(config, "DEMO_MODE", False)
 
@@ -104,6 +105,8 @@ def _install_chat_live(monkeypatch, *, imd_raises=False, imd_warning=None, caps=
     monkeypatch.setattr(chat, "_live_forecast", fake_forecast)
 
     async def fake_fetch():
+        if cap_down:
+            raise AdapterUnavailable("SACHET unreachable")
         return [dict(c) for c in caps], "LIVE"
 
     monkeypatch.setattr(cap_adapter, "fetch_alerts", fake_fetch)
@@ -135,7 +138,7 @@ def _ask(**payload):
 # --------------------------------------------------------------------------
 @pytest.mark.parametrize("user_type,language", [("general", "en"), ("farmer", "hi"), ("fisherman", "te")])
 def test_total_failure_never_reads_as_all_clear(monkeypatch, user_type, language):
-    _install_chat_live(monkeypatch, imd_raises=True)  # no weather, no CAP
+    _install_chat_live(monkeypatch, imd_raises=True, cap_down=True)  # no weather, no CAP
     body = _ask(user_type=user_type, language=language)
 
     key = user_type if user_type in advisory._UNREACHABLE else "general"

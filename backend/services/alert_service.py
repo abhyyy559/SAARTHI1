@@ -385,6 +385,7 @@ async def gather_alerts(*, lat: float, lon: float, district: str, state: str = "
         # Unknown availability must never read as "reached it, nothing to report":
         # a caller that treats this as a calm would invent one out of an outage.
         "available": bool(result.get("available", False)),
+        "official_available": bool(result.get("official_available", False)),
     }
 
 
@@ -475,4 +476,8 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
         "provenance": provenance,
         "feeds": feeds,
         "available": feeds_answered,
+        # SACHET itself answered live. Only this supports "checked, no official
+        # alert for your district" — a quiet commercial chain or a cached feed
+        # cannot.
+        "official_available": cap_prov == LIVE,
     }

@@ -37,6 +37,8 @@ SYSTEM_RULES = (
     "If the user asks what to do or for guidance, give the facts and say: "
     "'For guidance, check the Advisory tab in the app.' That tab is the ONLY place for guidance.\n"
     "Keep it short and simple - the listener may be a fisherman or farmer with a basic phone.\n"
+    "Never answer 'can I go to sea / go out / is it safe' with yes or no: that is a safety\n"
+    "decision, not a fact. Open with the warning status and the relevant facts instead.\n"
     # --- BREVITY. The answer is READ ALOUD to someone deciding whether to go out. ---
     # Without these rules the model padded every answer with a restatement of the
     # question, a summary of its own summary, and a second copy of practical
@@ -241,6 +243,19 @@ def _leads(language: str) -> dict:
     return _TEMPLATE_LEADS.get(language, _TEMPLATE_LEADS["en"])
 
 
+def _budget() -> dict:
+    """Token budget for one answer.
+
+    ~240 tokens is a comfortable ceiling for a 120-word answer; 400 invited
+    padding. Reasoning models (gpt-oss) spend hidden reasoning tokens from the
+    same max_tokens: at 240 they hit `length` with an empty answer, and every
+    chat silently fell back to the template. They get low effort plus room.
+    """
+    if "gpt-oss" in config.LLM_MODEL:
+        return {"max_tokens": 900, "reasoning_effort": "low"}
+    return {"max_tokens": 240}
+
+
 def _template_answer(evidence: dict, question: str = "", language: str = "en") -> str:
     """Question-aware rule-based answer. Used when the LLM is disabled/unreachable.
 
@@ -397,9 +412,7 @@ class LLMService:
                             {"role": "user", "content": user},
                         ],
                         "temperature": 0.2,
-                        # ~240 tokens is a comfortable ceiling for a 120-word
-                        # answer plus headings; 400 invited padding.
-                        "max_tokens": 240,
+                        **_budget(),
                     },
                 )
                 resp.raise_for_status()
@@ -456,7 +469,7 @@ class LLMService:
                 {"role": "user", "content": user},
             ],
             "temperature": 0.2,
-            "max_tokens": 240,
+            **_budget(),
             "stream": True,
         }
         sent_any = False

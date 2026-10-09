@@ -69,7 +69,7 @@ def _initial_state(name: str) -> tuple[str, str]:
             return (READY, "configured (data.gov.in) — verified on first use")
         return (UNCONFIGURED, "needs DATAGOV_API_KEY + DATAGOV_RESOURCE_ID (data.gov.in)")
     if name == "cap":
-        if config.CAP_FEED_URL:
+        if config.CAP_FEED_URLS:
             return (READY, "CAP feed configured — verified on first use")
         return (UNCONFIGURED, "needs CAP_FEED_URL (NDMA-Sachet / IMD CAP feed)")
     if name == "owm":

@@ -19,7 +19,7 @@ async def sources() -> dict:
             "DATAGOV_API_KEY": not bool(config.DATAGOV_API_KEY),
             "OWM_API_KEY": not bool(config.OWM_API_KEY),
             "SARVAM_API_KEY": not bool(config.SARVAM_API_KEY),
-            "CAP_FEED_URL": not bool(config.CAP_FEED_URL),
+            "CAP_FEED_URL": not bool(config.CAP_FEED_URLS),
         },
         "generated_at": iso_now(),
     }
