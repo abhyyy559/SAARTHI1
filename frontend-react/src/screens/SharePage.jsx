@@ -8,12 +8,13 @@ import { decodeSnapshot, readSnapshot } from '../lib/share';
 import { LANGS, condText, dayName, fmtDateTime, t } from '../lib/i18n';
 import { ROLES, activeAlerts, conditionIcon, hazardIcon, levelIcon, senderLabel, severityTone, sourceLabel, toneOf } from '../lib/weather';
 import { Icon } from '../components/Icons';
+import Backdrop from '../components/Backdrop';
 import { SpeakButton } from '../components/ui';
 import { summaryText } from './Today';
 
 const r0 = (n) => (n == null ? '–' : Math.round(Number(n)));
 
-export default function SharePage({ payload }) {
+function ShareView({ payload }) {
   const [snap, setSnap] = useState(null);
   const [bad, setBad] = useState(false);
   const [lang, setLang] = useState('en');
@@ -154,5 +155,16 @@ export default function SharePage({ payload }) {
       <a className="btn-big" href="/">{t(lang, 'openApp')}</a>
       <p className="note center">{t(lang, 'aiNote')}</p>
     </main>
+  );
+}
+
+// Same video backdrop and veil as the app. The snapshot never waits for it:
+// it is inside the link and renders at once.
+export default function SharePage({ payload }) {
+  return (
+    <>
+      <Backdrop dim />
+      <ShareView payload={payload} />
+    </>
   );
 }

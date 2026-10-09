@@ -26,7 +26,8 @@ export default function Sources() {
     <div className="sources">
       {ROWS.map((r) => {
         const s = byName[r.id];
-        const [label, tone] = STATE[s?.status] || ['stOff', 'off'];
+        // Still asking the server: say so, not "Not connected".
+        const [label, tone] = STATE[s?.status] || (!src.data && src.loading ? ['loading', 'off'] : ['stOff', 'off']);
         return (
           <div className="source-row" key={r.id} title={s?.detail || ''}>
             <Icon name={r.icon} size={26} />

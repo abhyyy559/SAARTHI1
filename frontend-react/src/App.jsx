@@ -4,6 +4,7 @@ import { useOnline } from './lib/useData';
 import { LANGS, t } from './lib/i18n';
 import { stopSpeaking } from './lib/voice';
 import { Icon } from './components/Icons';
+import Backdrop from './components/Backdrop';
 import Setup, { LangPicker, PlacePicker, RoleGrid } from './components/Setup';
 import { SosButton } from './components/Sos';
 import Sources from './components/Sources';
@@ -48,6 +49,10 @@ function Settings({ onClose }) {
         <ThemeToggle />
         <h3><Icon name="info" size={18} /> {t(lang, 'sourcesTitle')}</h3>
         <Sources />
+        <p className="credits">
+          {t(lang, 'credits')}: Font made from <a href="https://www.onlinewebfonts.com/fonts" target="_blank" rel="noreferrer">Web Fonts</a> is
+          licensed by CC BY 4.0 · Geist Pixel, Inter, Noto (SIL OFL 1.1) · Map © OpenStreetMap contributors · Places: GeoNames (CC BY 4.0)
+        </p>
         <button type="button" className="btn-big" onClick={onClose}><Icon name="check" size={24} /> {t(lang, 'done')}</button>
       </div>
     </div>
@@ -123,6 +128,16 @@ export default function App() {
           <button type="button" className="logo logo-sm" onClick={() => setView('landing')} aria-label={t(lang, 'navHome')}>
             <Icon name="partly" size={40} />
           </button>
+          {/* One nav: the white pill in this header on desktop, the bottom tab bar on phones. */}
+          <nav className="tabs" aria-label="WeatherGPT">
+            {TABS.map((x) => (
+              <button key={x.id} type="button" className={`tab ${tab === x.id ? 'is-on' : ''}`}
+                aria-current={tab === x.id ? 'page' : undefined} onClick={() => setTab(x.id)}>
+                <Icon name={x.icon} size={26} />
+                <span>{t(lang, x.key)}</span>
+              </button>
+            ))}
+          </nav>
           <button type="button" className="place-chip" onClick={() => setSettings(true)} aria-label={t(lang, 'place')}>
             <Icon name="pin" size={18} /> <b>{loc.district}</b>
           </button>
@@ -139,19 +154,17 @@ export default function App() {
             <Active />
           </Suspense>
         </main>
-        <nav className="tabs" aria-label="WeatherGPT">
-          {TABS.map((x) => (
-            <button key={x.id} type="button" className={`tab ${tab === x.id ? 'is-on' : ''}`}
-              aria-current={tab === x.id ? 'page' : undefined} onClick={() => setTab(x.id)}>
-              <Icon name={x.icon} size={26} />
-              <span>{t(lang, x.key)}</span>
-            </button>
-          ))}
-        </nav>
         {settings ? <Settings onClose={() => setSettings(false)} /> : null}
       </div>
     );
   }
 
-  return <AppCtx.Provider value={ctx}>{body}</AppCtx.Provider>;
+  // The video backdrop stays mounted across views, so it keeps playing from
+  // the landing into the app; the app screens get a darker veil.
+  return (
+    <AppCtx.Provider value={ctx}>
+      <Backdrop dim={view !== 'landing'} />
+      {body}
+    </AppCtx.Provider>
+  );
 }

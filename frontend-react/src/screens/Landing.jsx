@@ -8,22 +8,11 @@ import { useData } from '../lib/useData';
 import { LANGS, ago, t } from '../lib/i18n';
 import { Icon } from '../components/Icons';
 
-const VIDEO_SRC = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_012548_ef22562c-c0ae-4816-ad9d-f8922af4e6a7.mp4';
-
+// The background video lives in components/Backdrop.jsx, mounted once at the
+// root so it keeps playing from the landing into the app.
 const prefersReducedMotion = () => {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
 };
-
-// The video costs megabytes. Skip it on Data Saver, 2G, offline, and for
-// reduced motion; the black backdrop underneath is the designed fallback.
-function videoAllowed() {
-  try {
-    if (!navigator.onLine || prefersReducedMotion()) return false;
-    const c = navigator.connection;
-    if (c && (c.saveData || /2g$/.test(c.effectiveType || ''))) return false;
-  } catch { /* unknown browser: allow */ }
-  return true;
-}
 
 const easeOutCubic = (x) => 1 - (1 - x) ** 3;
 
@@ -123,18 +112,6 @@ export default function Landing({ ready, onStart, onNav }) {
   const stats = useData(keys.stats, () => api.stats(), { refreshMs: 5 * 60 * 1000 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [showVideo] = useState(videoAllowed);
-  const video = useRef(null);
-  // React sets `muted` as a property, not an attribute; autoplay rules
-  // (notably iOS Safari) look for the attribute, so the video sat paused.
-  useEffect(() => {
-    const v = video.current;
-    if (!v) return;
-    v.muted = true;
-    v.setAttribute('muted', '');
-    const p = v.play();
-    if (p && p.catch) p.catch(() => { /* blocked: the black backdrop stays */ });
-  }, []);
   const glyph = (LANGS.find((l) => l.id === lang) || LANGS[0]).glyph;
   const langName = (LANGS.find((l) => l.id === lang) || LANGS[0]).name;
 
@@ -163,15 +140,6 @@ export default function Landing({ ready, onStart, onNav }) {
 
   return (
     <div className="landing">
-      <div className="bg" aria-hidden="true">
-        {showVideo ? (
-          <video ref={video} className="bg-video" autoPlay muted loop playsInline preload="auto">
-            <source src={VIDEO_SRC} type="video/mp4" />
-          </video>
-        ) : null}
-        <div className="bg-scrim" />
-      </div>
-
       <div className="page">
         <header className="land-header">
           <button type="button" className="logo" aria-label="WeatherGPT" onClick={() => window.scrollTo(0, 0)}>

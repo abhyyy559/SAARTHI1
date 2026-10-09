@@ -3,9 +3,10 @@
 @import '@fontsource/inter/latin-500.css';
 @import '@fontsource/inter/latin-600.css';
 
-/* Dot-matrix display face. Geist Pixel Circle, SIL OFL 1.1 (see
-   /fonts/GeistPixel-OFL.txt), bundled so it works offline. It has no
-   Devanagari/Telugu glyphs: those fall through to Noto in --font-display. */
+/* Dot-matrix display face, as in the landing spec: BubbledotICG-FinePos from
+   the OnlineWebFonts CDN (index.html, non-blocking), then Geist Pixel Circle
+   (SIL OFL 1.1, /fonts/GeistPixel-OFL.txt), bundled so it works offline.
+   Neither has Devanagari/Telugu glyphs: those fall through to Noto. */
 @font-face {
   font-family: 'Geist Pixel Circle';
   src: url('/fonts/GeistPixel-Circle.woff2') format('woff2');
@@ -29,11 +30,13 @@
   --trust-border: rgba(255, 255, 255, 0.4);
   --trust-text: #c4c2c3;
   --font-sans: 'Inter', 'Noto Sans Devanagari', 'Noto Sans Telugu', 'Segoe UI', system-ui, sans-serif;
-  --font-display: 'Geist Pixel Circle', 'Noto Sans Devanagari', 'Noto Sans Telugu', monospace;
+  --font-display: 'BubbledotICG-FinePos', 'Geist Pixel Circle', 'Noto Sans Devanagari', 'Noto Sans Telugu', monospace;
 
-  --surface: #111113;
-  --surface-2: #1a1a1d;
-  --line: rgba(255, 255, 255, 0.09);
+  /* See-through surfaces: the video backdrop shows behind every screen. */
+  --surface: rgba(17, 17, 19, 0.74);
+  --surface-2: rgba(255, 255, 255, 0.055);
+  --surface-strong: rgba(30, 32, 38, 0.88);
+  --line: rgba(255, 255, 255, 0.11);
   --red: #e5484d;
   --orange: #f76b15;
   --yellow: #ffc53d;
@@ -69,11 +72,19 @@ h1, h2, h3, h4, p { margin: 0; }
 .boot { min-height: 100vh; background: #000; }
 
 /* =========================== LANDING =========================== */
-.landing { position: relative; isolation: isolate; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); }
-.bg { position: absolute; inset: 0; background: #000; overflow: hidden; z-index: 0; }
+.landing { position: relative; z-index: 1; isolation: isolate; height: 100vh; height: 100dvh; overflow: hidden; }
+/* Backdrop (components/Backdrop.jsx): one fixed layer behind every view. */
+.bg { position: fixed; inset: 0; background: #000; overflow: hidden; z-index: 0; }
 .bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 0; }
 /* Light scrim so white type stays readable over bright frames. */
 .bg-scrim { position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.55)); }
+/* App screens: a darker veil fades in on top, so cards and small type stay readable. */
+.bg-scrim::after {
+  content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease;
+  background: linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.42) 45%, rgba(0, 0, 0, 0.6));
+}
+.bg-scrim.dim::after { opacity: 1; }
+.app, .setup, .share-page { position: relative; z-index: 1; }
 
 .page {
   position: relative;
@@ -284,6 +295,11 @@ html[lang='hi'] .cta, html[lang='te'] .cta { font-size: clamp(15px, 1.6vw, 17px)
   .trust-pill { font-size: 12px; }
   .headline { letter-spacing: -0.035em; line-height: 1.06; }
 }
+/* The spec's exact tracking is drawn for BubbledotICG; main.jsx sets
+   .has-bubbledot once it has loaded (the Geist fallback needs more air). */
+html.has-bubbledot[lang='en'] .headline { letter-spacing: -0.04em; line-height: 1.12; }
+@media (max-width: 720px) { html.has-bubbledot[lang='en'] .headline { letter-spacing: -0.08em; line-height: 1.05; } }
+@media (max-width: 420px) { html.has-bubbledot[lang='en'] .headline { letter-spacing: -0.09em; line-height: 1.04; } }
 @media (max-height: 700px) {
   .trust { margin-bottom: 12px; }
   .subhead { margin: 10px 0 16px; }
@@ -300,7 +316,9 @@ main { display: block; }
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; gap: 8px;
   padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top));
-  background: linear-gradient(#000 72%, rgba(0, 0, 0, 0));
+  /* No backdrop-filter here on phones: the fixed bottom tab bar lives inside
+     this header, and a filter would pin it to the header instead. */
+  background: linear-gradient(rgba(0, 0, 0, 0.9) 66%, rgba(0, 0, 0, 0));
 }
 .logo-sm { width: 44px; height: 44px; }
 .place-chip {
@@ -310,6 +328,7 @@ main { display: block; }
   font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .place-chip svg { color: var(--red); flex: none; }
+.place-chip b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .top-right { display: flex; align-items: center; gap: 8px; }
 .icon-btn {
   width: 44px; height: 44px; flex: none; display: grid; place-items: center;
@@ -423,13 +442,13 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .advice > div { display: grid; gap: 8px; justify-items: start; }
 .advice h3 { font-size: 16.5px; font-weight: 600; }
 .advice p { font-size: 16.5px; }
-.main-advice { background: #16181d; border-color: rgba(255, 255, 255, 0.18); }
+.main-advice { background: var(--surface-strong); border-color: rgba(255, 255, 255, 0.18); }
 
 /* Ask */
 .ask { padding-bottom: calc(var(--composer-h, 320px) + 16px); }
 .thread { display: grid; gap: 10px; align-content: start; }
 .thread-end { height: 1px; scroll-margin-bottom: calc(var(--composer-h, 320px) + var(--tabs-h) + 36px); }
-.ask-intro { display: grid; justify-items: center; gap: 8px; padding: 36px 0 8px; text-align: center; color: var(--muted); }
+.ask-intro { display: grid; justify-items: center; gap: 8px; padding: 36px 0 8px; text-align: center; color: var(--trust-text); }
 .bubble { max-width: 92%; padding: 12px 14px; border-radius: 20px; }
 .bubble.me { justify-self: end; background: #fff; color: #000; border-bottom-right-radius: 6px; }
 .bubble.bot { justify-self: start; display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--grey); border-bottom-left-radius: 6px; }
@@ -437,7 +456,7 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .bubble.bot.edge-orange { border-left-color: var(--orange); }
 .bubble.bot.edge-yellow { border-left-color: var(--yellow); }
 .bubble.bot.edge-green { border-left-color: var(--green); }
-.bubble.is-offline { background: #1d1907; }
+.bubble.is-offline { background: rgba(42, 34, 8, 0.86); }
 .answer-text { display: grid; gap: 6px; }
 .answer-text h4 { font-size: 15.5px; }
 .answer-text .bullet { position: relative; padding-left: 16px; }
@@ -452,7 +471,7 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
   position: fixed; left: 0; right: 0; z-index: 15; margin: 0 auto; max-width: 560px;
   bottom: calc(var(--tabs-h) + 18px + env(safe-area-inset-bottom));
   display: grid; justify-items: center; gap: 8px; padding: 18px 14px 10px;
-  background: linear-gradient(rgba(0, 0, 0, 0), #000 20%);
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.86) 22%);
 }
 .chips { display: flex; gap: 8px; width: 100%; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .chip {
@@ -480,7 +499,7 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 
 /* Alerts */
 .screen-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.screen-head h1 { display: flex; gap: 8px; align-items: center; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.screen-head h1 { display: flex; gap: 10px; align-items: center; font-family: var(--font-display); font-size: 28px; font-weight: 400; letter-spacing: -0.03em; line-height: 1.15; }
 .group { display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 15px; font-weight: 600; color: var(--muted); }
 .alert { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--grey); }
 .alert.tone-red { border-left-color: var(--red); }
@@ -504,7 +523,7 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .alert-area { display: flex; gap: 4px; align-items: center; font-size: 13.5px; color: var(--muted); }
 .alert-none { display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: var(--radius); font-weight: 600; }
 .alert-none.tone-green { background: rgba(48, 164, 108, 0.12); color: #7ee2a8; border: 1px solid rgba(48, 164, 108, 0.35); }
-.alert-none.tone-grey { background: #1c1d20; color: var(--trust-text); border: 1px solid var(--line); }
+.alert-none.tone-grey { background: rgba(28, 29, 32, 0.8); color: var(--trust-text); border: 1px solid var(--line); }
 
 /* Buttons & states */
 .btn-big {
@@ -523,13 +542,16 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
   font-weight: 600; font-size: 14.5px;
 }
 .empty { display: grid; justify-items: center; gap: 10px; padding: 24px 16px; text-align: center; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.skeleton { border-radius: var(--radius); background: linear-gradient(90deg, #111 0%, #1d1d20 50%, #111 100%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+.skeleton { border-radius: var(--radius); background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.04) 100%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .warn-note { padding: 10px 12px; border-radius: 14px; font-size: 14px; color: var(--yellow); background: var(--amber-bg); border: 1px solid rgba(255, 197, 61, 0.3); }
 
 /* Share */
 .share { justify-items: center; text-align: center; }
-.share-title { display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+.share-title { display: flex; gap: 10px; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 27px; font-weight: 400; letter-spacing: -0.03em; line-height: 1.15; }
+html[lang='hi'] :is(.screen-head h1, .share-title), html[lang='te'] :is(.screen-head h1, .share-title) {
+  font-family: var(--font-sans); font-size: 22px; font-weight: 600; letter-spacing: 0;
+}
 .qr-frame { display: grid; gap: 8px; justify-items: center; padding: 16px; border-radius: 28px; background: #fff; color: #111; box-shadow: var(--glow); }
 .qr-frame img { width: min(300px, 74vw); height: auto; image-rendering: pixelated; }
 .qr-caption { display: flex; gap: 4px; align-items: center; font-weight: 600; }
@@ -654,7 +676,7 @@ html[data-theme='light'] body { background: #f4f1ea; color: #141820; color-schem
 html[data-theme='light'] :is(.app, .setup, .share-page, .sheet-wrap) {
   --bg: #f4f1ea; --text: #141820; --muted: #5b6573; --surface: #ffffff; --surface-2: #f3f0e8;
   --line: rgba(20, 24, 32, 0.12); --pill-dark: #ffffff; --sign-in-text: #2e2e2e; --trust-text: #3d4450;
-  --trust-border: rgba(20, 24, 32, 0.28); --amber-bg: #fff2c2;
+  --trust-border: rgba(20, 24, 32, 0.28); --amber-bg: #fff2c2; --surface-strong: #fbf3dc;
   --glow: 0 1px 2px rgba(20, 24, 32, 0.1), 0 6px 18px rgba(20, 24, 32, 0.14);
   --glow-strong: 0 2px 4px rgba(20, 24, 32, 0.14), 0 10px 26px rgba(20, 24, 32, 0.2);
   color: var(--text);
@@ -673,6 +695,7 @@ html[data-theme='light'] .sheet { background: var(--bg); border-top-color: var(-
 html[data-theme='light'] .skeleton { background: linear-gradient(90deg, #ece8df 0%, #f7f4ee 50%, #ece8df 100%); background-size: 200% 100%; }
 html[data-theme='light'] :is(.offline-bar, .warn-note, .shared-at, .fresh-saved) { color: #7a4a00; }
 html[data-theme='light'] .fresh-live { color: #1b8a4b; }
+html[data-theme='light'] .safety .fresh { color: #fff; }
 html[data-theme='light'] .net-off { color: #b07800; }
 html[data-theme='light'] .day-rain { color: #1f5fbf; }
 html[data-theme='light'] .delta.wet { color: #1f5fbf; }
@@ -704,7 +727,7 @@ html[data-theme='light'] .place-pill.is-on { background: #141820; color: #fff; b
 }
 .layer-chip.is-on { background: #fff; color: #000; border-color: #fff; box-shadow: var(--glow); }
 html[data-theme='light'] .layer-chip.is-on { background: #141820; color: #fff; border-color: #141820; }
-.map-box { height: 62vh; min-height: 360px; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); background: #0b0b0d; }
+.map-box { position: relative; z-index: 0; isolation: isolate; height: 62vh; min-height: 360px; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); background: #0b0b0d; }
 html[data-theme='light'] .map-box { background: #e8e4da; }
 .map-box .leaflet-control-attribution { font-size: 10px; }
 .map-pop { display: grid; gap: 4px; max-width: 240px; font: 13px/1.4 var(--font-sans); color: #111; }
@@ -718,33 +741,49 @@ html[data-theme='light'] .map-box { background: #e8e4da; }
 .tabs { grid-template-columns: repeat(5, 1fr); }
 .tab { font-size: 11.5px; }
 
-/* ---- Desktop: sidebar navigation, wider multi-column screens ---- */
+/* ---- Desktop: the spec header (logo, white nav pill, dark pills), wider screens ---- */
 @media (min-width: 1024px) {
-  .app { max-width: none; padding: 0 32px 40px 280px; }
-  .top { max-width: 1240px; margin: 0 auto; padding: 20px 0 14px; }
+  .app { max-width: none; padding: 0 32px 40px; }
+  .top {
+    margin: 0 -32px; padding: 20px max(32px, calc((100vw - 1180px) / 2)) 22px;
+    justify-content: center; gap: clamp(12px, 1.6vw, 24px);
+    /* Glass strip: what scrolls under it is blurred, the edge fades out.
+       Safe here because the nav is in normal flow on desktop. */
+    background: rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1);
+    -webkit-mask-image: linear-gradient(#000 76%, transparent); mask-image: linear-gradient(#000 76%, transparent);
+    animation: slideDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .top > .logo-sm { width: 46px; height: 46px; }
+  .tabs {
+    position: static; z-index: auto; flex: 0 1 auto; min-width: 0;
+    width: auto; max-width: none; height: 48px; margin: 0;
+    display: flex; align-items: stretch; padding: 4px 8px;
+    border-radius: 999px; background: #fff; box-shadow: var(--nav-shadow);
+  }
+  .tab {
+    flex: 0 1 auto; min-width: 0;
+    display: flex; align-items: center; gap: 7px; padding: 0 12px;
+    font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .tab svg { flex: none; width: 19px; height: 19px; }
+  .place-chip {
+    flex: 0 1 240px; min-height: 48px; padding: 0 18px;
+    background: var(--pill-dark); color: var(--sign-in-text);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+  .place-chip:hover { background: #323234; color: #fff; transform: translateY(-1px); }
+  .place-chip svg { color: #ff8a8d; }
+  .top-right :is(.icon-btn, .sos-btn) { width: 48px; height: 48px; }
   main { max-width: 1240px; margin: 0 auto; }
   .screen { padding: 6px 0 32px; gap: 18px; }
   .offline-bar { max-width: 1240px; margin: 0 auto 10px; }
-  .tabs {
-    left: 20px; top: 20px; bottom: 20px; right: auto; width: 232px; height: auto; margin: 0;
-    display: flex; flex-direction: column; gap: 6px; padding: 18px 12px; border-radius: 28px;
-  }
-  .tabs::before {
-    content: 'WeatherGPT'; padding: 6px 14px 18px; color: #111;
-    font-family: var(--font-display); font-size: 22px; letter-spacing: -0.03em;
-  }
-  .tab {
-    display: flex; justify-content: flex-start; align-items: center; gap: 14px;
-    min-height: 56px; padding: 0 16px; border-radius: 18px; font-size: 16px; opacity: 0.6;
-  }
-  .tab.is-on { background: #f0f0f0; opacity: 1; }
-  .tab.is-on::after { left: auto; right: 16px; bottom: 50%; transform: translateY(50%); }
   .screen.today { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .screen.today > .safety, .screen.today > .for-you, .screen.today > .note { grid-column: 1 / -1; }
   .safety h1 { font-size: 32px; }
   .alert-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
   .ask .thread { max-width: 880px; width: 100%; margin: 0 auto; }
-  .composer { left: 280px; right: 32px; bottom: 16px; max-width: 920px; }
+  .composer { left: 32px; right: 32px; bottom: 16px; max-width: 920px; }
   .thread-end { scroll-margin-bottom: calc(var(--composer-h, 320px) + 40px); }
   .share { grid-template-columns: auto minmax(0, 440px); justify-content: center; align-items: center; column-gap: 48px; text-align: left; }
   .share > .share-title { grid-column: 1 / -1; justify-content: flex-start; }
@@ -755,6 +794,40 @@ html[data-theme='light'] .map-box { background: #e8e4da; }
   .sheet-wrap { align-items: center; }
   .sheet { border-radius: 28px; max-width: 640px; }
 }
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .tab { padding: 0 9px; gap: 6px; font-size: 14px; }
+  .place-chip { flex-basis: 200px; }
+}
+html[data-theme='light'] .place-chip:hover { background: #fff; color: var(--text); }
+
+/* Glass: cards blur the video behind them. Desktop only: a phone GPU
+   re-blurring every video frame costs battery. */
+@media (min-width: 721px) and (hover: hover) {
+  html:not([data-theme='light']) :is(.card, .alert, .empty, .toggle-card, .source-row, .bubble.bot, .live-now,
+    .alert-none, .pick-lang, .pick-role, .results button) {
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
+  }
+}
+
+/* Screens rise in like the landing (spec entrance), staggered. Only a `from`
+   state with backwards fill: nothing stays applied afterwards, so hover lifts
+   and position: fixed children behave normally once it has played. */
+@keyframes rise { from { opacity: 0; transform: translateY(18px) scale(0.985); } }
+@keyframes riseBlur { from { opacity: 0; transform: translateY(22px) scale(0.98); filter: blur(6px); } }
+:is(.screen, .setup, .share-page) > :not(.composer) { animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+@media (min-width: 721px) { :is(.screen, .setup, .share-page) > :not(.composer) { animation-name: riseBlur; } }
+:is(.screen, .setup, .share-page) > :nth-child(2) { animation-delay: 0.05s; }
+:is(.screen, .setup, .share-page) > :nth-child(3) { animation-delay: 0.1s; }
+:is(.screen, .setup, .share-page) > :nth-child(4) { animation-delay: 0.15s; }
+:is(.screen, .setup, .share-page) > :nth-child(5) { animation-delay: 0.2s; }
+:is(.screen, .setup, .share-page) > :nth-child(6) { animation-delay: 0.25s; }
+:is(.screen, .setup, .share-page) > :nth-child(7) { animation-delay: 0.3s; }
+:is(.screen, .setup, .share-page) > :nth-child(n+8) { animation-delay: 0.35s; }
+
+/* Credits (Settings) */
+.credits { font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.credits a { color: inherit; }
 
 /* OpenStreetMap tiles, darkened for the dark theme (sunlight mode keeps them light). */
 html:not([data-theme='light']) .osm-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }

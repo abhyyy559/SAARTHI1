@@ -22,7 +22,7 @@ the links use the current origin, so a localhost build makes local-only codes).
 
 | Screen | What it shows |
 |---|---|
-| Landing (`screens/Landing.jsx`) | First-run opening screen: video background, live numbers from `/api/stats`. Returning users open on Today; the logo brings it back; `?landing=1` forces it. |
+| Landing (`screens/Landing.jsx`) | First-run opening screen over the video backdrop, live numbers from `/api/stats`. Returning users open on Today; the logo brings it back; `?landing=1` forces it. |
 | Setup (`components/Setup.jsx`) | Language, place (GPS or search), role. Nothing is defaulted silently. |
 | Today (`screens/Today.jsx`) | Server-owned safety verdict (says which sources were checked), weather now, next 3 days, advice for the chosen role. |
 | Ask (`screens/Ask.jsx`) | Big mic (Sarvam STT, browser fallback), picture chips per role, streamed answers read aloud after a spoken question. |
@@ -53,13 +53,29 @@ the links use the current origin, so a localhost build makes local-only codes).
 
 ## Design
 
-Dark look from the landing spec: black, white pills with soft shadows, glowing
-primary buttons, dot-matrix numbers. Fonts are bundled so they work offline:
-Geist Pixel Circle (SIL OFL 1.1, `public/fonts/GeistPixel-OFL.txt`) for the
-display type, Inter via `@fontsource/inter` (OFL) for text, Noto Sans
-Devanagari/Telugu for Hindi and Telugu. The landing video is streamed from an
-external CDN and skipped on Data Saver, 2G, offline and reduced motion; host a
-copy you have rights to before production.
+The landing spec's look on every screen: the looping video backdrop
+(`components/Backdrop.jsx`, mounted once at the root so it keeps playing from
+the landing into the app, with a darker veil inside the app), see-through
+cards (blurred glass on desktop only), white pills with soft shadows, glowing
+primary buttons, staggered rise-in entrances, dot-matrix numbers and titles.
+On desktop the spec header (logo, white nav pill, dark place pill) replaces
+the phone's bottom tab bar; both are the same `<nav>`, styled by width.
+
+- Display type: BubbledotICG-FinePos from the OnlineWebFonts CDN, as the spec
+  asks (non-blocking link in `index.html`, CC BY 4.0 credit in Settings), then
+  Geist Pixel Circle (SIL OFL 1.1, bundled, `public/fonts/GeistPixel-OFL.txt`)
+  offline. The spec's tight headline tracking is applied only once Bubbledot
+  has loaded (`has-bubbledot`, set in `main.jsx`). Bubbledot ICG is an Image
+  Club Graphics (Adobe) typeface and the CC BY licence is OnlineWebFonts'
+  claim: before a public launch, licence it or delete the link in
+  `index.html` (Geist Pixel then takes over with no other change).
+- Text: Inter via `@fontsource/inter` (OFL), Noto Sans Devanagari/Telugu for
+  Hindi and Telugu, all bundled so they work offline.
+- Video: the spec's CloudFront file (~14 MB, served with a one-year cache),
+  skipped on Data Saver, 2G, offline and reduced motion. Host a copy you have
+  rights to before production.
+- Sunlight mode (Settings): light, high-contrast screens with no video; the
+  landing keeps its dark look.
 
 ## Rules the code keeps
 
