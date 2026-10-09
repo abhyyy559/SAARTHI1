@@ -18,11 +18,13 @@ let demoForbiddenHandler = null;
 let lastDemo403 = 0;
 export const onDemoForbidden = (fn) => { demoForbiddenHandler = fn; };
 
-/** Max time for any server round-trip: 20 seconds, never infinite (B3).
- * 5s was aborting real answers on phone networks (warnings ~4.6s, chat ~7s
- * with LLM) — the app read as "data not loading" when the server was still
- * working. 20s keeps a ceiling while letting slow-but-live calls finish. */
-export const FETCH_TIMEOUT_MS = 20000;
+/** Max time for any server round-trip: 5 seconds, never infinite (B3). */
+export const FETCH_TIMEOUT_MS = 5000;
+/** Heavy calls (multi-source warnings, advisory cards, LLM chat, voice)
+ * fan out to slow upstreams — on phone networks they legitimately take
+ * 5-15s. They get their own ceiling so the app reads as "working, slow"
+ * instead of "data not loading". */
+export const SLOW_TIMEOUT_MS = 20000;
 
 // Offline queue for mutations when offline-sim is on
 const offlineQueue = [];
@@ -65,8 +67,8 @@ async function j(url, opts, timeoutMs) {
   }
   return r.json();
 }
-const post = (url, body) =>
-  j(full(url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const post = (url, body, timeoutMs) =>
+  j(full(url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, timeoutMs);
 
 // Streaming TTS: POSTs to /api/voice/synthesize-stream and yields parsed NDJSON
 // lines as they arrive, so playback can start on the first chunk while the
@@ -175,24 +177,24 @@ export const api = {
   current: (lat, lon) => j(`${V}/weather/current?lat=${lat}&lon=${lon}`),
   forecast: (lat, lon) => j(`${V}/weather/forecast?lat=${lat}&lon=${lon}`),
   warnings: (district, lat, lon) =>
-    j(`${V}/warnings?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
+    j(`${V}/warnings?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`, undefined, SLOW_TIMEOUT_MS),
   warningById: (id) => j(`${V}/warnings/${encodeURIComponent(id)}`),
   nowcast: (district, lat, lon) =>
-    j(`/api/weather/nowcast?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
+    j(`/api/weather/nowcast?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`, undefined, SLOW_TIMEOUT_MS),
   models: (lat, lon) => j(`/api/weather/models?lat=${lat}&lon=${lon}`),
   // Aviation briefing (deterministic, no LLM): winds aloft, cloud/visibility
   // proxies, turbulence-icing proxies, sunrise/sunset, official alerts.
   aviationBriefing: (lat, lon, lang) =>
-    j(`/api/aviation/briefing?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(lang || 'en')}`),
-  climate: (lat, lon) => j(`${V}/climate/trends?lat=${lat}&lon=${lon}&years=20`),
-  profileAdvisory: (loc, persona, language) => j(`${V}/advisories?district=${encodeURIComponent(loc.district)}&lat=${loc.lat}&lon=${loc.lon}&user_type=${encodeURIComponent(persona)}&language=${encodeURIComponent(language)}`),
+    j(`/api/aviation/briefing?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(lang || 'en')}`, undefined, SLOW_TIMEOUT_MS),
+  climate: (lat, lon) => j(`${V}/climate/trends?lat=${lat}&lon=${lon}&years=20`, undefined, SLOW_TIMEOUT_MS),
+  profileAdvisory: (loc, persona, language) => j(`${V}/advisories?district=${encodeURIComponent(loc.district)}&lat=${loc.lat}&lon=${loc.lon}&user_type=${encodeURIComponent(persona)}&language=${encodeURIComponent(language)}`, undefined, SLOW_TIMEOUT_MS),
   // Situation-aware advisory cards (current + 3-day forecast + official alert
   // verdict), rendered inside the Advisory view only.
-  advisoryCards: (loc, persona, language) => j(`/api/advisory/cards?lat=${loc.lat}&lon=${loc.lon}&lang=${encodeURIComponent(language)}&persona=${encodeURIComponent(persona)}`),
+  advisoryCards: (loc, persona, language) => j(`/api/advisory/cards?lat=${loc.lat}&lon=${loc.lon}&lang=${encodeURIComponent(language)}&persona=${encodeURIComponent(persona)}`, undefined, SLOW_TIMEOUT_MS),
   advisory: (severity, userType) => j(`${V}/advisories?severity=${severity}&user_type=${userType}`),
   impact: (a, b, userType = 'driver') =>
     j(`${V}/impact/analyze?lat1=${a.lat}&lon1=${a.lon}&lat2=${b.lat}&lon2=${b.lon}&user_type=${userType}`),
-  chat: (body) => post(`${V}/chat`, body),
+  chat: (body) => post(`${V}/chat`, body, SLOW_TIMEOUT_MS),
   chatStream: (body, opts) => chatStreamLines(body, opts),
   guidance: (q, lang) => j(`${V}/emergency/guidance?q=${encodeURIComponent(q)}&lang=${lang}`),
   sos: (payload) => post(`${V}/emergency/messages`, payload),
@@ -241,11 +243,11 @@ export const api = {
     const fd = new FormData();
     const extension = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : blob.type.includes('wav') ? 'wav' : 'webm';
     fd.append('file', blob, `speech.${extension}`);
-    return j(`/api/voice/transcribe?language=${encodeURIComponent(language)}`, { method: 'POST', body: fd });
+    return j(`/api/voice/transcribe?language=${encodeURIComponent(language)}`, { method: 'POST', body: fd }, SLOW_TIMEOUT_MS);
   },
   synthesize: (text, language) =>
-    post('/api/voice/synthesize', { text, language }),
-  speak: (text, language) => post('/api/voice/synthesize', { text, language }),
+    post('/api/voice/synthesize', { text, language }, SLOW_TIMEOUT_MS),
+  speak: (text, language) => post('/api/voice/synthesize', { text, language }, SLOW_TIMEOUT_MS),
   // Progressive TTS: yields NDJSON chunk lines as they arrive (play the first
   // chunk while the rest generates). See synthesizeStream above.
   speakStream: (text, language, opts) => synthesizeStream(text, language, opts),
