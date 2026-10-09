@@ -49,6 +49,8 @@ You (text/voice, EN/HI/TE, persona + GPS/district)
 | Source | Role | Access |
 |---|---|---|
 | Open-Meteo | Primary weather + forecast | No key |
+| NDMA SACHET state feeds (all 36 states/UTs) | Official alerts for the user's own state | No key |
+| GeoNames (CC BY 4.0) | All-India district list, built once by `scripts/build_districts_geonames.py` | No key |
 | SACHET NDMA CAP (TG + AP + national feeds) | Official alerts | No key |
 | OWM | Cross-check | Key in `.env` |
 | Sarvam AI | STT/TTS (IN languages) | Key in `.env` |

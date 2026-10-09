@@ -35,6 +35,10 @@ from pathlib import Path
 from typing import Any
 
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "districts_telangana_andhra.json"
+# Every other district in India (GeoNames ADM2, CC BY 4.0). The surveyed
+# Telangana/Andhra file above wins for those two states.
+_INDIA_PATH = Path(__file__).resolve().parent.parent / "data" / "districts_india_geonames.json"
+_SURVEYED_STATES = {"Telangana", "Andhra Pradesh"}
 
 _ALPHANUM = re.compile(r"[^a-z0-9]+")
 
@@ -52,18 +56,25 @@ def norm_name(value: Any) -> str:
 def _read() -> list[dict[str, Any]]:
     """Load the generated gazetteer. Never raises: alerting must survive a
     missing fixture, and 'no district knowledge' is a safe degradation."""
-    try:
-        raw = json.loads(_DATA_PATH.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    if not isinstance(raw, list):
-        return []
-    return [r for r in raw if isinstance(r, dict) and r.get("district")]
+    rows: list[dict[str, Any]] = []
+    for path, skip_states in ((_DATA_PATH, set()), (_INDIA_PATH, _SURVEYED_STATES)):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(raw, list):
+            rows.extend(r for r in raw if isinstance(r, dict) and r.get("district")
+                        and r.get("state") not in skip_states)
+    return rows
 
 
 DISTRICTS: list[dict[str, Any]] = _read()
 
-_BY_NAME: dict[str, dict[str, Any]] = {d["district"]: d for d in DISTRICTS}
+# Same district name in two states (Bilaspur, Aurangabad...): first wins here;
+# the resolver keeps both, each with its own state.
+_BY_NAME: dict[str, dict[str, Any]] = {}
+for _row in DISTRICTS:
+    _BY_NAME.setdefault(_row["district"], _row)
 
 # normalized spelling -> canonical district name. Built with setdefault so that if
 # two districts ever claim the same spelling the first one wins deterministically
@@ -124,7 +135,7 @@ def is_coastal(district: str) -> bool | None:
     the answer layer must not turn one into the other.
     """
     row = get(district)
-    if row is None:
+    if row is None or row.get("coastal") is None:
         return None
     return bool(row.get("coastal"))
 
@@ -143,7 +154,8 @@ def as_gazetteer_entries() -> list[dict[str, Any]]:
             "state": d["state"],
             "latitude": d["latitude"],
             "longitude": d["longitude"],
-            "coastal": bool(d.get("coastal")),
+            # None stays None: unknown must never read as "inland".
+            "coastal": None if d.get("coastal") is None else bool(d.get("coastal")),
             "aliases": list(d.get("aliases") or []),
             "coord_source": d.get("coord_source"),
         }

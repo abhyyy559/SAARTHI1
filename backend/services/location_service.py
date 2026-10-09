@@ -33,10 +33,22 @@ _CITIES = [
     {"city": "Kakinada", "district": "Kakinada", "state": "Andhra Pradesh", "latitude": 16.9891, "longitude": 82.2475, "coastal": True},
     {"city": "Machilipatnam", "district": "Krishna", "state": "Andhra Pradesh", "latitude": 16.1873, "longitude": 81.1389, "coastal": True},
     {"city": "Nellore", "district": "Nellore", "state": "Andhra Pradesh", "latitude": 14.4426, "longitude": 79.9865, "coastal": True},
-    {"city": "Kochi", "district": "Kerala", "state": "Kerala", "latitude": 9.9312, "longitude": 76.2673, "coastal": True},
+    {"city": "Kochi", "district": "Ernakulam", "state": "Kerala", "latitude": 9.9312, "longitude": 76.2673, "coastal": True},
     {"city": "Panaji", "district": "North Goa", "state": "Goa", "latitude": 15.4909, "longitude": 73.8278, "coastal": True},
     {"city": "Veraval", "district": "Gir Somnath", "state": "Gujarat", "latitude": 20.9067, "longitude": 70.3683, "coastal": True},
 ]
+
+
+def _twin_city(merged: list[dict], entry: dict) -> dict | None:
+    for c in merged[:len(_CITIES)]:
+        if c["state"] != entry["state"]:
+            continue
+        if haversine_km(c["latitude"], c["longitude"], entry["latitude"], entry["longitude"]) >= 20:
+            continue
+        a, b = _norm(c["district"]), _norm(entry["district"])
+        if a.split()[:1] == b.split()[:1] or SequenceMatcher(None, a, b).ratio() >= 0.75:
+            return c
+    return None
 
 
 def _build_gazetteer() -> list[dict]:
@@ -52,6 +64,14 @@ def _build_gazetteer() -> list[dict]:
     seen = {(e["state"], e["district"]) for e in merged}
     for entry in district_service.as_gazetteer_entries():
         if (entry["state"], entry["district"]) in seen:
+            continue
+        # An all-India district that is a city entry under another spelling
+        # ("Bangalore Urban" = "Bengaluru Urban", "Mumbai Suburban" = "Mumbai"):
+        # keep the city, and let it answer to the twin's name. Near-by districts
+        # with different names (Delhi's eleven) stay: alerts address them.
+        twin = _twin_city(merged, entry) if entry.get("coord_source") == "geonames" else None
+        if twin is not None:
+            twin.setdefault("aliases", []).append(entry["district"])
             continue
         merged.append(entry)
         seen.add((entry["state"], entry["district"]))
@@ -78,9 +98,9 @@ _ALIASES = {
     "bangalore": "Bengaluru Urban",
     "bengluru": "Bengaluru Urban",
     "bengaluru": "Bengaluru Urban",
-    "cochin": "Kerala",
+    "cochin": "Ernakulam",
+    "kochi": "Ernakulam",
     "panjim": "North Goa",
-    "gurgaon": "New Delhi",
     "mumbay": "Mumbai",
     "chennay": "Chennai",
     "chenai": "Chennai",
@@ -118,6 +138,7 @@ def _tokens(entry: dict) -> list[str]:
     # district by the name they actually see in the alert.
     for alias in entry.get("aliases") or []:
         words.append(_norm(alias))
+        words.extend(_norm(alias).split())  # "Bangalore Urban" also answers to "bangalore"
     return [w for w in dict.fromkeys(words) if len(w) >= _MIN_TOKEN]
 
 
@@ -160,16 +181,27 @@ class LocationService:
         return self._match_query(query)
 
     def _match_query(self, query: str) -> dict | None:
+        """Most precise rule first. With ~800 places, loose substring matching
+        ("ban" inside "bangalore") picked districts in the wrong state, so it is
+        kept only for the surveyed Telangana/Andhra entries it was built for."""
         q = _norm(query)
         if not q:
             return None
-        for entry in GAZETTEER:
-            toks = _tokens(entry)
-            if q in toks or any(q in tok or tok in q for tok in toks):
-                return dict(entry)
         alias = _ALIASES.get(q)
         if alias:
-            return next((dict(e) for e in GAZETTEER if e["district"] == alias), None)
+            hit = next((dict(e) for e in GAZETTEER if e["district"] == alias), None)
+            if hit:
+                return hit
+        for entry in GAZETTEER:
+            if q in _tokens(entry):
+                return dict(entry)
+        for entry in GAZETTEER:
+            toks = _tokens(entry)
+            if entry.get("coord_source") == "geonames":
+                if len(q) >= 4 and any(tok.startswith(q) for tok in toks):
+                    return dict(entry)
+            elif any(q in tok or tok in q for tok in toks):
+                return dict(entry)
         fuzzy = _fuzzy_candidates(query, limit=1)
         return fuzzy[0] if fuzzy else None
 
@@ -195,9 +227,11 @@ class LocationService:
         q = _norm(query)
         if not q:
             return []
-        exact = [dict(e) for e in GAZETTEER if q in _tokens(e) or any(q in tok for tok in _tokens(e))]
-        if exact:
-            return exact[:8]
+        exact = [dict(e) for e in GAZETTEER if q in _tokens(e)]
+        partial = [dict(e) for e in GAZETTEER if q not in _tokens(e) and any(
+            (tok.startswith(q) if e.get("coord_source") == "geonames" else q in tok) for tok in _tokens(e))]
+        if exact or partial:
+            return (exact + partial)[:8]
         alias = _ALIASES.get(q)
         if alias:
             alias_hits = [dict(e) for e in GAZETTEER if e["district"] == alias]

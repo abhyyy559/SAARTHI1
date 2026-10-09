@@ -303,7 +303,7 @@ def _merge(bucket: dict[str, list[dict]], alert: dict, *, lat: float, lon: float
     return False
 
 
-async def _fetch_cap() -> tuple[list[dict], str]:
+async def _fetch_cap(state: str = "") -> tuple[list[dict], str]:
     """The official feed, or nothing. Never raises: a dead official feed is a
     state to report, not an exception to propagate into a verdict.
 
@@ -312,7 +312,10 @@ async def _fetch_cap() -> tuple[list[dict], str]:
     every URL failed). Reporting a failing feed as UNCONFIGURED would hide an
     outage behind a setup label."""
     try:
-        alerts, prov = await cap_adapter.fetch_alerts()
+        # Outside Telangana/Andhra the user's own state feed joins the defaults.
+        urls = config.cap_feeds_for_state(state)
+        extra = len(urls) > len(config.CAP_FEED_URLS)
+        alerts, prov = await (cap_adapter.fetch_alerts(urls) if extra else cap_adapter.fetch_alerts())
         return list(alerts or []), prov or ""
     except AdapterUnavailable:
         configured = bool(getattr(config, "CAP_FEED_URLS", None) or config.CAP_FEED_URL)
@@ -412,11 +415,11 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
 
     only_official = official_only() if force_official_only is None else force_official_only
     if only_official:
-        cap_alerts, cap_prov = await _fetch_cap()
+        cap_alerts, cap_prov = await _fetch_cap(state)
         chain_alerts, chain_prov = [], ""
     else:
         (cap_alerts, cap_prov), (chain_alerts, chain_prov) = await asyncio.gather(
-            _fetch_cap(), _fetch_chain(lat, lon, district)
+            _fetch_cap(state), _fetch_chain(lat, lon, district)
         )
 
     # Did any feed actually ANSWER? Both fetchers swallow their own failures:

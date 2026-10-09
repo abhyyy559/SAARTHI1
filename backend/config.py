@@ -91,6 +91,29 @@ CAP_FEED_URL = _get("CAP_FEED_URL", "")
 # fisherman in Visakhapatnam is covered by the Andhra feed, not Telangana's.
 SACHET_RSS = "https://sachet.ndma.gov.in/cap_public_website/rss/rss_{}.xml"
 DEFAULT_CAP_FEED_URLS = [SACHET_RSS.format(s) for s in ("india", "telangana", "andhra")]
+# Every state/UT has its own SACHET feed (verified 2026-10-09); a user's own
+# state feed is added on top of the defaults when they are elsewhere.
+SACHET_STATE_SLUGS = {
+    "Andaman and Nicobar Islands": "andaman", "Andhra Pradesh": "andhra", "Arunachal Pradesh": "arunachal",
+    "Assam": "assam", "Bihar": "bihar", "Chandigarh": "chandigarh", "Chhattisgarh": "chhattisgarh",
+    "Dadra and Nagar Haveli and Daman and Diu": "dadra", "Delhi": "delhi", "Goa": "goa", "Gujarat": "gujarat",
+    "Haryana": "haryana", "Himachal Pradesh": "himachal", "Jammu and Kashmir": "jammu", "Jharkhand": "jharkhand",
+    "Karnataka": "karnataka", "Kerala": "kerala", "Ladakh": "ladakh", "Lakshadweep": "lakshadweep",
+    "Madhya Pradesh": "madhya", "Maharashtra": "maharashtra", "Manipur": "manipur", "Meghalaya": "meghalaya",
+    "Mizoram": "mizoram", "Nagaland": "nagaland", "Odisha": "odisha", "Puducherry": "puducherry",
+    "Punjab": "punjab", "Rajasthan": "rajasthan", "Sikkim": "sikkim", "Tamil Nadu": "tamil",
+    "Telangana": "telangana", "Tripura": "tripura", "Uttar Pradesh": "uttar", "Uttarakhand": "uttarakhand",
+    "West Bengal": "west",
+}
+
+
+def cap_feeds_for_state(state: str) -> list[str]:
+    """The configured feeds plus the user's own state feed, when it is extra."""
+    urls = list(CAP_FEED_URLS)
+    slug = SACHET_STATE_SLUGS.get((state or "").strip())
+    if urls and slug and SACHET_RSS.format(slug) not in urls:
+        urls.append(SACHET_RSS.format(slug))
+    return urls
 # CAP_FEED_URLS: comma-separated override; "off" disables CAP (tests, offline).
 _cap_env = _get("CAP_FEED_URLS", "").strip()
 if _cap_env.lower() == "off":

@@ -252,25 +252,25 @@ async def _fetch_feed(client: "httpx.AsyncClient", url: str) -> list[dict[str, A
 # was repeated per district and per request: the main cold-start cost.
 # Callers get copies, because they annotate alerts per district.
 _SHARED_TTL_S = 180.0
-_shared: dict[str, Any] = {"at": 0.0, "urls": (), "alerts": None}
+_shared: dict[tuple, tuple[float, list]] = {}
 
 
 def reset_shared_cache() -> None:
-    _shared.update(at=0.0, urls=(), alerts=None)
+    _shared.clear()
 
 
-async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
-    urls = list(getattr(config, "CAP_FEED_URLS", None) or ([config.CAP_FEED_URL] if config.CAP_FEED_URL else []))
+async def fetch_alerts(urls: list[str] | None = None) -> tuple[list[dict[str, Any]], str]:
+    urls = list(urls or getattr(config, "CAP_FEED_URLS", None) or ([config.CAP_FEED_URL] if config.CAP_FEED_URL else []))
     if not urls:
         report("cap", UNCONFIGURED, "CAP_FEED_URL not set")
         raise AdapterUnavailable("CAP feed unconfigured (needs CAP_FEED_URL)")
     import time as _time
-    if (_shared["alerts"] is not None and _shared["urls"] == tuple(urls)
-            and _time.monotonic() - _shared["at"] < _SHARED_TTL_S):
-        return [dict(a) for a in _shared["alerts"]], LIVE
+    hit = _shared.get(tuple(urls))
+    if hit and _time.monotonic() - hit[0] < _SHARED_TTL_S:
+        return [dict(a) for a in hit[1]], LIVE
     alerts, prov = await _fetch_alerts_uncached(urls)
     if prov == LIVE:
-        _shared.update(at=_time.monotonic(), urls=tuple(urls), alerts=[dict(a) for a in alerts])
+        _shared[tuple(urls)] = (_time.monotonic(), [dict(a) for a in alerts])
     return alerts, prov
 
 

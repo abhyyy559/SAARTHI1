@@ -21,7 +21,7 @@ def test_vizag_resolves_to_vizag():
 def test_coastal_districts_present():
     names = {e["district"] for e in __import__(
         "backend.services.location_service", fromlist=["GAZETTEER"]).GAZETTEER}
-    for coastal in ("Visakhapatnam", "Kakinada", "Krishna", "Nellore", "Kerala"):
+    for coastal in ("Visakhapatnam", "Kakinada", "Krishna", "Nellore", "Ernakulam"):
         assert coastal in names, f"missing coastal district: {coastal}"
 
 

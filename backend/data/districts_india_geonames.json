@@ -1,0 +1,8395 @@
+[
+ {
+  "district": "Nicobar",
+  "state": "Andaman and Nicobar Islands",
+  "latitude": 7.03,
+  "longitude": 93.7903,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nicobar"
+  ]
+ },
+ {
+  "district": "North  & Middle Andaman",
+  "state": "Andaman and Nicobar Islands",
+  "latitude": 12.8379,
+  "longitude": 92.8675,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "North  & Middle Andaman"
+  ]
+ },
+ {
+  "district": "South Andaman",
+  "state": "Andaman and Nicobar Islands",
+  "latitude": 10.7578,
+  "longitude": 92.5214,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "South Andaman"
+  ]
+ },
+ {
+  "district": "Alluri Sitharama Raju",
+  "state": "Andhra Pradesh",
+  "latitude": 17.8866,
+  "longitude": 82.2135,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Alluri Sitharama Raju"
+  ]
+ },
+ {
+  "district": "Anakapalli",
+  "state": "Andhra Pradesh",
+  "latitude": 17.678,
+  "longitude": 82.7911,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Anakapalli"
+  ]
+ },
+ {
+  "district": "Anantapur",
+  "state": "Andhra Pradesh",
+  "latitude": 14.55,
+  "longitude": 77.4167,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Anantapur"
+  ]
+ },
+ {
+  "district": "Annamayya",
+  "state": "Andhra Pradesh",
+  "latitude": 13.9095,
+  "longitude": 78.6482,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Annamayya"
+  ]
+ },
+ {
+  "district": "Bapatla",
+  "state": "Andhra Pradesh",
+  "latitude": 15.9328,
+  "longitude": 80.3865,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bapatla"
+  ]
+ },
+ {
+  "district": "Chittoor",
+  "state": "Andhra Pradesh",
+  "latitude": 13.4167,
+  "longitude": 79.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chittoor"
+  ]
+ },
+ {
+  "district": "East Godavari",
+  "state": "Andhra Pradesh",
+  "latitude": 17.0753,
+  "longitude": 81.719,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Godavari"
+  ]
+ },
+ {
+  "district": "Eluru",
+  "state": "Andhra Pradesh",
+  "latitude": 17.0131,
+  "longitude": 81.0842,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Eluru"
+  ]
+ },
+ {
+  "district": "Guntur",
+  "state": "Andhra Pradesh",
+  "latitude": 16.2715,
+  "longitude": 80.4331,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Guntur"
+  ]
+ },
+ {
+  "district": "Kakinada",
+  "state": "Andhra Pradesh",
+  "latitude": 17.1192,
+  "longitude": 82.19,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kakinada"
+  ]
+ },
+ {
+  "district": "Konaseema",
+  "state": "Andhra Pradesh",
+  "latitude": 16.6422,
+  "longitude": 82.0827,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Konaseema"
+  ]
+ },
+ {
+  "district": "Krishna",
+  "state": "Andhra Pradesh",
+  "latitude": 16.3031,
+  "longitude": 80.9957,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Krishna"
+  ]
+ },
+ {
+  "district": "Kurnool",
+  "state": "Andhra Pradesh",
+  "latitude": 15.6113,
+  "longitude": 77.6526,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kurnool"
+  ]
+ },
+ {
+  "district": "NTR",
+  "state": "Andhra Pradesh",
+  "latitude": 16.8205,
+  "longitude": 80.2472,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "NTR"
+  ]
+ },
+ {
+  "district": "Nandyal",
+  "state": "Andhra Pradesh",
+  "latitude": 15.5246,
+  "longitude": 78.4133,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nandyal"
+  ]
+ },
+ {
+  "district": "Nellore",
+  "state": "Andhra Pradesh",
+  "latitude": 14.7455,
+  "longitude": 79.7053,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nellore"
+  ]
+ },
+ {
+  "district": "Palnadu",
+  "state": "Andhra Pradesh",
+  "latitude": 16.3233,
+  "longitude": 79.6961,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Palnadu"
+  ]
+ },
+ {
+  "district": "Parvathipuram Manyam",
+  "state": "Andhra Pradesh",
+  "latitude": 18.7504,
+  "longitude": 83.5405,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Parvathipuram Manyam"
+  ]
+ },
+ {
+  "district": "Prakasam",
+  "state": "Andhra Pradesh",
+  "latitude": 15.5,
+  "longitude": 79.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Prakasam"
+  ]
+ },
+ {
+  "district": "Sri Sathya Sai",
+  "state": "Andhra Pradesh",
+  "latitude": 14.1682,
+  "longitude": 77.9641,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sri Sathya Sai"
+  ]
+ },
+ {
+  "district": "Srikakulam",
+  "state": "Andhra Pradesh",
+  "latitude": 18.5,
+  "longitude": 84.0,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Srikakulam"
+  ]
+ },
+ {
+  "district": "Tirupati",
+  "state": "Andhra Pradesh",
+  "latitude": 13.7805,
+  "longitude": 79.835,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tirupati"
+  ]
+ },
+ {
+  "district": "Visakhapatnam",
+  "state": "Andhra Pradesh",
+  "latitude": 17.7333,
+  "longitude": 83.2667,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Visakhapatnam"
+  ]
+ },
+ {
+  "district": "Vizianagaram",
+  "state": "Andhra Pradesh",
+  "latitude": 18.411,
+  "longitude": 83.3768,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vizianagaram"
+  ]
+ },
+ {
+  "district": "West Godavari",
+  "state": "Andhra Pradesh",
+  "latitude": 16.531,
+  "longitude": 81.6205,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Godavari"
+  ]
+ },
+ {
+  "district": "YSR",
+  "state": "Andhra Pradesh",
+  "latitude": 14.4167,
+  "longitude": 78.75,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "YSR"
+  ]
+ },
+ {
+  "district": "Anjaw",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.0655,
+  "longitude": 96.8288,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Anjaw"
+  ]
+ },
+ {
+  "district": "Changlang",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.3626,
+  "longitude": 96.3452,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Changlang"
+  ]
+ },
+ {
+  "district": "Dibang Valley",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.7,
+  "longitude": 95.7,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dibang Valley"
+  ]
+ },
+ {
+  "district": "East Kameng",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.3,
+  "longitude": 93.05,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Kameng"
+  ]
+ },
+ {
+  "district": "East Siang",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.0084,
+  "longitude": 95.3045,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Siang"
+  ]
+ },
+ {
+  "district": "Kamle",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.7297,
+  "longitude": 94.0909,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kamle"
+  ]
+ },
+ {
+  "district": "Kra Daadi",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.6949,
+  "longitude": 93.6337,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kra Daadi"
+  ]
+ },
+ {
+  "district": "Kurung Kumey",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.9998,
+  "longitude": 93.3924,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kurung Kumey"
+  ]
+ },
+ {
+  "district": "Lepa Rada",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.9264,
+  "longitude": 94.7329,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lepa Rada"
+  ]
+ },
+ {
+  "district": "Lohit",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.9858,
+  "longitude": 96.1755,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lohit"
+  ]
+ },
+ {
+  "district": "Longding",
+  "state": "Arunachal Pradesh",
+  "latitude": 26.8042,
+  "longitude": 95.3229,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Longding"
+  ]
+ },
+ {
+  "district": "Lower Dibang Valley",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.3726,
+  "longitude": 95.8804,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lower Dibang Valley"
+  ]
+ },
+ {
+  "district": "Lower Siang",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.7283,
+  "longitude": 94.5829,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lower Siang"
+  ]
+ },
+ {
+  "district": "Lower Subansiri",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.5648,
+  "longitude": 93.7943,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lower Subansiri"
+  ]
+ },
+ {
+  "district": "Namsai",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.6673,
+  "longitude": 95.8618,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Namsai"
+  ]
+ },
+ {
+  "district": "Pakke Kessang",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.1053,
+  "longitude": 93.0357,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pakke Kessang"
+  ]
+ },
+ {
+  "district": "Papum Pare",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.2888,
+  "longitude": 93.5969,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Papum Pare"
+  ]
+ },
+ {
+  "district": "Shi Yomi",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.6786,
+  "longitude": 94.2592,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shi Yomi"
+  ]
+ },
+ {
+  "district": "Siang",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.2121,
+  "longitude": 94.9924,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Siang"
+  ]
+ },
+ {
+  "district": "Tawang",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.6619,
+  "longitude": 91.9536,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tawang"
+  ]
+ },
+ {
+  "district": "Tirap",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.0192,
+  "longitude": 95.5179,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tirap"
+  ]
+ },
+ {
+  "district": "Upper Siang",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.8335,
+  "longitude": 94.9181,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Upper Siang"
+  ]
+ },
+ {
+  "district": "Upper Subansiri",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.3,
+  "longitude": 94.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Upper Subansiri"
+  ]
+ },
+ {
+  "district": "West Kameng",
+  "state": "Arunachal Pradesh",
+  "latitude": 27.4,
+  "longitude": 92.35,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Kameng"
+  ]
+ },
+ {
+  "district": "West Siang",
+  "state": "Arunachal Pradesh",
+  "latitude": 28.142,
+  "longitude": 94.5144,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Siang"
+  ]
+ },
+ {
+  "district": "Bajali",
+  "state": "Assam",
+  "latitude": 26.5267,
+  "longitude": 91.1668,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bajali"
+  ]
+ },
+ {
+  "district": "Baksa",
+  "state": "Assam",
+  "latitude": 26.698,
+  "longitude": 91.1514,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baksa"
+  ]
+ },
+ {
+  "district": "Barpeta",
+  "state": "Assam",
+  "latitude": 26.308,
+  "longitude": 90.9971,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Barpeta"
+  ]
+ },
+ {
+  "district": "Biswanath",
+  "state": "Assam",
+  "latitude": 26.7246,
+  "longitude": 93.1453,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Biswanath"
+  ]
+ },
+ {
+  "district": "Bongaigaon",
+  "state": "Assam",
+  "latitude": 26.4603,
+  "longitude": 90.6464,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bongaigaon"
+  ]
+ },
+ {
+  "district": "Cachar",
+  "state": "Assam",
+  "latitude": 24.7821,
+  "longitude": 92.8577,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Cachar"
+  ]
+ },
+ {
+  "district": "Charaideo",
+  "state": "Assam",
+  "latitude": 27.056,
+  "longitude": 95.0325,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Charaideo"
+  ]
+ },
+ {
+  "district": "Chirang",
+  "state": "Assam",
+  "latitude": 26.5253,
+  "longitude": 90.4907,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chirang"
+  ]
+ },
+ {
+  "district": "Darrang",
+  "state": "Assam",
+  "latitude": 26.5119,
+  "longitude": 92.1684,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Darrang"
+  ]
+ },
+ {
+  "district": "Dhemaji",
+  "state": "Assam",
+  "latitude": 27.6091,
+  "longitude": 94.7942,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhemaji"
+  ]
+ },
+ {
+  "district": "Dhubri",
+  "state": "Assam",
+  "latitude": 26.0675,
+  "longitude": 90.0224,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhubri"
+  ]
+ },
+ {
+  "district": "Dibrugarh",
+  "state": "Assam",
+  "latitude": 27.5,
+  "longitude": 95.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dibrugarh"
+  ]
+ },
+ {
+  "district": "Dima Hasao",
+  "state": "Assam",
+  "latitude": 25.5,
+  "longitude": 93.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dima Hasao"
+  ]
+ },
+ {
+  "district": "Goalpara",
+  "state": "Assam",
+  "latitude": 26.1279,
+  "longitude": 90.6097,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Goalpara"
+  ]
+ },
+ {
+  "district": "Golaghat",
+  "state": "Assam",
+  "latitude": 26.4092,
+  "longitude": 93.9119,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Golaghat"
+  ]
+ },
+ {
+  "district": "Hailakandi",
+  "state": "Assam",
+  "latitude": 24.5017,
+  "longitude": 92.6007,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hailakandi"
+  ]
+ },
+ {
+  "district": "Hojai",
+  "state": "Assam",
+  "latitude": 26.0013,
+  "longitude": 92.8609,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hojai"
+  ]
+ },
+ {
+  "district": "Jorhat",
+  "state": "Assam",
+  "latitude": 26.8,
+  "longitude": 94.26,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jorhat"
+  ]
+ },
+ {
+  "district": "Kamrup",
+  "state": "Assam",
+  "latitude": 26.2232,
+  "longitude": 91.6534,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kamrup"
+  ]
+ },
+ {
+  "district": "Kamrup Metropolitan",
+  "state": "Assam",
+  "latitude": 26.0538,
+  "longitude": 92.0076,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kamrup Metropolitan"
+  ]
+ },
+ {
+  "district": "Karbi Anglong",
+  "state": "Assam",
+  "latitude": 26.0,
+  "longitude": 93.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karbi Anglong"
+  ]
+ },
+ {
+  "district": "Karimganj",
+  "state": "Assam",
+  "latitude": 24.6,
+  "longitude": 92.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karimganj"
+  ]
+ },
+ {
+  "district": "Kokrajhar",
+  "state": "Assam",
+  "latitude": 26.6,
+  "longitude": 90.2,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kokrajhar"
+  ]
+ },
+ {
+  "district": "Lakhimpur",
+  "state": "Assam",
+  "latitude": 27.35,
+  "longitude": 94.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lakhimpur"
+  ]
+ },
+ {
+  "district": "Majuli",
+  "state": "Assam",
+  "latitude": 27.001,
+  "longitude": 94.2619,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Majuli"
+  ]
+ },
+ {
+  "district": "Morigaon",
+  "state": "Assam",
+  "latitude": 26.2521,
+  "longitude": 92.3424,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Morigaon"
+  ]
+ },
+ {
+  "district": "Nagaon",
+  "state": "Assam",
+  "latitude": 26.3504,
+  "longitude": 92.6923,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nagaon"
+  ]
+ },
+ {
+  "district": "Nalbari",
+  "state": "Assam",
+  "latitude": 26.5,
+  "longitude": 91.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nalbari"
+  ]
+ },
+ {
+  "district": "Sibsagar",
+  "state": "Assam",
+  "latitude": 26.9164,
+  "longitude": 94.6555,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sibsagar"
+  ]
+ },
+ {
+  "district": "Sonitpur",
+  "state": "Assam",
+  "latitude": 26.7675,
+  "longitude": 92.9643,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sonitpur"
+  ]
+ },
+ {
+  "district": "South Salmara Mancachar",
+  "state": "Assam",
+  "latitude": 25.7089,
+  "longitude": 89.8887,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South Salmara Mancachar"
+  ]
+ },
+ {
+  "district": "Tamulpur",
+  "state": "Assam",
+  "latitude": 26.6741,
+  "longitude": 91.5816,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tamulpur"
+  ]
+ },
+ {
+  "district": "Tinsukia",
+  "state": "Assam",
+  "latitude": 27.6,
+  "longitude": 95.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tinsukia"
+  ]
+ },
+ {
+  "district": "Udalguri",
+  "state": "Assam",
+  "latitude": 26.7336,
+  "longitude": 92.0921,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Udalguri"
+  ]
+ },
+ {
+  "district": "West Karbi Anglong",
+  "state": "Assam",
+  "latitude": 25.8899,
+  "longitude": 92.8388,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Karbi Anglong"
+  ]
+ },
+ {
+  "district": "Araria",
+  "state": "Bihar",
+  "latitude": 26.2,
+  "longitude": 87.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Araria"
+  ]
+ },
+ {
+  "district": "Arwal",
+  "state": "Bihar",
+  "latitude": 25.1616,
+  "longitude": 84.6904,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Arwal"
+  ]
+ },
+ {
+  "district": "Aurangabad",
+  "state": "Bihar",
+  "latitude": 24.75,
+  "longitude": 84.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Aurangabad"
+  ]
+ },
+ {
+  "district": "Banka",
+  "state": "Bihar",
+  "latitude": 24.8921,
+  "longitude": 86.9843,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Banka"
+  ]
+ },
+ {
+  "district": "Begusarai",
+  "state": "Bihar",
+  "latitude": 25.5,
+  "longitude": 86.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Begusarai"
+  ]
+ },
+ {
+  "district": "Bhagalpur",
+  "state": "Bihar",
+  "latitude": 25.2902,
+  "longitude": 87.0666,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhagalpur"
+  ]
+ },
+ {
+  "district": "Bhojpur",
+  "state": "Bihar",
+  "latitude": 25.3089,
+  "longitude": 84.445,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhojpur"
+  ]
+ },
+ {
+  "district": "Buxar",
+  "state": "Bihar",
+  "latitude": 25.5,
+  "longitude": 84.1,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Buxar"
+  ]
+ },
+ {
+  "district": "Darbhanga",
+  "state": "Bihar",
+  "latitude": 26.0,
+  "longitude": 86.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Darbhanga"
+  ]
+ },
+ {
+  "district": "Gaya",
+  "state": "Bihar",
+  "latitude": 24.75,
+  "longitude": 85.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gaya"
+  ]
+ },
+ {
+  "district": "Gopalganj",
+  "state": "Bihar",
+  "latitude": 26.5,
+  "longitude": 84.3333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gopalganj"
+  ]
+ },
+ {
+  "district": "Jamui",
+  "state": "Bihar",
+  "latitude": 24.9208,
+  "longitude": 86.1754,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jamui"
+  ]
+ },
+ {
+  "district": "Jehanabad",
+  "state": "Bihar",
+  "latitude": 25.207,
+  "longitude": 84.9957,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jehanabad"
+  ]
+ },
+ {
+  "district": "Kaimur",
+  "state": "Bihar",
+  "latitude": 25.0508,
+  "longitude": 83.5826,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kaimur"
+  ]
+ },
+ {
+  "district": "Katihar",
+  "state": "Bihar",
+  "latitude": 25.5,
+  "longitude": 87.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Katihar"
+  ]
+ },
+ {
+  "district": "Khagaria",
+  "state": "Bihar",
+  "latitude": 25.5,
+  "longitude": 86.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khagaria"
+  ]
+ },
+ {
+  "district": "Kishanganj",
+  "state": "Bihar",
+  "latitude": 26.3,
+  "longitude": 88.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kishanganj"
+  ]
+ },
+ {
+  "district": "Lakhisarai",
+  "state": "Bihar",
+  "latitude": 25.2,
+  "longitude": 86.2,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lakhisarai"
+  ]
+ },
+ {
+  "district": "Madhepura",
+  "state": "Bihar",
+  "latitude": 25.8,
+  "longitude": 87.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Madhepura"
+  ]
+ },
+ {
+  "district": "Madhubani",
+  "state": "Bihar",
+  "latitude": 26.3333,
+  "longitude": 86.0833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Madhubani"
+  ]
+ },
+ {
+  "district": "Munger",
+  "state": "Bihar",
+  "latitude": 25.361,
+  "longitude": 86.4651,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Munger"
+  ]
+ },
+ {
+  "district": "Muzaffarpur",
+  "state": "Bihar",
+  "latitude": 26.1667,
+  "longitude": 85.4167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Muzaffarpur"
+  ]
+ },
+ {
+  "district": "Nalanda",
+  "state": "Bihar",
+  "latitude": 25.25,
+  "longitude": 85.5833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nalanda"
+  ]
+ },
+ {
+  "district": "Nawada",
+  "state": "Bihar",
+  "latitude": 24.75,
+  "longitude": 85.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nawada"
+  ]
+ },
+ {
+  "district": "Pashchim Champaran",
+  "state": "Bihar",
+  "latitude": 27.0,
+  "longitude": 84.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pashchim Champaran"
+  ]
+ },
+ {
+  "district": "Patna",
+  "state": "Bihar",
+  "latitude": 25.4167,
+  "longitude": 85.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Patna"
+  ]
+ },
+ {
+  "district": "Purba Champaran",
+  "state": "Bihar",
+  "latitude": 26.5833,
+  "longitude": 84.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Purba Champaran"
+  ]
+ },
+ {
+  "district": "Purnia",
+  "state": "Bihar",
+  "latitude": 25.8161,
+  "longitude": 87.4071,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Purnia"
+  ]
+ },
+ {
+  "district": "Rohtas",
+  "state": "Bihar",
+  "latitude": 24.9794,
+  "longitude": 84.0277,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rohtas"
+  ]
+ },
+ {
+  "district": "Saharsa",
+  "state": "Bihar",
+  "latitude": 25.8166,
+  "longitude": 86.5898,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Saharsa"
+  ]
+ },
+ {
+  "district": "Samastipur",
+  "state": "Bihar",
+  "latitude": 25.75,
+  "longitude": 85.9167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Samastipur"
+  ]
+ },
+ {
+  "district": "Saran",
+  "state": "Bihar",
+  "latitude": 25.9167,
+  "longitude": 84.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Saran"
+  ]
+ },
+ {
+  "district": "Sheikhpura",
+  "state": "Bihar",
+  "latitude": 25.1307,
+  "longitude": 85.7818,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sheikhpura"
+  ]
+ },
+ {
+  "district": "Sheohar",
+  "state": "Bihar",
+  "latitude": 26.5,
+  "longitude": 85.3,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sheohar"
+  ]
+ },
+ {
+  "district": "Sitamarhi",
+  "state": "Bihar",
+  "latitude": 26.6667,
+  "longitude": 85.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sitamarhi"
+  ]
+ },
+ {
+  "district": "Siwan",
+  "state": "Bihar",
+  "latitude": 26.1667,
+  "longitude": 84.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Siwan"
+  ]
+ },
+ {
+  "district": "Supaul",
+  "state": "Bihar",
+  "latitude": 26.25,
+  "longitude": 86.8,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Supaul"
+  ]
+ },
+ {
+  "district": "Vaishali",
+  "state": "Bihar",
+  "latitude": 25.75,
+  "longitude": 85.4167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vaishali"
+  ]
+ },
+ {
+  "district": "Chandigarh",
+  "state": "Chandigarh",
+  "latitude": 30.7301,
+  "longitude": 76.7815,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chandigarh"
+  ]
+ },
+ {
+  "district": "Balod",
+  "state": "Chhattisgarh",
+  "latitude": 20.7303,
+  "longitude": 81.2022,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Balod"
+  ]
+ },
+ {
+  "district": "Baloda Bazar",
+  "state": "Chhattisgarh",
+  "latitude": 21.659,
+  "longitude": 82.1638,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baloda Bazar"
+  ]
+ },
+ {
+  "district": "Balrampur",
+  "state": "Chhattisgarh",
+  "latitude": 23.6077,
+  "longitude": 83.6141,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Balrampur"
+  ]
+ },
+ {
+  "district": "Bastar",
+  "state": "Chhattisgarh",
+  "latitude": 19.2679,
+  "longitude": 81.7383,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bastar"
+  ]
+ },
+ {
+  "district": "Bemetara",
+  "state": "Chhattisgarh",
+  "latitude": 21.7052,
+  "longitude": 81.5298,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bemetara"
+  ]
+ },
+ {
+  "district": "Bijapur",
+  "state": "Chhattisgarh",
+  "latitude": 18.8432,
+  "longitude": 80.7761,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bijapur"
+  ]
+ },
+ {
+  "district": "Bilaspur",
+  "state": "Chhattisgarh",
+  "latitude": 22.3833,
+  "longitude": 82.1333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bilaspur"
+  ]
+ },
+ {
+  "district": "Dakshin Bastar Dantewada",
+  "state": "Chhattisgarh",
+  "latitude": 18.5,
+  "longitude": 81.3796,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dakshin Bastar Dantewada"
+  ]
+ },
+ {
+  "district": "Dhamtari",
+  "state": "Chhattisgarh",
+  "latitude": 20.5,
+  "longitude": 81.8,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhamtari"
+  ]
+ },
+ {
+  "district": "Durg",
+  "state": "Chhattisgarh",
+  "latitude": 21.15,
+  "longitude": 81.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Durg"
+  ]
+ },
+ {
+  "district": "Gariyaband",
+  "state": "Chhattisgarh",
+  "latitude": 20.6343,
+  "longitude": 82.0588,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gariyaband"
+  ]
+ },
+ {
+  "district": "Gaurella Pendra Marwahi",
+  "state": "Chhattisgarh",
+  "latitude": 22.8311,
+  "longitude": 81.9588,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gaurella Pendra Marwahi"
+  ]
+ },
+ {
+  "district": "Janjgir-Champa",
+  "state": "Chhattisgarh",
+  "latitude": 21.9,
+  "longitude": 82.7,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Janjgir-Champa"
+  ]
+ },
+ {
+  "district": "Jashpur",
+  "state": "Chhattisgarh",
+  "latitude": 22.7849,
+  "longitude": 83.8457,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jashpur"
+  ]
+ },
+ {
+  "district": "Kabeerdham",
+  "state": "Chhattisgarh",
+  "latitude": 22.1,
+  "longitude": 81.2,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kabeerdham"
+  ]
+ },
+ {
+  "district": "Khairgarh Chhuikhadan Gandai",
+  "state": "Chhattisgarh",
+  "latitude": 21.5295,
+  "longitude": 80.9483,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khairgarh Chhuikhadan Gandai"
+  ]
+ },
+ {
+  "district": "Kondagaon",
+  "state": "Chhattisgarh",
+  "latitude": 19.5952,
+  "longitude": 81.6675,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kondagaon"
+  ]
+ },
+ {
+  "district": "Korba",
+  "state": "Chhattisgarh",
+  "latitude": 22.5,
+  "longitude": 82.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Korba"
+  ]
+ },
+ {
+  "district": "Koriya",
+  "state": "Chhattisgarh",
+  "latitude": 23.4299,
+  "longitude": 82.5178,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Koriya"
+  ]
+ },
+ {
+  "district": "Mahasamund",
+  "state": "Chhattisgarh",
+  "latitude": 21.2,
+  "longitude": 82.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahasamund"
+  ]
+ },
+ {
+  "district": "Manendragarh Chirimiri Bharatpur",
+  "state": "Chhattisgarh",
+  "latitude": 23.4316,
+  "longitude": 82.1789,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Manendragarh Chirimiri Bharatpur"
+  ]
+ },
+ {
+  "district": "Mohla Manpur Ambagarh Chouki",
+  "state": "Chhattisgarh",
+  "latitude": 20.4947,
+  "longitude": 80.7997,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mohla Manpur Ambagarh Chouki"
+  ]
+ },
+ {
+  "district": "Mungeli",
+  "state": "Chhattisgarh",
+  "latitude": 22.0679,
+  "longitude": 81.6818,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mungeli"
+  ]
+ },
+ {
+  "district": "Narayanpur",
+  "state": "Chhattisgarh",
+  "latitude": 19.6043,
+  "longitude": 81.0812,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Narayanpur"
+  ]
+ },
+ {
+  "district": "Raigarh",
+  "state": "Chhattisgarh",
+  "latitude": 22.0858,
+  "longitude": 83.306,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Raigarh"
+  ]
+ },
+ {
+  "district": "Raipur",
+  "state": "Chhattisgarh",
+  "latitude": 21.2562,
+  "longitude": 81.6902,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Raipur"
+  ]
+ },
+ {
+  "district": "Raj Nandgaon",
+  "state": "Chhattisgarh",
+  "latitude": 21.1667,
+  "longitude": 81.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Raj Nandgaon"
+  ]
+ },
+ {
+  "district": "Sakti",
+  "state": "Chhattisgarh",
+  "latitude": 21.9269,
+  "longitude": 82.9651,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sakti"
+  ]
+ },
+ {
+  "district": "Sarangarh Bilaigarh",
+  "state": "Chhattisgarh",
+  "latitude": 21.5429,
+  "longitude": 83.1266,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sarangarh Bilaigarh"
+  ]
+ },
+ {
+  "district": "Sukma",
+  "state": "Chhattisgarh",
+  "latitude": 18.4004,
+  "longitude": 81.6601,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sukma"
+  ]
+ },
+ {
+  "district": "Surajpur",
+  "state": "Chhattisgarh",
+  "latitude": 23.2139,
+  "longitude": 82.8658,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Surajpur"
+  ]
+ },
+ {
+  "district": "Surguja",
+  "state": "Chhattisgarh",
+  "latitude": 22.8962,
+  "longitude": 83.0963,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Surguja"
+  ]
+ },
+ {
+  "district": "Uttar Bastar Kanker",
+  "state": "Chhattisgarh",
+  "latitude": 20.2,
+  "longitude": 81.1,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Uttar Bastar Kanker"
+  ]
+ },
+ {
+  "district": "Dadra & Nagar Haveli",
+  "state": "Dadra and Nagar Haveli and Daman and Diu",
+  "latitude": 20.2065,
+  "longitude": 73.0081,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dadra & Nagar Haveli"
+  ]
+ },
+ {
+  "district": "Daman",
+  "state": "Dadra and Nagar Haveli and Daman and Diu",
+  "latitude": 20.4167,
+  "longitude": 72.8833,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Daman"
+  ]
+ },
+ {
+  "district": "Diu",
+  "state": "Dadra and Nagar Haveli and Daman and Diu",
+  "latitude": 20.7208,
+  "longitude": 70.9399,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Diu"
+  ]
+ },
+ {
+  "district": "Central Delhi",
+  "state": "Delhi",
+  "latitude": 28.6486,
+  "longitude": 77.219,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Central Delhi"
+  ]
+ },
+ {
+  "district": "East Delhi",
+  "state": "Delhi",
+  "latitude": 28.6226,
+  "longitude": 77.2915,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Delhi"
+  ]
+ },
+ {
+  "district": "New Delhi",
+  "state": "Delhi",
+  "latitude": 28.6177,
+  "longitude": 77.2069,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "New Delhi"
+  ]
+ },
+ {
+  "district": "North Delhi",
+  "state": "Delhi",
+  "latitude": 28.7774,
+  "longitude": 77.1119,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "North Delhi"
+  ]
+ },
+ {
+  "district": "North East Delhi",
+  "state": "Delhi",
+  "latitude": 28.7151,
+  "longitude": 77.2651,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "North East Delhi"
+  ]
+ },
+ {
+  "district": "North West Delhi",
+  "state": "Delhi",
+  "latitude": 28.7011,
+  "longitude": 77.1015,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "North West Delhi"
+  ]
+ },
+ {
+  "district": "Shahdara",
+  "state": "Delhi",
+  "latitude": 28.6772,
+  "longitude": 77.2885,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shahdara"
+  ]
+ },
+ {
+  "district": "South Delhi",
+  "state": "Delhi",
+  "latitude": 28.4873,
+  "longitude": 77.197,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South Delhi"
+  ]
+ },
+ {
+  "district": "South East",
+  "state": "Delhi",
+  "latitude": 28.5503,
+  "longitude": 77.2709,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South East"
+  ]
+ },
+ {
+  "district": "South West Delhi",
+  "state": "Delhi",
+  "latitude": 28.5806,
+  "longitude": 77.0672,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South West Delhi"
+  ]
+ },
+ {
+  "district": "West Delhi",
+  "state": "Delhi",
+  "latitude": 28.6565,
+  "longitude": 77.1007,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Delhi"
+  ]
+ },
+ {
+  "district": "North Goa",
+  "state": "Goa",
+  "latitude": 15.6285,
+  "longitude": 73.8903,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "North Goa"
+  ]
+ },
+ {
+  "district": "South Goa",
+  "state": "Goa",
+  "latitude": 15.2043,
+  "longitude": 74.1673,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "South Goa"
+  ]
+ },
+ {
+  "district": "Ahmadabad",
+  "state": "Gujarat",
+  "latitude": 23.03,
+  "longitude": 72.58,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ahmadabad"
+  ]
+ },
+ {
+  "district": "Amreli",
+  "state": "Gujarat",
+  "latitude": 21.5079,
+  "longitude": 71.1832,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Amreli"
+  ]
+ },
+ {
+  "district": "Anand",
+  "state": "Gujarat",
+  "latitude": 22.4,
+  "longitude": 72.75,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Anand"
+  ]
+ },
+ {
+  "district": "Arvalli",
+  "state": "Gujarat",
+  "latitude": 23.462,
+  "longitude": 73.3919,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Arvalli"
+  ]
+ },
+ {
+  "district": "Banas Kantha",
+  "state": "Gujarat",
+  "latitude": 24.25,
+  "longitude": 72.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Banas Kantha"
+  ]
+ },
+ {
+  "district": "Bharuch",
+  "state": "Gujarat",
+  "latitude": 21.75,
+  "longitude": 73.0,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bharuch"
+  ]
+ },
+ {
+  "district": "Bhavnagar",
+  "state": "Gujarat",
+  "latitude": 21.6667,
+  "longitude": 71.8333,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhavnagar"
+  ]
+ },
+ {
+  "district": "Botad",
+  "state": "Gujarat",
+  "latitude": 22.1736,
+  "longitude": 71.6678,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Botad"
+  ]
+ },
+ {
+  "district": "Chhotaudepur",
+  "state": "Gujarat",
+  "latitude": 22.3133,
+  "longitude": 74.0152,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chhotaudepur"
+  ]
+ },
+ {
+  "district": "Devbhumi Dwarka",
+  "state": "Gujarat",
+  "latitude": 22.2025,
+  "longitude": 69.655,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Devbhumi Dwarka"
+  ]
+ },
+ {
+  "district": "Dohad",
+  "state": "Gujarat",
+  "latitude": 22.9,
+  "longitude": 74.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dohad"
+  ]
+ },
+ {
+  "district": "Gandhinagar",
+  "state": "Gujarat",
+  "latitude": 23.2148,
+  "longitude": 72.6498,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gandhinagar"
+  ]
+ },
+ {
+  "district": "Gir Somnath",
+  "state": "Gujarat",
+  "latitude": 20.9129,
+  "longitude": 70.3671,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gir Somnath"
+  ]
+ },
+ {
+  "district": "Jamnagar",
+  "state": "Gujarat",
+  "latitude": 22.25,
+  "longitude": 70.0,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jamnagar"
+  ]
+ },
+ {
+  "district": "Junagadh",
+  "state": "Gujarat",
+  "latitude": 21.25,
+  "longitude": 70.3333,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Junagadh"
+  ]
+ },
+ {
+  "district": "Kheda",
+  "state": "Gujarat",
+  "latitude": 22.75,
+  "longitude": 72.8333,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kheda"
+  ]
+ },
+ {
+  "district": "Kutch",
+  "state": "Gujarat",
+  "latitude": 23.5833,
+  "longitude": 70.0,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kutch"
+  ]
+ },
+ {
+  "district": "Mahesana",
+  "state": "Gujarat",
+  "latitude": 23.6667,
+  "longitude": 72.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahesana"
+  ]
+ },
+ {
+  "district": "Mahisagar",
+  "state": "Gujarat",
+  "latitude": 23.1306,
+  "longitude": 73.6085,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahisagar"
+  ]
+ },
+ {
+  "district": "Morbi",
+  "state": "Gujarat",
+  "latitude": 22.8147,
+  "longitude": 70.8229,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Morbi"
+  ]
+ },
+ {
+  "district": "Narmada",
+  "state": "Gujarat",
+  "latitude": 21.8738,
+  "longitude": 73.4953,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Narmada"
+  ]
+ },
+ {
+  "district": "Navsari",
+  "state": "Gujarat",
+  "latitude": 20.95,
+  "longitude": 72.92,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Navsari"
+  ]
+ },
+ {
+  "district": "Panch Mahals",
+  "state": "Gujarat",
+  "latitude": 22.75,
+  "longitude": 73.6,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Panch Mahals"
+  ]
+ },
+ {
+  "district": "Patan",
+  "state": "Gujarat",
+  "latitude": 23.7,
+  "longitude": 71.8,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Patan"
+  ]
+ },
+ {
+  "district": "Porbandar",
+  "state": "Gujarat",
+  "latitude": 21.6533,
+  "longitude": 69.7781,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Porbandar"
+  ]
+ },
+ {
+  "district": "Rajkot",
+  "state": "Gujarat",
+  "latitude": 22.3333,
+  "longitude": 70.8333,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rajkot"
+  ]
+ },
+ {
+  "district": "Sabarkantha",
+  "state": "Gujarat",
+  "latitude": 23.6297,
+  "longitude": 73.002,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sabarkantha"
+  ]
+ },
+ {
+  "district": "Surat",
+  "state": "Gujarat",
+  "latitude": 21.178,
+  "longitude": 72.8119,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Surat"
+  ]
+ },
+ {
+  "district": "Surendranagar",
+  "state": "Gujarat",
+  "latitude": 22.75,
+  "longitude": 71.6667,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Surendranagar"
+  ]
+ },
+ {
+  "district": "Tapi",
+  "state": "Gujarat",
+  "latitude": 21.12,
+  "longitude": 73.4,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tapi"
+  ]
+ },
+ {
+  "district": "The Dangs",
+  "state": "Gujarat",
+  "latitude": 20.75,
+  "longitude": 73.75,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "The Dangs"
+  ]
+ },
+ {
+  "district": "Vadodara",
+  "state": "Gujarat",
+  "latitude": 22.18,
+  "longitude": 73.12,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vadodara"
+  ]
+ },
+ {
+  "district": "Valsad",
+  "state": "Gujarat",
+  "latitude": 20.5,
+  "longitude": 73.0833,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Valsad"
+  ]
+ },
+ {
+  "district": "Ambala",
+  "state": "Haryana",
+  "latitude": 30.3285,
+  "longitude": 76.9422,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ambala"
+  ]
+ },
+ {
+  "district": "Bhiwani",
+  "state": "Haryana",
+  "latitude": 28.75,
+  "longitude": 76.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhiwani"
+  ]
+ },
+ {
+  "district": "Charki Dadri",
+  "state": "Haryana",
+  "latitude": 28.5936,
+  "longitude": 76.2688,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Charki Dadri"
+  ]
+ },
+ {
+  "district": "Faridabad",
+  "state": "Haryana",
+  "latitude": 28.4629,
+  "longitude": 77.3716,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Faridabad"
+  ]
+ },
+ {
+  "district": "Fatehabad",
+  "state": "Haryana",
+  "latitude": 29.31,
+  "longitude": 75.27,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Fatehabad"
+  ]
+ },
+ {
+  "district": "Gurugram",
+  "state": "Haryana",
+  "latitude": 28.4389,
+  "longitude": 77.0059,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gurugram"
+  ]
+ },
+ {
+  "district": "Hisar",
+  "state": "Haryana",
+  "latitude": 29.1667,
+  "longitude": 75.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hisar"
+  ]
+ },
+ {
+  "district": "Jhajjar",
+  "state": "Haryana",
+  "latitude": 28.6047,
+  "longitude": 76.6494,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jhajjar"
+  ]
+ },
+ {
+  "district": "Jind",
+  "state": "Haryana",
+  "latitude": 29.5,
+  "longitude": 76.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jind"
+  ]
+ },
+ {
+  "district": "Kaithal",
+  "state": "Haryana",
+  "latitude": 29.814,
+  "longitude": 76.4182,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kaithal"
+  ]
+ },
+ {
+  "district": "Karnal",
+  "state": "Haryana",
+  "latitude": 29.6667,
+  "longitude": 76.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karnal"
+  ]
+ },
+ {
+  "district": "Kurukshetra",
+  "state": "Haryana",
+  "latitude": 30.0,
+  "longitude": 76.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kurukshetra"
+  ]
+ },
+ {
+  "district": "Mahendragarh",
+  "state": "Haryana",
+  "latitude": 28.25,
+  "longitude": 76.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahendragarh"
+  ]
+ },
+ {
+  "district": "Nuh",
+  "state": "Haryana",
+  "latitude": 27.9817,
+  "longitude": 77.0466,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nuh"
+  ]
+ },
+ {
+  "district": "Palwal",
+  "state": "Haryana",
+  "latitude": 28.0475,
+  "longitude": 77.3183,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Palwal"
+  ]
+ },
+ {
+  "district": "Panchkula",
+  "state": "Haryana",
+  "latitude": 30.7288,
+  "longitude": 76.9472,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Panchkula"
+  ]
+ },
+ {
+  "district": "Panipat",
+  "state": "Haryana",
+  "latitude": 29.3326,
+  "longitude": 76.9263,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Panipat"
+  ]
+ },
+ {
+  "district": "Rewari",
+  "state": "Haryana",
+  "latitude": 28.1961,
+  "longitude": 76.6161,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rewari"
+  ]
+ },
+ {
+  "district": "Rohtak",
+  "state": "Haryana",
+  "latitude": 28.8333,
+  "longitude": 76.6667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rohtak"
+  ]
+ },
+ {
+  "district": "Sirsa",
+  "state": "Haryana",
+  "latitude": 29.5833,
+  "longitude": 75.0833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sirsa"
+  ]
+ },
+ {
+  "district": "Sonipat",
+  "state": "Haryana",
+  "latitude": 29.0,
+  "longitude": 76.9167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sonipat"
+  ]
+ },
+ {
+  "district": "Yamunanagar",
+  "state": "Haryana",
+  "latitude": 30.2364,
+  "longitude": 77.305,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Yamunanagar"
+  ]
+ },
+ {
+  "district": "Bilaspur",
+  "state": "Himachal Pradesh",
+  "latitude": 31.3333,
+  "longitude": 76.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bilaspur"
+  ]
+ },
+ {
+  "district": "Chamba",
+  "state": "Himachal Pradesh",
+  "latitude": 32.5715,
+  "longitude": 76.1023,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chamba"
+  ]
+ },
+ {
+  "district": "Hamirpur",
+  "state": "Himachal Pradesh",
+  "latitude": 31.75,
+  "longitude": 76.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hamirpur"
+  ]
+ },
+ {
+  "district": "Kangra",
+  "state": "Himachal Pradesh",
+  "latitude": 32.1667,
+  "longitude": 76.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kangra"
+  ]
+ },
+ {
+  "district": "Kinnaur",
+  "state": "Himachal Pradesh",
+  "latitude": 31.5833,
+  "longitude": 78.4167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kinnaur"
+  ]
+ },
+ {
+  "district": "Kulu",
+  "state": "Himachal Pradesh",
+  "latitude": 32.0,
+  "longitude": 77.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kulu"
+  ]
+ },
+ {
+  "district": "Lahul and Spiti",
+  "state": "Himachal Pradesh",
+  "latitude": 32.5,
+  "longitude": 77.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lahul and Spiti"
+  ]
+ },
+ {
+  "district": "Mandi",
+  "state": "Himachal Pradesh",
+  "latitude": 31.75,
+  "longitude": 77.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mandi"
+  ]
+ },
+ {
+  "district": "Shimla",
+  "state": "Himachal Pradesh",
+  "latitude": 31.1667,
+  "longitude": 77.5833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shimla"
+  ]
+ },
+ {
+  "district": "Sirmaur",
+  "state": "Himachal Pradesh",
+  "latitude": 30.75,
+  "longitude": 77.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sirmaur"
+  ]
+ },
+ {
+  "district": "Solan",
+  "state": "Himachal Pradesh",
+  "latitude": 31.0833,
+  "longitude": 76.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Solan"
+  ]
+ },
+ {
+  "district": "Una",
+  "state": "Himachal Pradesh",
+  "latitude": 31.5837,
+  "longitude": 76.1928,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Una"
+  ]
+ },
+ {
+  "district": "Anantnag",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.8333,
+  "longitude": 75.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Anantnag"
+  ]
+ },
+ {
+  "district": "Badgam",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.89,
+  "longitude": 74.663,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Badgam"
+  ]
+ },
+ {
+  "district": "Bandipore",
+  "state": "Jammu and Kashmir",
+  "latitude": 34.504,
+  "longitude": 74.8283,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bandipore"
+  ]
+ },
+ {
+  "district": "Baramula",
+  "state": "Jammu and Kashmir",
+  "latitude": 34.1929,
+  "longitude": 74.3692,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baramula"
+  ]
+ },
+ {
+  "district": "Doda",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.1008,
+  "longitude": 75.6497,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Doda"
+  ]
+ },
+ {
+  "district": "Ganderbal",
+  "state": "Jammu and Kashmir",
+  "latitude": 34.2947,
+  "longitude": 75.2,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ganderbal"
+  ]
+ },
+ {
+  "district": "Jammu",
+  "state": "Jammu and Kashmir",
+  "latitude": 32.75,
+  "longitude": 74.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jammu"
+  ]
+ },
+ {
+  "district": "Kathua",
+  "state": "Jammu and Kashmir",
+  "latitude": 32.5833,
+  "longitude": 75.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kathua"
+  ]
+ },
+ {
+  "district": "Kishtwar",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.5296,
+  "longitude": 76.0146,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kishtwar"
+  ]
+ },
+ {
+  "district": "Kulgam",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.5882,
+  "longitude": 74.8606,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kulgam"
+  ]
+ },
+ {
+  "district": "Kupwara",
+  "state": "Jammu and Kashmir",
+  "latitude": 34.5319,
+  "longitude": 74.2661,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kupwara"
+  ]
+ },
+ {
+  "district": "Pulwama",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.9329,
+  "longitude": 75.0373,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pulwama"
+  ]
+ },
+ {
+  "district": "Punch",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.7018,
+  "longitude": 74.1992,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Punch"
+  ]
+ },
+ {
+  "district": "Rajauri",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.25,
+  "longitude": 74.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rajauri"
+  ]
+ },
+ {
+  "district": "Ramban",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.323,
+  "longitude": 75.1861,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ramban"
+  ]
+ },
+ {
+  "district": "Reasi",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.2074,
+  "longitude": 74.8223,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Reasi"
+  ]
+ },
+ {
+  "district": "Samba",
+  "state": "Jammu and Kashmir",
+  "latitude": 32.5752,
+  "longitude": 75.1093,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Samba"
+  ]
+ },
+ {
+  "district": "Shupiyan",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.7307,
+  "longitude": 74.8187,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shupiyan"
+  ]
+ },
+ {
+  "district": "Srinagar",
+  "state": "Jammu and Kashmir",
+  "latitude": 34.0833,
+  "longitude": 74.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Srinagar"
+  ]
+ },
+ {
+  "district": "Udhampur",
+  "state": "Jammu and Kashmir",
+  "latitude": 33.0,
+  "longitude": 75.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Udhampur"
+  ]
+ },
+ {
+  "district": "Bokaro",
+  "state": "Jharkhand",
+  "latitude": 23.6856,
+  "longitude": 85.9903,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bokaro"
+  ]
+ },
+ {
+  "district": "Chatra",
+  "state": "Jharkhand",
+  "latitude": 24.1735,
+  "longitude": 84.8871,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chatra"
+  ]
+ },
+ {
+  "district": "Deogarh",
+  "state": "Jharkhand",
+  "latitude": 24.4438,
+  "longitude": 86.7261,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Deogarh"
+  ]
+ },
+ {
+  "district": "Dhanbad",
+  "state": "Jharkhand",
+  "latitude": 23.75,
+  "longitude": 86.4167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhanbad"
+  ]
+ },
+ {
+  "district": "Dumka",
+  "state": "Jharkhand",
+  "latitude": 24.3,
+  "longitude": 87.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dumka"
+  ]
+ },
+ {
+  "district": "Garhwa",
+  "state": "Jharkhand",
+  "latitude": 24.0749,
+  "longitude": 83.7102,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Garhwa"
+  ]
+ },
+ {
+  "district": "Giridih",
+  "state": "Jharkhand",
+  "latitude": 24.25,
+  "longitude": 85.9167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Giridih"
+  ]
+ },
+ {
+  "district": "Godda",
+  "state": "Jharkhand",
+  "latitude": 24.8333,
+  "longitude": 87.2167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Godda"
+  ]
+ },
+ {
+  "district": "Gumla",
+  "state": "Jharkhand",
+  "latitude": 23.0805,
+  "longitude": 84.5383,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gumla"
+  ]
+ },
+ {
+  "district": "Hazaribag",
+  "state": "Jharkhand",
+  "latitude": 24.0,
+  "longitude": 85.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hazaribag"
+  ]
+ },
+ {
+  "district": "Jamtara",
+  "state": "Jharkhand",
+  "latitude": 24.0,
+  "longitude": 86.85,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jamtara"
+  ]
+ },
+ {
+  "district": "Khunti",
+  "state": "Jharkhand",
+  "latitude": 22.9977,
+  "longitude": 85.2746,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khunti"
+  ]
+ },
+ {
+  "district": "Kodarma",
+  "state": "Jharkhand",
+  "latitude": 24.437,
+  "longitude": 85.5956,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kodarma"
+  ]
+ },
+ {
+  "district": "Latehar",
+  "state": "Jharkhand",
+  "latitude": 23.75,
+  "longitude": 84.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Latehar"
+  ]
+ },
+ {
+  "district": "Lohardaga",
+  "state": "Jharkhand",
+  "latitude": 23.5,
+  "longitude": 84.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lohardaga"
+  ]
+ },
+ {
+  "district": "Pakur",
+  "state": "Jharkhand",
+  "latitude": 24.5706,
+  "longitude": 87.6707,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pakur"
+  ]
+ },
+ {
+  "district": "Palamu",
+  "state": "Jharkhand",
+  "latitude": 23.9167,
+  "longitude": 84.0833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Palamu"
+  ]
+ },
+ {
+  "district": "Pashchim Singhbhum",
+  "state": "Jharkhand",
+  "latitude": 22.5,
+  "longitude": 85.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pashchim Singhbhum"
+  ]
+ },
+ {
+  "district": "Purba Singhbhum",
+  "state": "Jharkhand",
+  "latitude": 22.5924,
+  "longitude": 86.4834,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Purba Singhbhum"
+  ]
+ },
+ {
+  "district": "Ramgarh",
+  "state": "Jharkhand",
+  "latitude": 23.6307,
+  "longitude": 85.5606,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ramgarh"
+  ]
+ },
+ {
+  "district": "Ranchi",
+  "state": "Jharkhand",
+  "latitude": 23.3313,
+  "longitude": 85.3708,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ranchi"
+  ]
+ },
+ {
+  "district": "Sahibganj",
+  "state": "Jharkhand",
+  "latitude": 24.9935,
+  "longitude": 87.6733,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sahibganj"
+  ]
+ },
+ {
+  "district": "Saraikela",
+  "state": "Jharkhand",
+  "latitude": 22.8391,
+  "longitude": 85.8959,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Saraikela"
+  ]
+ },
+ {
+  "district": "Simdega",
+  "state": "Jharkhand",
+  "latitude": 22.6,
+  "longitude": 84.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Simdega"
+  ]
+ },
+ {
+  "district": "Bagalkot",
+  "state": "Karnataka",
+  "latitude": 16.18,
+  "longitude": 75.69,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bagalkot"
+  ]
+ },
+ {
+  "district": "Ballari",
+  "state": "Karnataka",
+  "latitude": 15.15,
+  "longitude": 76.55,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ballari"
+  ]
+ },
+ {
+  "district": "Bangalore Rural",
+  "state": "Karnataka",
+  "latitude": 13.2257,
+  "longitude": 77.575,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bangalore Rural"
+  ]
+ },
+ {
+  "district": "Bangalore Urban",
+  "state": "Karnataka",
+  "latitude": 13.0,
+  "longitude": 77.5833,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bangalore Urban"
+  ]
+ },
+ {
+  "district": "Belgaum",
+  "state": "Karnataka",
+  "latitude": 16.3333,
+  "longitude": 74.75,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Belgaum"
+  ]
+ },
+ {
+  "district": "Bidar",
+  "state": "Karnataka",
+  "latitude": 18.0833,
+  "longitude": 77.3333,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bidar"
+  ]
+ },
+ {
+  "district": "Bijapur",
+  "state": "Karnataka",
+  "latitude": 16.6667,
+  "longitude": 75.9167,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bijapur"
+  ]
+ },
+ {
+  "district": "Chamrajnagar",
+  "state": "Karnataka",
+  "latitude": 11.96,
+  "longitude": 77.09,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chamrajnagar"
+  ]
+ },
+ {
+  "district": "Chikkaballapur",
+  "state": "Karnataka",
+  "latitude": 13.55,
+  "longitude": 77.87,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chikkaballapur"
+  ]
+ },
+ {
+  "district": "Chikmagalur",
+  "state": "Karnataka",
+  "latitude": 13.49,
+  "longitude": 75.73,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chikmagalur"
+  ]
+ },
+ {
+  "district": "Chitradurga",
+  "state": "Karnataka",
+  "latitude": 14.2,
+  "longitude": 76.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chitradurga"
+  ]
+ },
+ {
+  "district": "Dakshina Kannada",
+  "state": "Karnataka",
+  "latitude": 12.84,
+  "longitude": 75.29,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dakshina Kannada"
+  ]
+ },
+ {
+  "district": "Davanagere",
+  "state": "Karnataka",
+  "latitude": 14.43,
+  "longitude": 75.9,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Davanagere"
+  ]
+ },
+ {
+  "district": "Dharwad",
+  "state": "Karnataka",
+  "latitude": 15.37,
+  "longitude": 75.14,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dharwad"
+  ]
+ },
+ {
+  "district": "Gadag",
+  "state": "Karnataka",
+  "latitude": 15.4984,
+  "longitude": 75.6519,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gadag"
+  ]
+ },
+ {
+  "district": "Gulbarga",
+  "state": "Karnataka",
+  "latitude": 17.1667,
+  "longitude": 77.0833,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gulbarga"
+  ]
+ },
+ {
+  "district": "Hassan",
+  "state": "Karnataka",
+  "latitude": 12.95,
+  "longitude": 76.0833,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hassan"
+  ]
+ },
+ {
+  "district": "Haveri",
+  "state": "Karnataka",
+  "latitude": 14.7373,
+  "longitude": 75.4106,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Haveri"
+  ]
+ },
+ {
+  "district": "Kodagu",
+  "state": "Karnataka",
+  "latitude": 12.4167,
+  "longitude": 75.75,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kodagu"
+  ]
+ },
+ {
+  "district": "Kolar",
+  "state": "Karnataka",
+  "latitude": 13.13,
+  "longitude": 78.23,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kolar"
+  ]
+ },
+ {
+  "district": "Koppal",
+  "state": "Karnataka",
+  "latitude": 15.5,
+  "longitude": 76.2,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Koppal"
+  ]
+ },
+ {
+  "district": "Mandya",
+  "state": "Karnataka",
+  "latitude": 12.5833,
+  "longitude": 76.6667,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mandya"
+  ]
+ },
+ {
+  "district": "Mysore",
+  "state": "Karnataka",
+  "latitude": 12.23,
+  "longitude": 76.42,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mysore"
+  ]
+ },
+ {
+  "district": "Raichur",
+  "state": "Karnataka",
+  "latitude": 16.16,
+  "longitude": 76.91,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Raichur"
+  ]
+ },
+ {
+  "district": "Ramanagara",
+  "state": "Karnataka",
+  "latitude": 12.65,
+  "longitude": 77.35,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ramanagara"
+  ]
+ },
+ {
+  "district": "Shimoga",
+  "state": "Karnataka",
+  "latitude": 14.05,
+  "longitude": 75.16,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shimoga"
+  ]
+ },
+ {
+  "district": "Tumkur",
+  "state": "Karnataka",
+  "latitude": 13.5,
+  "longitude": 77.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tumkur"
+  ]
+ },
+ {
+  "district": "Udupi",
+  "state": "Karnataka",
+  "latitude": 13.5,
+  "longitude": 74.87,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Udupi"
+  ]
+ },
+ {
+  "district": "Uttar Kannada",
+  "state": "Karnataka",
+  "latitude": 14.8833,
+  "longitude": 74.5833,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Uttar Kannada"
+  ]
+ },
+ {
+  "district": "Vijayanagar",
+  "state": "Karnataka",
+  "latitude": 14.9425,
+  "longitude": 76.0441,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vijayanagar"
+  ]
+ },
+ {
+  "district": "Yadgir",
+  "state": "Karnataka",
+  "latitude": 16.73,
+  "longitude": 76.94,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Yadgir"
+  ]
+ },
+ {
+  "district": "Alappuzha",
+  "state": "Kerala",
+  "latitude": 9.4167,
+  "longitude": 76.5,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Alappuzha"
+  ]
+ },
+ {
+  "district": "Ernakulam",
+  "state": "Kerala",
+  "latitude": 10.0,
+  "longitude": 76.5,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ernakulam"
+  ]
+ },
+ {
+  "district": "Idukki",
+  "state": "Kerala",
+  "latitude": 10.0,
+  "longitude": 77.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Idukki"
+  ]
+ },
+ {
+  "district": "Kannur",
+  "state": "Kerala",
+  "latitude": 12.1667,
+  "longitude": 75.3333,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kannur"
+  ]
+ },
+ {
+  "district": "Kasaragod",
+  "state": "Kerala",
+  "latitude": 12.4925,
+  "longitude": 74.9906,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kasaragod"
+  ]
+ },
+ {
+  "district": "Kollam",
+  "state": "Kerala",
+  "latitude": 8.9569,
+  "longitude": 76.8527,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kollam"
+  ]
+ },
+ {
+  "district": "Kottayam",
+  "state": "Kerala",
+  "latitude": 9.6667,
+  "longitude": 76.6667,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kottayam"
+  ]
+ },
+ {
+  "district": "Kozhikode",
+  "state": "Kerala",
+  "latitude": 11.5,
+  "longitude": 76.0,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kozhikode"
+  ]
+ },
+ {
+  "district": "Malappuram",
+  "state": "Kerala",
+  "latitude": 11.0,
+  "longitude": 76.1667,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Malappuram"
+  ]
+ },
+ {
+  "district": "Palakkad",
+  "state": "Kerala",
+  "latitude": 10.775,
+  "longitude": 76.651,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Palakkad"
+  ]
+ },
+ {
+  "district": "Pattanamtitta",
+  "state": "Kerala",
+  "latitude": 9.2807,
+  "longitude": 76.8697,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pattanamtitta"
+  ]
+ },
+ {
+  "district": "Thiruvananthapuram",
+  "state": "Kerala",
+  "latitude": 8.604,
+  "longitude": 76.9857,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thiruvananthapuram"
+  ]
+ },
+ {
+  "district": "Thrissur",
+  "state": "Kerala",
+  "latitude": 10.5202,
+  "longitude": 76.2204,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thrissur"
+  ]
+ },
+ {
+  "district": "Wayanad",
+  "state": "Kerala",
+  "latitude": 11.605,
+  "longitude": 76.083,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Wayanad"
+  ]
+ },
+ {
+  "district": "Kargil",
+  "state": "Ladakh",
+  "latitude": 33.9666,
+  "longitude": 76.4844,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kargil"
+  ]
+ },
+ {
+  "district": "Leh",
+  "state": "Ladakh",
+  "latitude": 34.3333,
+  "longitude": 77.4167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Leh"
+  ]
+ },
+ {
+  "district": "Lakshadweep",
+  "state": "Lakshadweep",
+  "latitude": 10.5651,
+  "longitude": 72.6456,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lakshadweep"
+  ]
+ },
+ {
+  "district": "Agar Malwa",
+  "state": "Madhya Pradesh",
+  "latitude": 23.7159,
+  "longitude": 76.0098,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Agar Malwa"
+  ]
+ },
+ {
+  "district": "Alirajpur",
+  "state": "Madhya Pradesh",
+  "latitude": 22.3138,
+  "longitude": 74.3645,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Alirajpur"
+  ]
+ },
+ {
+  "district": "Anuppur",
+  "state": "Madhya Pradesh",
+  "latitude": 23.0567,
+  "longitude": 81.684,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Anuppur"
+  ]
+ },
+ {
+  "district": "Ashoknagar",
+  "state": "Madhya Pradesh",
+  "latitude": 24.58,
+  "longitude": 77.73,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ashoknagar"
+  ]
+ },
+ {
+  "district": "Balaghat",
+  "state": "Madhya Pradesh",
+  "latitude": 21.9667,
+  "longitude": 80.3333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Balaghat"
+  ]
+ },
+ {
+  "district": "Barwani",
+  "state": "Madhya Pradesh",
+  "latitude": 22.0249,
+  "longitude": 74.918,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Barwani"
+  ]
+ },
+ {
+  "district": "Betul",
+  "state": "Madhya Pradesh",
+  "latitude": 21.8333,
+  "longitude": 77.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Betul"
+  ]
+ },
+ {
+  "district": "Bhind",
+  "state": "Madhya Pradesh",
+  "latitude": 26.5,
+  "longitude": 78.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhind"
+  ]
+ },
+ {
+  "district": "Bhopal",
+  "state": "Madhya Pradesh",
+  "latitude": 23.5,
+  "longitude": 77.4167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhopal"
+  ]
+ },
+ {
+  "district": "Burhanpur",
+  "state": "Madhya Pradesh",
+  "latitude": 21.31,
+  "longitude": 76.23,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Burhanpur"
+  ]
+ },
+ {
+  "district": "Chhatarpur",
+  "state": "Madhya Pradesh",
+  "latitude": 24.75,
+  "longitude": 79.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chhatarpur"
+  ]
+ },
+ {
+  "district": "Chhindwara",
+  "state": "Madhya Pradesh",
+  "latitude": 22.1167,
+  "longitude": 78.8,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chhindwara"
+  ]
+ },
+ {
+  "district": "Damoh",
+  "state": "Madhya Pradesh",
+  "latitude": 23.75,
+  "longitude": 79.5833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Damoh"
+  ]
+ },
+ {
+  "district": "Datia",
+  "state": "Madhya Pradesh",
+  "latitude": 25.75,
+  "longitude": 78.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Datia"
+  ]
+ },
+ {
+  "district": "Dewas",
+  "state": "Madhya Pradesh",
+  "latitude": 23.0,
+  "longitude": 76.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dewas"
+  ]
+ },
+ {
+  "district": "Dhar",
+  "state": "Madhya Pradesh",
+  "latitude": 22.5,
+  "longitude": 75.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhar"
+  ]
+ },
+ {
+  "district": "Dindori",
+  "state": "Madhya Pradesh",
+  "latitude": 22.8,
+  "longitude": 81.1,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dindori"
+  ]
+ },
+ {
+  "district": "Guna",
+  "state": "Madhya Pradesh",
+  "latitude": 24.5546,
+  "longitude": 77.2008,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Guna"
+  ]
+ },
+ {
+  "district": "Gwalior",
+  "state": "Madhya Pradesh",
+  "latitude": 26.2,
+  "longitude": 78.2,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gwalior"
+  ]
+ },
+ {
+  "district": "Harda",
+  "state": "Madhya Pradesh",
+  "latitude": 22.2341,
+  "longitude": 76.9643,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Harda"
+  ]
+ },
+ {
+  "district": "Indore",
+  "state": "Madhya Pradesh",
+  "latitude": 22.6667,
+  "longitude": 75.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Indore"
+  ]
+ },
+ {
+  "district": "Jabalpur",
+  "state": "Madhya Pradesh",
+  "latitude": 23.16,
+  "longitude": 79.95,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jabalpur"
+  ]
+ },
+ {
+  "district": "Jhabua",
+  "state": "Madhya Pradesh",
+  "latitude": 22.8906,
+  "longitude": 74.6718,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jhabua"
+  ]
+ },
+ {
+  "district": "Katni",
+  "state": "Madhya Pradesh",
+  "latitude": 23.8356,
+  "longitude": 80.3942,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Katni"
+  ]
+ },
+ {
+  "district": "Khandwa",
+  "state": "Madhya Pradesh",
+  "latitude": 21.75,
+  "longitude": 76.5833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khandwa"
+  ]
+ },
+ {
+  "district": "Khargone",
+  "state": "Madhya Pradesh",
+  "latitude": 21.8231,
+  "longitude": 75.6103,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khargone"
+  ]
+ },
+ {
+  "district": "Mandla",
+  "state": "Madhya Pradesh",
+  "latitude": 22.6404,
+  "longitude": 80.5134,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mandla"
+  ]
+ },
+ {
+  "district": "Mandsaur",
+  "state": "Madhya Pradesh",
+  "latitude": 24.1512,
+  "longitude": 75.364,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mandsaur"
+  ]
+ },
+ {
+  "district": "Morena",
+  "state": "Madhya Pradesh",
+  "latitude": 26.1667,
+  "longitude": 77.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Morena"
+  ]
+ },
+ {
+  "district": "Narmadapuram",
+  "state": "Madhya Pradesh",
+  "latitude": 22.5883,
+  "longitude": 77.9889,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Narmadapuram"
+  ]
+ },
+ {
+  "district": "Narsimhapur",
+  "state": "Madhya Pradesh",
+  "latitude": 22.9167,
+  "longitude": 79.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Narsimhapur"
+  ]
+ },
+ {
+  "district": "Neemuch",
+  "state": "Madhya Pradesh",
+  "latitude": 24.47,
+  "longitude": 74.87,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Neemuch"
+  ]
+ },
+ {
+  "district": "Niwari",
+  "state": "Madhya Pradesh",
+  "latitude": 25.285,
+  "longitude": 78.7489,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Niwari"
+  ]
+ },
+ {
+  "district": "Panna",
+  "state": "Madhya Pradesh",
+  "latitude": 24.5,
+  "longitude": 80.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Panna"
+  ]
+ },
+ {
+  "district": "Raisen",
+  "state": "Madhya Pradesh",
+  "latitude": 23.25,
+  "longitude": 78.0833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Raisen"
+  ]
+ },
+ {
+  "district": "Rajgarh",
+  "state": "Madhya Pradesh",
+  "latitude": 23.8333,
+  "longitude": 76.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rajgarh"
+  ]
+ },
+ {
+  "district": "Ratlam",
+  "state": "Madhya Pradesh",
+  "latitude": 23.5833,
+  "longitude": 75.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ratlam"
+  ]
+ },
+ {
+  "district": "Rewa",
+  "state": "Madhya Pradesh",
+  "latitude": 24.75,
+  "longitude": 81.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rewa"
+  ]
+ },
+ {
+  "district": "Sagar",
+  "state": "Madhya Pradesh",
+  "latitude": 23.75,
+  "longitude": 78.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sagar"
+  ]
+ },
+ {
+  "district": "Satna",
+  "state": "Madhya Pradesh",
+  "latitude": 24.5,
+  "longitude": 81.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Satna"
+  ]
+ },
+ {
+  "district": "Sehore",
+  "state": "Madhya Pradesh",
+  "latitude": 22.9911,
+  "longitude": 77.1285,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sehore"
+  ]
+ },
+ {
+  "district": "Seoni",
+  "state": "Madhya Pradesh",
+  "latitude": 22.4167,
+  "longitude": 79.6667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Seoni"
+  ]
+ },
+ {
+  "district": "Shahdol",
+  "state": "Madhya Pradesh",
+  "latitude": 23.5,
+  "longitude": 81.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shahdol"
+  ]
+ },
+ {
+  "district": "Shajapur",
+  "state": "Madhya Pradesh",
+  "latitude": 23.5,
+  "longitude": 76.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shajapur"
+  ]
+ },
+ {
+  "district": "Sheopur",
+  "state": "Madhya Pradesh",
+  "latitude": 25.8,
+  "longitude": 77.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sheopur"
+  ]
+ },
+ {
+  "district": "Shivpuri",
+  "state": "Madhya Pradesh",
+  "latitude": 25.5,
+  "longitude": 78.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shivpuri"
+  ]
+ },
+ {
+  "district": "Sidhi",
+  "state": "Madhya Pradesh",
+  "latitude": 24.25,
+  "longitude": 82.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sidhi"
+  ]
+ },
+ {
+  "district": "Singrauli",
+  "state": "Madhya Pradesh",
+  "latitude": 24.2167,
+  "longitude": 82.4207,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Singrauli"
+  ]
+ },
+ {
+  "district": "Tikamgarh",
+  "state": "Madhya Pradesh",
+  "latitude": 24.75,
+  "longitude": 79.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tikamgarh"
+  ]
+ },
+ {
+  "district": "Ujjain",
+  "state": "Madhya Pradesh",
+  "latitude": 23.4167,
+  "longitude": 75.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ujjain"
+  ]
+ },
+ {
+  "district": "Umaria",
+  "state": "Madhya Pradesh",
+  "latitude": 23.5287,
+  "longitude": 80.8305,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Umaria"
+  ]
+ },
+ {
+  "district": "Vidisha",
+  "state": "Madhya Pradesh",
+  "latitude": 23.9167,
+  "longitude": 78.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vidisha"
+  ]
+ },
+ {
+  "district": "Ahmadnagar",
+  "state": "Maharashtra",
+  "latitude": 19.4,
+  "longitude": 74.65,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ahmadnagar"
+  ]
+ },
+ {
+  "district": "Akola",
+  "state": "Maharashtra",
+  "latitude": 20.5,
+  "longitude": 77.1667,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Akola"
+  ]
+ },
+ {
+  "district": "Amravati Division",
+  "state": "Maharashtra",
+  "latitude": 20.9348,
+  "longitude": 77.7569,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Amravati Division"
+  ]
+ },
+ {
+  "district": "Aurangabad",
+  "state": "Maharashtra",
+  "latitude": 19.8847,
+  "longitude": 75.3399,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Aurangabad"
+  ]
+ },
+ {
+  "district": "Bhandara",
+  "state": "Maharashtra",
+  "latitude": 21.1833,
+  "longitude": 80.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhandara"
+  ]
+ },
+ {
+  "district": "Bid",
+  "state": "Maharashtra",
+  "latitude": 18.8333,
+  "longitude": 75.75,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bid"
+  ]
+ },
+ {
+  "district": "Buldhana",
+  "state": "Maharashtra",
+  "latitude": 20.5833,
+  "longitude": 76.4167,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Buldhana"
+  ]
+ },
+ {
+  "district": "Chandrapur",
+  "state": "Maharashtra",
+  "latitude": 20.1179,
+  "longitude": 79.4438,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chandrapur"
+  ]
+ },
+ {
+  "district": "Dhule",
+  "state": "Maharashtra",
+  "latitude": 21.0685,
+  "longitude": 74.5884,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhule"
+  ]
+ },
+ {
+  "district": "Gadchiroli",
+  "state": "Maharashtra",
+  "latitude": 19.8,
+  "longitude": 80.2,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gadchiroli"
+  ]
+ },
+ {
+  "district": "Gondiya",
+  "state": "Maharashtra",
+  "latitude": 21.05,
+  "longitude": 80.25,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gondiya"
+  ]
+ },
+ {
+  "district": "Hingoli",
+  "state": "Maharashtra",
+  "latitude": 19.7,
+  "longitude": 77.15,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hingoli"
+  ]
+ },
+ {
+  "district": "Jalgaon",
+  "state": "Maharashtra",
+  "latitude": 21.0,
+  "longitude": 75.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jalgaon"
+  ]
+ },
+ {
+  "district": "Jalna",
+  "state": "Maharashtra",
+  "latitude": 19.8,
+  "longitude": 75.9,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jalna"
+  ]
+ },
+ {
+  "district": "Kolhapur",
+  "state": "Maharashtra",
+  "latitude": 16.6901,
+  "longitude": 74.2298,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kolhapur"
+  ]
+ },
+ {
+  "district": "Latur",
+  "state": "Maharashtra",
+  "latitude": 18.4,
+  "longitude": 76.8,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Latur"
+  ]
+ },
+ {
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "latitude": 18.9596,
+  "longitude": 72.8496,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mumbai"
+  ]
+ },
+ {
+  "district": "Mumbai Suburban",
+  "state": "Maharashtra",
+  "latitude": 19.1264,
+  "longitude": 72.849,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mumbai Suburban"
+  ]
+ },
+ {
+  "district": "Nagpur Division",
+  "state": "Maharashtra",
+  "latitude": 21.1491,
+  "longitude": 79.1075,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nagpur Division"
+  ]
+ },
+ {
+  "district": "Nanded",
+  "state": "Maharashtra",
+  "latitude": 18.9167,
+  "longitude": 77.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nanded"
+  ]
+ },
+ {
+  "district": "Nandurbar",
+  "state": "Maharashtra",
+  "latitude": 21.37,
+  "longitude": 74.2,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nandurbar"
+  ]
+ },
+ {
+  "district": "Nashik Division",
+  "state": "Maharashtra",
+  "latitude": 19.9829,
+  "longitude": 73.7894,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nashik Division"
+  ]
+ },
+ {
+  "district": "Osmanabad",
+  "state": "Maharashtra",
+  "latitude": 18.25,
+  "longitude": 76.1667,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Osmanabad"
+  ]
+ },
+ {
+  "district": "Palghar",
+  "state": "Maharashtra",
+  "latitude": 19.6927,
+  "longitude": 72.7667,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Palghar"
+  ]
+ },
+ {
+  "district": "Parbhani",
+  "state": "Maharashtra",
+  "latitude": 19.5,
+  "longitude": 76.75,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Parbhani"
+  ]
+ },
+ {
+  "district": "Pune Division",
+  "state": "Maharashtra",
+  "latitude": 18.7467,
+  "longitude": 73.7546,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pune Division"
+  ]
+ },
+ {
+  "district": "Raigarh",
+  "state": "Maharashtra",
+  "latitude": 18.57,
+  "longitude": 73.13,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Raigarh"
+  ]
+ },
+ {
+  "district": "Ratnagiri",
+  "state": "Maharashtra",
+  "latitude": 17.0,
+  "longitude": 73.5,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ratnagiri"
+  ]
+ },
+ {
+  "district": "Sangli",
+  "state": "Maharashtra",
+  "latitude": 17.112,
+  "longitude": 74.7699,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sangli"
+  ]
+ },
+ {
+  "district": "Satara Division",
+  "state": "Maharashtra",
+  "latitude": 17.726,
+  "longitude": 74.0643,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Satara Division"
+  ]
+ },
+ {
+  "district": "Sindhudurg",
+  "state": "Maharashtra",
+  "latitude": 16.17,
+  "longitude": 73.7,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sindhudurg"
+  ]
+ },
+ {
+  "district": "Solapur",
+  "state": "Maharashtra",
+  "latitude": 17.75,
+  "longitude": 75.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Solapur"
+  ]
+ },
+ {
+  "district": "Thane",
+  "state": "Maharashtra",
+  "latitude": 19.3333,
+  "longitude": 73.25,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thane"
+  ]
+ },
+ {
+  "district": "Wardha",
+  "state": "Maharashtra",
+  "latitude": 20.8333,
+  "longitude": 78.6,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Wardha"
+  ]
+ },
+ {
+  "district": "Washim",
+  "state": "Maharashtra",
+  "latitude": 20.2,
+  "longitude": 77.2,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Washim"
+  ]
+ },
+ {
+  "district": "Yavatmal",
+  "state": "Maharashtra",
+  "latitude": 20.15,
+  "longitude": 78.35,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Yavatmal"
+  ]
+ },
+ {
+  "district": "Bishnupur",
+  "state": "Manipur",
+  "latitude": 24.6077,
+  "longitude": 93.78,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bishnupur"
+  ]
+ },
+ {
+  "district": "Chandel",
+  "state": "Manipur",
+  "latitude": 24.2355,
+  "longitude": 94.0932,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chandel"
+  ]
+ },
+ {
+  "district": "Churachandpur",
+  "state": "Manipur",
+  "latitude": 24.3333,
+  "longitude": 93.6833,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Churachandpur"
+  ]
+ },
+ {
+  "district": "Imphal East",
+  "state": "Manipur",
+  "latitude": 24.8165,
+  "longitude": 93.9421,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Imphal East"
+  ]
+ },
+ {
+  "district": "Imphal West",
+  "state": "Manipur",
+  "latitude": 24.7905,
+  "longitude": 93.8679,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Imphal West"
+  ]
+ },
+ {
+  "district": "Jiribam",
+  "state": "Manipur",
+  "latitude": 24.8043,
+  "longitude": 93.1209,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jiribam"
+  ]
+ },
+ {
+  "district": "Kakching",
+  "state": "Manipur",
+  "latitude": 24.4958,
+  "longitude": 93.9846,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kakching"
+  ]
+ },
+ {
+  "district": "Kamjong",
+  "state": "Manipur",
+  "latitude": 24.8526,
+  "longitude": 94.5148,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kamjong"
+  ]
+ },
+ {
+  "district": "Kangpokpi",
+  "state": "Manipur",
+  "latitude": 25.1511,
+  "longitude": 93.9695,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kangpokpi"
+  ]
+ },
+ {
+  "district": "Noney",
+  "state": "Manipur",
+  "latitude": 24.6569,
+  "longitude": 93.3856,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Noney"
+  ]
+ },
+ {
+  "district": "Pherzawl",
+  "state": "Manipur",
+  "latitude": 24.2613,
+  "longitude": 93.1883,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pherzawl"
+  ]
+ },
+ {
+  "district": "Senapati",
+  "state": "Manipur",
+  "latitude": 25.2671,
+  "longitude": 94.0224,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Senapati"
+  ]
+ },
+ {
+  "district": "Tamenglong",
+  "state": "Manipur",
+  "latitude": 24.9755,
+  "longitude": 93.5156,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tamenglong"
+  ]
+ },
+ {
+  "district": "Tengnoupal",
+  "state": "Manipur",
+  "latitude": 24.409,
+  "longitude": 94.2148,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tengnoupal"
+  ]
+ },
+ {
+  "district": "Thoubal",
+  "state": "Manipur",
+  "latitude": 24.6221,
+  "longitude": 94.01,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thoubal"
+  ]
+ },
+ {
+  "district": "Ukhrul",
+  "state": "Manipur",
+  "latitude": 25.0483,
+  "longitude": 94.3588,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ukhrul"
+  ]
+ },
+ {
+  "district": "East Garo Hills",
+  "state": "Meghalaya",
+  "latitude": 25.6137,
+  "longitude": 90.6243,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Garo Hills"
+  ]
+ },
+ {
+  "district": "East Jaintia Hills",
+  "state": "Meghalaya",
+  "latitude": 25.3598,
+  "longitude": 92.3668,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Jaintia Hills"
+  ]
+ },
+ {
+  "district": "East Khasi Hills",
+  "state": "Meghalaya",
+  "latitude": 25.3805,
+  "longitude": 91.7891,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "East Khasi Hills"
+  ]
+ },
+ {
+  "district": "Eastern West Khasi Hills",
+  "state": "Meghalaya",
+  "latitude": 25.6073,
+  "longitude": 91.5737,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Eastern West Khasi Hills"
+  ]
+ },
+ {
+  "district": "North Garo Hills",
+  "state": "Meghalaya",
+  "latitude": 25.8968,
+  "longitude": 90.616,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "North Garo Hills"
+  ]
+ },
+ {
+  "district": "Ri-Bhoi",
+  "state": "Meghalaya",
+  "latitude": 25.89,
+  "longitude": 91.8271,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ri-Bhoi"
+  ]
+ },
+ {
+  "district": "South Garo Hills",
+  "state": "Meghalaya",
+  "latitude": 25.3016,
+  "longitude": 90.5853,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South Garo Hills"
+  ]
+ },
+ {
+  "district": "South West Garo Hills",
+  "state": "Meghalaya",
+  "latitude": 25.4724,
+  "longitude": 89.934,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South West Garo Hills"
+  ]
+ },
+ {
+  "district": "South West Khasi Hills",
+  "state": "Meghalaya",
+  "latitude": 25.3215,
+  "longitude": 91.2946,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South West Khasi Hills"
+  ]
+ },
+ {
+  "district": "West Garo Hills",
+  "state": "Meghalaya",
+  "latitude": 25.5679,
+  "longitude": 90.2245,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Garo Hills"
+  ]
+ },
+ {
+  "district": "West Jaintia Hills",
+  "state": "Meghalaya",
+  "latitude": 25.5,
+  "longitude": 92.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Jaintia Hills"
+  ]
+ },
+ {
+  "district": "West Khasi Hills",
+  "state": "Meghalaya",
+  "latitude": 25.5478,
+  "longitude": 91.2696,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Khasi Hills"
+  ]
+ },
+ {
+  "district": "Aizawl",
+  "state": "Mizoram",
+  "latitude": 23.8241,
+  "longitude": 92.7652,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Aizawl"
+  ]
+ },
+ {
+  "district": "Champhai",
+  "state": "Mizoram",
+  "latitude": 23.4744,
+  "longitude": 93.3256,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Champhai"
+  ]
+ },
+ {
+  "district": "Hnahthial",
+  "state": "Mizoram",
+  "latitude": 22.9764,
+  "longitude": 92.9655,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hnahthial"
+  ]
+ },
+ {
+  "district": "Khawzawl",
+  "state": "Mizoram",
+  "latitude": 23.4908,
+  "longitude": 93.1415,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khawzawl"
+  ]
+ },
+ {
+  "district": "Kolasib",
+  "state": "Mizoram",
+  "latitude": 24.2221,
+  "longitude": 92.677,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kolasib"
+  ]
+ },
+ {
+  "district": "Lawngtlai",
+  "state": "Mizoram",
+  "latitude": 22.53,
+  "longitude": 92.9,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lawngtlai"
+  ]
+ },
+ {
+  "district": "Lunglei",
+  "state": "Mizoram",
+  "latitude": 22.9,
+  "longitude": 92.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lunglei"
+  ]
+ },
+ {
+  "district": "Mamit",
+  "state": "Mizoram",
+  "latitude": 23.7849,
+  "longitude": 92.4694,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mamit"
+  ]
+ },
+ {
+  "district": "Saiha",
+  "state": "Mizoram",
+  "latitude": 22.3767,
+  "longitude": 93.0122,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Saiha"
+  ]
+ },
+ {
+  "district": "Saitual",
+  "state": "Mizoram",
+  "latitude": 23.8486,
+  "longitude": 93.0914,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Saitual"
+  ]
+ },
+ {
+  "district": "Serchhip",
+  "state": "Mizoram",
+  "latitude": 23.2817,
+  "longitude": 92.9004,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Serchhip"
+  ]
+ },
+ {
+  "district": "Chumoukedima",
+  "state": "Nagaland",
+  "latitude": 25.8094,
+  "longitude": 93.7147,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chumoukedima"
+  ]
+ },
+ {
+  "district": "Dimapur",
+  "state": "Nagaland",
+  "latitude": 25.9017,
+  "longitude": 93.7175,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dimapur"
+  ]
+ },
+ {
+  "district": "Kiphire",
+  "state": "Nagaland",
+  "latitude": 25.8449,
+  "longitude": 94.8251,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kiphire"
+  ]
+ },
+ {
+  "district": "Kohima",
+  "state": "Nagaland",
+  "latitude": 25.75,
+  "longitude": 94.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kohima"
+  ]
+ },
+ {
+  "district": "Longleng",
+  "state": "Nagaland",
+  "latitude": 26.5554,
+  "longitude": 94.8003,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Longleng"
+  ]
+ },
+ {
+  "district": "Mokokchung",
+  "state": "Nagaland",
+  "latitude": 26.3139,
+  "longitude": 94.5168,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mokokchung"
+  ]
+ },
+ {
+  "district": "Mon",
+  "state": "Nagaland",
+  "latitude": 26.75,
+  "longitude": 94.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mon"
+  ]
+ },
+ {
+  "district": "Noklak",
+  "state": "Nagaland",
+  "latitude": 26.1005,
+  "longitude": 95.0194,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Noklak"
+  ]
+ },
+ {
+  "district": "Peren",
+  "state": "Nagaland",
+  "latitude": 25.5128,
+  "longitude": 93.7372,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Peren"
+  ]
+ },
+ {
+  "district": "Phek",
+  "state": "Nagaland",
+  "latitude": 25.75,
+  "longitude": 94.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Phek"
+  ]
+ },
+ {
+  "district": "Tseminyu",
+  "state": "Nagaland",
+  "latitude": 25.9416,
+  "longitude": 94.1601,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tseminyu"
+  ]
+ },
+ {
+  "district": "Tuensang",
+  "state": "Nagaland",
+  "latitude": 26.25,
+  "longitude": 94.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tuensang"
+  ]
+ },
+ {
+  "district": "Wokha",
+  "state": "Nagaland",
+  "latitude": 26.1667,
+  "longitude": 94.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Wokha"
+  ]
+ },
+ {
+  "district": "Zunheboto",
+  "state": "Nagaland",
+  "latitude": 26.0,
+  "longitude": 94.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Zunheboto"
+  ]
+ },
+ {
+  "district": "Angul",
+  "state": "Odisha",
+  "latitude": 20.849,
+  "longitude": 85.0608,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Angul"
+  ]
+ },
+ {
+  "district": "Balangir",
+  "state": "Odisha",
+  "latitude": 20.75,
+  "longitude": 83.25,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Balangir"
+  ]
+ },
+ {
+  "district": "Baleshwar",
+  "state": "Odisha",
+  "latitude": 21.5,
+  "longitude": 86.75,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baleshwar"
+  ]
+ },
+ {
+  "district": "Baragarh",
+  "state": "Odisha",
+  "latitude": 21.3333,
+  "longitude": 83.6167,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baragarh"
+  ]
+ },
+ {
+  "district": "Baudh",
+  "state": "Odisha",
+  "latitude": 20.833,
+  "longitude": 84.333,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baudh"
+  ]
+ },
+ {
+  "district": "Bhadrak",
+  "state": "Odisha",
+  "latitude": 21.0,
+  "longitude": 86.6,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhadrak"
+  ]
+ },
+ {
+  "district": "Cuttack",
+  "state": "Odisha",
+  "latitude": 20.5,
+  "longitude": 86.25,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Cuttack"
+  ]
+ },
+ {
+  "district": "Debagarh",
+  "state": "Odisha",
+  "latitude": 21.4659,
+  "longitude": 84.8037,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Debagarh"
+  ]
+ },
+ {
+  "district": "Dhenkanal",
+  "state": "Odisha",
+  "latitude": 20.75,
+  "longitude": 85.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhenkanal"
+  ]
+ },
+ {
+  "district": "Gajapati",
+  "state": "Odisha",
+  "latitude": 18.91,
+  "longitude": 84.2,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gajapati"
+  ]
+ },
+ {
+  "district": "Ganjam",
+  "state": "Odisha",
+  "latitude": 19.5,
+  "longitude": 84.5,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ganjam"
+  ]
+ },
+ {
+  "district": "Jagatsinghpur",
+  "state": "Odisha",
+  "latitude": 20.2,
+  "longitude": 86.3,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jagatsinghpur"
+  ]
+ },
+ {
+  "district": "Jajpur",
+  "state": "Odisha",
+  "latitude": 20.8415,
+  "longitude": 86.3124,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jajpur"
+  ]
+ },
+ {
+  "district": "Jharsuguda",
+  "state": "Odisha",
+  "latitude": 21.85,
+  "longitude": 84.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jharsuguda"
+  ]
+ },
+ {
+  "district": "Kalahandi",
+  "state": "Odisha",
+  "latitude": 19.75,
+  "longitude": 83.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kalahandi"
+  ]
+ },
+ {
+  "district": "Kandhamal",
+  "state": "Odisha",
+  "latitude": 20.3,
+  "longitude": 84.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kandhamal"
+  ]
+ },
+ {
+  "district": "Kendrapara",
+  "state": "Odisha",
+  "latitude": 20.5,
+  "longitude": 86.5,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kendrapara"
+  ]
+ },
+ {
+  "district": "Kendujhar",
+  "state": "Odisha",
+  "latitude": 21.5,
+  "longitude": 85.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kendujhar"
+  ]
+ },
+ {
+  "district": "Khordha",
+  "state": "Odisha",
+  "latitude": 20.2,
+  "longitude": 85.6,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khordha"
+  ]
+ },
+ {
+  "district": "Koraput",
+  "state": "Odisha",
+  "latitude": 19.0,
+  "longitude": 83.0,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Koraput"
+  ]
+ },
+ {
+  "district": "Malkangiri",
+  "state": "Odisha",
+  "latitude": 18.25,
+  "longitude": 81.95,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Malkangiri"
+  ]
+ },
+ {
+  "district": "Mayurbhanj",
+  "state": "Odisha",
+  "latitude": 21.75,
+  "longitude": 86.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mayurbhanj"
+  ]
+ },
+ {
+  "district": "Nabarangpur",
+  "state": "Odisha",
+  "latitude": 19.2333,
+  "longitude": 82.55,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nabarangpur"
+  ]
+ },
+ {
+  "district": "Nayagarh",
+  "state": "Odisha",
+  "latitude": 20.13,
+  "longitude": 85.1,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nayagarh"
+  ]
+ },
+ {
+  "district": "Nuapada",
+  "state": "Odisha",
+  "latitude": 20.6,
+  "longitude": 82.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nuapada"
+  ]
+ },
+ {
+  "district": "Puri",
+  "state": "Odisha",
+  "latitude": 19.9,
+  "longitude": 85.6,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Puri"
+  ]
+ },
+ {
+  "district": "Rayagada",
+  "state": "Odisha",
+  "latitude": 19.4,
+  "longitude": 83.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rayagada"
+  ]
+ },
+ {
+  "district": "Sambalpur",
+  "state": "Odisha",
+  "latitude": 21.4,
+  "longitude": 83.8833,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sambalpur"
+  ]
+ },
+ {
+  "district": "Subarnapur",
+  "state": "Odisha",
+  "latitude": 20.9315,
+  "longitude": 83.8249,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Subarnapur"
+  ]
+ },
+ {
+  "district": "Sundargarh",
+  "state": "Odisha",
+  "latitude": 22.25,
+  "longitude": 84.5,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sundargarh"
+  ]
+ },
+ {
+  "district": "Karaikal",
+  "state": "Puducherry",
+  "latitude": 10.9221,
+  "longitude": 79.8335,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karaikal"
+  ]
+ },
+ {
+  "district": "Mahe",
+  "state": "Puducherry",
+  "latitude": 11.7,
+  "longitude": 75.5333,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahe"
+  ]
+ },
+ {
+  "district": "Puducherry",
+  "state": "Puducherry",
+  "latitude": 11.9167,
+  "longitude": 79.75,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Puducherry"
+  ]
+ },
+ {
+  "district": "Yanam",
+  "state": "Puducherry",
+  "latitude": 16.7346,
+  "longitude": 82.2177,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Yanam"
+  ]
+ },
+ {
+  "district": "Ajitgarh",
+  "state": "Punjab",
+  "latitude": 30.65,
+  "longitude": 76.7,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ajitgarh"
+  ]
+ },
+ {
+  "district": "Amritsar",
+  "state": "Punjab",
+  "latitude": 31.67,
+  "longitude": 74.84,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Amritsar"
+  ]
+ },
+ {
+  "district": "Barnala",
+  "state": "Punjab",
+  "latitude": 30.38,
+  "longitude": 75.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Barnala"
+  ]
+ },
+ {
+  "district": "Bathinda",
+  "state": "Punjab",
+  "latitude": 30.21,
+  "longitude": 75.03,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bathinda"
+  ]
+ },
+ {
+  "district": "Faridkot",
+  "state": "Punjab",
+  "latitude": 30.65,
+  "longitude": 74.75,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Faridkot"
+  ]
+ },
+ {
+  "district": "Fatehgarh Sahib",
+  "state": "Punjab",
+  "latitude": 30.6438,
+  "longitude": 76.3479,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Fatehgarh Sahib"
+  ]
+ },
+ {
+  "district": "Fazilka",
+  "state": "Punjab",
+  "latitude": 30.3758,
+  "longitude": 74.1169,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Fazilka"
+  ]
+ },
+ {
+  "district": "Firozpur",
+  "state": "Punjab",
+  "latitude": 30.89,
+  "longitude": 74.56,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Firozpur"
+  ]
+ },
+ {
+  "district": "Gurdaspur",
+  "state": "Punjab",
+  "latitude": 31.92,
+  "longitude": 75.27,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gurdaspur"
+  ]
+ },
+ {
+  "district": "Hoshiarpur",
+  "state": "Punjab",
+  "latitude": 31.66,
+  "longitude": 75.85,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hoshiarpur"
+  ]
+ },
+ {
+  "district": "Jalandhar",
+  "state": "Punjab",
+  "latitude": 31.4167,
+  "longitude": 75.6167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jalandhar"
+  ]
+ },
+ {
+  "district": "Kapurthala",
+  "state": "Punjab",
+  "latitude": 31.4,
+  "longitude": 75.31,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kapurthala"
+  ]
+ },
+ {
+  "district": "Ludhiana",
+  "state": "Punjab",
+  "latitude": 30.84,
+  "longitude": 75.82,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ludhiana"
+  ]
+ },
+ {
+  "district": "Malerkotla",
+  "state": "Punjab",
+  "latitude": 30.5338,
+  "longitude": 75.9082,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Malerkotla"
+  ]
+ },
+ {
+  "district": "Mansa",
+  "state": "Punjab",
+  "latitude": 29.94,
+  "longitude": 75.43,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mansa"
+  ]
+ },
+ {
+  "district": "Moga",
+  "state": "Punjab",
+  "latitude": 30.8038,
+  "longitude": 75.1494,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Moga"
+  ]
+ },
+ {
+  "district": "Muktsar",
+  "state": "Punjab",
+  "latitude": 30.2873,
+  "longitude": 74.5349,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Muktsar"
+  ]
+ },
+ {
+  "district": "Pathankot",
+  "state": "Punjab",
+  "latitude": 32.33,
+  "longitude": 75.64,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pathankot"
+  ]
+ },
+ {
+  "district": "Patiala",
+  "state": "Punjab",
+  "latitude": 30.35,
+  "longitude": 76.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Patiala"
+  ]
+ },
+ {
+  "district": "Rupnagar",
+  "state": "Punjab",
+  "latitude": 31.04,
+  "longitude": 76.52,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rupnagar"
+  ]
+ },
+ {
+  "district": "Sangrur",
+  "state": "Punjab",
+  "latitude": 30.25,
+  "longitude": 75.85,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sangrur"
+  ]
+ },
+ {
+  "district": "Shahid Bhagat Singh Nagar",
+  "state": "Punjab",
+  "latitude": 31.1318,
+  "longitude": 76.1333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shahid Bhagat Singh Nagar"
+  ]
+ },
+ {
+  "district": "Tarn Taran",
+  "state": "Punjab",
+  "latitude": 31.3269,
+  "longitude": 74.8164,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tarn Taran"
+  ]
+ },
+ {
+  "district": "Ajmer",
+  "state": "Rajasthan",
+  "latitude": 26.2859,
+  "longitude": 74.8642,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ajmer"
+  ]
+ },
+ {
+  "district": "Alwar",
+  "state": "Rajasthan",
+  "latitude": 27.3788,
+  "longitude": 76.6439,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Alwar"
+  ]
+ },
+ {
+  "district": "Banswara",
+  "state": "Rajasthan",
+  "latitude": 23.4759,
+  "longitude": 74.3631,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Banswara"
+  ]
+ },
+ {
+  "district": "Baran",
+  "state": "Rajasthan",
+  "latitude": 25.09,
+  "longitude": 76.66,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baran"
+  ]
+ },
+ {
+  "district": "Barmer",
+  "state": "Rajasthan",
+  "latitude": 25.6678,
+  "longitude": 71.1253,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Barmer"
+  ]
+ },
+ {
+  "district": "Bharatpur",
+  "state": "Rajasthan",
+  "latitude": 27.21,
+  "longitude": 77.29,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bharatpur"
+  ]
+ },
+ {
+  "district": "Bhilwara",
+  "state": "Rajasthan",
+  "latitude": 25.5645,
+  "longitude": 74.7351,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhilwara"
+  ]
+ },
+ {
+  "district": "Bikaner",
+  "state": "Rajasthan",
+  "latitude": 28.1667,
+  "longitude": 73.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bikaner"
+  ]
+ },
+ {
+  "district": "Bundi",
+  "state": "Rajasthan",
+  "latitude": 25.4844,
+  "longitude": 75.7937,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bundi"
+  ]
+ },
+ {
+  "district": "Chittaurgarh",
+  "state": "Rajasthan",
+  "latitude": 24.8169,
+  "longitude": 74.5862,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chittaurgarh"
+  ]
+ },
+ {
+  "district": "Churu",
+  "state": "Rajasthan",
+  "latitude": 28.3447,
+  "longitude": 74.6952,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Churu"
+  ]
+ },
+ {
+  "district": "Dausa",
+  "state": "Rajasthan",
+  "latitude": 26.8827,
+  "longitude": 76.5705,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dausa"
+  ]
+ },
+ {
+  "district": "Dhaulpur",
+  "state": "Rajasthan",
+  "latitude": 26.7118,
+  "longitude": 77.7396,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhaulpur"
+  ]
+ },
+ {
+  "district": "Dungarpur",
+  "state": "Rajasthan",
+  "latitude": 23.75,
+  "longitude": 73.85,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dungarpur"
+  ]
+ },
+ {
+  "district": "Ganganagar",
+  "state": "Rajasthan",
+  "latitude": 29.49,
+  "longitude": 73.61,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ganganagar"
+  ]
+ },
+ {
+  "district": "Hanumangarh",
+  "state": "Rajasthan",
+  "latitude": 29.11,
+  "longitude": 74.6,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hanumangarh"
+  ]
+ },
+ {
+  "district": "Jaipur",
+  "state": "Rajasthan",
+  "latitude": 26.8986,
+  "longitude": 75.6663,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jaipur"
+  ]
+ },
+ {
+  "district": "Jaisalmer",
+  "state": "Rajasthan",
+  "latitude": 27.0524,
+  "longitude": 70.8613,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jaisalmer"
+  ]
+ },
+ {
+  "district": "Jalore",
+  "state": "Rajasthan",
+  "latitude": 25.08,
+  "longitude": 72.29,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jalore"
+  ]
+ },
+ {
+  "district": "Jhalawar",
+  "state": "Rajasthan",
+  "latitude": 24.4167,
+  "longitude": 76.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jhalawar"
+  ]
+ },
+ {
+  "district": "Jhunjhunu",
+  "state": "Rajasthan",
+  "latitude": 28.0932,
+  "longitude": 75.5491,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jhunjhunu"
+  ]
+ },
+ {
+  "district": "Jodhpur",
+  "state": "Rajasthan",
+  "latitude": 26.4489,
+  "longitude": 73.0064,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jodhpur"
+  ]
+ },
+ {
+  "district": "Karauli",
+  "state": "Rajasthan",
+  "latitude": 26.58,
+  "longitude": 77.1,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karauli"
+  ]
+ },
+ {
+  "district": "Kota",
+  "state": "Rajasthan",
+  "latitude": 25.1751,
+  "longitude": 75.8441,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kota"
+  ]
+ },
+ {
+  "district": "Nagaur",
+  "state": "Rajasthan",
+  "latitude": 26.9894,
+  "longitude": 73.8735,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nagaur"
+  ]
+ },
+ {
+  "district": "Pali",
+  "state": "Rajasthan",
+  "latitude": 25.5835,
+  "longitude": 73.3837,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pali"
+  ]
+ },
+ {
+  "district": "Pratapgarh",
+  "state": "Rajasthan",
+  "latitude": 24.03,
+  "longitude": 74.78,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pratapgarh"
+  ]
+ },
+ {
+  "district": "Rajsamand",
+  "state": "Rajasthan",
+  "latitude": 25.2382,
+  "longitude": 73.935,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rajsamand"
+  ]
+ },
+ {
+  "district": "Sawai Madhopur",
+  "state": "Rajasthan",
+  "latitude": 26.18,
+  "longitude": 76.4,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sawai Madhopur"
+  ]
+ },
+ {
+  "district": "Sikar",
+  "state": "Rajasthan",
+  "latitude": 27.4719,
+  "longitude": 75.3958,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sikar"
+  ]
+ },
+ {
+  "district": "Sirohi",
+  "state": "Rajasthan",
+  "latitude": 24.7618,
+  "longitude": 72.7765,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sirohi"
+  ]
+ },
+ {
+  "district": "Tonk",
+  "state": "Rajasthan",
+  "latitude": 26.1483,
+  "longitude": 75.666,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tonk"
+  ]
+ },
+ {
+  "district": "Udaipur",
+  "state": "Rajasthan",
+  "latitude": 24.33,
+  "longitude": 73.77,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Udaipur"
+  ]
+ },
+ {
+  "district": "Gangtok",
+  "state": "Sikkim",
+  "latitude": 27.3333,
+  "longitude": 88.6667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gangtok"
+  ]
+ },
+ {
+  "district": "Gyalshing",
+  "state": "Sikkim",
+  "latitude": 27.3333,
+  "longitude": 88.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gyalshing"
+  ]
+ },
+ {
+  "district": "Mangan",
+  "state": "Sikkim",
+  "latitude": 27.6667,
+  "longitude": 88.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mangan"
+  ]
+ },
+ {
+  "district": "Namchi",
+  "state": "Sikkim",
+  "latitude": 27.3112,
+  "longitude": 88.3744,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Namchi"
+  ]
+ },
+ {
+  "district": "Pakyong",
+  "state": "Sikkim",
+  "latitude": 27.225,
+  "longitude": 88.6492,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pakyong"
+  ]
+ },
+ {
+  "district": "Soreng",
+  "state": "Sikkim",
+  "latitude": 27.1899,
+  "longitude": 88.2019,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Soreng"
+  ]
+ },
+ {
+  "district": "Ariyalur",
+  "state": "Tamil Nadu",
+  "latitude": 11.15,
+  "longitude": 79.25,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ariyalur"
+  ]
+ },
+ {
+  "district": "Chengalpattu",
+  "state": "Tamil Nadu",
+  "latitude": 12.6831,
+  "longitude": 79.977,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chengalpattu"
+  ]
+ },
+ {
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "latitude": 13.0889,
+  "longitude": 80.2648,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chennai"
+  ]
+ },
+ {
+  "district": "Coimbatore",
+  "state": "Tamil Nadu",
+  "latitude": 10.8,
+  "longitude": 77.09,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Coimbatore"
+  ]
+ },
+ {
+  "district": "Cuddalore",
+  "state": "Tamil Nadu",
+  "latitude": 11.52,
+  "longitude": 79.51,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Cuddalore"
+  ]
+ },
+ {
+  "district": "Dharmapuri",
+  "state": "Tamil Nadu",
+  "latitude": 12.13,
+  "longitude": 78.24,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dharmapuri"
+  ]
+ },
+ {
+  "district": "Dindigul",
+  "state": "Tamil Nadu",
+  "latitude": 10.4,
+  "longitude": 77.8,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dindigul"
+  ]
+ },
+ {
+  "district": "Erode",
+  "state": "Tamil Nadu",
+  "latitude": 11.34,
+  "longitude": 77.55,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Erode"
+  ]
+ },
+ {
+  "district": "Kallakurichi",
+  "state": "Tamil Nadu",
+  "latitude": 11.7,
+  "longitude": 78.9644,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kallakurichi"
+  ]
+ },
+ {
+  "district": "Kancheepuram",
+  "state": "Tamil Nadu",
+  "latitude": 12.8336,
+  "longitude": 79.7823,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kancheepuram"
+  ]
+ },
+ {
+  "district": "Kanniyakumari",
+  "state": "Tamil Nadu",
+  "latitude": 8.32,
+  "longitude": 77.34,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kanniyakumari"
+  ]
+ },
+ {
+  "district": "Karur",
+  "state": "Tamil Nadu",
+  "latitude": 10.88,
+  "longitude": 78.19,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karur"
+  ]
+ },
+ {
+  "district": "Krishnagiri",
+  "state": "Tamil Nadu",
+  "latitude": 12.58,
+  "longitude": 77.96,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Krishnagiri"
+  ]
+ },
+ {
+  "district": "Madurai",
+  "state": "Tamil Nadu",
+  "latitude": 9.89,
+  "longitude": 78.03,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Madurai"
+  ]
+ },
+ {
+  "district": "Mayiladuthurai",
+  "state": "Tamil Nadu",
+  "latitude": 11.0962,
+  "longitude": 79.636,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mayiladuthurai"
+  ]
+ },
+ {
+  "district": "Nagapattinam",
+  "state": "Tamil Nadu",
+  "latitude": 10.85,
+  "longitude": 79.74,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nagapattinam"
+  ]
+ },
+ {
+  "district": "Namakkal",
+  "state": "Tamil Nadu",
+  "latitude": 11.3,
+  "longitude": 78.13,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Namakkal"
+  ]
+ },
+ {
+  "district": "Nilgiris",
+  "state": "Tamil Nadu",
+  "latitude": 11.46,
+  "longitude": 76.64,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nilgiris"
+  ]
+ },
+ {
+  "district": "Perambalur",
+  "state": "Tamil Nadu",
+  "latitude": 11.272,
+  "longitude": 78.8738,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Perambalur"
+  ]
+ },
+ {
+  "district": "Pudukkottai",
+  "state": "Tamil Nadu",
+  "latitude": 10.35,
+  "longitude": 78.9,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pudukkottai"
+  ]
+ },
+ {
+  "district": "Ramanathapuram",
+  "state": "Tamil Nadu",
+  "latitude": 9.37,
+  "longitude": 78.7,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ramanathapuram"
+  ]
+ },
+ {
+  "district": "Ranipet",
+  "state": "Tamil Nadu",
+  "latitude": 12.9278,
+  "longitude": 79.3326,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ranipet"
+  ]
+ },
+ {
+  "district": "Salem",
+  "state": "Tamil Nadu",
+  "latitude": 11.69,
+  "longitude": 78.29,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Salem"
+  ]
+ },
+ {
+  "district": "Sivaganga",
+  "state": "Tamil Nadu",
+  "latitude": 9.9276,
+  "longitude": 78.5376,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sivaganga"
+  ]
+ },
+ {
+  "district": "Tenkasi",
+  "state": "Tamil Nadu",
+  "latitude": 8.9537,
+  "longitude": 77.3171,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tenkasi"
+  ]
+ },
+ {
+  "district": "Thanjavur",
+  "state": "Tamil Nadu",
+  "latitude": 10.64,
+  "longitude": 79.22,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thanjavur"
+  ]
+ },
+ {
+  "district": "Theni",
+  "state": "Tamil Nadu",
+  "latitude": 9.85,
+  "longitude": 77.42,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Theni"
+  ]
+ },
+ {
+  "district": "Thiruvallur",
+  "state": "Tamil Nadu",
+  "latitude": 13.25,
+  "longitude": 80.0,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thiruvallur"
+  ]
+ },
+ {
+  "district": "Thiruvarur",
+  "state": "Tamil Nadu",
+  "latitude": 10.66,
+  "longitude": 79.55,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thiruvarur"
+  ]
+ },
+ {
+  "district": "Thoothukkudi",
+  "state": "Tamil Nadu",
+  "latitude": 8.8375,
+  "longitude": 77.963,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Thoothukkudi"
+  ]
+ },
+ {
+  "district": "Tiruchirappalli",
+  "state": "Tamil Nadu",
+  "latitude": 10.97,
+  "longitude": 78.65,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tiruchirappalli"
+  ]
+ },
+ {
+  "district": "Tirunelveli Kattabo",
+  "state": "Tamil Nadu",
+  "latitude": 8.7927,
+  "longitude": 77.5741,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tirunelveli Kattabo"
+  ]
+ },
+ {
+  "district": "Tirupattur",
+  "state": "Tamil Nadu",
+  "latitude": 12.4947,
+  "longitude": 78.5645,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tirupattur"
+  ]
+ },
+ {
+  "district": "Tiruppur",
+  "state": "Tamil Nadu",
+  "latitude": 10.8381,
+  "longitude": 77.4054,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tiruppur"
+  ]
+ },
+ {
+  "district": "Tiruvannamalai",
+  "state": "Tamil Nadu",
+  "latitude": 12.51,
+  "longitude": 79.09,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tiruvannamalai"
+  ]
+ },
+ {
+  "district": "Vellore",
+  "state": "Tamil Nadu",
+  "latitude": 12.86,
+  "longitude": 79.035,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vellore"
+  ]
+ },
+ {
+  "district": "Villupuram",
+  "state": "Tamil Nadu",
+  "latitude": 11.99,
+  "longitude": 79.37,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Villupuram"
+  ]
+ },
+ {
+  "district": "Virudhunagar",
+  "state": "Tamil Nadu",
+  "latitude": 9.45,
+  "longitude": 77.92,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Virudhunagar"
+  ]
+ },
+ {
+  "district": "Adilabad",
+  "state": "Telangana",
+  "latitude": 19.5188,
+  "longitude": 78.5673,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Adilabad"
+  ]
+ },
+ {
+  "district": "Bhadradri Kothagudem",
+  "state": "Telangana",
+  "latitude": 17.5546,
+  "longitude": 80.6198,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhadradri Kothagudem"
+  ]
+ },
+ {
+  "district": "Hanamkonda",
+  "state": "Telangana",
+  "latitude": 17.9995,
+  "longitude": 79.5813,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hanamkonda"
+  ]
+ },
+ {
+  "district": "Hyderabad",
+  "state": "Telangana",
+  "latitude": 17.4016,
+  "longitude": 78.4898,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hyderabad"
+  ]
+ },
+ {
+  "district": "Jagitial",
+  "state": "Telangana",
+  "latitude": 18.7938,
+  "longitude": 78.9135,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jagitial"
+  ]
+ },
+ {
+  "district": "Jangoan",
+  "state": "Telangana",
+  "latitude": 17.7294,
+  "longitude": 79.161,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jangoan"
+  ]
+ },
+ {
+  "district": "Jayashankar Bhupalapally",
+  "state": "Telangana",
+  "latitude": 18.4376,
+  "longitude": 79.892,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jayashankar Bhupalapally"
+  ]
+ },
+ {
+  "district": "Jogulamba Gadwal",
+  "state": "Telangana",
+  "latitude": 16.234,
+  "longitude": 77.8056,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jogulamba Gadwal"
+  ]
+ },
+ {
+  "district": "Kamareddy",
+  "state": "Telangana",
+  "latitude": 18.3257,
+  "longitude": 78.3342,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kamareddy"
+  ]
+ },
+ {
+  "district": "Karimnagar",
+  "state": "Telangana",
+  "latitude": 18.3384,
+  "longitude": 79.2294,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Karimnagar"
+  ]
+ },
+ {
+  "district": "Khammam",
+  "state": "Telangana",
+  "latitude": 17.2304,
+  "longitude": 80.2134,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khammam"
+  ]
+ },
+ {
+  "district": "Kumuram Bheem Asifabad",
+  "state": "Telangana",
+  "latitude": 19.3565,
+  "longitude": 79.2868,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kumuram Bheem Asifabad"
+  ]
+ },
+ {
+  "district": "Mahabubabad",
+  "state": "Telangana",
+  "latitude": 17.6004,
+  "longitude": 80.0054,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahabubabad"
+  ]
+ },
+ {
+  "district": "Mahbubnagar",
+  "state": "Telangana",
+  "latitude": 16.7609,
+  "longitude": 77.9959,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahbubnagar"
+  ]
+ },
+ {
+  "district": "Mancherial",
+  "state": "Telangana",
+  "latitude": 19.0736,
+  "longitude": 79.4897,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mancherial"
+  ]
+ },
+ {
+  "district": "Medak",
+  "state": "Telangana",
+  "latitude": 17.9547,
+  "longitude": 78.2617,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Medak"
+  ]
+ },
+ {
+  "district": "Medchal Malkajgiri",
+  "state": "Telangana",
+  "latitude": 17.6064,
+  "longitude": 78.5401,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Medchal Malkajgiri"
+  ]
+ },
+ {
+  "district": "Mulugu",
+  "state": "Telangana",
+  "latitude": 18.2891,
+  "longitude": 80.3374,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mulugu"
+  ]
+ },
+ {
+  "district": "Nagarkurnool",
+  "state": "Telangana",
+  "latitude": 16.4839,
+  "longitude": 78.3295,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nagarkurnool"
+  ]
+ },
+ {
+  "district": "Nalgonda",
+  "state": "Telangana",
+  "latitude": 16.8765,
+  "longitude": 79.1929,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nalgonda"
+  ]
+ },
+ {
+  "district": "Narayanpet",
+  "state": "Telangana",
+  "latitude": 16.6433,
+  "longitude": 77.5803,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Narayanpet"
+  ]
+ },
+ {
+  "district": "Nirmal",
+  "state": "Telangana",
+  "latitude": 19.0991,
+  "longitude": 78.341,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nirmal"
+  ]
+ },
+ {
+  "district": "Nizamabad",
+  "state": "Telangana",
+  "latitude": 18.75,
+  "longitude": 78.25,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nizamabad"
+  ]
+ },
+ {
+  "district": "Peddapalli",
+  "state": "Telangana",
+  "latitude": 18.6163,
+  "longitude": 79.3825,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Peddapalli"
+  ]
+ },
+ {
+  "district": "Rajanna Sircilla",
+  "state": "Telangana",
+  "latitude": 18.3863,
+  "longitude": 78.8156,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rajanna Sircilla"
+  ]
+ },
+ {
+  "district": "Rangareddi",
+  "state": "Telangana",
+  "latitude": 17.2788,
+  "longitude": 78.1684,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rangareddi"
+  ]
+ },
+ {
+  "district": "Sangareddy",
+  "state": "Telangana",
+  "latitude": 17.6289,
+  "longitude": 78.0847,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sangareddy"
+  ]
+ },
+ {
+  "district": "Siddipet",
+  "state": "Telangana",
+  "latitude": 18.1014,
+  "longitude": 78.8508,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Siddipet"
+  ]
+ },
+ {
+  "district": "Suryapet",
+  "state": "Telangana",
+  "latitude": 17.1416,
+  "longitude": 79.6225,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Suryapet"
+  ]
+ },
+ {
+  "district": "Vikarabad",
+  "state": "Telangana",
+  "latitude": 17.3354,
+  "longitude": 77.9045,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Vikarabad"
+  ]
+ },
+ {
+  "district": "Wanaparthy",
+  "state": "Telangana",
+  "latitude": 16.3602,
+  "longitude": 78.0642,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Wanaparthy"
+  ]
+ },
+ {
+  "district": "Warangal Rural",
+  "state": "Telangana",
+  "latitude": 18.0,
+  "longitude": 79.8333,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Warangal Rural"
+  ]
+ },
+ {
+  "district": "Yadadri Bhuvanagiri",
+  "state": "Telangana",
+  "latitude": 17.5129,
+  "longitude": 78.8854,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Yadadri Bhuvanagiri"
+  ]
+ },
+ {
+  "district": "Dhalai",
+  "state": "Tripura",
+  "latitude": 23.8431,
+  "longitude": 91.9259,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dhalai"
+  ]
+ },
+ {
+  "district": "Gomati",
+  "state": "Tripura",
+  "latitude": 23.534,
+  "longitude": 91.4812,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gomati"
+  ]
+ },
+ {
+  "district": "Khowai",
+  "state": "Tripura",
+  "latitude": 24.067,
+  "longitude": 91.6051,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Khowai"
+  ]
+ },
+ {
+  "district": "North Tripura",
+  "state": "Tripura",
+  "latitude": 24.3554,
+  "longitude": 92.171,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "North Tripura"
+  ]
+ },
+ {
+  "district": "Sepahijala",
+  "state": "Tripura",
+  "latitude": 23.6063,
+  "longitude": 91.3433,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sepahijala"
+  ]
+ },
+ {
+  "district": "South Tripura",
+  "state": "Tripura",
+  "latitude": 23.1671,
+  "longitude": 91.6095,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "South Tripura"
+  ]
+ },
+ {
+  "district": "Unakoti",
+  "state": "Tripura",
+  "latitude": 24.3278,
+  "longitude": 92.0038,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Unakoti"
+  ]
+ },
+ {
+  "district": "West Tripura",
+  "state": "Tripura",
+  "latitude": 23.8858,
+  "longitude": 91.3996,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "West Tripura"
+  ]
+ },
+ {
+  "district": "Agra",
+  "state": "Uttar Pradesh",
+  "latitude": 27.0833,
+  "longitude": 77.9667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Agra"
+  ]
+ },
+ {
+  "district": "Aligarh",
+  "state": "Uttar Pradesh",
+  "latitude": 27.9271,
+  "longitude": 78.0646,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Aligarh"
+  ]
+ },
+ {
+  "district": "Ambedkar Nagar",
+  "state": "Uttar Pradesh",
+  "latitude": 26.4054,
+  "longitude": 82.6976,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ambedkar Nagar"
+  ]
+ },
+ {
+  "district": "Amethi",
+  "state": "Uttar Pradesh",
+  "latitude": 26.2081,
+  "longitude": 81.6944,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Amethi"
+  ]
+ },
+ {
+  "district": "Amroha",
+  "state": "Uttar Pradesh",
+  "latitude": 28.7716,
+  "longitude": 78.3387,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Amroha"
+  ]
+ },
+ {
+  "district": "Auraiya",
+  "state": "Uttar Pradesh",
+  "latitude": 26.6469,
+  "longitude": 79.4286,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Auraiya"
+  ]
+ },
+ {
+  "district": "Ayodhya",
+  "state": "Uttar Pradesh",
+  "latitude": 26.75,
+  "longitude": 82.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ayodhya"
+  ]
+ },
+ {
+  "district": "Azamgarh",
+  "state": "Uttar Pradesh",
+  "latitude": 26.0448,
+  "longitude": 83.0673,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Azamgarh"
+  ]
+ },
+ {
+  "district": "Baghpat",
+  "state": "Uttar Pradesh",
+  "latitude": 28.95,
+  "longitude": 77.2167,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Baghpat"
+  ]
+ },
+ {
+  "district": "Bahraich",
+  "state": "Uttar Pradesh",
+  "latitude": 27.8002,
+  "longitude": 81.5186,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bahraich"
+  ]
+ },
+ {
+  "district": "Ballia",
+  "state": "Uttar Pradesh",
+  "latitude": 25.8333,
+  "longitude": 84.1667,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ballia"
+  ]
+ },
+ {
+  "district": "Balrampur",
+  "state": "Uttar Pradesh",
+  "latitude": 27.4345,
+  "longitude": 82.4028,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Balrampur"
+  ]
+ },
+ {
+  "district": "Bara Banki",
+  "state": "Uttar Pradesh",
+  "latitude": 26.9386,
+  "longitude": 81.3274,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bara Banki"
+  ]
+ },
+ {
+  "district": "Bareilly",
+  "state": "Uttar Pradesh",
+  "latitude": 28.4578,
+  "longitude": 79.4323,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bareilly"
+  ]
+ },
+ {
+  "district": "Basti",
+  "state": "Uttar Pradesh",
+  "latitude": 26.8282,
+  "longitude": 82.7792,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Basti"
+  ]
+ },
+ {
+  "district": "Bhadohi",
+  "state": "Uttar Pradesh",
+  "latitude": 25.3579,
+  "longitude": 82.4308,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bhadohi"
+  ]
+ },
+ {
+  "district": "Bijnor",
+  "state": "Uttar Pradesh",
+  "latitude": 29.3869,
+  "longitude": 78.3899,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bijnor"
+  ]
+ },
+ {
+  "district": "Budaun",
+  "state": "Uttar Pradesh",
+  "latitude": 28.0778,
+  "longitude": 79.0417,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Budaun"
+  ]
+ },
+ {
+  "district": "Bulandshahr",
+  "state": "Uttar Pradesh",
+  "latitude": 28.358,
+  "longitude": 77.9987,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bulandshahr"
+  ]
+ },
+ {
+  "district": "Chandauli",
+  "state": "Uttar Pradesh",
+  "latitude": 25.2613,
+  "longitude": 83.2641,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chandauli"
+  ]
+ },
+ {
+  "district": "Chitrakoot",
+  "state": "Uttar Pradesh",
+  "latitude": 25.2051,
+  "longitude": 81.0896,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chitrakoot"
+  ]
+ },
+ {
+  "district": "Deoria",
+  "state": "Uttar Pradesh",
+  "latitude": 26.4225,
+  "longitude": 83.8337,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Deoria"
+  ]
+ },
+ {
+  "district": "District Banda",
+  "state": "Uttar Pradesh",
+  "latitude": 25.4746,
+  "longitude": 80.5554,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Banda"
+  ]
+ },
+ {
+  "district": "District Etawah",
+  "state": "Uttar Pradesh",
+  "latitude": 26.7634,
+  "longitude": 79.0958,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Etawah"
+  ]
+ },
+ {
+  "district": "District Hamirpur",
+  "state": "Uttar Pradesh",
+  "latitude": 25.7507,
+  "longitude": 79.865,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Hamirpur"
+  ]
+ },
+ {
+  "district": "District Jalaun",
+  "state": "Uttar Pradesh",
+  "latitude": 26.0908,
+  "longitude": 79.3865,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Jalaun"
+  ]
+ },
+ {
+  "district": "District Pilibhit",
+  "state": "Uttar Pradesh",
+  "latitude": 28.5306,
+  "longitude": 79.9948,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Pilibhit"
+  ]
+ },
+ {
+  "district": "District Pratapgarh",
+  "state": "Uttar Pradesh",
+  "latitude": 25.8729,
+  "longitude": 81.8286,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Pratapgarh"
+  ]
+ },
+ {
+  "district": "District Raebareli",
+  "state": "Uttar Pradesh",
+  "latitude": 26.2042,
+  "longitude": 81.1916,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Raebareli"
+  ]
+ },
+ {
+  "district": "District Rampur",
+  "state": "Uttar Pradesh",
+  "latitude": 28.8279,
+  "longitude": 79.1434,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Rampur"
+  ]
+ },
+ {
+  "district": "District Saharanpur",
+  "state": "Uttar Pradesh",
+  "latitude": 29.9509,
+  "longitude": 77.5463,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Saharanpur"
+  ]
+ },
+ {
+  "district": "District Sultanpur",
+  "state": "Uttar Pradesh",
+  "latitude": 26.2622,
+  "longitude": 82.1944,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Sultanpur"
+  ]
+ },
+ {
+  "district": "District Unnao",
+  "state": "Uttar Pradesh",
+  "latitude": 26.6087,
+  "longitude": 80.5621,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "District Unnao"
+  ]
+ },
+ {
+  "district": "Etah",
+  "state": "Uttar Pradesh",
+  "latitude": 27.5157,
+  "longitude": 78.7175,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Etah"
+  ]
+ },
+ {
+  "district": "Fatehpur",
+  "state": "Uttar Pradesh",
+  "latitude": 25.8758,
+  "longitude": 80.8071,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Fatehpur"
+  ]
+ },
+ {
+  "district": "Ferrukhabad",
+  "state": "Uttar Pradesh",
+  "latitude": 27.4311,
+  "longitude": 79.4579,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ferrukhabad"
+  ]
+ },
+ {
+  "district": "Firozabad",
+  "state": "Uttar Pradesh",
+  "latitude": 27.2007,
+  "longitude": 78.4287,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Firozabad"
+  ]
+ },
+ {
+  "district": "Gautam Buddha Nagar",
+  "state": "Uttar Pradesh",
+  "latitude": 28.359,
+  "longitude": 77.5508,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gautam Buddha Nagar"
+  ]
+ },
+ {
+  "district": "Ghaziabad",
+  "state": "Uttar Pradesh",
+  "latitude": 28.6954,
+  "longitude": 77.4582,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ghaziabad"
+  ]
+ },
+ {
+  "district": "Ghazipur",
+  "state": "Uttar Pradesh",
+  "latitude": 25.6241,
+  "longitude": 83.5555,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Ghazipur"
+  ]
+ },
+ {
+  "district": "Gonda",
+  "state": "Uttar Pradesh",
+  "latitude": 27.1858,
+  "longitude": 81.9669,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gonda"
+  ]
+ },
+ {
+  "district": "Gorakhpur",
+  "state": "Uttar Pradesh",
+  "latitude": 26.6558,
+  "longitude": 83.3592,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Gorakhpur"
+  ]
+ },
+ {
+  "district": "Hapur",
+  "state": "Uttar Pradesh",
+  "latitude": 28.7313,
+  "longitude": 77.773,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hapur"
+  ]
+ },
+ {
+  "district": "Hardoi",
+  "state": "Uttar Pradesh",
+  "latitude": 27.3303,
+  "longitude": 80.162,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hardoi"
+  ]
+ },
+ {
+  "district": "Hathras",
+  "state": "Uttar Pradesh",
+  "latitude": 27.5776,
+  "longitude": 78.1616,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hathras"
+  ]
+ },
+ {
+  "district": "Jaunpur",
+  "state": "Uttar Pradesh",
+  "latitude": 25.746,
+  "longitude": 82.5749,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jaunpur"
+  ]
+ },
+ {
+  "district": "Jhansi",
+  "state": "Uttar Pradesh",
+  "latitude": 25.5,
+  "longitude": 78.5,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jhansi"
+  ]
+ },
+ {
+  "district": "Kannauj",
+  "state": "Uttar Pradesh",
+  "latitude": 27.0177,
+  "longitude": 79.6785,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kannauj"
+  ]
+ },
+ {
+  "district": "Kanpur",
+  "state": "Uttar Pradesh",
+  "latitude": 26.3805,
+  "longitude": 80.2158,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kanpur"
+  ]
+ },
+ {
+  "district": "Kanpur Dehat",
+  "state": "Uttar Pradesh",
+  "latitude": 26.4151,
+  "longitude": 79.9896,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kanpur Dehat"
+  ]
+ },
+ {
+  "district": "Kasganj",
+  "state": "Uttar Pradesh",
+  "latitude": 27.7772,
+  "longitude": 78.8454,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kasganj"
+  ]
+ },
+ {
+  "district": "Kaushambi",
+  "state": "Uttar Pradesh",
+  "latitude": 25.5307,
+  "longitude": 81.3773,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kaushambi"
+  ]
+ },
+ {
+  "district": "Kheri",
+  "state": "Uttar Pradesh",
+  "latitude": 28.1211,
+  "longitude": 80.6671,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kheri"
+  ]
+ },
+ {
+  "district": "Kushinagar",
+  "state": "Uttar Pradesh",
+  "latitude": 26.7403,
+  "longitude": 83.8889,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kushinagar"
+  ]
+ },
+ {
+  "district": "Lalitpur",
+  "state": "Uttar Pradesh",
+  "latitude": 24.6536,
+  "longitude": 78.5622,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lalitpur"
+  ]
+ },
+ {
+  "district": "Lucknow",
+  "state": "Uttar Pradesh",
+  "latitude": 26.75,
+  "longitude": 81.0,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Lucknow"
+  ]
+ },
+ {
+  "district": "Maharajganj",
+  "state": "Uttar Pradesh",
+  "latitude": 27.1695,
+  "longitude": 83.5067,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Maharajganj"
+  ]
+ },
+ {
+  "district": "Mahoba",
+  "state": "Uttar Pradesh",
+  "latitude": 25.2921,
+  "longitude": 79.8724,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mahoba"
+  ]
+ },
+ {
+  "district": "Mainpuri",
+  "state": "Uttar Pradesh",
+  "latitude": 27.1822,
+  "longitude": 79.0521,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mainpuri"
+  ]
+ },
+ {
+  "district": "Mathura",
+  "state": "Uttar Pradesh",
+  "latitude": 27.5972,
+  "longitude": 77.6259,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mathura"
+  ]
+ },
+ {
+  "district": "Mau",
+  "state": "Uttar Pradesh",
+  "latitude": 26.0294,
+  "longitude": 83.5076,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mau"
+  ]
+ },
+ {
+  "district": "Meerut",
+  "state": "Uttar Pradesh",
+  "latitude": 29.0396,
+  "longitude": 77.7836,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Meerut"
+  ]
+ },
+ {
+  "district": "Mirzapur",
+  "state": "Uttar Pradesh",
+  "latitude": 25.1146,
+  "longitude": 82.6089,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Mirzapur"
+  ]
+ },
+ {
+  "district": "Moradabad",
+  "state": "Uttar Pradesh",
+  "latitude": 28.8525,
+  "longitude": 78.797,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Moradabad"
+  ]
+ },
+ {
+  "district": "Muzaffarnagar",
+  "state": "Uttar Pradesh",
+  "latitude": 29.4175,
+  "longitude": 77.7321,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Muzaffarnagar"
+  ]
+ },
+ {
+  "district": "Prayagraj",
+  "state": "Uttar Pradesh",
+  "latitude": 25.4201,
+  "longitude": 81.8838,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Prayagraj"
+  ]
+ },
+ {
+  "district": "Sambhal",
+  "state": "Uttar Pradesh",
+  "latitude": 28.5839,
+  "longitude": 78.5697,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sambhal"
+  ]
+ },
+ {
+  "district": "Sant Kabir Nagar",
+  "state": "Uttar Pradesh",
+  "latitude": 26.7902,
+  "longitude": 83.0348,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sant Kabir Nagar"
+  ]
+ },
+ {
+  "district": "Shajahanpur",
+  "state": "Uttar Pradesh",
+  "latitude": 27.9501,
+  "longitude": 79.8215,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shajahanpur"
+  ]
+ },
+ {
+  "district": "Shamli",
+  "state": "Uttar Pradesh",
+  "latitude": 29.4638,
+  "longitude": 77.2658,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shamli"
+  ]
+ },
+ {
+  "district": "Shrawasti",
+  "state": "Uttar Pradesh",
+  "latitude": 27.5075,
+  "longitude": 82.0047,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Shrawasti"
+  ]
+ },
+ {
+  "district": "Siddharthnagar",
+  "state": "Uttar Pradesh",
+  "latitude": 27.258,
+  "longitude": 83.0147,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Siddharthnagar"
+  ]
+ },
+ {
+  "district": "Sitapur",
+  "state": "Uttar Pradesh",
+  "latitude": 27.5184,
+  "longitude": 80.8563,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sitapur"
+  ]
+ },
+ {
+  "district": "Sonbhadra",
+  "state": "Uttar Pradesh",
+  "latitude": 24.4021,
+  "longitude": 83.0535,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Sonbhadra"
+  ]
+ },
+ {
+  "district": "Varanasi",
+  "state": "Uttar Pradesh",
+  "latitude": 25.3882,
+  "longitude": 82.9139,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Varanasi"
+  ]
+ },
+ {
+  "district": "Almora",
+  "state": "Uttarakhand",
+  "latitude": 29.6922,
+  "longitude": 79.4979,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Almora"
+  ]
+ },
+ {
+  "district": "Bageshwar",
+  "state": "Uttarakhand",
+  "latitude": 29.9732,
+  "longitude": 79.8322,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bageshwar"
+  ]
+ },
+ {
+  "district": "Chamoli",
+  "state": "Uttarakhand",
+  "latitude": 30.4949,
+  "longitude": 79.5768,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Chamoli"
+  ]
+ },
+ {
+  "district": "Champawat",
+  "state": "Uttarakhand",
+  "latitude": 29.2876,
+  "longitude": 80.0374,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Champawat"
+  ]
+ },
+ {
+  "district": "Dehradun",
+  "state": "Uttarakhand",
+  "latitude": 30.33,
+  "longitude": 78.06,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dehradun"
+  ]
+ },
+ {
+  "district": "Garhwal",
+  "state": "Uttarakhand",
+  "latitude": 29.9637,
+  "longitude": 78.9285,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Garhwal"
+  ]
+ },
+ {
+  "district": "Haridwar",
+  "state": "Uttarakhand",
+  "latitude": 29.9697,
+  "longitude": 78.0746,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Haridwar"
+  ]
+ },
+ {
+  "district": "Nainital",
+  "state": "Uttarakhand",
+  "latitude": 29.3169,
+  "longitude": 79.4618,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nainital"
+  ]
+ },
+ {
+  "district": "Pithoragarh",
+  "state": "Uttarakhand",
+  "latitude": 30.1136,
+  "longitude": 80.3454,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Pithoragarh"
+  ]
+ },
+ {
+  "district": "Rudraprayag",
+  "state": "Uttarakhand",
+  "latitude": 30.6087,
+  "longitude": 79.0652,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Rudraprayag"
+  ]
+ },
+ {
+  "district": "Tehri Garhwal",
+  "state": "Uttarakhand",
+  "latitude": 30.3474,
+  "longitude": 78.4886,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Tehri Garhwal"
+  ]
+ },
+ {
+  "district": "Udham Singh Nagar",
+  "state": "Uttarakhand",
+  "latitude": 29.0275,
+  "longitude": 79.5235,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Udham Singh Nagar"
+  ]
+ },
+ {
+  "district": "Uttarkashi",
+  "state": "Uttarakhand",
+  "latitude": 30.9721,
+  "longitude": 78.6068,
+  "coastal": false,
+  "coord_source": "geonames",
+  "aliases": [
+   "Uttarkashi"
+  ]
+ },
+ {
+  "district": "Alipurduar",
+  "state": "West Bengal",
+  "latitude": 26.4914,
+  "longitude": 89.528,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Alipurduar"
+  ]
+ },
+ {
+  "district": "Bankura",
+  "state": "West Bengal",
+  "latitude": 23.137,
+  "longitude": 87.1357,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Bankura"
+  ]
+ },
+ {
+  "district": "Birbhum",
+  "state": "West Bengal",
+  "latitude": 23.9536,
+  "longitude": 87.6616,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Birbhum"
+  ]
+ },
+ {
+  "district": "Cooch Behar",
+  "state": "West Bengal",
+  "latitude": 26.2928,
+  "longitude": 89.3471,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Cooch Behar"
+  ]
+ },
+ {
+  "district": "Dakshin Dinajpur",
+  "state": "West Bengal",
+  "latitude": 25.22,
+  "longitude": 88.76,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Dakshin Dinajpur"
+  ]
+ },
+ {
+  "district": "Darjeeling",
+  "state": "West Bengal",
+  "latitude": 26.8503,
+  "longitude": 88.2583,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Darjeeling"
+  ]
+ },
+ {
+  "district": "Haora",
+  "state": "West Bengal",
+  "latitude": 22.6,
+  "longitude": 88.25,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Haora"
+  ]
+ },
+ {
+  "district": "Hugli",
+  "state": "West Bengal",
+  "latitude": 22.8289,
+  "longitude": 88.201,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Hugli"
+  ]
+ },
+ {
+  "district": "Jalpaiguri",
+  "state": "West Bengal",
+  "latitude": 26.5197,
+  "longitude": 88.7146,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jalpaiguri"
+  ]
+ },
+ {
+  "district": "Jhargram",
+  "state": "West Bengal",
+  "latitude": 22.4518,
+  "longitude": 86.9945,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Jhargram"
+  ]
+ },
+ {
+  "district": "Kalimpong",
+  "state": "West Bengal",
+  "latitude": 27.0591,
+  "longitude": 88.4695,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kalimpong"
+  ]
+ },
+ {
+  "district": "Kolkata",
+  "state": "West Bengal",
+  "latitude": 22.5473,
+  "longitude": 88.3737,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Kolkata"
+  ]
+ },
+ {
+  "district": "Malda",
+  "state": "West Bengal",
+  "latitude": 25.1372,
+  "longitude": 88.0899,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Malda"
+  ]
+ },
+ {
+  "district": "Murshidabad",
+  "state": "West Bengal",
+  "latitude": 24.1,
+  "longitude": 88.25,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Murshidabad"
+  ]
+ },
+ {
+  "district": "Nadia",
+  "state": "West Bengal",
+  "latitude": 23.4786,
+  "longitude": 88.517,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Nadia"
+  ]
+ },
+ {
+  "district": "North 24 Parganas",
+  "state": "West Bengal",
+  "latitude": 22.71,
+  "longitude": 88.7108,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "North 24 Parganas"
+  ]
+ },
+ {
+  "district": "Paschim Bardhaman",
+  "state": "West Bengal",
+  "latitude": 23.6813,
+  "longitude": 86.9785,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Paschim Bardhaman"
+  ]
+ },
+ {
+  "district": "Paschim Medinipur",
+  "state": "West Bengal",
+  "latitude": 22.4081,
+  "longitude": 87.3811,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Paschim Medinipur"
+  ]
+ },
+ {
+  "district": "Purba Bardhaman",
+  "state": "West Bengal",
+  "latitude": 23.3592,
+  "longitude": 87.9473,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Purba Bardhaman"
+  ]
+ },
+ {
+  "district": "Purba Medinipur",
+  "state": "West Bengal",
+  "latitude": 21.9373,
+  "longitude": 87.7763,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "Purba Medinipur"
+  ]
+ },
+ {
+  "district": "Puruliya",
+  "state": "West Bengal",
+  "latitude": 23.2766,
+  "longitude": 86.4214,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Puruliya"
+  ]
+ },
+ {
+  "district": "South 24 Parganas",
+  "state": "West Bengal",
+  "latitude": 22.162,
+  "longitude": 88.4317,
+  "coastal": true,
+  "coord_source": "geonames",
+  "aliases": [
+   "South 24 Parganas"
+  ]
+ },
+ {
+  "district": "Uttar Dinajpur",
+  "state": "West Bengal",
+  "latitude": 25.614,
+  "longitude": 88.126,
+  "coastal": null,
+  "coord_source": "geonames",
+  "aliases": [
+   "Uttar Dinajpur"
+  ]
+ }
+]

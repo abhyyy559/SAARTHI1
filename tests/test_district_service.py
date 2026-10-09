@@ -30,13 +30,21 @@ def test_gazetteer_covers_every_district_of_both_states():
 def test_every_row_is_usable():
     for row in district_service.DISTRICTS:
         assert row["district"].strip()
-        assert row["state"] in ("Telangana", "Andhra Pradesh")
-        assert 12.0 <= row["latitude"] <= 20.0, row
-        assert 76.0 <= row["longitude"] <= 85.0, row
-        # Provenance of the coordinate, so nobody mistakes an HQ pin for geometry.
-        assert row["coord_source"] in ("gadm", "hq"), row
-        assert isinstance(row["coastal"], bool)
+        assert row["district"].isascii(), row  # diacritics broke matching
+        assert 6.0 <= row["latitude"] <= 37.5, row  # inside India
+        assert 68.0 <= row["longitude"] <= 98.0, row
         assert row["aliases"], row
+        if row["state"] in ("Telangana", "Andhra Pradesh"):
+            # Surveyed file: provenance of the coordinate, so nobody mistakes an
+            # HQ pin for geometry, and a coastal flag for every district.
+            assert row["coord_source"] in ("gadm", "hq"), row
+            assert isinstance(row["coastal"], bool)
+        else:
+            # All-India file: coastal may be unknown (None), never guessed.
+            assert row["coord_source"] == "geonames", row
+            assert row["coastal"] in (True, False, None), row
+    states = {r["state"] for r in district_service.DISTRICTS}
+    assert len(states) == 36, sorted(states)
     print("PASS: test_every_row_is_usable")
 
 
@@ -56,8 +64,9 @@ def test_coastal_flag_is_present_for_the_coast():
     missing flag is a wrong statement, not a missing nicety."""
     assert district_service.is_coastal("Visakhapatnam") is True
     assert district_service.is_coastal("Hyderabad") is False
-    # Outside our coverage the answer is "unknown", which is not "inland".
-    assert district_service.is_coastal("Mumbai") is None
+    assert district_service.is_coastal("Mumbai") is True
+    # Coverage gaps say "unknown", which is not "inland".
+    assert district_service.is_coastal("Nowhere Such") is None
     print("PASS: test_coastal_flag_is_present_for_the_coast")
 
 
@@ -169,6 +178,8 @@ def test_districts_resolve_to_themselves_from_their_own_coordinate():
     """
     wrong = []
     for row in district_service.DISTRICTS:
+        if row["state"] not in ("Telangana", "Andhra Pradesh"):
+            continue  # surveyed states; all-India rows are covered elsewhere
         got = LocationService().resolve(row["latitude"], row["longitude"])
         if got["district"] != row["district"]:
             wrong.append((row["district"], got["district"]))
