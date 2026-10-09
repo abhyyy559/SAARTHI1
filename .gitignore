@@ -30,3 +30,13 @@ _tmp_districts.json
 _qa/
 vapid_keys.json
 .venv/
+
+# Runtime state written by the running server (alert watcher, push
+# subscriptions, delivery ledger, notification log). Never source: a commit
+# would carry phones' push endpoints and stale demo data to everyone.
+store/
+alert_watch_state.json
+delivery_ledger.json
+demo_alerts.json
+notification_log.json
+push_subscriptions.json

@@ -7,9 +7,7 @@ from fastapi import APIRouter, HTTPException
 from .. import config
 from ..adapters import cap_adapter
 from ..adapters.registry import AdapterUnavailable, snapshot
-from ..models.emergency import EMERGENCY_TYPES
-from ..services import impact_service, rag_service, report_service
-from ..services.emergency_service import EmergencyMessagingService, inbox
+from ..services import impact_service
 from ..services.location_service import LocationService
 from ..utils.time import iso_now
 from . import advisory as advisory_mod
@@ -20,7 +18,6 @@ from . import weather as weather_mod
 from ..models.chat import ChatRequest
 
 router = APIRouter(prefix="/api/v1")
-_emergency = EmergencyMessagingService()
 
 
 @router.get("/weather/current")
@@ -205,86 +202,6 @@ async def v1_resolve(lat: Optional[float] = None, lon: Optional[float] = None, q
 @router.get("/climate/trends")
 async def v1_climate(lat: float = 17.385, lon: float = 78.4867, years: int = 20):
     return await climate_mod.climate_trends(lat, lon, years)
-
-
-@router.post("/emergency/messages")
-async def v1_emergency_send(payload: dict):
-    mtype = payload.get("message_type", "NEED_HELP")
-    if mtype not in EMERGENCY_TYPES:
-        return {"status": "error", "reason": f"unknown message_type (see {EMERGENCY_TYPES})"}
-    res = await _emergency.sendEmergencyMessage(payload.get("sender_id", "anonymous"), payload)
-    return {"status": "queued", **res, "generated_at": iso_now()}
-
-
-@router.get("/emergency/messages")
-async def v1_emergency_inbox():
-    return {"messages": inbox(), "generated_at": iso_now()}
-
-
-@router.post("/emergency/sync")
-async def v1_emergency_sync():
-    return {**_emergency.syncWhenConnected(), "generated_at": iso_now()}
-
-
-@router.post("/emergency/simulate")
-async def v1_emergency_simulate(payload: dict):
-    """Stage demo of the A→B→C store-and-forward chain. The packet carries a
-    SIMULATED provenance label end to end — never mistaken for a live relay."""
-    from ..services.emergency_service import EmergencyMessagingService, SimulatedTransport
-    mtype = payload.get("message_type", "NEED_HELP")
-    if mtype not in EMERGENCY_TYPES:
-        return {"status": "error", "reason": f"unknown message_type (see {EMERGENCY_TYPES})"}
-    demo = EmergencyMessagingService(SimulatedTransport())
-    res = await demo.sendEmergencyMessage(payload.get("sender_id", "demo-A"), payload)
-    # Build a visual hop trace the UI can render without interpreting.
-    now = iso_now()
-    trace = [
-        {"node": "you", "icon": "phone", "state": "sealed", "at": now, "detail": "Encrypted + signed"},
-        {"node": "relay-a", "icon": "radio", "state": "received", "at": now, "detail": "Store-and-forward"},
-        {"node": "relay-b", "icon": "radio", "state": "forwarded", "at": now, "detail": "Hop 2/10"},
-        {"node": "relay-c", "icon": "radio", "state": "forwarded", "at": now, "detail": "Hop 3/10"},
-        {"node": "out", "icon": "check", "state": "delivered", "at": now, "detail": "SIMULATED"},
-    ]
-    return {
-        "status": "relayed-simulated",
-        **res,
-        "trace": trace,
-        "properties": {
-            "sealed": True,
-            "tamper_proof": True,
-            "hop_limit": 10,
-            "hops_used": 3,
-            "queued": True,
-            "provenance": "SIMULATED",
-        },
-        "generated_at": now,
-    }
-
-
-@router.get("/emergency/guidance")
-async def v1_guidance(q: str, lang: str = "en"):
-    """RAG retrieval over local emergency docs (also serves offline Q&A content)."""
-    return {"hits": rag_service.retrieve(q, lang), "generated_at": iso_now()}
-
-
-@router.post("/reports")
-async def v1_report(payload: dict):
-    """Community hazard report — ALWAYS labelled COMMUNITY, never official (§34)."""
-    try:
-        rep = report_service.submit(
-            payload.get("report_type", ""), float(payload.get("latitude", 0)),
-            float(payload.get("longitude", 0)), payload.get("district", ""),
-            payload.get("text", ""), payload.get("reporter_id", "anonymous"))
-    except (ValueError, TypeError) as exc:
-        return {"status": "error", "reason": str(exc)}
-    return {"status": "stored-community-report",
-            "note": "Community report — not an official warning.",
-            "report": rep.model_dump(mode="json")}
-
-
-@router.get("/reports")
-async def v1_reports(district: str = ""):
-    return {"reports": report_service.list_reports(district), "generated_at": iso_now()}
 
 
 @router.get("/system/status")

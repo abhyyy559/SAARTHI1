@@ -4,7 +4,7 @@ import contextlib
 import logging
 import time
 from pathlib import Path
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +14,7 @@ from .utils.time import iso_now
 
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
-                  push, notifications, aviation)
+                  push, notifications)
 from .api import map as map_api
 from .utils.logging import RequestLoggingMiddleware
 
@@ -174,7 +174,6 @@ app.include_router(advisory.router)
 app.include_router(v1.router)
 app.include_router(push.router)
 app.include_router(notifications.router)
-app.include_router(aviation.router)
 
 # Ack/telemetry ingest (Round2 T3.3: POST /api/ack, GET /api/coverage). Guarded
 # so a telemetry-only failure can never prevent the app from serving alerts.
@@ -217,45 +216,6 @@ async def health() -> dict:
 @app.get("/api/mode")
 async def get_mode() -> dict:
     return _mode_payload()
-
-
-@app.websocket("/ws/warnings")
-async def ws_warnings(websocket: WebSocket):
-    """Live warning push (§26). Sends snapshot on connect, then refreshes. Demo-safe."""
-    from .services.imd_service import IMDService
-    from .services.validation_service import ValidationService
-    from .services.verdict_service import build_verdict
-
-    await websocket.accept()
-    imd = IMDService()
-    try:
-        while True:
-            try:
-                w = await imd.get_district_warning("Hyderabad")
-                verified = ValidationService(imd).validate_warning(w, "Hyderabad") if w else None
-                warning_d = w.model_dump(mode="json") if w else None
-                verified_d = verified.model_dump(mode="json") if verified else None
-                payload = {
-                    "type": "warning_snapshot",
-                    "warning": warning_d,
-                    "verified": verified_d,
-                    # Same authoritative verdict the HTTP endpoints emit, so the
-                    # pushed snapshot can never be read as a calm by itself.
-                    "verdict": build_verdict(
-                        verified=verified_d, warning=warning_d,
-                        warning_service_available=bool(w),
-                    ),
-                    "generated_at": iso_now(),
-                }
-            except Exception as exc:
-                payload = {
-                    "type": "warning_snapshot", "status": "unavailable", "detail": str(exc),
-                    "verdict": build_verdict(warning_service_available=False),
-                }
-            await websocket.send_json(payload)
-            await asyncio.sleep(20)
-    except WebSocketDisconnect:
-        return
 
 
 _react_dist = Path(__file__).resolve().parent.parent / "frontend-react" / "dist"

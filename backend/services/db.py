@@ -249,8 +249,7 @@ def _json_path(name: str) -> Path:
     The old per-store variables (DEMO_ALERT_STORE_FILE, NOTIFICATION_STORE_FILE,
     DELIVERY_STORE_FILE) were set by tests/conftest.py but read by nothing, so
     the isolation they promised did not exist: a plain `pytest` run cleared the
-    real stores. Only EMERGENCY_STORE_FILE was ever honoured, and it still is
-    (emergency_service reads it directly).
+    real stores.
     """
     override = os.environ.get("SAARTHI_STORE_DIR", "").strip()
     if override:

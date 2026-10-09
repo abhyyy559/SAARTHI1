@@ -3,9 +3,7 @@
 Isolation: the test suite must never read or write the developer's real runtime
 store. Two separate leaks existed here.
 
-1. The emergency relay keeps a message store, and a leftover message id
-   surfaced as a false 'duplicate' — the flake this suite already had.
-   `EMERGENCY_STORE_FILE` (read directly by emergency_service) fixes that.
+1. (Removed: the old emergency relay and its own store file.)
 
 2. The Round-2 stores did NOT have working isolation. `NOTIFICATION_STORE_FILE`,
    `DELIVERY_STORE_FILE` and `DEMO_ALERT_STORE_FILE` were set below but read by
@@ -26,9 +24,6 @@ _TMP = tempfile.mkdtemp(prefix="wgpt_test_stores_")
 
 # Relocate the ENTIRE JSON store (kv rows, docs, logs) for this process.
 os.environ["SAARTHI_STORE_DIR"] = _TMP
-
-# Emergency relay keeps its own file, read directly by emergency_service.
-os.environ["EMERGENCY_STORE_FILE"] = os.path.join(_TMP, "emergency_store.json")
 
 # Keep the real store out of reach even if something resolves a path before
 # SAARTHI_STORE_DIR is consulted.
