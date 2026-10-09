@@ -5,7 +5,7 @@ import { api, HYD, onDemoForbidden, setOfflineSim } from './api';
 import { DISTRICTS, t } from './i18n';
 import { cacheGuidance, useOnline } from './offline';
 import { askNotifyPermission, forgetNotified, hasPushSubscription, notify, notifySupport, pushReasonKey, subscribeToPush, unsubscribeFromPush } from './notify';
-import { tagFor, transition } from './alertWatch';
+import { tagFor, transitionInDistrict } from './alertWatch';
 import { splitSpeakChunks } from './speakChunks';
 
 const AppCtx = createContext(null);
@@ -580,6 +580,8 @@ export function AppProvider({ children }) {
   // other views keep reading it as before.
   const [pushMode, setPushMode] = useState('off');
   const [pushReason, setPushReason] = useState(null);
+  // The last verdict seen AND the district it was for ({ verdict, district }):
+  // transitionInDistrict only compares verdicts for the same district.
   const prevVerdict = useRef(null);
 
   const fireNotification = useCallback((change, district) => {
@@ -622,8 +624,10 @@ export function AppProvider({ children }) {
 
   const publishVerdict = useCallback((verdict, district) => {
     if (!verdict) return;
-    const change = transition(prevVerdict.current, verdict, district);
-    prevVerdict.current = verdict;
+    // A new district starts a new history: its first verdict is a first
+    // sighting (stays quiet), never a change from the old place.
+    const change = transitionInDistrict(prevVerdict.current, verdict, district);
+    prevVerdict.current = { verdict, district };
     if (change && notifyOn && notifySupport() === 'granted') fireNotification(change, district);
   }, [notifyOn, fireNotification]);
 
@@ -694,8 +698,8 @@ export function AppProvider({ children }) {
     const perm = notifySupport() === 'granted' ? 'granted' : await askNotifyPermission();
     setNotifyPerm(perm);
     const v = { level: 'HIGH', basis: 'cap_alert', confirmed: true, severity: 'ORANGE', hazard: 'Heavy rain' };
-    const change = transition(prevVerdict.current, v, loc.district) || { kind: 'start', ...v, district: loc.district };
-    prevVerdict.current = v;
+    const change = transitionInDistrict(prevVerdict.current, v, loc.district) || { kind: 'start', ...v, district: loc.district };
+    prevVerdict.current = { verdict: v, district: loc.district };
     if (perm === 'granted') {
       forgetNotified(); // demo: allow replaying the same event
       fireNotification(change, loc.district);
@@ -706,8 +710,8 @@ export function AppProvider({ children }) {
 
   const simulateClear = useCallback(async () => {
     const v = { level: 'LOW', basis: 'none', confirmed: true, severity: 'GREEN', hazard: null };
-    const change = transition(prevVerdict.current, v, loc.district) || { kind: 'clear', district: loc.district };
-    prevVerdict.current = v;
+    const change = transitionInDistrict(prevVerdict.current, v, loc.district) || { kind: 'clear', district: loc.district };
+    prevVerdict.current = { verdict: v, district: loc.district };
     forgetNotified();
     fireNotification(change, loc.district);
   }, [loc.district, fireNotification]);

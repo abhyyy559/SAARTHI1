@@ -21,7 +21,7 @@ from __future__ import annotations
 import logging
 
 from . import db
-from .store_bridge import run as _db_run
+from .store_bridge import run as _db_run, run_async as _db_run_async
 from .. import config
 
 log = logging.getLogger(__name__)
@@ -57,13 +57,15 @@ def _restore_sync() -> None:
 
 
 # Restore from an async context. Called from main.lifespan() at startup — the
-# only correct place, see the note above.
+# only correct place, see the note above. Both async helpers go through the
+# store bridge like every other store call, so the Postgres pool is created on
+# (and only ever used from) the bridge loop.
 async def restore_async() -> None:
-    stored = await db.kv_get(_KEY)
+    stored = await _db_run_async(db.kv_get(_KEY))
     if isinstance(stored, str) and stored in _VALID and stored != config.SOURCE_MODE:
         apply_mode(stored)
         log.info("restored persisted source mode: %s", stored)
 
 
 async def persist_async(mode: str) -> None:
-    await db.kv_set(_KEY, mode)
+    await _db_run_async(db.kv_set(_KEY, mode))

@@ -33,9 +33,31 @@ class CacheService:
         except Exception:
             self._data = {}
 
+    def _read_disk(self) -> dict:
+        try:
+            if self.path.exists():
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                return data if isinstance(data, dict) else {}
+        except Exception:
+            pass
+        return {}
+
     def _save(self) -> None:
+        # Several instances share one file: api/weather.py keeps one for the
+        # weather keys and cap_adapter opens its own for "cap_alerts". Each used
+        # to write back only what IT had loaded, so the next weather write wiped
+        # the CAP snapshot — and the "serve the last good alerts, labelled
+        # CACHED" fallback for a failing SACHET feed found nothing. Merge what is
+        # on disk first; for a key both sides hold, the newer entry wins.
         try:
             with self._lock:
+                for key, entry in self._read_disk().items():
+                    if not isinstance(entry, dict):
+                        continue  # never adopt a malformed row from disk
+                    mine = self._data.get(key)
+                    if not isinstance(mine, dict) or (
+                            str(entry.get("retrieved_at") or "") > str(mine.get("retrieved_at") or "")):
+                        self._data[key] = entry
                 self.path.write_text(json.dumps(self._data, default=str), encoding="utf-8")
         except Exception:
             pass

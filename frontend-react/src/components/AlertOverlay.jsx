@@ -39,10 +39,18 @@ function useActiveAlerts() {
       .then((d) => {
         if (!alive) return;
         const out = [];
-        if (d && d.warning && !isExpired(d.warning.valid_until, nowMs)) {
+        // Same admission rules as the Alerts view this pill opens: the IMD
+        // warning only when validation passed (or the verdict names it as the
+        // unverified warning for THIS district), and never a third-party
+        // provider's alert (official === false). Otherwise the pill could
+        // announce an alert the Alerts view then does not list.
+        const warningShown = d && d.warning
+          && ((d.verified && d.verified.verified) || (d.verdict && d.verdict.basis === 'unverified_warning'));
+        if (warningShown && !isExpired(d.warning.valid_until, nowMs)) {
           out.push({ ...d.warning, headline: d.warning.message || d.warning.hazard });
         }
         for (const a of (d && d.cap_alerts) || []) {
+          if (a.official === false) continue;
           if (!isExpired(a.valid_until || a.expires, nowMs)) out.push(a);
         }
         out.sort((x, y) => rankOf(x) - rankOf(y));

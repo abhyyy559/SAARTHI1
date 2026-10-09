@@ -20,6 +20,7 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import { sevWord } from './ui';
+import { alertState } from './inboxLogic';
 
 // Full lifecycle detail (alerts redesign). Canonical fields come from the
 // backend's lifecycle_detail (see backend/services/alert_service.py). The
@@ -111,7 +112,9 @@ export default function AlertDetails({ alert, onAck }) {
   };
 
   const sev = alert.severity || 'UNKNOWN';
-  const state = String(alert.lifecycle_state || alert.state || 'UPCOMING').toUpperCase();
+  // Official alerts carry no lifecycle field: their state comes from their
+  // validity window, never a default of "Upcoming".
+  const state = alertState(alert);
   const isUpcoming = state === 'UPCOMING';
   const district = alert.district || alert.areaDesc || alert.area || '';
   // Provenance honesty: demo/admin content wears the DEMO badge; the official

@@ -1,5 +1,6 @@
 import asyncio, sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The repo root (parent of scripts/), where the `backend` package lives.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.services import alert_service, district_service
 from backend.adapters import cap_adapter
 from backend.services.gis_service import alert_text

@@ -290,18 +290,15 @@
   line-height: 1.4;
 }
 
-/* Grounded-fallback honesty chip: a degraded answer must never look
-   identical to a fully verified one. Amber tint + shield icon + words. */
+/* Rule-based-reply footnote: sits under "Based on", same quiet style, so a
+   rule-based answer is labelled without the label crowding the answer. */
 .hcm-fallback {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  margin: 6px 0 0;
-  background: var(--tint-amber);
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 13px;
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
   line-height: 1.4;
 }
 

@@ -167,6 +167,9 @@ function Lens({ icon, label, value, unit, note, missing, lang, tone }) {
 export default function HomeHero() {
   const { lang, loc, locReady, speak, setDistrict, ask, syncTick, publishVerdict, offline } = useApp();
   const [warn, setWarn] = useState(null);
+  // The district `warn` was fetched for. Right after a district switch `warn`
+  // still holds the previous place's answer until the new one lands.
+  const [warnFor, setWarnFor] = useState(null);
   const [current, setCurrent] = useState(null);
   const [wxProv, setWxProv] = useState(null);
   const [stale, setStale] = useState(false);
@@ -190,11 +193,13 @@ export default function HomeHero() {
       .then((d) => {
         if (!alive) return;
         setWarn(d);
+        setWarnFor(loc.district);
         setStale(false);
         if (d && d.status !== 'unavailable' && d.warning) saveWarningSnapshot(d.warning, d.verified, loc.district);
       })
       .catch(() => {
         if (!alive) return;
+        setWarnFor(loc.district);
         const snap = readWarningSnapshot();
         if (snap && snap.warning && snap.district === loc.district) {
           setWarn({ status: 'ok', warning: snap.warning, verified: snap.verified, snapshotAt: snap.at });
@@ -216,8 +221,10 @@ export default function HomeHero() {
   const verdict = (warn && warn.verdict) || null;
   const w = warn && warn.status !== 'unavailable' ? warn.warning : null;
   useEffect(() => {
-    if (verdict) publishVerdict(verdict, loc.district);
-  }, [verdict, loc.district, publishVerdict]);
+    // Publish only a verdict fetched for the district on screen: the previous
+    // place's verdict published under the new name read as a change there.
+    if (verdict && warnFor === loc.district) publishVerdict(verdict, loc.district);
+  }, [verdict, warnFor, loc.district, publishVerdict]);
 
   const level = (verdict && verdict.level) || 'UNKNOWN';
   const basis = (verdict && verdict.basis) || 'unavailable';
@@ -275,7 +282,13 @@ export default function HomeHero() {
   const generatedAt = (warn && (warn.generated_at || warn.snapshotAt)) || null;
   const ageMin = minutesSince(generatedAt, nowMs);
   const ageText = ageMin == null ? '' : ageMin < 1 ? t(lang, 'justNow') : t(lang, 'agoPattern').replace('{m}', ageMin);
-  const evProv = pending ? '—' : aged ? 'CACHED' : basis === 'unavailable' ? 'UNAVAILABLE' : ((warn && (warn.provenance || warn.warning_provenance || warn.cap_provenance)) || 'LIVE');
+  // The provenance of the source that actually answered. Without an IMD key
+  // `warning_provenance` is UNAVAILABLE while SACHET (cap_provenance) answered
+  // LIVE — taking the first non-empty field stamped "UNAVAILABLE" on a live,
+  // confirmed "All clear".
+  const answered = warn && [warn.provenance, warn.warning_provenance, warn.cap_provenance]
+    .find((p) => p && p !== 'UNAVAILABLE' && p !== 'UNCONFIGURED');
+  const evProv = pending ? '—' : aged ? 'CACHED' : basis === 'unavailable' ? 'UNAVAILABLE' : (answered || 'LIVE');
 
   const askAbout = () => {
     // HomeChat is mounted on this view and publishes its submit to the store,

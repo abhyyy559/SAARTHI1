@@ -295,21 +295,33 @@ export default function HomeChat({
     return () => clearInterval(iv);
   }, [streamId, log, reducedMotion]);
 
-  // Replay queued queries once on reconnect, oldest first.
+  // Replay queued queries once on reconnect, oldest first — ONE AT A TIME.
+  // They used to fire on a fixed 1.2 s timer, but every ask() aborts the stream
+  // still running from the previous turn, and a streamed answer takes longer
+  // than that: each replayed question cut off the one before it, so only the
+  // last queued question got an answer. Each turn now finishes first.
   useEffect(() => {
     if (netState !== 'live') return undefined;
     const q = readQueue();
     if (!q.length) return undefined;
-    clearQueue();
-    let i = 0;
-    const next = () => {
-      if (i >= q.length) return;
-      const item = q[i++];
-      ask(item.text, { live: true });
-      setTimeout(next, 1200);
+    let cancelled = false;
+    const replay = async () => {
+      // Cleared only once the replay actually starts: a remount inside the
+      // 600 ms delay must leave the questions queued, not drop them.
+      clearQueue();
+      for (let i = 0; i < q.length; i += 1) {
+        await ask(q[i].text, { live: true });
+        if (cancelled) {
+          // Unmounted mid-replay (which aborts the running answer and resets
+          // this chat's log): the interrupted question and the rest go back
+          // on the queue for the next mount.
+          q.slice(i).forEach((item) => queueQuery(item));
+          return;
+        }
+      }
     };
-    const tId = setTimeout(next, 600);
-    return () => clearTimeout(tId);
+    const tId = setTimeout(replay, 600);
+    return () => { cancelled = true; clearTimeout(tId); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [netState]);
 

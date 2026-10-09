@@ -60,12 +60,6 @@ export default function ChatMessage({
       <div className="hcm-verdict">
         <SevStamp lang={lang} level={verdictLevel(message)} />
       </div>
-      {(message.fallback || message.modelError) && !stillStreaming && (
-        <p className="hcm-fallback" role="note">
-          <Icon name="shield" size={14} aria-hidden="true" />
-          <span><b>{t(lang, 'hcFallbackChip')}</b> · {t(lang, 'hcFallbackText')}</span>
-        </p>
-      )}
       <p className="hcm-fold">
         {fold}
         {stillStreaming && <span className="hc-caret" aria-hidden="true" />}
@@ -86,6 +80,15 @@ export default function ChatMessage({
         <Icon name="database" size={14} aria-hidden="true" />
         <span>{basedOn}</span>
       </p>
+      {/* How the reply was produced is a footnote, not a headline: it sits
+          under the answer with the sources, never above it. Still always
+          shown for a rule-based reply, so it never passes as the AI's own. */}
+      {(message.fallback || message.modelError) && !stillStreaming && (
+        <p className="hcm-fallback" role="note" title={t(lang, 'hcFallbackText')}>
+          <Icon name="shield" size={13} aria-hidden="true" />
+          <span>{t(lang, 'hcFallbackChip')}</span>
+        </p>
+      )}
       <div className="hcm-actions">
         {message.text && (
           <button

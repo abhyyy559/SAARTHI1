@@ -146,8 +146,20 @@ DATAGOV_RESOURCE_ID = _get("DATAGOV_RESOURCE_ID", "")
 CAP_FEED_URL = _get("CAP_FEED_URL", "")
 # Extra SACHET state feeds, comma-separated. A fisherman in Visakhapatnam is
 # covered by the Andhra feed, not the Telangana one — one feed is not enough.
-CAP_FEED_URLS = [u.strip() for u in _get("CAP_FEED_URLS", "").split(",") if u.strip()] or (
-    [CAP_FEED_URL] if CAP_FEED_URL else []
+# When neither variable is set at all, the public SACHET feeds are used by
+# default: they are keyless, official (NDMA, carrying IMD's own warnings), and
+# without them a fresh checkout with no .env checked no official warnings at
+# all. Setting CAP_FEED_URLS to an empty value still turns them off.
+DEFAULT_CAP_FEED_URLS = [
+    "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
+    "https://sachet.ndma.gov.in/cap_public_website/rss/rss_telangana.xml",
+    # AP slug trap: only rss_andhra.xml works (see .env.example).
+    "https://sachet.ndma.gov.in/cap_public_website/rss/rss_andhra.xml",
+]
+_CAP_FEED_URLS_RAW = os.environ.get("CAP_FEED_URLS")
+CAP_FEED_URLS = [u.strip() for u in (_CAP_FEED_URLS_RAW or "").split(",") if u.strip()] or (
+    [CAP_FEED_URL] if CAP_FEED_URL
+    else (list(DEFAULT_CAP_FEED_URLS) if _CAP_FEED_URLS_RAW is None else [])
 )
 # Multi-source alert chain (adapters/alert_sources.py)
 WEATHERAPI_KEY = _get("WEATHERAPI_KEY", "")   # free key, weatherapi.com

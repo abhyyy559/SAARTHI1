@@ -283,14 +283,19 @@ async def v1_status():
     """Connectivity + freshness overview (§41). OFFLINE is a client-measured state;
     backend reports its own reachability view: LIVE vs LIMITED."""
     srcs = snapshot()
-    live_n = sum(1 for s in srcs if s["status"] == "LIVE")
+    # Only network data sources count towards LIVE. The gis-* rows are local
+    # math that report LIVE from boot, so counting them made the console say
+    # LIVE with every real feed down.
+    live_n = sum(1 for s in srcs if s["status"] == "LIVE" and not s["name"].startswith("gis-"))
     state = "LIVE" if (live_n >= 2 and not config.DEMO_MODE) else "LIMITED"
     if config.DEMO_MODE:
         state = "LIMITED"
     # Persistence backend: postgres when DATABASE_URL works, else JSON files.
     # Reported so an operator can SEE that alerts/acks survive a redeploy.
+    # Through the store bridge: the pool lives on the bridge loop.
     from ..services import db
-    dbh = await db.health()
+    from ..services.store_bridge import run_async
+    dbh = await run_async(db.health())
     return {
         "state": state,
         "internet_status": "reachable",
@@ -303,7 +308,8 @@ async def v1_status():
             "DATAGOV_API_KEY": not bool(config.DATAGOV_API_KEY),
             "OWM_API_KEY": not bool(config.OWM_API_KEY),
             "SARVAM_API_KEY": not bool(config.SARVAM_API_KEY),
-            "CAP_FEED_URL": not bool(config.CAP_FEED_URL),
+            # CAP_FEED_URLS wins over the singular (cap_adapter.fetch_alerts).
+            "CAP_FEED_URL": not bool(config.CAP_FEED_URLS or config.CAP_FEED_URL),
         },
         "generated_at": iso_now(),
     }

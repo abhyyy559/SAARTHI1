@@ -198,11 +198,13 @@ def _live_current_row(payload, latitude: float, longitude: float) -> dict:
         # observed_at is required — a row without any timestamp still
         # describes the latest observation, so stamp the fetch time.
         obs_time = now_ist().isoformat()
+    # A field the station did not report stays None. Defaulting it to 0 put an
+    # invented "0°C, 0% humidity" on screen as an official IMD observation.
     return {
-        "temp": _num(norm.get("temperature", norm.get("temp"))) or 0,
-        "humidity": _num(norm.get("humidity")) or 0,
-        "rainfall": _num(norm.get("last 24 hrs rainfall", norm.get("rainfall"))) or 0,
-        "windspeed": _num(norm.get("wind speed", norm.get("windspeed"))) or 0,
+        "temp": _num(norm.get("temperature", norm.get("temp"))),
+        "humidity": _num(norm.get("humidity")),
+        "rainfall": _num(norm.get("last 24 hrs rainfall", norm.get("rainfall"))),
+        "windspeed": _num(norm.get("wind speed", norm.get("windspeed"))),
         "condition": _condition_for_wx(norm.get("weather code", norm.get("weather_code"))) or norm.get("condition"),
         "district": str(norm.get("station") or ""),
         "station": str(norm.get("station") or ""),
@@ -499,14 +501,21 @@ class IMDService:
                 raise AdapterUnavailable(f"IMD live unreachable: {exc}") from exc
             if not isinstance(raw, dict) or "temp" not in _norm_row(raw):
                 raw = _live_current_row(raw, latitude, longitude)
+        observed_at = _parse_ts(raw.get("obs_time")) if self.adapter == "live" else _relative_ts()
+        if observed_at is None:
+            # observed_at is required. An unreadable live timestamp used to raise
+            # a pydantic error straight through the AdapterUnavailable contract
+            # and 500 the weather and chat endpoints; reported as unavailable,
+            # the hybrid chain falls through to Open-Meteo instead.
+            raise AdapterUnavailable("IMD current_wx: unreadable observation time")
         return WeatherObservation(
             source="IMD",
-            temperature=float(raw.get("temp") or 0),
-            humidity=float(raw.get("humidity") or 0),
-            rainfall=float(raw.get("rainfall") or 0),
-            wind_speed=float(raw.get("windspeed") or 0),
+            temperature=_num(raw.get("temp")),
+            humidity=_num(raw.get("humidity")),
+            rainfall=_num(raw.get("rainfall")),
+            wind_speed=_num(raw.get("windspeed")),
             condition=raw.get("condition"),
-            observed_at=_parse_ts(raw.get("obs_time")) if self.adapter == "live" else _relative_ts(),
+            observed_at=observed_at,
         )
 
     async def get_forecast(self, latitude: float, longitude: float,
@@ -514,16 +523,25 @@ class IMDService:
         if self.adapter == "demo":
             raw = _load_fixture("forecast_hyderabad.json")["raw"]
             preset_days = district_demo.demo_forecast(district)
+            today = now_ist().date()
             if preset_days:
                 # Fresh dates: a fixed 2026-09-15 row would silently expire.
                 entry = district_demo.preset_for(district) or {}
                 name = entry.get("district") or district or raw.get("city")
-                today = now_ist().date()
                 raw = {**raw, "city": name, "forecast": [
                     {"date": (today + timedelta(days=i)).isoformat(),
                      "condition": d["condition"], "min": d["min"],
                      "max": d["max"], "rain": d["rain"]}
                     for i, d in enumerate(preset_days)
+                ]}
+            else:
+                # The generic sample needs fresh dates too. Its rows are fixed to
+                # 15-21 Sep 2026, so every demo forecast was dated weeks in the
+                # past ("Forecast day +1 (16 Sep)"). Same retargeting rule as the
+                # warning fixture: the sample speaks for the requested district.
+                raw = {**raw, "city": district or raw.get("city"), "forecast": [
+                    {**d, "date": (today + timedelta(days=i)).isoformat()}
+                    for i, d in enumerate(raw.get("forecast") or [])
                 ]}
         else:
             try:
@@ -547,7 +565,12 @@ class IMDService:
             }
             for d in raw.get("forecast", [])
         ]
-        return WeatherForecast(source="IMD", location=raw.get("city"), issued_at=_parse_ts(raw.get("issued_at")) if self.adapter == "live" else _relative_ts(), days=days)
+        issued_at = _parse_ts(raw.get("issued_at")) if self.adapter == "live" else _relative_ts()
+        if issued_at is None:
+            # Same contract as current_wx: an unreadable stamp is an unavailable
+            # forecast, never a pydantic 500.
+            raise AdapterUnavailable("IMD cityforecastloc: unreadable issue time")
+        return WeatherForecast(source="IMD", location=raw.get("city"), issued_at=issued_at, days=days)
 
     async def get_district_warning(self, district: str) -> WeatherWarning | None:
         if self.adapter == "demo":

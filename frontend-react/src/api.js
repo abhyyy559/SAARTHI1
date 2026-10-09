@@ -20,6 +20,15 @@ export const onDemoForbidden = (fn) => { demoForbiddenHandler = fn; };
 
 /** Max time for any server round-trip: 5 seconds, never infinite (B3). */
 export const FETCH_TIMEOUT_MS = 5000;
+// Endpoints that wait on OUTSIDE sources (Open-Meteo, SACHET, the alert chain)
+// get longer: a cold fetch is a few seconds on a good line, more on a weak
+// one, and at 5 s the weather card and alerts showed "not available" while
+// the server was still answering. Still bounded, never infinite.
+export const UPSTREAM_TIMEOUT_MS = 15000;
+// The plain (non-streaming) chat fallback waits on the language model, whose
+// own server-side limit is 25 s (LLM_TIMEOUT).
+export const CHAT_TIMEOUT_MS = 40000;
+const up = (url) => j(url, undefined, UPSTREAM_TIMEOUT_MS);
 
 // Offline queue for mutations when offline-sim is on
 const offlineQueue = [];
@@ -62,8 +71,8 @@ async function j(url, opts, timeoutMs) {
   }
   return r.json();
 }
-const post = (url, body) =>
-  j(full(url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const post = (url, body, timeoutMs) =>
+  j(full(url), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, timeoutMs);
 
 // Streaming TTS: POSTs to /api/voice/synthesize-stream and yields parsed NDJSON
 // lines as they arrive, so playback can start on the first chunk while the
@@ -169,27 +178,27 @@ export const api = {
   // geography — cached in localStorage by the caller, so the map renders
   // offline after the first load.
   districtCoords: () => j('/api/location/districts').then((d) => d.districts || []),
-  current: (lat, lon) => j(`${V}/weather/current?lat=${lat}&lon=${lon}`),
-  forecast: (lat, lon) => j(`${V}/weather/forecast?lat=${lat}&lon=${lon}`),
+  current: (lat, lon) => up(`${V}/weather/current?lat=${lat}&lon=${lon}`),
+  forecast: (lat, lon) => up(`${V}/weather/forecast?lat=${lat}&lon=${lon}`),
   warnings: (district, lat, lon) =>
-    j(`${V}/warnings?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
-  warningById: (id) => j(`${V}/warnings/${encodeURIComponent(id)}`),
+    up(`${V}/warnings?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
+  warningById: (id) => up(`${V}/warnings/${encodeURIComponent(id)}`),
   nowcast: (district, lat, lon) =>
-    j(`/api/weather/nowcast?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
-  models: (lat, lon) => j(`/api/weather/models?lat=${lat}&lon=${lon}`),
+    up(`/api/weather/nowcast?district=${encodeURIComponent(district)}&lat=${lat}&lon=${lon}`),
+  models: (lat, lon) => up(`/api/weather/models?lat=${lat}&lon=${lon}`),
   // Aviation briefing (deterministic, no LLM): winds aloft, cloud/visibility
   // proxies, turbulence-icing proxies, sunrise/sunset, official alerts.
   aviationBriefing: (lat, lon, lang) =>
-    j(`/api/aviation/briefing?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(lang || 'en')}`),
-  climate: (lat, lon) => j(`${V}/climate/trends?lat=${lat}&lon=${lon}&years=20`),
-  profileAdvisory: (loc, persona, language) => j(`${V}/advisories?district=${encodeURIComponent(loc.district)}&lat=${loc.lat}&lon=${loc.lon}&user_type=${encodeURIComponent(persona)}&language=${encodeURIComponent(language)}`),
+    up(`/api/aviation/briefing?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(lang || 'en')}`),
+  climate: (lat, lon) => up(`${V}/climate/trends?lat=${lat}&lon=${lon}&years=20`),
+  profileAdvisory: (loc, persona, language) => up(`${V}/advisories?district=${encodeURIComponent(loc.district)}&lat=${loc.lat}&lon=${loc.lon}&user_type=${encodeURIComponent(persona)}&language=${encodeURIComponent(language)}`),
   // Situation-aware advisory cards (current + 3-day forecast + official alert
   // verdict), rendered inside the Advisory view only.
-  advisoryCards: (loc, persona, language) => j(`/api/advisory/cards?lat=${loc.lat}&lon=${loc.lon}&lang=${encodeURIComponent(language)}&persona=${encodeURIComponent(persona)}`),
-  advisory: (severity, userType) => j(`${V}/advisories?severity=${severity}&user_type=${userType}`),
+  advisoryCards: (loc, persona, language) => up(`/api/advisory/cards?lat=${loc.lat}&lon=${loc.lon}&lang=${encodeURIComponent(language)}&persona=${encodeURIComponent(persona)}`),
+  advisory: (severity, userType) => up(`${V}/advisories?severity=${severity}&user_type=${userType}`),
   impact: (a, b, userType = 'driver') =>
-    j(`${V}/impact/analyze?lat1=${a.lat}&lon1=${a.lon}&lat2=${b.lat}&lon2=${b.lon}&user_type=${userType}`),
-  chat: (body) => post(`${V}/chat`, body),
+    up(`${V}/impact/analyze?lat1=${a.lat}&lon1=${a.lon}&lat2=${b.lat}&lon2=${b.lon}&user_type=${userType}`),
+  chat: (body) => post(`${V}/chat`, body, CHAT_TIMEOUT_MS),
   chatStream: (body, opts) => chatStreamLines(body, opts),
   guidance: (q, lang) => j(`${V}/emergency/guidance?q=${encodeURIComponent(q)}&lang=${lang}`),
   sos: (payload) => post(`${V}/emergency/messages`, payload),

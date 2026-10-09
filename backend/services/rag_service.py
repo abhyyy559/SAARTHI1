@@ -12,9 +12,11 @@ from pathlib import Path
 _KB = Path(__file__).resolve().parent.parent / "data" / "emergency_guidance.json"
 _WORD = re.compile(r"[a-zA-Z\u0900-\u097F\u0C00-\u0C7F]+")
 
+# Lower-case only: they are matched against the lower-cased query, so "baaDh"
+# and "Bijli" could never match anything.
 HAZARD_KEYS = {
-    "flood": {"flood", "baarish", "paani", "varada", "floodwater", "baaDh", "inundation"},
-    "thunderstorm": {"thunder", "lightning", " Bijli".strip(), "storm", "aandhi", "urumu", "merupu"},
+    "flood": {"flood", "baarish", "paani", "varada", "floodwater", "baadh", "inundation"},
+    "thunderstorm": {"thunder", "lightning", "bijli", "storm", "aandhi", "urumu", "merupu"},
     "heatwave": {"heat", "loo", "garmi", "vadagalu", "heatwave", "temperature high"},
     "cyclone": {"cyclone", "toofan", "tufan", "storm surge", "chakravat"},
 }

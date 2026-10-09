@@ -38,11 +38,24 @@ async def get_current(latitude: float, longitude: float) -> tuple[dict, str]:
         raise AdapterUnavailable(f"OpenWeatherMap unreachable: {exc}") from exc
     main = data.get("main") or {}
     cond = (data.get("weather") or [{}])[0].get("description", "")
+    # This dict is also the current-weather fallback when Open-Meteo is down,
+    # where the screens and the chat evidence read observed_at / wind_speed /
+    # rainfall like any other observation. Report what OWM actually sent:
+    # `dt` is the observation time, wind arrives in m/s (metric) and the app
+    # speaks km/h, and `rain.1h` is only present when it rained.
+    dt = data.get("dt")
+    observed = (datetime.fromtimestamp(dt, tz=timezone.utc).astimezone(IST)
+                if isinstance(dt, (int, float)) else datetime.now(IST))
+    wind_ms = (data.get("wind") or {}).get("speed")
+    rain_1h = (data.get("rain") or {}).get("1h")
     out = {
         "source": SOURCE,
         "temperature": main.get("temp"),
         "humidity": main.get("humidity"),
+        "rainfall": rain_1h if isinstance(rain_1h, (int, float)) else None,
+        "wind_speed": round(wind_ms * 3.6, 1) if isinstance(wind_ms, (int, float)) else None,
         "condition": cond.title() if cond else None,
+        "observed_at": observed.isoformat(),
     }
     report("owm", LIVE, f"cross-check {out['temperature']}C {out['condition']}")
     return out, LIVE

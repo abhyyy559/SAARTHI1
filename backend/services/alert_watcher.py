@@ -203,6 +203,14 @@ def _official_alert_id(gathered: dict[str, Any]) -> str:
 # (like `_demo_notified`); `status()` skips them so they never surface as
 # phantom "districts".
 _FP_KEY = "_fp:{district}"
+# The last CONFIRMED verdict per district: what the user was actually told.
+# `state[district]` keeps the latest verdict (status() reports it), but a
+# change is judged against this one. Judged against the latest instead, one
+# unconfirmed pass in the middle of a warning (a feed blip, a stale backlog
+# bulletin) erased the memory of it: the same warning was announced again as a
+# new "start" when the feed came back, and once a warning lapsed the all-clear
+# never came, because UNKNOWN -> LOW is not a change from a hazard.
+_CONFIRMED_KEY = "_confirmed:{district}"
 
 
 def demo_message_for(alert: dict[str, Any], kind: str) -> dict[str, Any]:
@@ -393,11 +401,21 @@ async def check_district(district: str) -> dict[str, Any]:
         # which `decide` turns into "Safe now", an all-clear invented from a
         # network failure. Unconfirmed here means no push at all, which is the
         # safe direction.
-        warning_service_available=gathered.get("available", False),
+        # Same rule as the warnings endpoint and chat: a live answer from the
+        # OFFICIAL feed is a check; a cached snapshot or a commercial provider
+        # alone is not, so it can never produce an all-clear.
+        warning_service_available=gathered.get("official_checked", False),
     )
 
     state = _load_state()
+    confirmed_key = _CONFIRMED_KEY.format(district=district)
     prev = state.get(district)
+    # Bridge an unconfirmed gap: when the latest pass could not confirm
+    # anything, judge this one against the last confirmed verdict instead.
+    if isinstance(prev, dict) and not prev.get("confirmed"):
+        last_confirmed = state.get(confirmed_key)
+        if isinstance(last_confirmed, dict):
+            prev = last_confirmed
     kind = decide(prev, verdict)
     fp_key = _FP_KEY.format(district=district)
     prev_fp = state.get(fp_key)
@@ -412,7 +430,13 @@ async def check_district(district: str) -> dict[str, Any]:
             and hazard_of(prev) and hazard_of(prev) == hazard_of(verdict)):
         kind = "updated"
     state[district] = verdict
-    state[fp_key] = cur_fp
+    if verdict.get("confirmed"):
+        state[confirmed_key] = verdict
+        # The bulletin set is only remembered from a confirmed pass, so an
+        # update that lands during an outage is still caught afterwards.
+        state[fp_key] = cur_fp
+    elif fp_key not in state:
+        state[fp_key] = cur_fp
     _save_state(state)
 
     if not kind:

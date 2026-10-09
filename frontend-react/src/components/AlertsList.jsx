@@ -15,7 +15,7 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import { SevStamp } from './ui';
-import { relTime, mergeAlerts } from './inboxLogic';
+import { relTime, mergeAlerts, isPastAlert } from './inboxLogic';
 import AlertDetails from './AlertDetails';
 import DistrictMap from './DistrictMap';
 import QrRelay from './QrRelay';
@@ -242,7 +242,10 @@ export default function AlertsList({ initialAlertId = null }) {
 
   // Ended alerts stay visible with their full lifecycle, but under their own
   // honest heading — an ENDED row under "Emergency alerts" reads as active.
-  const isEndedAlert = (a) => String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
+  // That includes withdrawn (CANCELLED) demo alerts and official bulletins
+  // whose validity window has closed: neither is in force, and the verdict
+  // already ignores expired alerts.
+  const isEndedAlert = (a) => isPastAlert(a, nowMs);
   const activeAlerts = alerts.filter((a) => !isEndedAlert(a));
   const endedAlerts = alerts.filter(isEndedAlert);
   // section prefixes the DOM id: renderRows runs once per section, so a

@@ -360,6 +360,10 @@ async def gather_alerts(*, lat: float, lon: float, district: str, state: str = "
         # Unknown availability must never read as "reached it, nothing to report":
         # a caller that treats this as a calm would invent one out of an outage.
         "available": bool(result.get("available", False)),
+        # The OFFICIAL feed (NDMA SACHET, which carries IMD's own warnings)
+        # answered live in this request. Stricter than `available`: a cached
+        # snapshot or a commercial provider is not a check of official warnings.
+        "official_checked": bool(result.get("official_checked", False)),
     }
 
 
@@ -450,4 +454,5 @@ async def _gather_uncached(*, lat: float, lon: float, district: str, state: str 
         "provenance": provenance,
         "feeds": feeds,
         "available": feeds_answered,
+        "official_checked": cap_prov == LIVE,
     }

@@ -2,7 +2,7 @@
 
 Regression guard for a duplication that shipped: a rain question came back as
 
-    Yes — rain likely tomorrow (22.0 mm).
+    Yes — moderate rain is likely tomorrow.
 
     ## Warning Status
     **Yes**, it will rain tomorrow. ...
@@ -36,9 +36,9 @@ def test_prepends_when_the_answer_buries_the_rain_verdict():
     """No yes/no up front -> the plain answer is added, once."""
     answer = "Temperatures will reach 31 C with high humidity across the district."
     out = _ensure_rain_lead("Will it rain tomorrow?", FORECAST, answer)
-    assert out.startswith("Yes — rain likely tomorrow (22.0 mm).")
+    assert out.startswith("Yes — moderate rain is likely tomorrow.")
     assert out.endswith(answer)
-    assert out.count("rain likely tomorrow") == 1
+    assert out.count("rain is likely tomorrow") == 1
 
 
 def test_dry_forecast_says_no_rain():
@@ -62,4 +62,4 @@ def test_missing_forecast_is_left_alone():
 def test_localised_rain_words_are_recognised():
     answer = "मौसम साफ़ रहेगा।"
     out = _ensure_rain_lead("कल बारिश होगी?", FORECAST, answer)
-    assert out.startswith("Yes — rain likely tomorrow")
+    assert out.startswith("Yes — moderate rain is likely tomorrow")

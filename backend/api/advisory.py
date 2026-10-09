@@ -72,8 +72,10 @@ async def advisory_cards_endpoint(lat: float = 17.385, lon: float = 78.4867,
         # Demo branches read fixtures even when IMD_ADAPTER=live (same rule as
         # weather.py::_services).
         imd = weather_mod._services()["imd"]
-        cur_d = (await imd.get_current_weather(lat, lon)).model_dump(mode="json")
-        fc_d = (await imd.get_forecast(lat, lon)).model_dump(mode="json")
+        # The district selects the sample set, same as the Home weather card;
+        # without it every place got the Hyderabad sample's numbers.
+        cur_d = (await imd.get_current_weather(lat, lon, district=district)).model_dump(mode="json")
+        fc_d = (await imd.get_forecast(lat, lon, district=district)).model_dump(mode="json")
         prov_c = prov_f = "DEMO"
         alerts_d = await weather_mod.warnings(district, lat, lon)
     else:

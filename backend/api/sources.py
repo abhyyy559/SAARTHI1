@@ -18,7 +18,10 @@ async def sources() -> dict:
             "DATAGOV_API_KEY": not bool(config.DATAGOV_API_KEY),
             "OWM_API_KEY": not bool(config.OWM_API_KEY),
             "SARVAM_API_KEY": not bool(config.SARVAM_API_KEY),
-            "CAP_FEED_URL": not bool(config.CAP_FEED_URL),
+            # The shipped .env sets the plural CAP_FEED_URLS and leaves the
+            # singular empty; checking only the singular showed a configured
+            # SACHET feed as UNCONFIGURED in the sources strip.
+            "CAP_FEED_URL": not bool(config.CAP_FEED_URLS or config.CAP_FEED_URL),
         },
         "generated_at": iso_now(),
     }

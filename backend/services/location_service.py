@@ -121,6 +121,73 @@ def _tokens(entry: dict) -> list[str]:
     return [w for w in dict.fromkeys(words) if len(w) >= _MIN_TOKEN]
 
 
+def _names(entry: dict) -> list[str]:
+    """Whole place names an entry answers to: its city, district and feed aliases."""
+    names = [_norm(entry.get("city", "")), _norm(entry.get("district", ""))]
+    names += [_norm(alias) for alias in entry.get("aliases") or []]
+    return [n for n in dict.fromkeys(names) if len(n) >= _MIN_TOKEN]
+
+
+def _name_match(q: str, entry: dict) -> tuple[int, int] | None:
+    """How well a normalized query names this entry: (rank, -matched length).
+
+    Lower sorts first. The rank decides; the longer (more specific) matched name
+    breaks ties, then gazetteer order.
+
+      0  the query IS one of the entry's names          "west godavari"
+      1  the query is one whole word of a name          "reddy"
+      2  the query contains a name as whole words       "warangal telangana"
+      3  a name starts with the query                   "kurn"
+      4  a name contains the query                      "godav"
+      5  the query names the entry's state              "telangana"
+
+    The old matcher tested "query in token OR token in query" over every word
+    of every name, so any short name hiding inside a longer one won by list
+    order: "Kurnool" resolved to Nagarkurnool, "West Godavari" to East Godavari,
+    "Srikakulam" to Sri Sathya Sai, "Palnadu" to Chennai (the "nadu" of Tamil
+    Nadu) and "Medchal Malkajgiri" to Gir Somnath in Gujarat. A name inside the
+    query now has to be whole words, and an exact name always beats a partial one.
+    """
+    names = _names(entry)
+    padded = f" {q} "
+    best: tuple[int, int] | None = None
+
+    def keep(rank: int, name: str) -> None:
+        nonlocal best
+        cand = (rank, -len(name))
+        if best is None or cand < best:
+            best = cand
+
+    for name in names:
+        if q == name:
+            keep(0, name)
+        elif q in name.split():
+            keep(1, name)
+        elif f" {name} " in padded:
+            keep(2, name)
+        elif len(q) >= _MIN_TOKEN and name.startswith(q):
+            keep(3, name)
+        elif len(q) >= _MIN_TOKEN and q in name:
+            keep(4, name)
+    if best is None:
+        state = _norm(entry.get("state", ""))
+        if state and (q == state or f" {state} " in padded
+                      or any(w == q for w in state.split() if len(w) >= _MIN_TOKEN)):
+            best = (5, -len(state))
+    return best
+
+
+def _ranked_matches(q: str) -> list[dict]:
+    """Every gazetteer entry the query names, best match first."""
+    scored = []
+    for order, entry in enumerate(GAZETTEER):
+        m = _name_match(q, entry)
+        if m is not None:
+            scored.append((m, order, entry))
+    scored.sort(key=lambda s: (s[0], s[1]))
+    return [dict(entry) for _, _, entry in scored]
+
+
 def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
@@ -163,13 +230,17 @@ class LocationService:
         q = _norm(query)
         if not q:
             return None
-        for entry in GAZETTEER:
-            toks = _tokens(entry)
-            if q in toks or any(q in tok or tok in q for tok in toks):
-                return dict(entry)
+        ranked = _ranked_matches(q)
+        exact = bool(ranked) and _name_match(q, ranked[0])[0] == 0
+        # A curated nickname ("vizag", "cochin") is an exact answer too; it only
+        # yields to a gazetteer name that IS the query.
         alias = _ALIASES.get(q)
-        if alias:
-            return next((dict(e) for e in GAZETTEER if e["district"] == alias), None)
+        if alias and not exact:
+            hit = next((dict(e) for e in GAZETTEER if e["district"] == alias), None)
+            if hit:
+                return hit
+        if ranked:
+            return ranked[0]
         fuzzy = _fuzzy_candidates(query, limit=1)
         return fuzzy[0] if fuzzy else None
 
@@ -195,7 +266,9 @@ class LocationService:
         q = _norm(query)
         if not q:
             return []
-        exact = [dict(e) for e in GAZETTEER if q in _tokens(e) or any(q in tok for tok in _tokens(e))]
+        # Best match first: the manual city box applies results[0], so "Kurnool"
+        # must list Kurnool before Nagarkurnool, not after it in gazetteer order.
+        exact = _ranked_matches(q)
         if exact:
             return exact[:8]
         alias = _ALIASES.get(q)

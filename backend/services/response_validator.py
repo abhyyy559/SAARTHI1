@@ -165,4 +165,6 @@ def _safe_fallback(verified: dict, language: str = "en") -> str:
         text = _UNREACHABLE_FALLBACK[lang]
     else:
         text = _FALLBACKS[False].get(lang, _FALLBACKS[False]["en"])
-    return f"[STRUCTURED] {text}"
+    # No "[STRUCTURED]" tag in the text itself: the reply already carries
+    # structured_fallback, and the app shows that as a note under the answer.
+    return text
