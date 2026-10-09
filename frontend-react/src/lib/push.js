@@ -29,7 +29,7 @@ export async function pushState() {
   return sub ? 'on' : 'off';
 }
 
-export async function pushOn({ district, state, lat, lon, language, persona }) {
+export async function pushOn({ district, state, language, persona }) {
   if (!pushSupported()) return 'unsupported';
   const reg = await registration();
   if (!reg) return 'no-sw';
@@ -40,7 +40,7 @@ export async function pushOn({ district, state, lat, lon, language, persona }) {
     const { public_key: key } = await api.pushVapid();
     sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
   }
-  const r = await api.pushSubscribe({ subscription: sub.toJSON(), district, state, lat, lon, language, persona });
+  const r = await api.pushSubscribe({ subscription: sub.toJSON(), district, state, language, persona });
   if (r.status === 'error') throw new Error(r.reason || 'subscribe failed');
   return 'on';
 }

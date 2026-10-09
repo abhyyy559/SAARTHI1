@@ -371,3 +371,33 @@ const COND = {
 export function condText(condition, lang) {
   return (COND[lang] && COND[lang][condition]) || condition || '';
 }
+
+// Official hazard names (SACHET / IMD event words) in Hindi and Telugu. The
+// feed text stays English; the name on the card and in speech does not.
+// First match wins, so combined events read as the more specific one.
+const HAZARD = [
+  [/tsunami/, { hi: 'सुनामी', te: 'సునామీ' }],
+  [/storm surge/, { hi: 'तूफ़ानी लहर', te: 'తుఫాను ఉప్పెన' }],
+  [/cyclon|depression/, { hi: 'चक्रवात', te: 'తుఫాను' }],
+  [/thunder/, { hi: 'आंधी-तूफ़ान और बिजली', te: 'ఉరుములు, మెరుపులు' }],
+  [/lightning/, { hi: 'आकाशीय बिजली', te: 'పిడుగులు' }],
+  [/flash flood/, { hi: 'अचानक बाढ़', te: 'ఆకస్మిక వరద' }],
+  [/flood|inundation/, { hi: 'बाढ़', te: 'వరద' }],
+  [/avalanche/, { hi: 'हिमस्खलन', te: 'హిమపాతం' }],
+  [/landslide/, { hi: 'भूस्खलन', te: 'కొండచరియలు విరిగిపడటం' }],
+  [/hail/, { hi: 'ओलावृष्टि', te: 'వడగళ్ల వాన' }],
+  [/heat/, { hi: 'लू', te: 'వడగాలులు' }],
+  [/cold/, { hi: 'शीतलहर', te: 'చలిగాలులు' }],
+  [/dust/, { hi: 'धूल भरी आंधी', te: 'దుమ్ము తుఫాను' }],
+  [/fog/, { hi: 'घना कोहरा', te: 'దట్టమైన పొగమంచు' }],
+  [/high wave|swell|rough sea/, { hi: 'ऊँची लहरें', te: 'ఎత్తైన అలలు' }],
+  [/wind|gale|squall/, { hi: 'तेज़ हवा', te: 'బలమైన గాలులు' }],
+  [/heavy rain/, { hi: 'भारी बारिश', te: 'భారీ వర్షం' }],
+  [/rain/, { hi: 'बारिश', te: 'వర్షం' }],
+];
+export function hazardText(hazard, lang) {
+  const h = String(hazard || '');
+  if (!h || !lang || lang === 'en') return h;
+  const hit = HAZARD.find(([re]) => re.test(h.toLowerCase()));
+  return (hit && hit[1][lang]) || h;
+}

@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { api } from '../lib/api';
 import { keys, readPref, useApp } from '../lib/appState';
 import { useData } from '../lib/useData';
-import { condText, dayName, t } from '../lib/i18n';
+import { condText, dayName, hazardText, t } from '../lib/i18n';
 import { CARD_ICON, ROLES, conditionIcon, hazardIcon, levelIcon, sourceLabel, toneOf } from '../lib/weather';
 import { speak, warmSpeech } from '../lib/voice';
 import { Icon } from '../components/Icons';
@@ -15,7 +15,7 @@ const r1 = (n) => (n == null ? '–' : Math.round(Number(n) * 10) / 10);
 // What the big speaker on the safety card says.
 export function summaryText(lang, verdict, current, days) {
   const parts = [t(lang, `lv${verdict?.level || 'UNKNOWN'}`)];
-  if (verdict?.hazard && verdict.level !== 'LOW') parts.push(verdict.hazard);
+  if (verdict?.hazard && verdict.level !== 'LOW') parts.push(hazardText(verdict.hazard, lang));
   if (!verdict || verdict.level === 'UNKNOWN') parts.push(t(lang, 'lvUNKNOWNsub'));
   if (current) parts.push(`${t(lang, 'now')} ${r0(current.temperature)}°C, ${condText(current.condition, lang)}`);
   const tm = days && days[1];
@@ -57,7 +57,7 @@ function SafetyCard({ warn, current, days }) {
         <div className="safety-words">
           <h1>{t(lang, `lv${verdict.level}`)}</h1>
           {verdict.hazard && verdict.level !== 'LOW' ? (
-            <p className="safety-hazard"><Icon name={hazardIcon(verdict.hazard)} size={26} /> {verdict.hazard}</p>
+            <p className="safety-hazard"><Icon name={hazardIcon(verdict.hazard)} size={26} /> {hazardText(verdict.hazard, lang)}</p>
           ) : null}
           {verdict.level === 'UNKNOWN' ? <p className="safety-sub">{t(lang, 'lvUNKNOWNsub')}</p> : null}
         </div>

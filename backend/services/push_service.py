@@ -144,8 +144,7 @@ def _save(items: list[dict[str, Any]]) -> None:
 
 
 def subscribe(subscription: dict[str, Any], district: str = "", language: str = "en",
-              persona: str = "general", state: str = "", lat: float | None = None,
-              lon: float | None = None) -> dict[str, Any]:
+              persona: str = "general", state: str = "") -> dict[str, Any]:
     """Store or refresh one subscription. Keyed by endpoint, which is unique."""
     endpoint = (subscription or {}).get("endpoint")
     if not endpoint:
@@ -162,10 +161,8 @@ def subscribe(subscription: dict[str, Any], district: str = "", language: str = 
         # language and persona shape the wording.
         "district": district or "",
         # Same district name in two states (Aurangabad, Bilaspur, Hamirpur...):
-        # the state and the saved point say which one this phone means.
+        # the state says which one this phone means. No coordinates are kept.
         "state": state or "",
-        "lat": lat,
-        "lon": lon,
         "language": language or "en",
         "persona": persona or "general",
         "created_at": datetime.now(timezone.utc).isoformat(),

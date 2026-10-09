@@ -23,7 +23,7 @@ export function PushToggle() {
   const toggle = async (want) => {
     setBusy(true); setNote('');
     try {
-      setState(want ? await pushOn({ district: loc.district, state: loc.state, lat: loc.lat, lon: loc.lon, language: lang, persona })
+      setState(want ? await pushOn({ district: loc.district, state: loc.state, language: lang, persona })
         : await pushOff());
     } catch {
       setNote(t(lang, 'alertsError'));

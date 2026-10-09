@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { decodeSnapshot, readSnapshot } from '../lib/share';
-import { LANGS, condText, dayName, fmtDateTime, t } from '../lib/i18n';
+import { LANGS, condText, dayName, fmtDateTime, hazardText, t } from '../lib/i18n';
 import { ROLES, activeAlerts, conditionIcon, hazardIcon, levelIcon, senderLabel, severityTone, sourceLabel, toneOf } from '../lib/weather';
 import { Icon } from '../components/Icons';
 import Backdrop from '../components/Backdrop';
@@ -129,7 +129,7 @@ function ShareView({ payload }) {
           <div className="alert-top">
             <span className="alert-badge"><Icon name={hazardIcon(a.hazard || a.headline)} size={40} /></span>
             <div className="alert-words">
-              <h3>{a.hazard}</h3>
+              <h3>{hazardText(a.hazard, lang)}</h3>
               {a.expires ? <p className="alert-meta"><Icon name="clock" size={14} /> {t(lang, 'until', { t: fmtDateTime(a.expires, lang) })}</p> : null}
             </div>
           </div>

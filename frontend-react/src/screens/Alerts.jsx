@@ -1,7 +1,7 @@
 import { api } from '../lib/api';
 import { keys, useApp } from '../lib/appState';
 import { useData } from '../lib/useData';
-import { fmtDateTime, t } from '../lib/i18n';
+import { fmtDateTime, hazardText, t } from '../lib/i18n';
 import { activeAlerts, hazardIcon, senderLabel, severityTone, sourceLabel } from '../lib/weather';
 import { Icon } from '../components/Icons';
 import { Empty, Fresh, Skeleton, SpeakButton } from '../components/ui';
@@ -16,7 +16,7 @@ function AlertRow({ a }) {
       <div className="alert-top">
         <span className="alert-badge"><Icon name={hazardIcon(a.hazard || headline)} size={44} /></span>
         <div className="alert-words">
-          <h3>{a.hazard || headline}</h3>
+          <h3>{a.hazard ? hazardText(a.hazard, lang) : headline}</h3>
           <p className="alert-meta">
             <span className={`sev sev-${tone}`}>{a.severity || '?'}</span>
             {a.expires ? <span><Icon name="clock" size={14} /> {t(lang, 'until', { t: fmtDateTime(a.expires, lang) })}</span> : null}

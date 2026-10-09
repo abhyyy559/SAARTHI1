@@ -35,8 +35,6 @@ async def subscribe(payload: dict) -> dict:
             language=payload.get("language", "en"),
             persona=payload.get("persona", "general"),
             state=payload.get("state", ""),
-            lat=payload.get("lat"),
-            lon=payload.get("lon"),
         )
     except ValueError as exc:
         return {"status": "error", "reason": str(exc)}

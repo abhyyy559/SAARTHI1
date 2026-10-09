@@ -100,7 +100,7 @@ export default function App() {
   useEffect(() => { applyTheme(readPref('theme', 'dark')); }, []);
   useEffect(() => { stopSpeaking(); window.scrollTo(0, 0); }, [tab, view]);
   useEffect(() => {
-    if (loc) pushSync({ district: loc.district, state: loc.state, lat: loc.lat, lon: loc.lon, language: lang, persona: persona || 'general' });
+    if (loc) pushSync({ district: loc.district, state: loc.state, language: lang, persona: persona || 'general' });
   }, [loc, lang, persona]);
 
   const ctx = useMemo(() => ({

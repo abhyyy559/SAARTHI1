@@ -7,7 +7,7 @@ import 'leaflet.heat/dist/leaflet-heat.js';
 import { api } from '../lib/api';
 import { useApp } from '../lib/appState';
 import { useData, useOnline } from '../lib/useData';
-import { fmtDateTime, t } from '../lib/i18n';
+import { fmtDateTime, hazardText, t } from '../lib/i18n';
 import { distanceKm, severityTone } from '../lib/weather';
 import { Icon } from '../components/Icons';
 import { Fresh, SpeakButton } from '../components/ui';
@@ -29,7 +29,7 @@ function popup(p, lang) {
   const div = document.createElement('div');
   div.className = 'map-pop';
   const b = document.createElement('b');
-  b.textContent = `${p.hazard || ''} · ${p.severity || '?'}`;
+  b.textContent = `${hazardText(p.hazard, lang)} · ${p.severity || '?'}`;
   div.appendChild(b);
   const where = document.createElement('div');
   where.textContent = `${p.district || p.state}${p.approx ? ` (${t(lang, 'mapApprox')})` : ''}`;
@@ -102,7 +102,7 @@ export default function MapScreen() {
       if (!d?.points) return '';
       const near = [...d.points].sort((a, b) => distanceKm(loc, a) - distanceKm(loc, b))[0];
       const base = t(lang, 'mapAlertsSum', { n: d.alerts });
-      return near ? `${base} ${t(lang, 'mapNearest', { h: near.hazard || '', s: near.severity || '', km: Math.round(distanceKm(loc, near)), w: near.district || near.state })}` : base;
+      return near ? `${base} ${t(lang, 'mapNearest', { h: hazardText(near.hazard, lang), s: near.severity || '', km: Math.round(distanceKm(loc, near)), w: near.district || near.state })}` : base;
     }
     const d = grid.data;
     if (!d?.points) return '';

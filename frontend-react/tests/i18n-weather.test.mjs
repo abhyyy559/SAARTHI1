@@ -62,3 +62,14 @@ test('expired alerts drop out; worst first; duplicates collapse', () => {
   ];
   assert.deepEqual(activeAlerts(list, now).map((a) => a.identifier), ['c', 'd', 'a']);
 });
+
+test('official hazard names are said in the reader\'s language', async () => {
+  const { hazardText } = await import('../src/lib/i18n.js');
+  assert.equal(hazardText('Lightning', 'en'), 'Lightning');
+  assert.equal(hazardText('Lightning', 'te'), 'పిడుగులు');
+  assert.equal(hazardText('Thunderstorm & Lightning', 'hi'), 'आंधी-तूफ़ान और बिजली');
+  assert.equal(hazardText('Heavy Rainfall', 'te'), 'భారీ వర్షం');
+  assert.equal(hazardText('Flood', 'hi'), 'बाढ़');
+  assert.equal(hazardText('Something new', 'te'), 'Something new');
+  assert.equal(hazardText(null, 'te'), '');
+});

@@ -7,7 +7,7 @@
 //
 // Pure module: runs in node tests (CompressionStream is global in node 18+).
 
-import { condText, fmtDateTime, t } from './i18n.js';
+import { condText, fmtDateTime, hazardText, t } from './i18n.js';
 
 const MAX_TEXT = { headline: 140, advisory: 260 };
 // Phone-to-phone relay: a snapshot can be passed on at most this many times.
@@ -132,7 +132,7 @@ export function textSummary(input, lang = 'en', maxLen = 420) {
   const lines = [
     `WeatherGPT · ${input.loc?.district || ''}${input.loc?.state ? `, ${input.loc.state}` : ''}`,
     fmtDateTime(input.savedAt, lang),
-    `${L(`lv${v.level || 'UNKNOWN'}`)}${v.hazard && v.level !== 'LOW' ? `: ${v.hazard}` : ''}`,
+    `${L(`lv${v.level || 'UNKNOWN'}`)}${v.hazard && v.level !== 'LOW' ? `: ${hazardText(v.hazard, lang)}` : ''}`,
   ];
   if (c.temperature != null) lines.push(`${L('now')} ${Math.round(c.temperature)}°C ${condText(c.condition, lang)}`);
   if (tm && tm.rainfall != null) lines.push(`${L('tomorrow')} ${L('rain')} ${Math.round(tm.rainfall * 10) / 10} mm`);
@@ -147,7 +147,7 @@ export function textSummary(input, lang = 'en', maxLen = 420) {
   }).slice(0, 2);
   if (alerts.length && v.level === 'LOW') lines.push(`${L('elsewhere')}:`);
   for (const a of alerts) {
-    lines.push(`${a.severity || '?'} ${a.hazard || ''}${a.expires ? ` · ${L('until', { t: fmtDateTime(a.expires, lang) })}` : ''}`);
+    lines.push(`${a.severity || '?'} ${hazardText(a.hazard, lang)}${a.expires ? ` · ${L('until', { t: fmtDateTime(a.expires, lang) })}` : ''}`);
   }
   lines.push('112');
   let out = lines.filter(Boolean).join('\n');
