@@ -30,6 +30,7 @@ export const keys = {
   models: (loc) => `models:${loc.district}`,
   climate: (loc) => `climate:${loc.district}`,
   nowcast: (loc) => `nowcast:${loc.district}`,
+  marine: (loc) => `marine:${loc.district}`,
   chat: 'chat:history',
   queue: 'chat:queue',
 };

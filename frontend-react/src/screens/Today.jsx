@@ -33,7 +33,10 @@ export function useTodayData() {
   const models = useData(keys.models(loc), () => api.models(loc), { refreshMs: 30 * 60 * 1000, maxAgeMs: 30 * 60 * 1000 });
   const climate = useData(keys.climate(loc), () => api.climate(loc), { refreshMs: 0, maxAgeMs: 24 * 3600 * 1000 });
   const nowcast = useData(keys.nowcast(loc), () => api.nowcast(loc));
-  return { warn, now, fc, adv, cards, models, climate, nowcast };
+  // Sea card: fishermen anywhere not known to be inland, and anyone on the coast.
+  const wantSea = loc.coastal === true || (persona === 'fisherman' && loc.coastal !== false);
+  const marine = useData(wantSea ? keys.marine(loc) : null, () => api.marine(loc), { maxAgeMs: 20 * 60 * 1000 });
+  return { warn, now, fc, adv, cards, models, climate, nowcast, marine, wantSea };
 }
 
 function SafetyCard({ warn, current, days }) {
@@ -213,6 +216,49 @@ function ClimateCard({ climate }) {
   );
 }
 
+// Sea state for fishermen: model wave height + gusts, labelled as context,
+// never as a warning. Unavailable is said, never shown as a calm sea.
+function SeaCard({ marine }) {
+  const { lang } = useApp();
+  const d = marine.data?.marine;
+  if (!d) {
+    if (marine.loading) return <Skeleton h={160} />;
+    return marine.data?.status === 'unavailable'
+      ? <section className="card"><div className="card-head"><h2><Icon name="waves" size={24} /> {t(lang, 'seaTitle')}</h2></div><Empty lang={lang} offline={!navigator.onLine} /></section>
+      : null;
+  }
+  const said = d.days.map((x, i) => t(lang, 'seaSpeak', { day: dayName(x.date, lang, i), h: x.wave_height_max_m ?? '–', g: x.gust_max_kmh ?? '–' })).join(' ');
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>{t(lang, 'seaTitle')}</h2>
+        <Fresh {...marine} lang={lang} />
+      </div>
+      <div className="now-main">
+        <Icon name="waves" size={84} />
+        <div>
+          <div className="temp">{d.current_wave_height_m ?? '–'}<small className="unit"> m</small></div>
+          <div className="cond">{t(lang, 'seaWaves')}</div>
+        </div>
+      </div>
+      <div className="days">
+        {d.days.map((x, i) => (
+          <div className="day" key={x.date}>
+            <span className="day-name">{dayName(x.date, lang, i)}</span>
+            <Icon name="waves" size={40} />
+            <span className="day-temp"><b>{x.wave_height_max_m ?? '–'}</b> m</span>
+            <span className="day-rain"><Icon name="wind" size={16} />{x.gust_max_kmh ?? '–'} km/h</span>
+          </div>
+        ))}
+      </div>
+      <div className="card-foot">
+        <span className="src-note">{t(lang, 'seaNote')}</span>
+        <SpeakButton text={said} lang={lang} id="sea" />
+      </div>
+    </section>
+  );
+}
+
 function RolePicker() {
   const { lang, persona, setPersona } = useApp();
   return (
@@ -265,8 +311,9 @@ function ForYou({ adv, cards }) {
 }
 
 export default function Today() {
-  const { lang, loc } = useApp();
-  const { warn, now, fc, adv, cards, models, climate, nowcast } = useTodayData();
+  const { lang, loc, persona } = useApp();
+  const { warn, now, fc, adv, cards, models, climate, nowcast, marine, wantSea } = useTodayData();
+  const fisher = persona === 'fisherman';
   const days = fc.data?.forecast?.days;
   const verdict = warn.data?.verdict;
   const current = now.data?.current;
@@ -288,8 +335,10 @@ export default function Today() {
   return (
     <div className="screen">
       <SafetyCard warn={warn} current={current} days={days} />
+      {wantSea && fisher ? <SeaCard marine={marine} /> : null}
       <NowCard now={now} nowcast={nowcast} />
       <DaysCard fc={fc} />
+      {wantSea && !fisher ? <SeaCard marine={marine} /> : null}
       <ModelsCard models={models} />
       <ForYou adv={adv} cards={cards} />
       <ClimateCard climate={climate} />

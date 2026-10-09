@@ -9,6 +9,9 @@ export const LANGS = [
 
 export const STR = {
   en: {
+    seaTitle: 'Sea', seaWaves: 'Waves now', seaGusts: 'Wind gusts',
+    seaNote: 'Open-Meteo marine model. Not an INCOIS or IMD sea warning.',
+    seaSpeak: '{day}: waves up to {h} metres, wind gusts {g} kilometres per hour.',
     sos: 'SOS', sosTitle: 'Emergency help', sosCall112: 'Emergency: police, fire, ambulance', sosCall108: 'Ambulance',
     sosCall1077: 'District disaster control room', sosCall1070: 'State disaster control room',
     sosSend: 'Send my location', sosMsg: 'I need help. My location: {url}', sosNote: 'Calls work without internet.',
@@ -83,6 +86,9 @@ export const STR = {
     done: 'Done', settings: 'Settings',
   },
   hi: {
+    seaTitle: 'समुद्र', seaWaves: 'अभी लहरें', seaGusts: 'हवा के झोंके',
+    seaNote: 'Open-Meteo समुद्री मॉडल। यह INCOIS या IMD की समुद्री चेतावनी नहीं है।',
+    seaSpeak: '{day}: लहरें {h} मीटर तक, हवा के झोंके {g} किलोमीटर प्रति घंटा।',
     sos: 'SOS', sosTitle: 'आपातकालीन मदद', sosCall112: 'आपातकाल: पुलिस, फायर, एम्बुलेंस', sosCall108: 'एम्बुलेंस',
     sosCall1077: 'ज़िला आपदा नियंत्रण कक्ष', sosCall1070: 'राज्य आपदा नियंत्रण कक्ष',
     sosSend: 'मेरी लोकेशन भेजें', sosMsg: 'मुझे मदद चाहिए। मेरी लोकेशन: {url}', sosNote: 'कॉल बिना इंटरनेट के भी लगती है।',
@@ -157,6 +163,9 @@ export const STR = {
     done: 'ठीक है', settings: 'सेटिंग',
   },
   te: {
+    seaTitle: 'సముద్రం', seaWaves: 'ఇప్పుడు అలలు', seaGusts: 'గాలి వేగం',
+    seaNote: 'Open-Meteo సముద్ర మోడల్. ఇది INCOIS లేదా IMD సముద్ర హెచ్చరిక కాదు.',
+    seaSpeak: '{day}: అలలు {h} మీటర్ల వరకు, గాలి వేగం గంటకు {g} కిలోమీటర్లు.',
     sos: 'SOS', sosTitle: 'అత్యవసర సహాయం', sosCall112: 'అత్యవసరం: పోలీస్, ఫైర్, అంబులెన్స్', sosCall108: 'అంబులెన్స్',
     sosCall1077: 'జిల్లా విపత్తు నియంత్రణ కేంద్రం', sosCall1070: 'రాష్ట్ర విపత్తు నియంత్రణ కేంద్రం',
     sosSend: 'నా లొకేషన్ పంపండి', sosMsg: 'నాకు సహాయం కావాలి. నా లొకేషన్: {url}', sosNote: 'ఇంటర్నెట్ లేకపోయినా కాల్ పనిచేస్తుంది.',

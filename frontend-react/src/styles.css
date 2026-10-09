@@ -645,3 +645,5 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .delta { font-family: var(--font-display); font-weight: 400; font-size: 26px; }
 .delta.wet { color: #7fb3f5; } .delta.dry { color: #f5b86b; }
 .delta.hot { color: #ff8a65; } .delta.cool { color: #7fd3f5; }
+
+.unit { font-family: var(--font-sans); font-size: 22px; color: var(--muted); }

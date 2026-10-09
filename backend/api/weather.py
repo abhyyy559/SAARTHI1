@@ -372,6 +372,20 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
     }
 
 
+@router.get("/weather/marine")
+async def marine(lat: float, lon: float, district: str = "") -> dict:
+    """Wave height + wind gusts for coastal districts (fishermen). Model values,
+    never a warning; unavailable is said as unavailable, never as a calm sea."""
+    from ..adapters import marine_adapter
+    try:
+        data = await marine_adapter.sea_state(lat, lon)
+    except AdapterUnavailable as exc:
+        return {"status": "unavailable", "detail": str(exc), "provenance": "UNAVAILABLE",
+                "district": district, "generated_at": iso_now()}
+    return {"status": "ok", "district": district, "marine": data, "provenance": "LIVE",
+            "generated_at": iso_now()}
+
+
 @router.get("/risk")
 async def risk(severity: str = "YELLOW", user_type: str = "general") -> dict:
     s = _services()

@@ -252,3 +252,18 @@ def test_quantified_rain_statement_gets_no_second_rain_lead():
     assert chat._ensure_rain_lead("రేపు వర్షం పడుతుందా?", fc, te, "te") == te
     en = "Light drizzle tomorrow: rain about 0.6 mm."
     assert chat._ensure_rain_lead("Will it rain tomorrow?", fc, en, "en") == en
+
+
+def test_marine_endpoint_reports_unavailable_never_calm(monkeypatch):
+    from backend.adapters import marine_adapter
+    monkeypatch.setattr(marine_adapter, "sea_state", AsyncMock(side_effect=AdapterUnavailable("down")))
+    with TestClient(app) as client:
+        body = client.get("/api/weather/marine", params={"lat": 19.81, "lon": 85.83}).json()
+    assert body["status"] == "unavailable" and body["provenance"] == "UNAVAILABLE"
+    monkeypatch.setattr(marine_adapter, "sea_state", AsyncMock(return_value={
+        "source": "Open-Meteo Marine", "note": marine_adapter.NOTE, "current_wave_height_m": 0.9,
+        "days": [{"date": "2026-10-09", "wave_height_max_m": 1.1, "swell_max_m": 0.8, "wind_max_kmh": 12, "gust_max_kmh": 25}]}))
+    with TestClient(app) as client:
+        body = client.get("/api/weather/marine", params={"lat": 19.81, "lon": 85.83}).json()
+    assert body["marine"]["days"][0]["wave_height_max_m"] == 1.1
+    assert "Not an INCOIS or IMD" in body["marine"]["note"]

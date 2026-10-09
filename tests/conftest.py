@@ -71,6 +71,11 @@ def _clear_module_caches():
         except Exception:
             pass
         try:
+            from backend.adapters import marine_adapter as _mar
+            _mar._cache.clear()
+        except Exception:
+            pass
+        try:
             from backend.api import climate as _clim
             _clim._cache.clear()
         except Exception:

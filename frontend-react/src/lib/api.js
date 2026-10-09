@@ -63,6 +63,7 @@ export const api = {
   stats: () => get('/api/stats', 30000),
   models: (loc) => get(`/api/weather/models?${q({ lat: loc.lat, lon: loc.lon })}`, 30000),
   climate: (loc) => get(`/api/climate/trends?${q({ lat: loc.lat, lon: loc.lon })}`, 40000),
+  marine: (loc) => get(`/api/weather/marine?${q({ district: loc.district, lat: loc.lat, lon: loc.lon })}`, 20000),
   nowcast: (loc) => get(`/api/weather/nowcast?${q({ district: loc.district, lat: loc.lat, lon: loc.lon })}`),
   pushVapid: () => get('/api/push/vapid'),
   pushSubscribe: (payload) => post('/api/push/subscribe', payload),
