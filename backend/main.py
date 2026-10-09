@@ -59,6 +59,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="WeatherGPT", version="1.0.0", lifespan=lifespan)
 
 
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception):  # noqa: BLE001 - last-resort envelope only
+    log.exception("unhandled error on %s: %s", request.url.path, exc)
+    return JSONResponse(status_code=500, content={"error": f"{type(exc).__name__}: {exc}", "status": 500})
+
+
 def _cors_origins() -> list:
     """Env-driven allowlist + always-on local dev origins."""
     origins = {
