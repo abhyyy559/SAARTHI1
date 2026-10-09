@@ -1,7 +1,10 @@
 """Central configuration. All secrets via env, safe defaults for demo."""
 import json
+import logging
 import os
 from pathlib import Path
+
+log = logging.getLogger("weathergpt.config")
 
 try:
     from dotenv import load_dotenv
@@ -75,7 +78,8 @@ IMD_DEFAULT_STATION = _get("IMD_DEFAULT_STATION", "Hyderabad")
 _IMD_FIELD_MAP_RAW = _get("IMD_FIELD_MAP", "").strip()
 try:
     IMD_FIELD_MAP: dict = json.loads(_IMD_FIELD_MAP_RAW) if _IMD_FIELD_MAP_RAW else {}
-except (json.JSONDecodeError, ValueError):
+except (json.JSONDecodeError, ValueError) as exc:
+    log.warning("bad IMD_FIELD_MAP JSON, falling back to {}: %s", exc)
     IMD_FIELD_MAP = {}
 
 # --- Web Push (background notifications) ------------------------------------
