@@ -58,11 +58,15 @@ export default function Ask() {
 
   // The composer is pinned above the tab bar; the thread reserves its exact
   // height so the newest answer (and its Listen button) is never hidden.
+  // Opening the screen shows the newest messages once that space is known
+  // (this runs after the app's scroll-to-top on every tab change).
   useEffect(() => {
     const el = composer.current;
     if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    let first = true;
     const ro = new ResizeObserver(() => {
       screen.current?.style.setProperty('--composer-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+      if (first) { first = false; listEnd.current?.scrollIntoView({ block: 'end' }); }
     });
     ro.observe(el);
     return () => ro.disconnect();

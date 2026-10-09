@@ -176,7 +176,10 @@ h1, h2, h3, h4, p { margin: 0; }
   margin: 0; color: #fff;
   font-family: var(--font-display); font-weight: 400;
   font-size: clamp(28px, 6.2vw, 80px); letter-spacing: -0.04em; line-height: 1.12;
-  white-space: nowrap; overflow: hidden; max-width: 100%;
+  white-space: nowrap; max-width: 100%;
+  /* Clip sideways only: the dot faces draw a little above and below the
+     line box, and those dots must not be cut (older browsers: hidden). */
+  overflow: hidden; overflow: clip visible;
 }
 .headline .line {
   display: block; opacity: 0; transform: translateY(14px);
@@ -318,7 +321,23 @@ main { display: block; }
   padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top));
   /* No backdrop-filter here on phones: the fixed bottom tab bar lives inside
      this header, and a filter would pin it to the header instead. */
-  background: linear-gradient(rgba(0, 0, 0, 0.9) 66%, rgba(0, 0, 0, 0));
+}
+/* Phones and tablets: a solid band behind the header buttons, across the
+   whole window (the app column is narrower on tablets), with a short fade
+   below, so text scrolling up never shows through. Desktop has its own. */
+.top::before {
+  content: ''; position: fixed; z-index: -1; left: 0; right: 0; top: 0;
+  height: calc(max(10px, env(safe-area-inset-top)) + 66px);
+  background: linear-gradient(#000 calc(100% - 14px), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+/* The same band behind the floating bottom tab bar (which lives in this
+   header), so nothing shows in the gaps around and below it. */
+.top::after {
+  content: ''; position: fixed; z-index: -1; left: 0; right: 0; bottom: 0;
+  height: calc(var(--tabs-h) + 24px + env(safe-area-inset-bottom));
+  background: linear-gradient(rgba(0, 0, 0, 0), #000 14px);
+  pointer-events: none;
 }
 .logo-sm { width: 44px; height: 44px; }
 .place-chip {
@@ -445,7 +464,9 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .main-advice { background: var(--surface-strong); border-color: rgba(255, 255, 255, 0.18); }
 
 /* Ask */
-.ask { padding-bottom: calc(var(--composer-h, 320px) + 16px); }
+/* `.screen.ask`, not `.ask`: the desktop `.screen { padding }` rule must not
+   cancel this, or the newest answer ends up under the composer. */
+.screen.ask { padding-bottom: calc(var(--composer-h, 320px) + 16px); }
 .thread { display: grid; gap: 10px; align-content: start; }
 .thread-end { height: 1px; scroll-margin-bottom: calc(var(--composer-h, 320px) + var(--tabs-h) + 36px); }
 .ask-intro { display: grid; justify-items: center; gap: 8px; padding: 36px 0 8px; text-align: center; color: var(--trust-text); }
@@ -469,9 +490,26 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 
 .composer {
   position: fixed; left: 0; right: 0; z-index: 15; margin: 0 auto; max-width: 560px;
-  bottom: calc(var(--tabs-h) + 18px + env(safe-area-inset-bottom));
-  display: grid; justify-items: center; gap: 8px; padding: 18px 14px 10px;
-  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.86) 22%);
+  bottom: calc(var(--tabs-h) + 10px + env(safe-area-inset-bottom));
+  display: grid; justify-items: center; gap: 8px; padding: 30px 14px 18px;
+  /* Solid behind the chips, mic and input (only the top 26px fade), so chat
+     text scrolling underneath never shows through them. It reaches down to
+     the tab bar, leaving no gap for text to peek through. */
+  background: linear-gradient(rgba(0, 0, 0, 0), #000 26px);
+}
+/* The chat list only fades in: a moving or scaled list would throw off the
+   scroll to the newest answer while it plays. */
+@keyframes fadeIn { from { opacity: 0; } }
+.screen.ask > .thread { animation-name: fadeIn; }
+/* Tablets: the composer's dark band spans the window and fades out at the
+   sides instead of ending in a hard-edged box around the app column. */
+@media (min-width: 561px) {
+  .composer {
+    max-width: none;
+    padding-left: max(14px, calc(50% - 266px)); padding-right: max(14px, calc(50% - 266px));
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 calc(50% - 340px), #000 calc(50% + 340px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 calc(50% - 340px), #000 calc(50% + 340px), transparent);
+  }
 }
 .chips { display: flex; gap: 8px; width: 100%; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .chip {
@@ -633,7 +671,8 @@ html[lang='hi'] :is(.screen-head h1, .share-title), html[lang='te'] :is(.screen-
   border-radius: 22px; background: var(--surface); border: 1px solid var(--line); color: #fff; text-decoration: none;
 }
 .sos-call.primary { background: linear-gradient(160deg, #e5484d, #a3222a); border-color: transparent; box-shadow: 0 10px 34px rgba(229, 72, 77, 0.35); }
-.sos-num { font-family: var(--font-display); font-size: 32px; line-height: 1; min-width: 3.2ch; }
+/* One fixed column for 112 ... 1077: four-digit numbers no longer run into their label. */
+.sos-num { flex: none; font-family: var(--font-display); font-size: 32px; line-height: 1; min-width: 4.2ch; }
 .sos-label { font-size: 15px; color: #e6e6e6; line-height: 1.3; }
 
 /* Toggles (push alerts, read aloud) */
@@ -689,7 +728,9 @@ html[data-theme='light'] :is(.btn-big, .mic, .send, .bubble.me, .speak.is-on, .l
 }
 html[data-theme='light'] .mic-listening { background: var(--red); }
 html[data-theme='light'] .top { background: linear-gradient(var(--bg) 72%, rgba(244, 241, 234, 0)); }
-html[data-theme='light'] .composer { background: linear-gradient(rgba(244, 241, 234, 0), var(--bg) 20%); }
+html[data-theme='light'] .top::before { background: linear-gradient(var(--bg) calc(100% - 14px), rgba(244, 241, 234, 0)); }
+html[data-theme='light'] .top::after { background: linear-gradient(rgba(244, 241, 234, 0), var(--bg) 14px); }
+html[data-theme='light'] .composer { background: linear-gradient(rgba(244, 241, 234, 0), var(--bg) 26px); }
 html[data-theme='light'] .tabs { border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(20, 24, 32, 0.14); }
 html[data-theme='light'] .sheet { background: var(--bg); border-top-color: var(--line); }
 html[data-theme='light'] .skeleton { background: linear-gradient(90deg, #ece8df 0%, #f7f4ee 50%, #ece8df 100%); background-size: 200% 100%; }
@@ -749,11 +790,12 @@ html[data-theme='light'] .map-box { background: #e8e4da; }
     justify-content: center; gap: clamp(12px, 1.6vw, 24px);
     /* Glass strip: what scrolls under it is blurred, the edge fades out.
        Safe here because the nav is in normal flow on desktop. */
-    background: rgba(0, 0, 0, 0.45);
-    -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1);
-    -webkit-mask-image: linear-gradient(#000 76%, transparent); mask-image: linear-gradient(#000 76%, transparent);
+    background: rgba(0, 0, 0, 0.72);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1); backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-mask-image: linear-gradient(#000 84%, transparent); mask-image: linear-gradient(#000 84%, transparent);
     animation: slideDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+  .top::before, .top::after { display: none; }
   .top > .logo-sm { width: 46px; height: 46px; }
   .tabs {
     position: static; z-index: auto; flex: 0 1 auto; min-width: 0;
@@ -783,7 +825,14 @@ html[data-theme='light'] .map-box { background: #e8e4da; }
   .safety h1 { font-size: 32px; }
   .alert-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
   .ask .thread { max-width: 880px; width: 100%; margin: 0 auto; }
-  .composer { left: 32px; right: 32px; bottom: 16px; max-width: 920px; }
+  /* A full-width band at the bottom, solid behind the 920px of controls and
+     fading out at the sides so the video still shows around it. */
+  .composer {
+    left: 0; right: 0; bottom: 0; max-width: none;
+    padding: 30px max(32px, calc(50% - 460px)) 18px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 calc(50% - 560px), #000 calc(50% + 560px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 calc(50% - 560px), #000 calc(50% + 560px), transparent);
+  }
   .thread-end { scroll-margin-bottom: calc(var(--composer-h, 320px) + 40px); }
   .share { grid-template-columns: auto minmax(0, 440px); justify-content: center; align-items: center; column-gap: 48px; text-align: left; }
   .share > .share-title { grid-column: 1 / -1; justify-content: flex-start; }
@@ -848,9 +897,12 @@ html:not([data-theme='light']) .osm-tiles { filter: invert(1) hue-rotate(180deg)
 /* ---- Data sources ---- */
 .sources { display: grid; gap: 8px; }
 .source-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
-.source-words { flex: 1; min-width: 0; display: grid; }
+.source-row > svg { flex: none; }
+/* The name never shrinks below its longest word; on a narrow phone the
+   status pill wraps onto two lines instead of covering "OpenWeatherMap". */
+.source-words { flex: 1; min-width: auto; display: grid; }
 .source-words .muted { font-size: 13.5px; }
-.src-state { flex: none; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
+.src-state { flex: 0 1 auto; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; line-height: 1.25; text-align: center; }
 .src-state.ok { color: #7ee2a8; background: rgba(48, 164, 108, 0.16); }
 .src-state.warn { color: var(--yellow); background: rgba(255, 197, 61, 0.14); }
 .src-state.off { color: var(--muted); background: rgba(142, 142, 142, 0.14); }
