@@ -33,6 +33,15 @@ function isEnded(a) {
   return String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
 }
 
+// Map labels use a short form so long names (e.g. "Medchal Malkajgiri")
+// don't collide with neighbouring dots. Full name stays in <title>.
+function shortName(name) {
+  const s = String(name || '').trim();
+  if (s.toLowerCase() === 'medchal malkajgiri') return 'Medchal';
+  const first = s.split(/\s+/)[0];
+  return first.length >= 3 ? first : s;
+}
+
 function loadCachedCoords() {
   try {
     const v = JSON.parse(localStorage.getItem(COORDS_KEY) || '[]');
@@ -130,8 +139,9 @@ export default function DistrictMap({ alerts = [], onSelectDistrict = null }) {
                   <title>{`${p.name}${sev ? ` — ${t(lang, SEV_WORD[sev] || 'sevUnknown')}` : ''}${isUser ? ' •' : ''}`}</title>
                 </circle>
                 {(sev || isUser) && (
-                  <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--ink)">
-                    {p.name}
+                  <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--ink)"
+                    style={{ paintOrder: 'stroke', stroke: 'var(--paper)', strokeWidth: 3 }}>
+                    {shortName(p.name)}
                   </text>
                 )}
               </g>
