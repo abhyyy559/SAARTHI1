@@ -347,6 +347,7 @@ def test_imd_with_a_key_still_reports_a_real_outage(monkeypatch):
     from backend.adapters import registry
 
     # Dual credentials: the gateway needs both the key and the portal JWT.
+    monkeypatch.setattr(config, "IMD_ENABLED", True)
     monkeypatch.setattr(config, "IMD_API_KEY", "test-key")
     monkeypatch.setattr(config, "IMD_JWT", "test-jwt")
 

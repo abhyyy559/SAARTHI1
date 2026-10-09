@@ -166,6 +166,7 @@ async def test_live_auth_query_scheme_sends_param(monkeypatch):
             return SpyResp()
 
     monkeypatch.setattr(mod.httpx, "AsyncClient", SpyClient)
+    monkeypatch.setattr(_config, "IMD_ENABLED", True)
     monkeypatch.setattr(_config, "IMD_API_KEY", "k123")
     monkeypatch.setattr(_config, "IMD_JWT", "jwt123")
     monkeypatch.setattr(_config, "IMD_AUTH_SCHEME", "query")
@@ -198,6 +199,7 @@ async def test_live_default_scheme_sends_both_credentials(monkeypatch):
             return SpyResp()
 
     monkeypatch.setattr(mod.httpx, "AsyncClient", SpyClient)
+    monkeypatch.setattr(_config, "IMD_ENABLED", True)
     monkeypatch.setattr(_config, "IMD_API_KEY", "k123")
     monkeypatch.setattr(_config, "IMD_JWT", "jwt123")
     monkeypatch.setattr(_config, "IMD_AUTH_SCHEME", "bearer")
@@ -231,6 +233,7 @@ async def test_live_auto_mint_uses_portal_credentials(monkeypatch):
             raise _AdapterUnavailable("stop here — headers are the assertion")
 
     monkeypatch.setattr(mod.httpx, "AsyncClient", SpyClient)
+    monkeypatch.setattr(_config, "IMD_ENABLED", True)
     monkeypatch.setattr(_config, "IMD_API_KEY", "k123")
     monkeypatch.setattr(_config, "IMD_JWT", "")
     monkeypatch.setattr(_config, "IMD_API_EMAIL", "u@example.com")
@@ -279,6 +282,7 @@ async def test_live_expired_jwt_remints_once_and_retries(monkeypatch):
             return DataResp(ok=calls["gets"] > 1)
 
     monkeypatch.setattr(mod.httpx, "AsyncClient", SpyClient)
+    monkeypatch.setattr(_config, "IMD_ENABLED", True)
     monkeypatch.setattr(_config, "IMD_API_KEY", "k123")
     monkeypatch.setattr(_config, "IMD_JWT", "")
     monkeypatch.setattr(_config, "IMD_API_EMAIL", "u@example.com")
@@ -326,6 +330,7 @@ async def test_live_key_without_jwt_fails_fast_without_network(monkeypatch):
         raise AssertionError("no network call may happen without the JWT")
 
     monkeypatch.setattr(mod.httpx, "AsyncClient", _boom_client)
+    monkeypatch.setattr(_config, "IMD_ENABLED", True)
     monkeypatch.setattr(_config, "IMD_API_KEY", "k123")
     monkeypatch.setattr(_config, "IMD_JWT", "")
     monkeypatch.setattr(_config, "IMD_API_EMAIL", "")

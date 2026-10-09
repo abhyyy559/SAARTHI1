@@ -81,6 +81,8 @@ def _initial_state(name: str) -> tuple[str, str]:
             return (READY, "configured (OpenWeatherMap) — verified on first use")
         return (UNCONFIGURED, "OWM_API_KEY not set — second-opinion panel hidden")
     if name == "imd":
+        if not config.IMD_ENABLED:
+            return (UNCONFIGURED, "IMD disabled (IMD_ENABLED=false) — Open-Meteo + CAP carry live data")
         if config.IMD_API_KEY:
             return (READY, "IMD credentials present — verified on first use")
         if config.IMD_ADAPTER == "demo":
