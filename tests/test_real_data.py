@@ -190,3 +190,39 @@ def test_rejected_imd_key_is_skipped_until_cooldown(monkeypatch):
     except AdapterUnavailable:
         pass
     assert len(calls) == 2, "after the cooldown IMD is tried again"
+
+
+def test_stats_are_measured_not_invented(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+    from backend.adapters import cap_adapter
+    from backend.api import sources
+    iso = lambda h: (datetime.now(timezone.utc) + timedelta(hours=h)).isoformat()
+    monkeypatch.setattr(sources, "_alert_count", {"at": 0.0, "value": None})
+    monkeypatch.setattr(cap_adapter, "fetch_alerts", AsyncMock(return_value=(
+        [{"expires": iso(2)}, {"expires": iso(-3)}, {"expires": iso(5)}], "LIVE")))
+    with TestClient(app) as client:
+        body = client.get("/api/stats").json()
+    assert body["official_alerts_in_force"] == 2, "expired alerts are not counted"
+    assert body["districts_covered"] >= 50
+    assert body["languages"] == ["en", "hi", "te"]
+    assert {s["name"]: s["live"] for s in body["sources"]}["NDMA SACHET"] is True
+
+    monkeypatch.setattr(sources, "_alert_count", {"at": 0.0, "value": None})
+    monkeypatch.setattr(cap_adapter, "fetch_alerts", AsyncMock(side_effect=AdapterUnavailable("down")))
+    with TestClient(app) as client:
+        body = client.get("/api/stats").json()
+    assert body["official_alerts_in_force"] is None, "unknown is null, never zero"
+    assert {s["name"]: s["live"] for s in body["sources"]}["NDMA SACHET"] is False
+
+
+def test_stats_list_keyless_open_meteo_before_first_use(monkeypatch):
+    """Fresh process: Open-Meteo is configured (keyless) before any weather call."""
+    from backend.adapters import cap_adapter, registry
+    from backend.api import sources
+    monkeypatch.setattr(registry, "_STATUSES",
+                        {n: registry.SourceStatus(name=n) for n in registry._KNOWN_SOURCES})
+    monkeypatch.setattr(sources, "_alert_count", {"at": 0.0, "value": None})
+    monkeypatch.setattr(cap_adapter, "fetch_alerts", AsyncMock(return_value=([], "LIVE")))
+    with TestClient(app) as client:
+        body = client.get("/api/stats").json()
+    assert {s["name"]: s["live"] for s in body["sources"]}["Open-Meteo"] is True

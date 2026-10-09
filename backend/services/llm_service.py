@@ -38,6 +38,8 @@ SYSTEM_RULES = (
     "in the answer's language, saying guidance is in the 'For you' section of the app. "
     "That section is the ONLY place for guidance.\n"
     "Keep it short and simple - the listener may be a fisherman or farmer with a basic phone.\n"
+    "Use exactly the units given in the data's `units` field. Never convert or guess a unit.\n"
+    "Never print field names, JSON keys or code words from the data (like current_observation).\n"
     "Never answer 'can I go to sea / go out / is it safe' with yes or no: that is a safety\n"
     "decision, not a fact. Open with the warning status and the relevant facts instead.\n"
     # --- BREVITY. The answer is READ ALOUD to someone deciding whether to go out. ---
@@ -78,9 +80,11 @@ LANG_DIRECTIVE = {
 # English evidence JSON, gpt-oss often ignored the system directive and answered
 # a Telugu question in English. The last instruction it reads wins more often.
 LANG_REMINDER = {
-    "en": "Write the whole answer in English.",
-    "hi": "Write the whole answer in Hindi, in Devanagari script (हिंदी). Not English.",
-    "te": "Write the whole answer in Telugu, in Telugu script (తెలుగు). Not English.",
+    "en": "Write the whole answer in English. The app's guidance section is called 'For you'.",
+    "hi": "Write the whole answer in Hindi, in Devanagari script (हिंदी). Not English. "
+          "The app's guidance section is called 'आपके लिए'.",
+    "te": "Write the whole answer in Telugu, in Telugu script (తెలుగు). Not English. "
+          "The app's guidance section is called 'మీ కోసం'.",
 }
 
 # Script ranges for the post-check in api/chat.py (_in_language).
@@ -147,6 +151,9 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
         "user_type": user_type,
         "tomorrow_rainfall_mm": tomorrow_rainfall_mm,
         "tomorrow_rainfall_prob": tomorrow_rainfall_prob,
+        # Without units the model guessed: a 6.8 km/h wind was read out as
+        # "6.8 m/s" (about 24 km/h). Every live source reports these units.
+        "units": {"temperature": "°C", "rainfall": "mm", "wind_speed": "km/h", "humidity": "%"},
     }
 
 
