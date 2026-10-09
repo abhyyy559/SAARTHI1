@@ -50,7 +50,7 @@ export default function SharePage({ payload }) {
   return (
     <main className="share-page">
       <header className="share-head">
-        <span className="brand"><Icon name="sun" size={28} /> WeatherGPT</span>
+        <span className="brand"><span className="logo logo-sm"><Icon name="partly" size={40} /></span> WeatherGPT</span>
         <div className="lang-pills">
           {LANGS.map((l) => (
             <button key={l.id} type="button" className={l.id === lang ? 'is-on' : ''} onClick={() => setLang(l.id)} aria-label={l.name}>{l.glyph}</button>

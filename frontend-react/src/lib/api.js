@@ -60,6 +60,7 @@ export const api = {
   resolve: (lat, lon) => get(`/api/location/resolve?${q({ lat, lon })}`),
   search: (text) => get(`/api/location/search?${q({ q: text })}`).then((d) => d.results || []),
   sources: () => get('/api/sources'),
+  stats: () => get('/api/stats', 30000),
   voiceStatus: () => get('/api/voice/status', 4000),
   synthesize: (text, language) => post('/api/voice/synthesize', { text, language }, 20000),
   transcribe: async (blob, language) => {

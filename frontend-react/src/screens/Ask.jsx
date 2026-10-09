@@ -53,6 +53,20 @@ export default function Ask() {
   const [busy, setBusy] = useState(false);
   const listEnd = useRef(null);
   const abort = useRef(null);
+  const screen = useRef(null);
+  const composer = useRef(null);
+
+  // The composer is pinned above the tab bar; the thread reserves its exact
+  // height so the newest answer (and its Listen button) is never hidden.
+  useEffect(() => {
+    const el = composer.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => {
+      screen.current?.style.setProperty('--composer-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const persist = (list) => cache.save(keys.chat, list.slice(-MAX_HISTORY));
 
@@ -131,7 +145,7 @@ export default function Ask() {
           : mic.error ? t(lang, 'micFailed') : t(lang, 'askHint');
 
   return (
-    <div className="screen ask">
+    <div className="screen ask" ref={screen}>
       <div className="thread" aria-live="polite">
         {msgs.length === 0 ? (
           <div className="ask-intro">
@@ -152,10 +166,10 @@ export default function Ask() {
             ) : null}
           </div>
         )))}
-        <div ref={listEnd} />
+        <div ref={listEnd} className="thread-end" />
       </div>
 
-      <div className="composer">
+      <div className="composer" ref={composer}>
         <div className="chips">
           {(CHIPS[persona] || CHIPS.general).map(([icon, key]) => (
             <button key={key} type="button" className="chip" disabled={busy} onClick={() => ask(t(lang, key))}>

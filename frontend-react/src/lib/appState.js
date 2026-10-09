@@ -26,6 +26,7 @@ export const keys = {
   forecast: (loc) => `fc:${loc.district}`,
   advisory: (loc, persona, lang) => `adv:${loc.district}:${persona}:${lang}`,
   cards: (loc, persona, lang) => `cards:${loc.district}:${persona}:${lang}`,
+  stats: 'stats',
   chat: 'chat:history',
   queue: 'chat:queue',
 };

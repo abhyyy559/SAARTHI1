@@ -100,7 +100,7 @@ export default function Setup({ onDone }) {
   const [step, setStep] = useState(0);
   return (
     <div className="setup">
-      <div className="setup-brand"><Icon name="partly" size={64} /><b>WeatherGPT</b></div>
+      <div className="setup-brand"><span className="logo"><Icon name="partly" size={52} /></span><span>WeatherGPT</span></div>
       <ol className="steps" aria-hidden="true">
         {[0, 1, 2].map((i) => <li key={i} className={i <= step ? 'is-on' : ''} />)}
       </ol>

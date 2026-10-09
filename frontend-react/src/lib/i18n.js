@@ -9,6 +9,13 @@ export const LANGS = [
 
 export const STR = {
   en: {
+    navHome: 'Home', menu: 'Menu', close: 'Close',
+    landHead1: 'Weather Intelligence', landHead2: 'Designed To Protect',
+    landSub: 'Ask in Telugu, Hindi or English. Hear official alerts for your district explained simply, even offline.',
+    getStarted: 'Get Started', openToday: 'Open Today',
+    trustLive: 'Live data: {list}', trustSaved: 'Saved {age}: {list}', trustNone: 'Data sources unreachable right now',
+    statAlerts: 'Official alerts in force (feeds we track)', statDistricts: 'Districts covered',
+    statLangs: 'Languages, with voice', statCheck: 'Alert check interval', minUnit: ' min',
     appName: 'WeatherGPT',
     tabToday: 'Today', tabAsk: 'Ask', tabAlerts: 'Alerts', tabShare: 'Share',
     lvCRITICAL: 'Danger — red alert',
@@ -59,6 +66,13 @@ export const STR = {
     done: 'Done', settings: 'Settings',
   },
   hi: {
+    navHome: 'होम', menu: 'मेनू', close: 'बंद करें',
+    landHead1: 'मौसम की समझ', landHead2: 'आपकी सुरक्षा के लिए',
+    landSub: 'तेलुगु, हिंदी या अंग्रेज़ी में पूछें। अपने ज़िले की सरकारी चेतावनियाँ आसान भाषा में सुनें, इंटरनेट के बिना भी।',
+    getStarted: 'शुरू करें', openToday: 'आज खोलें',
+    trustLive: 'लाइव डेटा: {list}', trustSaved: 'सहेजा गया {age}: {list}', trustNone: 'अभी डेटा स्रोतों से संपर्क नहीं हो पा रहा',
+    statAlerts: 'लागू सरकारी चेतावनियाँ (जिन फ़ीड पर हम नज़र रखते हैं)', statDistricts: 'शामिल ज़िले',
+    statLangs: 'भाषाएँ, आवाज़ के साथ', statCheck: 'चेतावनी जाँच का अंतराल', minUnit: ' मिनट',
     appName: 'WeatherGPT',
     tabToday: 'आज', tabAsk: 'पूछें', tabAlerts: 'चेतावनी', tabShare: 'साझा करें',
     lvCRITICAL: 'खतरा — रेड अलर्ट',
@@ -109,6 +123,13 @@ export const STR = {
     done: 'ठीक है', settings: 'सेटिंग',
   },
   te: {
+    navHome: 'హోమ్', menu: 'మెనూ', close: 'మూసివేయండి',
+    landHead1: 'వాతావరణ సమాచారం', landHead2: 'మీ రక్షణ కోసం',
+    landSub: 'తెలుగు, హిందీ లేదా ఇంగ్లీష్‌లో అడగండి. మీ జిల్లా ప్రభుత్వ హెచ్చరికలను సులభంగా వినండి, ఇంటర్నెట్ లేకపోయినా.',
+    getStarted: 'ప్రారంభించండి', openToday: 'ఈ రోజు తెరవండి',
+    trustLive: 'లైవ్ డేటా: {list}', trustSaved: 'సేవ్ చేసింది {age}: {list}', trustNone: 'ప్రస్తుతం డేటా మూలాలు అందుబాటులో లేవు',
+    statAlerts: 'అమలులో ఉన్న ప్రభుత్వ హెచ్చరికలు (మేము గమనించే ఫీడ్‌లు)', statDistricts: 'కవర్ చేసిన జిల్లాలు',
+    statLangs: 'భాషలు, వాయిస్‌తో', statCheck: 'హెచ్చరికల తనిఖీ వ్యవధి', minUnit: ' నిమి',
     appName: 'WeatherGPT',
     tabToday: 'ఈ రోజు', tabAsk: 'అడగండి', tabAlerts: 'హెచ్చరికలు', tabShare: 'పంచుకోండి',
     lvCRITICAL: 'ప్రమాదం — రెడ్ అలర్ట్',

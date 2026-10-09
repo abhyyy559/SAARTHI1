@@ -5,6 +5,7 @@ import { LANGS, t } from './lib/i18n';
 import { stopSpeaking } from './lib/voice';
 import { Icon } from './components/Icons';
 import Setup, { LangPicker, PlacePicker, RoleGrid } from './components/Setup';
+import Landing from './screens/Landing';
 import Today from './screens/Today';
 import Ask from './screens/Ask';
 import Alerts from './screens/Alerts';
@@ -42,13 +43,20 @@ export default function App() {
   const [lang, setLangState] = useState(() => readPref('lang', 'en'));
   const [persona, setPersonaState] = useState(() => readPref('persona', null));
   const [loc, setLocState] = useState(() => readPref('loc', null));
+  const [setupDone, setSetupDone] = useState(() => !!(readPref('loc') && readPref('persona')));
   const [tab, setTab] = useState(() => {
     const v = new URLSearchParams(window.location.search).get('tab');
     return TABS.some((x) => x.id === v) ? v : 'today';
   });
+  // landing | setup | app. First run opens on the landing; returning users
+  // go straight to Today (a safety app must not make them tap through a
+  // splash). The logo brings the landing back; ?landing=1 forces it.
+  const [view, setView] = useState(() => {
+    const forced = new URLSearchParams(window.location.search).get('landing') === '1';
+    return forced || !setupDone ? 'landing' : 'app';
+  });
   const [pendingQuestion, setPending] = useState(null);
   const [settings, setSettings] = useState(false);
-  const [setupDone, setSetupDone] = useState(() => !!(readPref('loc') && readPref('persona')));
   const online = useOnline();
 
   const setLang = useCallback((v) => { setLangState(v); writePref('lang', v); }, []);
@@ -58,35 +66,40 @@ export default function App() {
   const clearPending = useCallback(() => setPending(null), []);
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
-  useEffect(() => { stopSpeaking(); window.scrollTo(0, 0); }, [tab]);
+  useEffect(() => { stopSpeaking(); window.scrollTo(0, 0); }, [tab, view]);
 
   const ctx = useMemo(() => ({
     lang, setLang, persona: persona || 'general', personaChosen: !!persona, setPersona, loc, setLoc,
     pendingQuestion, clearPending, askAbout,
   }), [lang, setLang, persona, setPersona, loc, setLoc, pendingQuestion, clearPending, askAbout]);
 
-  if (!setupDone || !loc) {
-    return (
-      <AppCtx.Provider value={ctx}>
-        <Setup onDone={() => setSetupDone(true)} />
-      </AppCtx.Provider>
-    );
-  }
+  const ready = setupDone && !!loc;
+  const enter = (nextTab) => {
+    if (nextTab) setTab(nextTab);
+    setView(ready ? 'app' : 'setup');
+  };
 
-  const Active = (TABS.find((x) => x.id === tab) || TABS[0]).View;
-  const langGlyph = (LANGS.find((l) => l.id === lang) || LANGS[0]).glyph;
-
-  return (
-    <AppCtx.Provider value={ctx}>
+  let body;
+  if (view === 'landing') {
+    body = <Landing ready={ready} onStart={() => enter()} onNav={(id) => enter(id)} />;
+  } else if (view === 'setup' || !ready) {
+    body = <Setup onDone={() => { setSetupDone(true); setView('app'); }} />;
+  } else {
+    const Active = (TABS.find((x) => x.id === tab) || TABS[0]).View;
+    const langGlyph = (LANGS.find((l) => l.id === lang) || LANGS[0]).glyph;
+    body = (
       <div className="app">
         <header className="top">
+          <button type="button" className="logo logo-sm" onClick={() => setView('landing')} aria-label={t(lang, 'navHome')}>
+            <Icon name="partly" size={40} />
+          </button>
           <button type="button" className="place-chip" onClick={() => setSettings(true)} aria-label={t(lang, 'place')}>
-            <Icon name="pin" size={20} /> <b>{loc.district}</b>
+            <Icon name="pin" size={18} /> <b>{loc.district}</b>
           </button>
           <div className="top-right">
             {!online ? <span className="net-off" title={t(lang, 'offline')}><Icon name="offline" size={22} /></span> : null}
-            <button type="button" className="lang-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'language')}>{langGlyph}</button>
-            <button type="button" className="icon-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'settings')}><Icon name="gear" size={24} /></button>
+            <button type="button" className="icon-btn lang-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'language')}>{langGlyph}</button>
+            <button type="button" className="icon-btn" onClick={() => setSettings(true)} aria-label={t(lang, 'settings')}><Icon name="gear" size={22} /></button>
           </div>
         </header>
         {!online ? <div className="offline-bar"><Icon name="offline" size={18} /> {t(lang, 'offline')}</div> : null}
@@ -97,13 +110,15 @@ export default function App() {
           {TABS.map((x) => (
             <button key={x.id} type="button" className={`tab ${tab === x.id ? 'is-on' : ''}`}
               aria-current={tab === x.id ? 'page' : undefined} onClick={() => setTab(x.id)}>
-              <Icon name={x.icon} size={28} />
+              <Icon name={x.icon} size={26} />
               <span>{t(lang, x.key)}</span>
             </button>
           ))}
         </nav>
         {settings ? <Settings onClose={() => setSettings(false)} /> : null}
       </div>
-    </AppCtx.Provider>
-  );
+    );
+  }
+
+  return <AppCtx.Provider value={ctx}>{body}</AppCtx.Provider>;
 }
