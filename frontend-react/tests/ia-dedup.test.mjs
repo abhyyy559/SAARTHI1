@@ -163,6 +163,8 @@ test('no P2P/offline page exists; QR relay lives in the Alerts view', () => {
   assert.match(list, /alertsCachedNote/, 'saved list is labelled as saved, never live');
   assert.match(list, /<DistrictMap/, 'Alerts view opens with the schematic warning map');
   assert.match(list, /openDistrictFirst/, 'map tap expands the district alert inline');
+  assert.match(list, /nearby_alerts/, 'Alerts view reads the nearby list (same-state context)');
+  assert.match(list, /alertsNearby/, 'nearby section headed honestly — never your verdict');
 
 // --- schematic warning map: SVG, no tile servers, honest about it -----------
 test('DistrictMap is offline-safe schematic, never tiles', () => {

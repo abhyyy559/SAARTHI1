@@ -105,6 +105,10 @@ function alertTime(a) {
 export default function AlertsList({ initialAlertId = null }) {
   const { lang, loc, syncTick, speak, demoMode } = useApp();
   const [alerts, setAlerts] = useState(null);
+  // Same-state-but-not-this-district alerts: context, never the verdict.
+  // Dropped silently until now — a page showing "all clear" while ten
+  // same-state warnings existed is exactly what "can't see any alerts" meant.
+  const [nearbyAlerts, setNearbyAlerts] = useState([]);
   const [unavailable, setUnavailable] = useState(false);
   const [openId, setOpenId] = useState(initialAlertId);
   const [tick, setTick] = useState(0);
@@ -124,6 +128,7 @@ export default function AlertsList({ initialAlertId = null }) {
     let alive = true;
     // Reset on location/mode change so stale alerts never flash as current.
     setAlerts(null);
+    setNearbyAlerts([]);
     setUnavailable(false);
     // Demo alerts live behind a DEMO_MODE-gated endpoint: in imd/hybrid the
     // backend 403s by design, so don't even ask — it only spams the console
@@ -191,6 +196,9 @@ export default function AlertsList({ initialAlertId = null }) {
       // alerts (WeatherAPI.com, GDACS — official=false) never render here.
       const merged = mergeAlerts(deduped, demo).filter(isOfficialSource);
       setAlerts(merged);
+      // Nearby = official chain only (same gate as the main list): state
+      // neighbours the user should know about, explicitly not their verdict.
+      setNearbyAlerts([...(w?.nearby_alerts || [])].filter(isOfficialSource));
       setStaleCache(false);
       // Snapshot the list on this phone so the QR sender + offline view keep
       // working with zero connectivity. Best-effort: never blocks render.
@@ -352,6 +360,20 @@ export default function AlertsList({ initialAlertId = null }) {
           </div>
           <div className="alerts-list" role="list">
             {renderRows(endedAlerts, 'ended')}
+          </div>
+        </>
+      )}
+      {/* Nearby: official warnings in your state that are NOT for your
+          district. Context for travel — never your verdict, never alarming
+          as your own. */}
+      {nearbyAlerts.length > 0 && (
+        <>
+          <div className="alert-sec-title">
+            <span className="kicker">{t(lang, 'alertsNearby')}</span>
+          </div>
+          <p className="sub">{t(lang, 'alertsNearbySub')}</p>
+          <div className="alerts-list" role="list">
+            {renderRows(nearbyAlerts, 'nearby')}
           </div>
         </>
       )}
