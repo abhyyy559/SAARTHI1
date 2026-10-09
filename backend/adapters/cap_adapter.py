@@ -264,17 +264,21 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
         seen: set[str] = set()
         failed = 0
         async with httpx.AsyncClient(timeout=12.0) as client:
-            for url in urls:
-                try:
-                    for a in await _fetch_feed(client, url):
-                        ident = a.get("identifier") or a.get("headline") or url
-                        if ident not in seen:
-                            seen.add(ident)
-                            alerts.append(a)
-                except Exception as exc:  # noqa: BLE001 - one bad feed never kills the others, but log it
-                    log.warning("cap feed failed (%s): %s: %s", url, type(exc).__name__, exc)
+            # Feeds are independent: fetch concurrently so latency is the
+            # slowest feed, not the sum. Order preserved per feed; dedup by
+            # identifier keeps the merged list identical to the serial version.
+            results = await asyncio.gather(
+                *(_fetch_feed(client, url) for url in urls), return_exceptions=True)
+            for url, res in zip(urls, results):
+                if isinstance(res, Exception):
+                    log.warning("cap feed failed (%s): %s: %s", url, type(res).__name__, res)
                     failed += 1
                     continue  # one bad feed never kills the others
+                for a in res:
+                    ident = a.get("identifier") or a.get("headline") or url
+                    if ident not in seen:
+                        seen.add(ident)
+                        alerts.append(a)
     except AdapterUnavailable:
         raise
     except Exception as exc:
