@@ -647,3 +647,50 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .delta.hot { color: #ff8a65; } .delta.cool { color: #7fd3f5; }
 
 .unit { font-family: var(--font-sans); font-size: 22px; color: var(--muted); }
+
+/* Sunlight mode: light, high-contrast screen for reading outdoors (Settings).
+   The landing keeps its dark video look. */
+html[data-theme='light'] body { background: #f4f1ea; color: #141820; color-scheme: light; }
+html[data-theme='light'] :is(.app, .setup, .share-page, .sheet-wrap) {
+  --bg: #f4f1ea; --text: #141820; --muted: #5b6573; --surface: #ffffff; --surface-2: #f3f0e8;
+  --line: rgba(20, 24, 32, 0.12); --pill-dark: #ffffff; --sign-in-text: #2e2e2e; --trust-text: #3d4450;
+  --trust-border: rgba(20, 24, 32, 0.28); --amber-bg: #fff2c2;
+  --glow: 0 1px 2px rgba(20, 24, 32, 0.1), 0 6px 18px rgba(20, 24, 32, 0.14);
+  --glow-strong: 0 2px 4px rgba(20, 24, 32, 0.14), 0 10px 26px rgba(20, 24, 32, 0.2);
+  color: var(--text);
+}
+html[data-theme='light'] :is(.speak, .chip, .role, .results button, .pick-lang, .pick-role, .search input,
+  .type-row input, .btn-ghost, .btn-light, .lang-pills button, .day-temp b, .alert-text) { color: var(--text); }
+html[data-theme='light'] :is(.speak, .chip, .btn-ghost, .fresh, .type-row input, .search) { border-color: var(--line); }
+html[data-theme='light'] :is(.btn-big, .mic, .send, .bubble.me, .speak.is-on, .lang-pills button.is-on, .pick-lang .glyph) {
+  background: #141820; color: #fff;
+}
+html[data-theme='light'] .mic-listening { background: var(--red); }
+html[data-theme='light'] .top { background: linear-gradient(var(--bg) 72%, rgba(244, 241, 234, 0)); }
+html[data-theme='light'] .composer { background: linear-gradient(rgba(244, 241, 234, 0), var(--bg) 20%); }
+html[data-theme='light'] .tabs { border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(20, 24, 32, 0.14); }
+html[data-theme='light'] .sheet { background: var(--bg); border-top-color: var(--line); }
+html[data-theme='light'] .skeleton { background: linear-gradient(90deg, #ece8df 0%, #f7f4ee 50%, #ece8df 100%); background-size: 200% 100%; }
+html[data-theme='light'] :is(.offline-bar, .warn-note, .shared-at, .fresh-saved) { color: #7a4a00; }
+html[data-theme='light'] .fresh-live { color: #1b8a4b; }
+html[data-theme='light'] .net-off { color: #b07800; }
+html[data-theme='light'] .day-rain { color: #1f5fbf; }
+html[data-theme='light'] .delta.wet { color: #1f5fbf; }
+html[data-theme='light'] .delta.dry { color: #b06a00; }
+html[data-theme='light'] .delta.hot { color: #c2410c; }
+html[data-theme='light'] .delta.cool { color: #0e7490; }
+html[data-theme='light'] .alert-none.tone-green { color: #1b8a4b; background: #e3f5ea; }
+html[data-theme='light'] .alert-none.tone-grey { color: var(--text); background: #eceff2; }
+html[data-theme='light'] .sos-call:not(.primary) { color: var(--text); }
+html[data-theme='light'] .bubble.is-offline { background: #fffbea; }
+html[data-theme='light'] .role.is-on, html[data-theme='light'] .pick-role.is-on, html[data-theme='light'] .pick-lang.is-on { border-color: #141820; }
+
+/* Saved places */
+.saved-places { display: flex; flex-wrap: wrap; gap: 8px; }
+.place-pill {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text, #fff);
+  font-weight: 600; font-size: 15px;
+}
+.place-pill.is-on { background: #fff; color: #000; border-color: #fff; }
+html[data-theme='light'] .place-pill.is-on { background: #141820; color: #fff; border-color: #141820; }

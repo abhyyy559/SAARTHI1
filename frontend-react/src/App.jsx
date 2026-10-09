@@ -6,7 +6,7 @@ import { stopSpeaking } from './lib/voice';
 import { Icon } from './components/Icons';
 import Setup, { LangPicker, PlacePicker, RoleGrid } from './components/Setup';
 import { SosButton } from './components/Sos';
-import { AutoSpeakToggle, PushToggle } from './components/Toggles';
+import { AutoSpeakToggle, PushToggle, ThemeToggle, applyTheme } from './components/Toggles';
 import { pushSync } from './lib/push';
 import Landing from './screens/Landing';
 import Today from './screens/Today';
@@ -39,6 +39,7 @@ function Settings({ onClose }) {
         <h3><Icon name="bell" size={18} /> {t(lang, 'tabAlerts')}</h3>
         <PushToggle />
         <AutoSpeakToggle />
+        <ThemeToggle />
         <button type="button" className="btn-big" onClick={onClose}><Icon name="check" size={24} /> {t(lang, 'done')}</button>
       </div>
     </div>
@@ -49,6 +50,8 @@ export default function App() {
   const [lang, setLangState] = useState(() => readPref('lang', 'en'));
   const [persona, setPersonaState] = useState(() => readPref('persona', null));
   const [loc, setLocState] = useState(() => readPref('loc', null));
+  // Up to 5 places (home village, where family works...), newest first.
+  const [places, setPlaces] = useState(() => readPref('places', null) || (readPref('loc', null) ? [readPref('loc', null)] : []));
   const [setupDone, setSetupDone] = useState(() => !!(readPref('loc') && readPref('persona')));
   const [tab, setTab] = useState(() => {
     const p = new URLSearchParams(window.location.search);
@@ -68,20 +71,29 @@ export default function App() {
 
   const setLang = useCallback((v) => { setLangState(v); writePref('lang', v); }, []);
   const setPersona = useCallback((v) => { setPersonaState(v); writePref('persona', v); }, []);
-  const setLoc = useCallback((v) => { setLocState(v); writePref('loc', v); }, []);
+  const setLoc = useCallback((v) => {
+    setLocState(v);
+    writePref('loc', v);
+    setPlaces((list) => {
+      const next = [v, ...list.filter((p) => !(p.district === v.district && p.state === v.state))].slice(0, 5);
+      writePref('places', next);
+      return next;
+    });
+  }, []);
   const askAbout = useCallback((q) => { setPending(q); setTab('ask'); }, []);
   const clearPending = useCallback(() => setPending(null), []);
 
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  useEffect(() => { applyTheme(readPref('theme', 'dark')); }, []);
   useEffect(() => { stopSpeaking(); window.scrollTo(0, 0); }, [tab, view]);
   useEffect(() => {
     if (loc) pushSync({ district: loc.district, language: lang, persona: persona || 'general' });
   }, [loc, lang, persona]);
 
   const ctx = useMemo(() => ({
-    lang, setLang, persona: persona || 'general', personaChosen: !!persona, setPersona, loc, setLoc,
+    lang, setLang, persona: persona || 'general', personaChosen: !!persona, setPersona, loc, setLoc, places,
     pendingQuestion, clearPending, askAbout,
-  }), [lang, setLang, persona, setPersona, loc, setLoc, pendingQuestion, clearPending, askAbout]);
+  }), [lang, setLang, persona, setPersona, loc, setLoc, places, pendingQuestion, clearPending, askAbout]);
 
   const ready = setupDone && !!loc;
   const enter = (nextTab) => {

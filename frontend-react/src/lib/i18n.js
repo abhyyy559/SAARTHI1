@@ -9,6 +9,8 @@ export const LANGS = [
 
 export const STR = {
   en: {
+    savedPlaces: 'My places',
+    sunlight: 'Sunlight mode: light screen, easier outdoors',
     seaTitle: 'Sea', seaWaves: 'Waves now', seaGusts: 'Wind gusts',
     seaNote: 'Open-Meteo marine model. Not an INCOIS or IMD sea warning.',
     seaSpeak: '{day}: waves up to {h} metres, wind gusts {g} kilometres per hour.',
@@ -86,6 +88,8 @@ export const STR = {
     done: 'Done', settings: 'Settings',
   },
   hi: {
+    savedPlaces: 'मेरी जगहें',
+    sunlight: 'धूप मोड: हल्की स्क्रीन, बाहर पढ़ना आसान',
     seaTitle: 'समुद्र', seaWaves: 'अभी लहरें', seaGusts: 'हवा के झोंके',
     seaNote: 'Open-Meteo समुद्री मॉडल। यह INCOIS या IMD की समुद्री चेतावनी नहीं है।',
     seaSpeak: '{day}: लहरें {h} मीटर तक, हवा के झोंके {g} किलोमीटर प्रति घंटा।',
@@ -163,6 +167,8 @@ export const STR = {
     done: 'ठीक है', settings: 'सेटिंग',
   },
   te: {
+    savedPlaces: 'నా ప్రదేశాలు',
+    sunlight: 'ఎండ మోడ్: లేత స్క్రీన్, బయట చదవడం సులభం',
     seaTitle: 'సముద్రం', seaWaves: 'ఇప్పుడు అలలు', seaGusts: 'గాలి వేగం',
     seaNote: 'Open-Meteo సముద్ర మోడల్. ఇది INCOIS లేదా IMD సముద్ర హెచ్చరిక కాదు.',
     seaSpeak: '{day}: అలలు {h} మీటర్ల వరకు, గాలి వేగం గంటకు {g} కిలోమీటర్లు.',

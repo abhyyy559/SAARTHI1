@@ -8,6 +8,11 @@ import { payloadFromHash } from './lib/share';
 const App = lazy(() => import('./App.jsx'));
 const SharePage = lazy(() => import('./screens/SharePage.jsx'));
 
+// Sunlight mode before first paint, so a light screen never flashes dark.
+try {
+  if (JSON.parse(localStorage.getItem('wgpt2.pref.theme')) === 'light') document.documentElement.dataset.theme = 'light';
+} catch { /* storage blocked */ }
+
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => { /* app still works online */ });

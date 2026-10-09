@@ -59,6 +59,27 @@ export function PushToggle() {
   );
 }
 
+export function applyTheme(theme) {
+  try { document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark'; } catch { /* no DOM */ }
+}
+
+// Sunlight mode: a light screen is easier to read outdoors in bright sun.
+export function ThemeToggle() {
+  const { lang } = useApp();
+  const [light, setLight] = useState(() => readPref('theme', 'dark') === 'light');
+  return (
+    <section className="toggle-card">
+      <div className="toggle-row">
+        <Icon name="sun" size={30} />
+        <div className="toggle-words"><b>{t(lang, 'sunlight')}</b></div>
+        <Switch on={light} label={t(lang, 'sunlight')} onChange={(v) => {
+          setLight(v); writePref('theme', v ? 'light' : 'dark'); applyTheme(v ? 'light' : 'dark');
+        }} />
+      </div>
+    </section>
+  );
+}
+
 // Read the safety card aloud when Today opens (helps people who do not read).
 export function AutoSpeakToggle() {
   const { lang } = useApp();

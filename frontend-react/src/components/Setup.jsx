@@ -23,7 +23,7 @@ export function LangPicker() {
 }
 
 export function PlacePicker({ onPicked }) {
-  const { lang, loc, setLoc } = useApp();
+  const { lang, loc, setLoc, places } = useApp();
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
@@ -55,8 +55,20 @@ export function PlacePicker({ onPicked }) {
     return () => clearTimeout(id);
   }, [q]);
 
+  const saved = (places || []).filter((p) => p && p.district);
   return (
     <div className="pick-place">
+      {saved.length > 1 || (saved.length === 1 && saved[0].district !== loc?.district) ? (
+        <div className="saved-places" aria-label={t(lang, 'savedPlaces')}>
+          {saved.map((p) => (
+            <button key={`${p.state}-${p.district}`} type="button"
+              className={`place-pill ${loc?.district === p.district && loc?.state === p.state ? 'is-on' : ''}`}
+              onClick={() => { setLoc(p); onPicked?.(); }}>
+              <Icon name={p.coastal ? 'waves' : 'pin'} size={18} /> {p.district}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <button type="button" className="btn-big" onClick={findMe} disabled={status === 'locating'}>
         <Icon name="pin" size={26} /> {status === 'locating' ? t(lang, 'locating') : t(lang, 'findMe')}
       </button>

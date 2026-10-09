@@ -253,10 +253,12 @@ async def _fetch_feed(client: "httpx.AsyncClient", url: str) -> list[dict[str, A
 # Callers get copies, because they annotate alerts per district.
 _SHARED_TTL_S = 180.0
 _shared: dict[tuple, tuple[float, list]] = {}
+_feed_cache: dict[str, tuple[float, list]] = {}
 
 
 def reset_shared_cache() -> None:
     _shared.clear()
+    _feed_cache.clear()
 
 
 async def fetch_alerts(urls: list[str] | None = None) -> tuple[list[dict[str, Any]], str]:
@@ -280,17 +282,31 @@ async def _fetch_alerts_uncached(urls: list[str]) -> tuple[list[dict[str, Any]],
         alerts: list[dict[str, Any]] = []
         seen: set[str] = set()
         failed = 0
+        import time as _time
+
+        async def one(client, url):
+            # Per-feed cache: a user in a new state fetches only that state's
+            # feed; the shared all-India/Telangana/Andhra reads stay warm.
+            hit = _feed_cache.get(url)
+            if hit and _time.monotonic() - hit[0] < _SHARED_TTL_S:
+                return [dict(a) for a in hit[1]]
+            feed = await _fetch_feed(client, url)
+            _feed_cache[url] = (_time.monotonic(), [dict(a) for a in feed])
+            return feed
+
         async with httpx.AsyncClient(timeout=12.0) as client:
-            for url in urls:
-                try:
-                    for a in await _fetch_feed(client, url):
-                        ident = a.get("identifier") or a.get("headline") or url
-                        if ident not in seen:
-                            seen.add(ident)
-                            alerts.append(a)
-                except Exception:
-                    failed += 1
-                    continue  # one bad feed never kills the others
+            # Feeds in parallel: sequentially a new state paid four feeds'
+            # round trips (plus their linked CAP files) back to back.
+            results = await asyncio.gather(*(one(client, u) for u in urls), return_exceptions=True)
+        for url, res in zip(urls, results):
+            if isinstance(res, BaseException):
+                failed += 1
+                continue  # one bad feed never kills the others
+            for a in res:
+                ident = a.get("identifier") or a.get("headline") or url
+                if ident not in seen:
+                    seen.add(ident)
+                    alerts.append(a)
     except AdapterUnavailable:
         raise
     except Exception as exc:
