@@ -6,6 +6,7 @@ import { stopSpeaking } from './lib/voice';
 import { Icon } from './components/Icons';
 import Setup, { LangPicker, PlacePicker, RoleGrid } from './components/Setup';
 import { SosButton } from './components/Sos';
+import Sources from './components/Sources';
 import { AutoSpeakToggle, PushToggle, ThemeToggle, applyTheme } from './components/Toggles';
 import { pushSync } from './lib/push';
 import Landing from './screens/Landing';
@@ -45,6 +46,8 @@ function Settings({ onClose }) {
         <PushToggle />
         <AutoSpeakToggle />
         <ThemeToggle />
+        <h3><Icon name="info" size={18} /> {t(lang, 'sourcesTitle')}</h3>
+        <Sources />
         <button type="button" className="btn-big" onClick={onClose}><Icon name="check" size={24} /> {t(lang, 'done')}</button>
       </div>
     </div>

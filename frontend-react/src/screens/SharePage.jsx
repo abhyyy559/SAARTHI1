@@ -122,6 +122,7 @@ export default function SharePage({ payload }) {
         </section>
       ) : null}
 
+      {v?.level === 'LOW' && activeAlerts(snap.alerts).length ? <h2 className="group"><Icon name="globe" size={18} /> {t(lang, 'elsewhere')}</h2> : null}
       {activeAlerts(snap.alerts).map((a) => (
         <article key={a.headline} className={`alert tone-${severityTone(a.severity)}`}>
           <div className="alert-top">

@@ -5,7 +5,7 @@ import { keys, useApp } from '../lib/appState';
 import { useOnline } from '../lib/useData';
 import { ago, t } from '../lib/i18n';
 import { speak, useMic } from '../lib/voice';
-import { toneOf } from '../lib/weather';
+import { sourceLabel, toneOf } from '../lib/weather';
 import { Icon } from '../components/Icons';
 import { SpeakButton } from '../components/ui';
 import { summaryText } from './Today';
@@ -95,11 +95,18 @@ export default function Ask() {
     let text = '';
     let verdict = null;
     let failed = false;
+    let sources = [];
+    let ruleBased = false;
     try {
       for await (const ev of api.chatStream({
         message: q, language: lang, user_type: persona, latitude: loc.lat, longitude: loc.lon,
       }, ctrl.signal)) {
-        if (ev.type === 'meta') verdict = ev.verdict || null;
+        if (ev.type === 'meta') {
+          verdict = ev.verdict || null;
+          sources = [...new Set([...(verdict?.checked_sources || []), ...(ev.evidence || []).map((e) => e.source)]
+            .map(sourceLabel).filter((s) => s && !/^(LIVE|CACHED|DEMO)$/.test(s)))];
+        }
+        if (ev.type === 'done') ruleBased = !!ev.structured_fallback;
         else if (ev.type === 'token') text += ev.text || '';
         else if (ev.type === 'final') text = ev.answer || text;
         if (ev.type !== 'done') {
@@ -116,7 +123,7 @@ export default function Ask() {
       text = off.text;
     }
     setMsgs((m) => {
-      const next = m.map((x) => (x.id === botId ? { ...x, text, verdict, pending: false, offline: failed } : x));
+      const next = m.map((x) => (x.id === botId ? { ...x, text, verdict, sources, ruleBased, pending: false, offline: failed } : x));
       persist(next);
       return next;
     });
@@ -158,6 +165,14 @@ export default function Ask() {
         ) : (
           <div key={m.id} className={`bubble bot ${m.verdict ? `edge-${toneOf(m.verdict)}` : ''} ${m.offline ? 'is-offline' : ''}`}>
             {m.pending && !m.text ? <div className="typing"><i /><i /><i /></div> : <Answer text={m.text} />}
+            {!m.pending && !m.offline && (m.sources?.length || m.ruleBased) ? (
+              <div className="grd">
+                <Icon name="shield-ok" size={18} />
+                {m.sources?.length ? <span>{t(lang, 'grdBased')}: {m.sources.join(' · ')}</span> : null}
+                {m.ruleBased ? <span className="grd-tag">{t(lang, 'grdTemplate')}</span> : null}
+                <span className="grd-rule">{t(lang, 'grdRule')}</span>
+              </div>
+            ) : null}
             {!m.pending ? (
               <div className="bubble-foot">
                 {m.offline ? <span className="fresh fresh-saved"><Icon name="offline" size={14} /></span> : null}

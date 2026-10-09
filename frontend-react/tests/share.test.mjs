@@ -55,3 +55,30 @@ test('garbage links are rejected, not half-rendered', async () => {
   await assert.rejects(() => decodeSnapshot('xabc'));
   assert.throws(() => readSnapshot({ v: 99 }));
 });
+
+test('hop count travels with the snapshot and is capped', async () => {
+  const { MAX_HOPS } = await import('../src/lib/share.js');
+  const once = readSnapshot(await decodeSnapshot(await encodeSnapshot(buildSnapshot({ ...input, hops: 2 }))));
+  assert.equal(once.hops, 2);
+  const capped = readSnapshot(await decodeSnapshot(await encodeSnapshot(buildSnapshot({ ...input, hops: 99 }))));
+  assert.equal(capped.hops, MAX_HOPS);
+});
+
+test('plain-text QR summary: short, in the reader\'s language, ends with 112', async () => {
+  const { textSummary } = await import('../src/lib/share.js');
+  const te = textSummary(input, 'te');
+  assert.ok(te.length <= 420, te.length);
+  assert.ok(te.startsWith('WeatherGPT · Visakhapatnam'));
+  assert.ok(te.includes('చాలా జాగ్రత్త'), 'verdict label in Telugu');
+  assert.ok(te.trim().endsWith('112'));
+  const en = textSummary({ ...input, verdict: { level: 'LOW' } }, 'en');
+  assert.ok(en.includes('No official alert for your district'));
+});
+
+test('text QR: duplicate alerts collapse, and state alerts are marked as elsewhere', async () => {
+  const { textSummary } = await import('../src/lib/share.js');
+  const dup = { severity: 'ORANGE', hazard: 'Lightning', expires: '2026-10-09T17:25:00+05:30' };
+  const txt = textSummary({ ...input, verdict: { level: 'LOW' }, alerts: [dup, { ...dup }] }, 'en');
+  assert.equal(txt.split('Lightning').length - 1, 1, txt);
+  assert.ok(txt.includes('Elsewhere in your state:'), txt);
+});

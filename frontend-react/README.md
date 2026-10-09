@@ -27,7 +27,18 @@ the links use the current origin, so a localhost build makes local-only codes).
 | Today (`screens/Today.jsx`) | Server-owned safety verdict (says which sources were checked), weather now, next 3 days, advice for the chosen role. |
 | Ask (`screens/Ask.jsx`) | Big mic (Sarvam STT, browser fallback), picture chips per role, streamed answers read aloud after a spoken question. |
 | Alerts (`screens/Alerts.jsx`) | Official alerts still in force, worst first; "Explain" asks the chatbot in the user's language. |
+| Map (`screens/MapScreen.jsx`, lazy) | Heatmaps: official alerts in force across India (all 36 SACHET state feeds), rain and heat tomorrow (Open-Meteo grid). Spoken summary with the nearest alert. |
+| SOS (`components/Sos.jsx`) | 112, 108, 1077, 1070 through the dialler (works offline) and "send my location" by SMS/share. |
+| Settings | Language, place (saved places), role, push alerts, speak on open, sunlight mode, data sources (`components/Sources.jsx`). |
 | Share (`screens/Share.jsx`) + `screens/SharePage.jsx` | A QR code whose link carries the snapshot after `#`. Any phone camera opens a light page that shows it with its time, plus the latest status if that phone is online. |
+
+## Phone to phone (P2P)
+
+- Link QR: the snapshot rides inside the link; any camera opens it.
+- Text QR: plain words any camera shows with no internet at all.
+- Receive: the in-app scanner (`components/Scanner.jsx`, jsQR, all on the
+  phone) saves another phone's code; "Pass it on" shows it again with one
+  more hop, up to 5 (`lib/relay.js`). Works with both phones offline.
 
 ## Offline
 

@@ -63,7 +63,13 @@ async def sources() -> dict:
         "source_mode": config.current_source_mode(),
         # Demo mode is removed entirely (single IMD-first mode, 2026-09-27).
         "demo_mode": False,
-        "sources": snapshot(),
+        # The AI is a source of wording, never of facts: listed so the panel
+        # shows whether answers are phrased by the model or the template.
+        "sources": snapshot() + [{
+            "name": "llm", "status": READY if config.LLM_API_KEY else "UNCONFIGURED",
+            "detail": f"Groq {config.LLM_MODEL}" if config.LLM_API_KEY else "LLM_API_KEY not set: rule-based answers",
+            "updated_at": "",
+        }],
         "needs_keys": {
             "DATAGOV_API_KEY": not bool(config.DATAGOV_API_KEY),
             "OWM_API_KEY": not bool(config.OWM_API_KEY),

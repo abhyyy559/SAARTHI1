@@ -7,7 +7,11 @@
 //
 // Pure module: runs in node tests (CompressionStream is global in node 18+).
 
+import { condText, fmtDateTime, t } from './i18n.js';
+
 const MAX_TEXT = { headline: 140, advisory: 260 };
+// Phone-to-phone relay: a snapshot can be passed on at most this many times.
+export const MAX_HOPS = 5;
 export const MAX_LINK = 1800; // keeps the QR at a version phone cameras read easily
 
 const clip = (s, n) => {
@@ -17,10 +21,11 @@ const clip = (s, n) => {
 const r1 = (n) => (n == null || Number.isNaN(Number(n)) ? null : Math.round(Number(n) * 10) / 10);
 
 // Build the compact snapshot from what the Today screen holds.
-export function buildSnapshot({ lang, persona, loc, savedAt, verdict, current, days, alerts, advisory }, maxAlerts = 3) {
+export function buildSnapshot({ lang, persona, loc, savedAt, verdict, current, days, alerts, advisory, hops }, maxAlerts = 3) {
   return {
     v: 1,
     t: savedAt || Date.now(),
+    h: Math.min(MAX_HOPS, Number(hops) || 0),
     l: lang,
     p: persona || 'general',
     loc: [loc?.district || '', loc?.state || '', r1(loc?.lat), r1(loc?.lon)],
@@ -48,7 +53,7 @@ export function readSnapshot(s) {
     temperature: s.w[0], condition: s.w[1], rainfall: s.w[2], wind_speed: s.w[3], humidity: s.w[4], source: s.w[5],
   };
   return {
-    savedAt: s.t, lang: s.l || 'en', persona: s.p || 'general',
+    savedAt: s.t, lang: s.l || 'en', persona: s.p || 'general', hops: Number(s.h) || 0,
     loc: { district, state, lat, lon },
     verdict: vd, current: w,
     days: (s.f || []).map(([date, condition, rainfall, max_temperature, min_temperature]) =>
@@ -114,4 +119,38 @@ export async function makeShareLink(base, input) {
 export function payloadFromHash(hash) {
   const m = /^#s=([A-Za-z0-9_-]+)$/.exec(hash || '');
   return m ? m[1] : null;
+}
+
+// Plain-text version for a QR any camera can read with no internet at all:
+// the phone shows the words directly, no page to load. Kept short so the
+// code stays easy to scan.
+export function textSummary(input, lang = 'en', maxLen = 420) {
+  const L = (k, v) => t(lang, k, v);
+  const v = input.verdict || {};
+  const c = input.current || {};
+  const tm = (input.days || [])[1];
+  const lines = [
+    `WeatherGPT · ${input.loc?.district || ''}${input.loc?.state ? `, ${input.loc.state}` : ''}`,
+    fmtDateTime(input.savedAt, lang),
+    `${L(`lv${v.level || 'UNKNOWN'}`)}${v.hazard && v.level !== 'LOW' ? `: ${v.hazard}` : ''}`,
+  ];
+  if (c.temperature != null) lines.push(`${L('now')} ${Math.round(c.temperature)}°C ${condText(c.condition, lang)}`);
+  if (tm && tm.rainfall != null) lines.push(`${L('tomorrow')} ${L('rain')} ${Math.round(tm.rainfall * 10) / 10} mm`);
+  // Same wording twice is one alert; and when the district has none, the
+  // listed alerts are elsewhere in the state and must say so.
+  const seen = new Set();
+  const alerts = (input.alerts || []).filter((a) => {
+    const k = `${a.severity}|${a.hazard}|${a.expires}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 2);
+  if (alerts.length && v.level === 'LOW') lines.push(`${L('elsewhere')}:`);
+  for (const a of alerts) {
+    lines.push(`${a.severity || '?'} ${a.hazard || ''}${a.expires ? ` · ${L('until', { t: fmtDateTime(a.expires, lang) })}` : ''}`);
+  }
+  lines.push('112');
+  let out = lines.filter(Boolean).join('\n');
+  if (out.length > maxLen) out = `${out.slice(0, maxLen - 1)}…`;
+  return out;
 }
