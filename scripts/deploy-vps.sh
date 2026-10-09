@@ -26,6 +26,14 @@
 # imd reporting DEMO passes only when IMD_ADAPTER=demo (fixtures by design).
 set -u
 
+# Refuse to run anywhere but a Linux server: on a Windows laptop (Git Bash)
+# every step fails confusingly (no docker daemon, no ufw, no sudo).
+if [ "$(uname -s)" != "Linux" ]; then
+  echo "[ FAIL ] Run this ON the Ubuntu VPS over SSH, not on your laptop."
+  echo "         ssh <user>@43.225.25.133, then the same command there."
+  exit 1
+fi
+
 APP_DIR="${APP_DIR:-$HOME/saarthi}"
 APP_PORT="${WGPT_PORT:-8000}"
 REPO_URL="${REPO_URL:-}"
