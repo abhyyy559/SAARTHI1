@@ -44,15 +44,21 @@ SYSTEM_RULES = (
     # NOTE: the server does NOT append an advisory block to chat answers.
     # Chat answers are facts-only; advisory guidance travels separately in the
     # 'advisory' field of the /api/chat response (the app's Advisory tab).
-    "LENGTH: at most 120 words total. This is a hard limit, not a target.\n"
+    "LENGTH: at most 180 words total. This is a hard limit, not a target.\n"
     "Open with the safety answer itself - the hazard or the yes/no - in one short\n"
     "sentence of at most 20 words. Never open with 'Great question', 'Certainly',\n"
     "a restatement of what was asked, or a heading.\n"
+    "Structure the facts day-wise when forecast days exist: what is happening\n"
+    "now (observed temp, humidity, wind), then today, then tomorrow — each with\n"
+    "its rain chance (mm + probability when present) and temperature range.\n"
+    "Name the source of each fact (which source supplied it) and the warning\n"
+    "status with validity where present. End with the risk line for the user's\n"
+    "occupation.\n"
     "DO NOT give practical actions, precautions, or 'what you can do' advice: that\n"
     "is delivered separately as the advisory and would be duplicated. State facts\n"
     "and the safety picture only.\n"
     "DO NOT repeat yourself. Say each fact once. No closing summary.\n"
-    "Use at most 2 short sections, and at most 3 list items in total.\n"
+    "Use at most 3 short sections, and at most 3 list items in total.\n"
     "If the user's occupation needs the sea or coast but VERIFIED BACKEND DATA shows\n"
     "their district is not coastal, say so plainly before any other advice.\n"
     "Format the answer for a simple screen reader: short paragraphs separated by blank\n"
@@ -270,9 +276,10 @@ class LLMService:
                             {"role": "user", "content": user},
                         ],
                         "temperature": 0.2,
-                        # ~240 tokens is a comfortable ceiling for a 120-word
-                        # answer plus headings; 400 invited padding.
-                        "max_tokens": 240,
+                        # ~500 tokens comfortably fits a 180-word day-wise
+                        # answer plus headings; the model stops at the word
+                        # limit, the token cap only prevents runaway output.
+                        "max_tokens": 500,
                     },
                 )
                 resp.raise_for_status()
@@ -329,7 +336,7 @@ class LLMService:
                 {"role": "user", "content": user},
             ],
             "temperature": 0.2,
-            "max_tokens": 240,
+            "max_tokens": 500,
             "stream": True,
         }
         sent_any = False
