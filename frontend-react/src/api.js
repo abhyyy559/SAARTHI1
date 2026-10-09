@@ -3,7 +3,7 @@
 // kept as a legacy alias) at build time to point at a separately-hosted
 // backend (e.g. https://saarthi-api.onrender.com). Default '' = same origin,
 // which works both when the Vite dev proxy forwards /api to the FastAPI
-// backend (127.0.0.1:8000) and when the built dist is served by FastAPI itself.
+// backend (127.0.0.1:8003, see vite.config.js) and when the built dist is served by FastAPI itself.
 const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
 const full = (p) => (p.startsWith('/api') ? `${BASE}${p}` : p);
 
