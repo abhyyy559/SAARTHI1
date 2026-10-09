@@ -409,6 +409,8 @@ class IMDService:
         missing is a certain 401, so fail fast as UNCONFIGURED with a message
         naming the missing piece instead of spending the round trip.
         """
+        if not config.IMD_ENABLED:
+            raise AdapterUnavailable("IMD disabled (IMD_ENABLED=false) — using other sources")
         if not config.IMD_API_KEY:
             _report_failure(path, AdapterUnavailable("no IMD_API_KEY"))
             raise AdapterUnavailable("IMD live unreachable: no IMD_API_KEY")

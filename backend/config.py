@@ -19,6 +19,11 @@ def _get(key: str, default: str = "") -> str:
 
 
 IMD_API_KEY = _get("IMD_API_KEY", "")
+# Kill-switch: IMD is credential + IP gated and stalls every page for seconds
+# while its gateway times out. Default OFF — hybrid serves live Open-Meteo
+# weather + SACHET/CAP alerts without it. Set IMD_ENABLED=true only on a host
+# whose IP is allowlisted with valid IMD credentials.
+IMD_ENABLED = _get("IMD_ENABLED", "false").lower() in ("1", "true", "yes")
 # Portal-issued JWT for api.imd.gov.in (see the auth note below). The hex API
 # key alone can never pass the gateway — both values are required for IMD.
 # Paste a fresh access_token here, or set IMD_API_EMAIL/PASSWORD below and the
