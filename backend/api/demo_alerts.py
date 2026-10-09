@@ -33,8 +33,11 @@ from ..services import (alert_watcher, demo_alert_store, delivery_service,
 from ..services.alert_service import normalise_action
 from ..utils.time import iso_now, now_ist
 from datetime import timedelta
+import logging
 
 router = APIRouter(prefix="/api/demo", tags=["demo"])
+
+log = logging.getLogger("weathergpt.demo_alerts")
 
 ACTIONS = ("pre-alert", "activate", "update", "extend", "cancel", "end")
 
@@ -63,7 +66,8 @@ def _notify_alert(alert: dict) -> dict:
             targets = [s.get("endpoint") for s in push_service.subscriptions(district)
                        if s.get("endpoint")]
             delivery_service.record_pending(str(alert.get("id") or ""), targets)
-        except Exception:  # noqa: BLE001 - bookkeeping must not stop alerts
+        except Exception as exc:  # noqa: BLE001 - bookkeeping must not stop alerts
+            log.warning("demo pending-ledger bookkeeping failed: %s: %s", type(exc).__name__, exc)
             pass
         return {"error": f"{type(exc).__name__}: {exc}"}
     try:
@@ -74,7 +78,8 @@ def _notify_alert(alert: dict) -> dict:
             push={k: result.get(k) for k in ("targeted", "delivered", "failed", "pruned")},
         )
         delivery_service.record_issue(str(alert.get("id") or ""), result.get("results") or [])
-    except Exception:  # noqa: BLE001 - bookkeeping must not stop alerts
+    except Exception as exc:  # noqa: BLE001 - bookkeeping must not stop alerts
+        log.warning("demo notify bookkeeping failed: %s: %s", type(exc).__name__, exc)
         pass
     # Mark this (alert, state) as already-notified so the background loop does
     # not double-send what the button just sent.
@@ -84,7 +89,8 @@ def _notify_alert(alert: dict) -> dict:
         seen = st.setdefault("_demo_notified", {})
         seen[f"{alert.get('id')}:{state}"] = payload.get("body", "")
         _save_state(st)
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        log.warning("demo watcher seen-mark failed: %s: %s", type(exc).__name__, exc)
         pass
     return {"notified": kind, "push": {k: result.get(k) for k in ("targeted", "delivered", "failed")}}
 
