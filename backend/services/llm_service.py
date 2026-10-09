@@ -73,6 +73,38 @@ LANG_DIRECTIVE = {
     "te": "పూర్తి సమాధానం సరళ తెలుగులో ఇవ్వండి. ఇతర భాషలు వాడకండి.",
 }
 
+# Repeated at the END of the user turn: after a long English system prompt and
+# English evidence JSON, gpt-oss often ignored the system directive and answered
+# a Telugu question in English. The last instruction it reads wins more often.
+LANG_REMINDER = {
+    "en": "Write the whole answer in English.",
+    "hi": "Write the whole answer in Hindi, in Devanagari script (हिंदी). Not English.",
+    "te": "Write the whole answer in Telugu, in Telugu script (తెలుగు). Not English.",
+}
+
+# Script ranges for the post-check in api/chat.py (_in_language).
+SCRIPT_RANGES = {"hi": (0x0900, 0x097F), "te": (0x0C00, 0x0C7F)}
+
+
+def in_language(text: str, language: str, min_share: float = 0.5) -> bool:
+    """True when most letters of `text` are in the script of `language`.
+
+    English and unknown languages always pass. Digits, units and source names
+    (Open-Meteo, NDMA, °C) are Latin in every language, so the bar is a
+    majority of letters, not all of them.
+    """
+    rng = SCRIPT_RANGES.get(language)
+    if not rng:
+        return True
+    # Indic vowel signs are combining marks, not "letters" to str.isalpha(),
+    # so script membership counts on its own.
+    native = sum(1 for c in text if rng[0] <= ord(c) <= rng[1])
+    latin = sum(1 for c in text if c.isascii() and c.isalpha())
+    if native + latin < 8:
+        return True
+    return native / (native + latin) >= min_share
+
+
 # Strip <think>...</think> reasoning blocks (qwen/gpt-oss emit them).
 _LT = chr(60)  # "<"
 _THINK = re.compile(_LT + "think" + chr(62) + ".*?" + _LT + "/think" + chr(62), re.S)
@@ -398,7 +430,8 @@ class LLMService:
             "VERIFIED BACKEND DATA (the only source of facts):\n"
             f"{json.dumps(evidence, ensure_ascii=False, default=str)}\n\n"
             f"USER QUESTION: {question}\n"
-            "Answer from the data above. If a fact is missing, say it is not available."
+            "Answer from the data above. If a fact is missing, say it is not available.\n"
+            f"{LANG_REMINDER.get(language, '')}"
         )
         try:
             async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
@@ -460,7 +493,8 @@ class LLMService:
             "VERIFIED BACKEND DATA (the only source of facts):\n"
             f"{json.dumps(evidence, ensure_ascii=False, default=str)}\n\n"
             f"USER QUESTION: {question}\n"
-            "Answer from the data above. If a fact is missing, say it is not available."
+            "Answer from the data above. If a fact is missing, say it is not available.\n"
+            f"{LANG_REMINDER.get(language, '')}"
         )
         payload = {
             "model": config.LLM_MODEL,

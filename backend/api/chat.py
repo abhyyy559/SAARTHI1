@@ -19,7 +19,7 @@ from ..rules.weather_rules import WeatherRules
 from ..services.advisory_service import advisory_for
 from ..services.alert_service import gather_alerts
 from ..services.imd_service import IMDService
-from ..services.llm_service import LLMService, build_evidence_package, _template_answer
+from ..services.llm_service import LLMService, build_evidence_package, in_language, _template_answer
 from ..services.location_service import LocationService
 from ..services.response_validator import validate as validate_answer
 from ..services.validation_service import ValidationService
@@ -507,6 +507,10 @@ async def _prepare(req: ChatRequest) -> dict:
     }
 
 
+# CJK ideographs, kana, hangul: never part of an EN/HI/TE answer.
+_FOREIGN_SCRIPT = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]")
+
+
 def _finalize_answer(ctx: dict, raw: str, fallback: bool = False) -> tuple[str, bool]:
     """Post-LLM validation (§10, §43) + rain-lead guarantee on the full text.
 
@@ -517,6 +521,17 @@ def _finalize_answer(ctx: dict, raw: str, fallback: bool = False) -> tuple[str, 
     fallback = fallback or bool(findings)
     if findings:
         ctx["evidence"]["validation_findings"] = findings
+
+    # gpt-oss occasionally leaks a stray CJK token ("Light Drizzle予"). No
+    # supported language uses those scripts, and TTS would try to read it.
+    answer = _FOREIGN_SCRIPT.sub("", answer)
+
+    # A Telugu or Hindi reader must not get an English answer: the model
+    # sometimes ignores the language directive. The grounded template speaks
+    # every supported language, so it replaces an answer in the wrong script.
+    if not in_language(answer, ctx["language"]):
+        answer = _template_answer(ctx["evidence"], ctx["message"], ctx["language"])
+        fallback = True
 
     # Prepend a clear rain answer for "rain tomorrow" queries (T2.1 S2.1.4).
     # The template answer already does this; the LLM may phrase it differently or

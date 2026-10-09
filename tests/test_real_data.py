@@ -107,3 +107,86 @@ def test_sea_permission_question_never_opens_with_yes_or_no():
     assert chat._drop_permission_yesno("Is it safe to go fishing?", "No warning is active.") == "No warning is active."
     # A rain question keeps its yes/no: that one IS a weather fact.
     assert chat._drop_permission_yesno("Will it rain at sea?", "Yes, 4 mm.") == "Yes, 4 mm."
+
+
+def test_nearby_count_ignores_expired_alerts():
+    from datetime import datetime, timedelta, timezone
+    from backend.services.verdict_service import build_verdict
+    iso = lambda h: (datetime.now(timezone.utc) + timedelta(hours=h)).isoformat()
+    nearby = [{"severity": "ORANGE", "expires": iso(-5)}, {"severity": "ORANGE", "expires": iso(-1)},
+              {"severity": "YELLOW", "expires": iso(3)}, {"severity": "YELLOW"}]
+    v = build_verdict(nearby_alerts=nearby, warning_service_available=True)
+    assert v["nearby_count"] == 2, v
+    assert "2 official alert(s) elsewhere" in v["detail"], v
+
+
+def test_answer_in_wrong_script_is_detected():
+    from backend.services.llm_service import in_language
+    assert in_language("Visakhapatnam లో ప్రస్తుతం 33°C, వర్షం లేదు.", "te")
+    assert in_language("Hyderabad में अभी 33°C है, बारिश नहीं।", "hi")
+    assert not in_language("No active official warning; risk level LOW.", "te")
+    assert not in_language("No active official warning; risk level LOW.", "hi")
+    assert in_language("Anything at all", "en")
+    assert in_language("NDMA 33°C", "te"), "too few letters to judge: never replace"
+
+
+def test_english_answer_to_telugu_question_is_replaced(monkeypatch):
+    monkeypatch.setattr(config, "DEMO_MODE", False)
+    monkeypatch.setattr(chat, "_fetch_current_safe", AsyncMock(return_value=(
+        {"source": "Open-Meteo", "temperature": 33.4, "condition": "Mostly Clear",
+         "observed_at": "2026-10-09T12:00:00+05:30"}, "LIVE")))
+    monkeypatch.setattr(chat, "_fetch_forecast_safe", AsyncMock(return_value=(None, "UNAVAILABLE")))
+    monkeypatch.setattr(chat, "_fetch_warning_safe", AsyncMock(return_value=(
+        None, {"verified": False, "severity": "GREEN", "hazard": None, "source": "IMD",
+               "warning_service": "unavailable"}, False)))
+    monkeypatch.setattr(chat, "gather_alerts", AsyncMock(return_value=_gathered(True)))
+    monkeypatch.setattr(chat.LLMService, "generate", AsyncMock(return_value=(
+        "No active official warning; risk level LOW. Visakhapatnam district is coastal.", False)))
+    with TestClient(app) as client:
+        body = client.post("/api/v1/chat", json={
+            "message": "ఈ రోజు సముద్రంలోకి వెళ్ళవచ్చా?", "language": "te", "user_type": "fisherman",
+            "latitude": 17.6868, "longitude": 83.2185}).json()
+    from backend.services.llm_service import in_language
+    assert in_language(body["answer"], "te"), body["answer"]
+
+
+def test_stray_cjk_tokens_are_removed():
+    assert chat._FOREIGN_SCRIPT.sub("", "రేపు **Light Drizzle**予, వర్షం 0.6 mm") == "రేపు **Light Drizzle**, వర్షం 0.6 mm"
+    assert chat._FOREIGN_SCRIPT.sub("", "बारिश 4 mm, 33°C") == "बारिश 4 mm, 33°C"
+
+
+def test_rejected_imd_key_is_skipped_until_cooldown(monkeypatch):
+    """A key IMD has not whitelisted yet must cost one round trip, not one per request."""
+    import asyncio
+    import httpx
+    from backend.adapters import registry
+    from backend.services import imd_service
+    # Keep this test's IMD OFFLINE report out of the shared source registry.
+    monkeypatch.setattr(registry, "_STATUSES",
+                        {n: registry.SourceStatus(name=n) for n in registry._KNOWN_SOURCES})
+    monkeypatch.setattr(config, "IMD_API_KEY", "k")
+    calls = []
+
+    class Fake:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def get(self, url, params=None, headers=None):
+            calls.append(url)
+            return httpx.Response(400, json={"status": False, "message": "Unauthorised Access"},
+                                  request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(imd_service.httpx, "AsyncClient", Fake)
+    svc = imd_service.IMDService(adapter="live")
+    for _ in range(5):
+        try:
+            asyncio.run(svc.get_district_warning("Hyderabad"))
+        except AdapterUnavailable:
+            pass
+    assert len(calls) == 1, calls
+    imd_service.reset_breaker()
+    try:
+        asyncio.run(svc.get_district_warning("Hyderabad"))
+    except AdapterUnavailable:
+        pass
+    assert len(calls) == 2, "after the cooldown IMD is tried again"

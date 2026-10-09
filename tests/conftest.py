@@ -70,6 +70,11 @@ def _clear_module_caches():
             _a._gather_cache.clear()
         except Exception:
             pass
+        try:
+            from backend.services import imd_service as _imd
+            _imd.reset_breaker()  # one test's rejected IMD must not skip IMD in the next
+        except Exception:
+            pass
 
     _clear()
     yield

@@ -1,5 +1,6 @@
 """IMD adapter — the ONLY place that talks to IMD. Everything else uses normalized models."""
 import json
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -13,6 +14,22 @@ from ..utils.time import IST, now_ist
 from . import district_demo
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent.parent / "demo" / "fixtures"
+
+# Circuit breaker. IMD is tried first for every weather and warning request.
+# Until IMD activates a key's IP whitelist it answers 400/401 "Unauthorised
+# Access", and paying that round trip on every request (2-4 s, and over 30 s
+# per request under parallel load on a cold start) made the whole app slow.
+# After a rejection IMD is skipped for a while, then tried again, so a key
+# that starts working is picked up by itself within the cooldown.
+_REJECT_COOLDOWN_S = 600.0
+_ERROR_COOLDOWN_S = 60.0
+_skip_until = 0.0
+_skip_reason = ""
+
+
+def reset_breaker() -> None:
+    global _skip_until, _skip_reason
+    _skip_until, _skip_reason = 0.0, ""
 
 
 def _report_failure(what: str, exc: Exception) -> None:
@@ -29,7 +46,10 @@ def _report_failure(what: str, exc: Exception) -> None:
         report("imd", UNCONFIGURED,
                "no IMD_API_KEY — IMD is credential-gated (key is IP-bound); set IMD_API_KEY to enable live IMD")
     else:
-        report("imd", OFFLINE, f"live {what} failed: {type(exc).__name__}")
+        # A breaker skip carries its reason ("HTTP 400: key not accepted (IP
+        # whitelist pending?)"); a bare class name told nobody what to fix.
+        why = str(exc) if isinstance(exc, AdapterUnavailable) else type(exc).__name__
+        report("imd", OFFLINE, f"live {what} failed: {why}"[:200])
 
 
 def _load_fixture(name: str) -> dict:
@@ -76,12 +96,23 @@ class IMDService:
             # reporting UNCONFIGURED. Skip the network entirely — ~0ms.
             _report_failure(path, RuntimeError("no IMD_API_KEY"))
             raise AdapterUnavailable("IMD unconfigured: no IMD_API_KEY")
+        global _skip_until, _skip_reason
+        now = time.monotonic()
+        if now < _skip_until:
+            raise AdapterUnavailable(f"IMD skipped for {int(_skip_until - now)}s: {_skip_reason}")
         headers = {"Authorization": f"Bearer {config.IMD_API_KEY}"}
         url = f"{config.IMD_BASE_URL}/{path}"
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url, params=params, headers=headers)
-            resp.raise_for_status()
-            return resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                resp = await client.get(url, params=params, headers=headers)
+        except httpx.HTTPError as exc:  # timeout, DNS, refused
+            _skip_until, _skip_reason = time.monotonic() + _ERROR_COOLDOWN_S, type(exc).__name__
+            raise
+        if resp.status_code in (400, 401, 403):
+            _skip_until = time.monotonic() + _REJECT_COOLDOWN_S
+            _skip_reason = f"HTTP {resp.status_code}: key not accepted (IP whitelist pending?)"
+        resp.raise_for_status()
+        return resp.json()
 
     async def get_current_weather(self, latitude: float, longitude: float,
                                 district: str | None = None) -> WeatherObservation:

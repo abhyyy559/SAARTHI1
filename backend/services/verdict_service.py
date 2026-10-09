@@ -156,7 +156,10 @@ def build_verdict(
     """
     cap_alerts = list(cap_alerts or [])
     nearby_alerts = list(nearby_alerts or [])
-    nearby_count = len(nearby_alerts)
+    # Only alerts still in force. SACHET serves a backlog of lapsed bulletins,
+    # and counting them made advisories say "10 official alerts are active in
+    # your state" when most had expired hours earlier.
+    nearby_count = sum(1 for a in nearby_alerts if not _is_expired(a))
     verified = verified or {}
 
     # 1. A warning that passed source/freshness/location/validity/completeness.
