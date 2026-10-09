@@ -11,22 +11,33 @@ import { api } from './api';
 const LOCALE = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' };
 const TTS_CACHE = 'wgpt-tts-v1';
 
+// Units said in the listener's language: a Telugu sentence with "degrees"
+// and "millimetre" in English was hard to follow for the people it is for.
+const UNITS = {
+  en: { deg: ' degrees', mm: ' millimetres', kmh: ' kilometres per hour' },
+  hi: { deg: ' डिग्री', mm: ' मिलीमीटर', kmh: ' किलोमीटर प्रति घंटा' },
+  te: { deg: ' డిగ్రీలు', mm: ' మిల్లీమీటర్లు', kmh: ' కిలోమీటర్లు గంటకు' },
+};
+
 // Markdown and symbols read badly aloud.
-export function speakable(text) {
+export function speakable(text, lang = 'en') {
+  const u = UNITS[lang] || UNITS.en;
   return String(text || '')
     .replace(/[*_#`>|]/g, ' ')
     .replace(/^\s*[-•]\s+/gm, '')
     .replace(/\s*\n+\s*/g, '. ')
-    .replace(/°C/g, ' degrees')
-    .replace(/(\d)\s*mm\b/g, '$1 millimetre')
+    .replace(/\s*°\s*C\b/g, u.deg)
+    .replace(/°/g, u.deg)
+    .replace(/(\d)\s*(?:mm|मिमी|మిమీ)(?![\p{L}])/gu, `$1${u.mm}`)
+    .replace(/(\d)\s*(?:km\/h|किमी\/घंटा|కిమీ\/గం)/g, `$1${u.kmh}`)
     .replace(/\s{2,}/g, ' ')
     .replace(/(\.\s*){2,}/g, '. ')
     .trim();
 }
 
 // Short first chunk so sound starts fast; then sentence-sized chunks.
-export function chunks(text, first = 120, rest = 300) {
-  const sentences = speakable(text).split(/(?<=[.!?।])\s+/).filter(Boolean);
+export function chunks(text, first = 120, rest = 300, lang = 'en') {
+  const sentences = speakable(text, lang).split(/(?<=[.!?।])\s+/).filter(Boolean);
   const out = [];
   let cur = '';
   for (const s of sentences) {
@@ -130,7 +141,7 @@ export async function speak(text, lang, id = 'default') {
   const myRun = ++run;
   speakingId = id;
   emit();
-  const parts = chunks(text);
+  const parts = chunks(text, 120, 300, lang);
   // Fetch the next clip while the current one plays.
   let next = parts.length ? getClip(parts[0], lang) : null;
   for (let i = 0; i < parts.length && myRun === run; i++) {
@@ -147,7 +158,7 @@ export async function speak(text, lang, id = 'default') {
 // so it plays instantly and is available offline later.
 export function warmSpeech(text, lang) {
   if (!navigator.onLine || !text) return;
-  chunks(text).slice(0, 2).forEach((c) => { getClip(c, lang); });
+  chunks(text, 120, 300, lang).slice(0, 2).forEach((c) => { getClip(c, lang); });
 }
 
 // ---- mic -----------------------------------------------------------------

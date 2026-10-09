@@ -57,6 +57,8 @@ const PICTO = {
   truck: <><rect x="4" y="14" width="24" height="18" rx="2" fill="#F2B233" stroke="#A8761A" strokeWidth="2" /><path d="M28 19h8l6 7v6H28z" fill="#3E7CC9" stroke="#2A5A96" strokeWidth="2" strokeLinejoin="round" /><circle cx="13" cy="35" r="4.5" fill="#333" stroke="#fff" strokeWidth="2" /><circle cx="35" cy="35" r="4.5" fill="#333" stroke="#fff" strokeWidth="2" /></>,
   family: <><circle cx="17" cy="14" r="6" fill="#E59866" /><path d="M7 40c0-9 4.5-15 10-15s10 6 10 15z" fill="#3E7CC9" /><circle cx="33" cy="18" r="5" fill="#C9805A" /><path d="M25 40c0-7 3.5-12 8-12s8 5 8 12z" fill="#D9603B" /></>,
   heart: <path d="M24 41S7 31 7 18.5A8.5 8.5 0 0 1 24 13a8.5 8.5 0 0 1 17 5.5C41 31 24 41 24 41z" fill="#E5533D" />,
+  // Outdoor worker: hard hat over a face, sun behind.
+  worker: <>{rays(37, 11, 6, 9, 2.5)}<circle cx="37" cy="11" r="4" fill={SUN} /><circle cx="22" cy="22" r="7" fill="#E59866" /><path d="M12 19a10 10 0 0 1 20 0z" fill="#F2B233" stroke="#A8761A" strokeWidth="2" strokeLinejoin="round" /><path d="M10 19h24" stroke="#A8761A" strokeWidth="3" strokeLinecap="round" /><path d="M9 42c0-8 6-12 13-12s13 4 13 12z" fill="#F76B15" /><path d="M16 34l3 8M28 34l-3 8" stroke="#FFE08A" strokeWidth="2.5" strokeLinecap="round" /></>,
 };
 
 const LINE = {

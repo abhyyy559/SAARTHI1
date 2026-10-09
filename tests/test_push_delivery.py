@@ -14,6 +14,7 @@ import asyncio
 import pytest
 from fastapi.testclient import TestClient
 
+from backend import config
 from backend.services import alert_watcher, push_service
 from backend.services import db
 from backend.services.store_bridge import run
@@ -104,8 +105,9 @@ def test_push_test_endpoint_broadcasts_to_district(client, monkeypatch):
         return True, "delivered"
 
     monkeypatch.setattr(push_service, "send_one", fake_send_one)
+    monkeypatch.setattr(config, "PUSH_ADMIN_TOKEN", "op-token")
 
-    r = client.post("/api/push/test", json={"district": DISTRICT})
+    r = client.post("/api/push/test", json={"district": DISTRICT}, headers={"X-Admin-Token": "op-token"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["status"] == "sent"
@@ -127,8 +129,10 @@ def test_push_test_endpoint_with_alert_id_deep_links(client, monkeypatch):
         return True, "delivered"
 
     monkeypatch.setattr(push_service, "send_one", fake_send_one)
+    monkeypatch.setattr(config, "PUSH_ADMIN_TOKEN", "op-token")
+    admin = {"X-Admin-Token": "op-token"}
 
-    r = client.post("/api/push/test", json={"district": DISTRICT, "alert_id": "demo-123"})
+    r = client.post("/api/push/test", json={"district": DISTRICT, "alert_id": "demo-123"}, headers=admin)
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "sent"
     assert sent[0]["alert_id"] == "demo-123"
@@ -136,7 +140,7 @@ def test_push_test_endpoint_with_alert_id_deep_links(client, monkeypatch):
 
     # Without alert_id: no alert_id key expectations, list-level deep link.
     sent.clear()
-    r = client.post("/api/push/test", json={"district": DISTRICT})
+    r = client.post("/api/push/test", json={"district": DISTRICT}, headers=admin)
     assert r.status_code == 200, r.text
     assert "alert_id" not in sent[0]
     assert sent[0]["url"] == "/?view=alerts"
@@ -180,3 +184,46 @@ def test_subscribe_validates_input(client):
     assert body["status"] == "subscribed"
     assert body["endpoint"] == SUB["endpoint"]
     assert body["district"] == DISTRICT
+
+
+def test_district_test_push_needs_the_admin_token(client, monkeypatch):
+    """Without the operator token nobody can make every phone in a district
+    ring; a phone can still test itself by its own endpoint."""
+    push_service.subscribe(dict(SUB), district=DISTRICT)
+    sent = []
+    monkeypatch.setattr(push_service, "send_one", lambda sub, payload: (sent.append(payload) or (True, "delivered")))
+
+    monkeypatch.setattr(config, "PUSH_ADMIN_TOKEN", "")
+    assert client.post("/api/push/test", json={"district": DISTRICT}).json()["status"] == "error"
+    monkeypatch.setattr(config, "PUSH_ADMIN_TOKEN", "op-token")
+    r = client.post("/api/push/test", json={"district": DISTRICT}, headers={"X-Admin-Token": "wrong"})
+    assert r.json()["status"] == "error"
+    assert sent == []
+
+    r = client.post("/api/push/test", json={"endpoint": SUB["endpoint"]})
+    assert r.json()["status"] == "sent"
+    assert len(sent) == 1
+
+
+def test_broadcast_uses_each_phones_language_and_state(monkeypatch):
+    """A Telugu phone gets the Telugu wording; a namesake district in another
+    state does not get the push at all."""
+    te = {**SUB, "endpoint": "https://push.example/te"}
+    other = {**SUB, "endpoint": "https://push.example/other-state"}
+    push_service.subscribe(dict(SUB), district=DISTRICT, language="en", state="Bihar")
+    push_service.subscribe(te, district=DISTRICT, language="te", state="Bihar")
+    push_service.subscribe(other, district=DISTRICT, language="en", state="Maharashtra")
+    sent = {}
+    monkeypatch.setattr(push_service, "send_one",
+                        lambda sub, payload: (sent.__setitem__(sub["endpoint"], payload) or (True, "delivered")))
+
+    verdict = {"severity": "ORANGE", "hazard": "Heavy rain"}
+    payload = alert_watcher.message_for("active", verdict, DISTRICT)
+    payload["i18n"] = alert_watcher.localized_messages("active", verdict, DISTRICT)
+    payload["state"] = "Bihar"
+    push_service.broadcast(payload, district=DISTRICT)
+
+    assert set(sent) == {SUB["endpoint"], te["endpoint"]}
+    assert sent[SUB["endpoint"]]["title"] == "Weather alert"
+    assert "నారింజ" in sent[te["endpoint"]]["body"]
+    assert "i18n" not in sent[te["endpoint"]]

@@ -19,18 +19,21 @@ export function writePref(key, value) {
   try { localStorage.setItem(PREF + key, JSON.stringify(value)); } catch { /* storage blocked */ }
 }
 
-// Cache keys shared by Today, Alerts, Ask (offline answer) and Share.
+// Cache keys shared by Today, Alerts, Ask (offline answer) and Share. The
+// state is part of the key: Aurangabad (Bihar) and Aurangabad (Maharashtra)
+// must never show each other's saved data.
+const at = (loc) => (loc.state ? `${loc.district}|${loc.state}` : loc.district);
 export const keys = {
-  warnings: (loc) => `warn:${loc.district}`,
-  current: (loc) => `now:${loc.district}`,
-  forecast: (loc) => `fc:${loc.district}`,
-  advisory: (loc, persona, lang) => `adv:${loc.district}:${persona}:${lang}`,
-  cards: (loc, persona, lang) => `cards:${loc.district}:${persona}:${lang}`,
+  warnings: (loc) => `warn:${at(loc)}`,
+  current: (loc) => `now:${at(loc)}`,
+  forecast: (loc) => `fc:${at(loc)}`,
+  advisory: (loc, persona, lang) => `adv:${at(loc)}:${persona}:${lang}`,
+  cards: (loc, persona, lang) => `cards:${at(loc)}:${persona}:${lang}`,
   stats: 'stats',
-  models: (loc) => `models:${loc.district}`,
-  climate: (loc) => `climate:${loc.district}`,
-  nowcast: (loc) => `nowcast:${loc.district}`,
-  marine: (loc) => `marine:${loc.district}`,
+  models: (loc) => `models:${at(loc)}`,
+  climate: (loc) => `climate:${at(loc)}`,
+  nowcast: (loc) => `nowcast:${at(loc)}`,
+  marine: (loc) => `marine:${at(loc)}`,
   chat: 'chat:history',
   queue: 'chat:queue',
 };

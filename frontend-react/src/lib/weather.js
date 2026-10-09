@@ -78,6 +78,7 @@ export function sourceLabel(s) {
   if (/sachet|ndma|sdma|cap/i.test(x)) return 'NDMA SACHET';
   if (/imd/i.test(x)) return 'IMD';
   if (/gdacs/i.test(x)) return 'GDACS';
+  if (/era5/i.test(x)) return 'ERA5 (20-year record)';
   if (/open-?meteo/i.test(x)) return 'Open-Meteo';
   if (/owm|openweather/i.test(x)) return 'OpenWeatherMap';
   return x;
@@ -94,6 +95,7 @@ export const ROLES = [
   { id: 'farmer', icon: 'farmer', key: 'roleFarmer' },
   { id: 'fisherman', icon: 'boat', key: 'roleFisherman' },
   { id: 'driver', icon: 'truck', key: 'roleDriver' },
+  { id: 'outdoor-worker', icon: 'worker', key: 'roleWorker' },
 ];
 
 export const CARD_ICON = {

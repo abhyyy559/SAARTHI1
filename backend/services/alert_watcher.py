@@ -101,6 +101,53 @@ def _alert_url(alert_id: str | None) -> str:
     return url
 
 
+# Lock-screen wording in Hindi and Telugu. {sev} is the colour word, {haz}
+# the hazard as the feed names it.
+_MSG = {
+    "hi": {
+        "clear": ("अब सुरक्षित", "{district} के लिए {haz} चेतावनी समाप्त हो गई है।",
+                  "{district} के लिए मौसम चेतावनी समाप्त हो गई है।"),
+        "escalate": ("चेतावनी बढ़ी", "{district} के लिए अब {sev} — {haz}।", None),
+        "pre-alert": ("चेतावनी आने वाली है", "{district} में {sev} {haz} की आशंका। तैयार रहें।",
+                      "{district} में मौसम चेतावनी की आशंका। तैयार रहें।"),
+        "active": ("मौसम चेतावनी", "{district} के लिए {sev} {haz} चेतावनी। ज़रूरी न हो तो बाहर न निकलें।", None),
+        "updated": ("चेतावनी अपडेट", "{district} में {sev} {haz} की स्थिति जारी है। नई आधिकारिक सलाह लागू है।", None),
+        "extended": ("चेतावनी बढ़ाई गई", "{district} के लिए {haz} चेतावनी बढ़ा दी गई है। खत्म होने तक सतर्क रहें।", None),
+        "cancelled": ("चेतावनी रद्द", "{district} के लिए मौसम चेतावनी जारी करने वाली संस्था ने रद्द कर दी है।", None),
+    },
+    "te": {
+        "clear": ("ఇప్పుడు సురక్షితం", "{district}కు {haz} హెచ్చరిక ముగిసింది.",
+                  "{district}కు వాతావరణ హెచ్చరిక ముగిసింది."),
+        "escalate": ("హెచ్చరిక పెరిగింది", "{district}కు ఇప్పుడు {sev} — {haz}.", None),
+        "pre-alert": ("హెచ్చరిక రాబోతోంది", "{district}లో {sev} {haz} అవకాశం. సిద్ధంగా ఉండండి.",
+                      "{district}లో వాతావరణ హెచ్చరిక అవకాశం. సిద్ధంగా ఉండండి."),
+        "active": ("వాతావరణ హెచ్చరిక", "{district}కు {sev} {haz} హెచ్చరిక. అవసరం లేకపోతే బయటకు వెళ్లకండి.", None),
+        "updated": ("హెచ్చరిక అప్‌డేట్", "{district}లో {sev} {haz} పరిస్థితి కొనసాగుతోంది. తాజా అధికారిక సూచనలు వర్తిస్తాయి.", None),
+        "extended": ("హెచ్చరిక పొడిగింపు", "{district}కు {haz} హెచ్చరిక పొడిగించబడింది. ముగిసే వరకు జాగ్రత్తగా ఉండండి.", None),
+        "cancelled": ("హెచ్చరిక రద్దు", "{district}కు వాతావరణ హెచ్చరికను జారీ చేసిన సంస్థ రద్దు చేసింది.", None),
+    },
+}
+_COLOUR = {
+    "hi": {"RED": "लाल", "ORANGE": "नारंगी", "YELLOW": "पीली", "GREEN": "हरी"},
+    "te": {"RED": "ఎరుపు", "ORANGE": "నారింజ", "YELLOW": "పసుపు", "GREEN": "ఆకుపచ్చ"},
+}
+
+
+def localized_messages(kind: str, verdict: dict[str, Any], district: str) -> dict[str, dict[str, str]]:
+    """{language: {title, body}} for every non-English language we speak."""
+    severity = str(verdict.get("severity") or verdict.get("level") or "")
+    hazard = verdict.get("hazard") or ""
+    key = "clear" if kind == "ended" else kind
+    out = {}
+    for lang, table in _MSG.items():
+        title, body, body_no_hazard = table.get(key) or table["active"]
+        text = body_no_hazard if (not hazard and body_no_hazard) else body
+        sev = _COLOUR[lang].get(severity.upper(), severity)
+        out[lang] = {"title": title,
+                     "body": " ".join(text.format(district=district, sev=sev, haz=hazard).split())}
+    return out
+
+
 def message_for(kind: str, verdict: dict[str, Any], district: str,
                 alert_id: str | None = None) -> dict[str, Any]:
     """The push payload. Short: it is read on a lock screen.
@@ -205,7 +252,17 @@ def _official_alert_id(gathered: dict[str, Any]) -> str:
 _FP_KEY = "_fp:{district}"
 
 
-async def check_district(district: str) -> dict[str, Any]:
+def _place(district: str, state: str = "") -> dict[str, Any] | None:
+    """The gazetteer entry for a district, in the given state when known."""
+    if state:
+        from .location_service import GAZETTEER
+        for e in GAZETTEER:
+            if e.get("district") == district and e.get("state") == state:
+                return dict(e)
+    return LocationService().lookup(district)
+
+
+async def check_district(district: str, state: str = "") -> dict[str, Any]:
     """Compute one district's verdict, push on change, and log the transition.
 
     Every transition the watcher detects (start / escalate / clear on the
@@ -214,7 +271,7 @@ async def check_district(district: str) -> dict[str, Any]:
     notification log — the OS push is fire-and-forget, the Notification Center
     is the durable trail the user can scroll. Bookkeeping never raises.
     """
-    loc = LocationService().lookup(district) or {"district": district, "latitude": None, "longitude": None}
+    loc = _place(district, state) or {"district": district, "latitude": None, "longitude": None}
     try:
         gathered = await alert_service.gather_alerts(
             lat=loc.get("latitude"), lon=loc.get("longitude"),
@@ -236,11 +293,13 @@ async def check_district(district: str) -> dict[str, Any]:
         warning_service_available=gathered.get("available", False),
     )
 
-    state = _load_state()
-    prev = state.get(district)
+    # One record per district; namesake districts in two states are kept apart.
+    key = f"{district}|{state}" if state else district
+    store = _load_state()
+    prev = store.get(key)
     kind = decide(prev, verdict)
-    fp_key = _FP_KEY.format(district=district)
-    prev_fp = state.get(fp_key)
+    fp_key = _FP_KEY.format(district=key)
+    prev_fp = store.get(fp_key)
     cur_fp = _cap_fingerprint(gathered)
     # A new or changed official bulletin at the SAME level is an update, not
     # silence: the verdict did not move, but the warning did change and the
@@ -251,14 +310,18 @@ async def check_district(district: str) -> dict[str, Any]:
             and cur_fp != prev_fp
             and hazard_of(prev) and hazard_of(prev) == hazard_of(verdict)):
         kind = "updated"
-    state[district] = verdict
-    state[fp_key] = cur_fp
-    _save_state(state)
+    store[key] = verdict
+    store[fp_key] = cur_fp
+    _save_state(store)
 
     if not kind:
         return {"district": district, "level": verdict.get("level"), "notified": None}
 
     payload = message_for(kind, verdict, district, alert_id=_official_alert_id(gathered))
+    # Each phone reads it in its own language; only this state's subscribers.
+    payload["i18n"] = localized_messages(kind, verdict, district)
+    if state:
+        payload["state"] = state
     result = push_service.broadcast(payload, district=district)
     # The push happened (or was attempted): record it in the history the user
     # scrolls. This was the missing link — official-chain transitions pushed
@@ -279,10 +342,11 @@ async def check_district(district: str) -> dict[str, Any]:
 
 async def check_all() -> list[dict[str, Any]]:
     """One pass over every district anyone is subscribed to."""
-    districts = sorted({s.get("district") for s in push_service.subscriptions() if s.get("district")})
-    if not districts:
+    places = sorted({(s.get("district"), s.get("state") or "") for s in push_service.subscriptions()
+                     if s.get("district")})
+    if not places:
         return []
-    return [await check_district(d) for d in districts]
+    return [await check_district(d, st) for d, st in places]
 
 
 # The demo lifecycle loop is FASTER than the CAP loop: a scheduled demo alert

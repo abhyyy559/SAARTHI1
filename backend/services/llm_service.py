@@ -64,10 +64,45 @@ SYSTEM_RULES = (
     "lines. You may use '## ' at the start of a line for a section heading, '**' around\n"
     "a few key words, and lines starting with '- ' for a short list (max 4 items).\n"
     "No other markdown, no tables, no code blocks.\n"
-    "When asked 'will it rain tomorrow' or similar rain query, answer Yes/No first with mm amount from tomorrow_rainfall_mm. If data missing, say 'rainfall forecast unavailable'.\n"
+    "When asked 'will it rain tomorrow' or similar rain query, answer first with the mm amount\n"
+    "from tomorrow_rainfall_mm and its IMD category from tomorrow_rain_category. Say 'yes, rain'\n"
+    "only when the category is 'light rain' or heavier (2.5 mm or more: an IMD rainy day).\n"
+    "For 'very light rain' (under 2.5 mm) say only very light rain is expected, not a rainy day.\n"
+    "If data missing, say 'rainfall forecast unavailable'.\n"
     "Answer the rain yes/no ONCE, in that opening sentence. Do not add a second\n"
-    "'yes it will rain' later in the answer."
+    "'yes it will rain' later in the answer.\n"
+    "If the data has `asked_place`, the question is about that place, not the user's saved\n"
+    "place: name it in the first sentence.\n"
+    "For questions about normal, usual, average, past years or climate, use only\n"
+    "`climate_trend` and say which years it covers. If it is missing or 'unavailable',\n"
+    "say historical data is not available.\n"
+    "`earlier_questions` are the user's previous questions, only to understand a follow-up\n"
+    "such as 'what about tomorrow?'. Never take facts from them."
 )
+
+# IMD's categories for rain in 24 hours (mm). A "rainy day" is 2.5 mm or more:
+# 0.1 mm is a trace, and telling a farmer "yes, it will rain" for it is wrong.
+RAINY_DAY_MM = 2.5
+_IMD_RAIN_SCALE = (
+    (2.5, "very light rain"), (15.6, "light rain"), (64.5, "moderate rain"),
+    (115.6, "heavy rain"), (204.5, "very heavy rain"),
+)
+
+
+def imd_rain_category(mm) -> str | None:
+    """IMD category for a 24-hour rainfall amount, or None when unknown."""
+    if mm is None:
+        return None
+    try:
+        mm = float(mm)
+    except (TypeError, ValueError):
+        return None
+    if mm <= 0:
+        return "no rain"
+    for upper, name in _IMD_RAIN_SCALE:
+        if mm < upper:
+            return name
+    return "extremely heavy rain"
 
 # Language is a hard requirement, not a hint.
 LANG_DIRECTIVE = {
@@ -134,8 +169,13 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
     # 7 inflates every prompt for no gain. Trim the evidence copy, never the
     # caller's dict.
     if len(days) > 3:
-        forecast = {**forecast, "days": days[:3]}
-        days = forecast["days"]
+        days = days[:3]
+    # Each day carries its IMD rain category, so the phrasing layer never has
+    # to judge "is 0.4 mm rain?" itself.
+    days = [{**d, "rain_category_imd": imd_rain_category(d.get("rainfall"))} if isinstance(d, dict) else d
+            for d in days]
+    if days:
+        forecast = {**forecast, "days": days}
     tomorrow = days[1] if len(days) > 1 else (days[0] if days else {})
     tomorrow_rainfall_mm = tomorrow.get("rainfall")
     tomorrow_rainfall_prob = tomorrow.get("precipitation_probability")
@@ -150,6 +190,7 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
         "weathergpt_risk": risk.get("level"),
         "user_type": user_type,
         "tomorrow_rainfall_mm": tomorrow_rainfall_mm,
+        "tomorrow_rain_category": imd_rain_category(tomorrow_rainfall_mm),
         "tomorrow_rainfall_prob": tomorrow_rainfall_prob,
         # Without units the model guessed: a 6.8 km/h wind was read out as
         # "6.8 m/s" (about 24 km/h). Every live source reports these units.
@@ -246,6 +287,7 @@ _TEMPLATE_LEADS = {
         "wind_now": "Wind in {loc} is {speed} km/h right now.",
         "rain_yes": "Yes — rain likely tomorrow in {loc} ({rain} mm expected).",
         "rain_no": "No rain expected tomorrow in {loc}.",
+        "rain_light": "Only very light rain expected tomorrow in {loc} ({rain} mm), not a rainy day.",
         "warn_yes": "{severity} {hazard} warning is active for {loc}.",
         "warn_no": "No active weather warnings for {loc}.",
         "warn_unknown": "The warning service could not be reached, so I cannot confirm warnings for {loc} right now.",
@@ -257,6 +299,7 @@ _TEMPLATE_LEADS = {
         "wind_now": "अभी {loc} में हवा की गति {speed} किमी/घंटा है।",
         "rain_yes": "हाँ — कल {loc} में बारिश की संभावना है ({rain} मिमी अनुमानित)।",
         "rain_no": "कल {loc} में बारिश की उम्मीद नहीं है।",
+        "rain_light": "कल {loc} में सिर्फ़ बहुत हल्की बारिश ({rain} मिमी) की उम्मीद है, बारिश वाला दिन नहीं।",
         "warn_yes": "{loc} के लिए {severity} {hazard} चेतावनी सक्रिय है।",
         "warn_no": "{loc} के लिए कोई सक्रिय मौसम चेतावनी नहीं है।",
         "warn_unknown": "चेतावनी सेवा से संपर्क नहीं हो सका, इसलिए अभी {loc} की चेतावनियों की पुष्टि नहीं कर सकता।",
@@ -268,11 +311,41 @@ _TEMPLATE_LEADS = {
         "wind_now": "ప్రస్తుతం {loc}లో గాలి వేగం {speed} కిమీ/గం.",
         "rain_yes": "అవును — రేపు {loc}లో వర్షం పడే అవకాశం ఉంది ({rain} మిమీ అంచనా).",
         "rain_no": "రేపు {loc}లో వర్షం అంచనా లేదు.",
+        "rain_light": "రేపు {loc}లో చాలా తేలికపాటి వర్షం మాత్రమే ({rain} మిమీ), వర్షపు రోజు కాదు.",
         "warn_yes": "{loc} కోసం {severity} {hazard} హెచ్చరిక అమలులో ఉంది.",
         "warn_no": "{loc} కోసం ఎటువంటి వాతావరణ హెచ్చరికలు లేవు.",
         "warn_unknown": "హెచ్చరిక సేవను చేరుకోలేకపోయాం, కాబట్టి ప్రస్తుతం {loc} హెచ్చరికలను నిర్ధారించలేను.",
     },
 }
+
+
+# Words the template used to print in English inside a Hindi/Telugu answer.
+_ROLE_WORDS = {
+    "hi": {"general": "सभी", "farmer": "किसान", "fisherman": "मछुआरे", "driver": "ड्राइवर",
+           "outdoor-worker": "बाहर काम करने वाले", "commuter": "यात्री"},
+    "te": {"general": "అందరూ", "farmer": "రైతు", "fisherman": "మత్స్యకారులు", "driver": "డ్రైవర్",
+           "outdoor-worker": "బయట పని చేసేవారు", "commuter": "ప్రయాణికులు"},
+}
+_RISK_WORDS = {
+    "hi": {"LOW": "कम", "MODERATE": "मध्यम", "HIGH": "ज़्यादा", "CRITICAL": "बहुत ज़्यादा", "UNKNOWN": "पता नहीं"},
+    "te": {"LOW": "తక్కువ", "MODERATE": "మధ్యస్థం", "HIGH": "ఎక్కువ", "CRITICAL": "చాలా ఎక్కువ", "UNKNOWN": "తెలియదు"},
+}
+_SKY_WORDS = {
+    "hi": {"Clear": "साफ़ आसमान", "Mostly Clear": "ज़्यादातर साफ़", "Partly Cloudy": "आंशिक बादल",
+           "Overcast": "घने बादल", "Foggy": "कोहरा", "Light Drizzle": "हल्की बूंदाबांदी",
+           "Drizzle": "बूंदाबांदी", "Light Rain": "हल्की बारिश", "Rain": "बारिश", "Heavy Rain": "भारी बारिश",
+           "Light Showers": "हल्की बौछारें", "Showers": "बौछारें", "Heavy Showers": "तेज़ बौछारें",
+           "Thunderstorm": "आंधी-तूफ़ान"},
+    "te": {"Clear": "నిర్మలమైన ఆకాశం", "Mostly Clear": "ఎక్కువగా నిర్మలం", "Partly Cloudy": "కొంత మేఘావృతం",
+           "Overcast": "దట్టమైన మేఘాలు", "Foggy": "పొగమంచు", "Light Drizzle": "చిరుజల్లులు",
+           "Drizzle": "జల్లులు", "Light Rain": "తేలికపాటి వర్షం", "Rain": "వర్షం", "Heavy Rain": "భారీ వర్షం",
+           "Light Showers": "తేలికపాటి జల్లులు", "Showers": "జల్లులు", "Heavy Showers": "భారీ జల్లులు",
+           "Thunderstorm": "ఉరుములతో కూడిన వర్షం"},
+}
+
+
+def _word(table: dict, language: str, key) -> str:
+    return (table.get(language) or {}).get(key, key)
 
 
 def _phrases(language: str) -> dict:
@@ -343,8 +416,10 @@ def _template_answer(evidence: dict, question: str = "", language: str = "en") -
         return L["warn_no"].format(loc=loc)
 
     def rain_line() -> str:
-        if fc_rain is not None and fc_rain > 0:
+        if fc_rain is not None and fc_rain >= RAINY_DAY_MM:
             return L["rain_yes"].format(loc=loc, rain=fc_rain)
+        if fc_rain is not None and fc_rain > 0:
+            return L["rain_light"].format(loc=loc, rain=fc_rain)
         if fc_rain == 0:
             return L["rain_no"].format(loc=loc)
         return P["rain_na"]
@@ -378,7 +453,7 @@ def _template_answer(evidence: dict, question: str = "", language: str = "en") -
         t = current.get("temperature")
         cond = current.get("condition") or ""
         if t is not None:
-            lead = L["now"].format(loc=loc, temp=t, condition=cond).rstrip(" ,.")
+            lead = L["now"].format(loc=loc, temp=t, condition=_word(_SKY_WORDS, language, cond)).rstrip(" ,.")
             if fc_min is not None and fc_max is not None:
                 lead += " " + P["temp"].format(tmin=fc_min, tmax=fc_max)
         else:
@@ -390,14 +465,15 @@ def _template_answer(evidence: dict, question: str = "", language: str = "en") -
         # reads as "no warning", the one false statement this product forbids).
         t = current.get("temperature")
         cond = current.get("condition") or ""
-        lead = (L["now"].format(loc=loc, temp=t, condition=cond).rstrip(" ,.")
+        lead = (L["now"].format(loc=loc, temp=t, condition=_word(_SKY_WORDS, language, cond)).rstrip(" ,.")
                 if t is not None else "")
         support = warn_line()
         if not lead:
             lead, support = support, (rain_line() if fc_rain is not None else "")
 
     parts = [p for p in (lead, support) if p]
-    parts.append(P["risk"].format(user_type=user_type, risk=risk))
+    parts.append(P["risk"].format(user_type=_word(_ROLE_WORDS, language, user_type),
+                                  risk=_word(_RISK_WORDS, language, risk)))
     parts.append(P["risk_note"])
     return " ".join(parts)
 

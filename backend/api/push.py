@@ -5,9 +5,10 @@ capability: the backend can then reach this device while the app is closed. The
 browser never tells us who the user is — a subscription is an opaque endpoint
 plus two public keys.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from urllib.parse import quote
 
+from .. import config
 from ..services import alert_watcher, push_service
 from ..utils.time import iso_now
 
@@ -33,6 +34,9 @@ async def subscribe(payload: dict) -> dict:
             district=payload.get("district", ""),
             language=payload.get("language", "en"),
             persona=payload.get("persona", "general"),
+            state=payload.get("state", ""),
+            lat=payload.get("lat"),
+            lon=payload.get("lon"),
         )
     except ValueError as exc:
         return {"status": "error", "reason": str(exc)}
@@ -48,7 +52,8 @@ async def unsubscribe(payload: dict) -> dict:
 
 
 @router.post("/test")
-async def test_push(payload: dict | None = None) -> dict:
+async def test_push(payload: dict | None = None,
+                    x_admin_token: str | None = Header(default=None)) -> dict:
     """Send a real push right now, so the path can be proven end to end.
 
     Targets one endpoint when given, otherwise every subscriber for the district.
@@ -81,6 +86,10 @@ async def test_push(payload: dict | None = None) -> dict:
     district = payload.get("district", "")
     if not district:
         return {"status": "error", "reason": "district or endpoint is required"}
+    # Anyone could otherwise make every phone in a district ring with test
+    # notifications. A phone testing itself (by endpoint, above) needs no token.
+    if not config.PUSH_ADMIN_TOKEN or x_admin_token != config.PUSH_ADMIN_TOKEN:
+        return {"status": "error", "reason": "a district-wide test push needs the admin token"}
     result = push_service.broadcast({
         "title": "Test alert",
         "body": f"Test push for {district}. If this arrived with the app closed, push works.",

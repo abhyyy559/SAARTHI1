@@ -450,7 +450,7 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .day-temp b { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: #fff; }
 
 /* Roles & advice */
-.roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
 .role {
   min-height: 92px; padding: 6px 2px; display: grid; justify-items: center; align-content: center; gap: 4px;
   border: 2px solid transparent; border-radius: 18px; background: var(--surface-2); color: #fff;
@@ -483,6 +483,7 @@ html[lang='hi'] .safety h1, html[lang='te'] .safety h1 { letter-spacing: 0; font
 .answer-text .bullet { position: relative; padding-left: 16px; }
 .answer-text .bullet::before { content: ''; position: absolute; left: 4px; top: 0.7em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
 .bubble-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.bubble-place { display: inline-flex; align-items: center; gap: 4px; justify-self: start; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--pill-dark); color: var(--sign-in-text); border: 1px solid var(--line); }
 .typing { display: flex; gap: 6px; padding: 8px 4px; }
 .typing i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); animation: pulse 1.2s infinite; }
 .typing i:nth-child(2) { animation-delay: 0.2s; }

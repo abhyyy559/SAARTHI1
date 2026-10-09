@@ -1,6 +1,6 @@
 """Chat API contract (§32)."""
 from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ChatRequest(BaseModel):
@@ -9,6 +9,16 @@ class ChatRequest(BaseModel):
     longitude: float = 78.4867
     language: str = "en"
     user_type: str = "general"
+    # The user's earlier questions in this conversation, oldest first (the app
+    # sends the last few). Context only: "what about tomorrow there?" needs
+    # the previous question's place. Never a source of facts.
+    history: list[str] = Field(default_factory=list)
+
+    @field_validator("history")
+    @classmethod
+    def _short_history(cls, v: list[str]) -> list[str]:
+        # Last 4 questions, each clipped: enough for a follow-up, cheap in the prompt.
+        return [str(x)[:300] for x in (v or []) if str(x).strip()][-4:]
 
 
 class ChatResponse(BaseModel):

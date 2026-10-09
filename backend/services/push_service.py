@@ -144,7 +144,8 @@ def _save(items: list[dict[str, Any]]) -> None:
 
 
 def subscribe(subscription: dict[str, Any], district: str = "", language: str = "en",
-              persona: str = "general") -> dict[str, Any]:
+              persona: str = "general", state: str = "", lat: float | None = None,
+              lon: float | None = None) -> dict[str, Any]:
     """Store or refresh one subscription. Keyed by endpoint, which is unique."""
     endpoint = (subscription or {}).get("endpoint")
     if not endpoint:
@@ -160,6 +161,11 @@ def subscribe(subscription: dict[str, Any], district: str = "", language: str = 
         # What to notify about. Only the district is needed to decide relevance;
         # language and persona shape the wording.
         "district": district or "",
+        # Same district name in two states (Aurangabad, Bilaspur, Hamirpur...):
+        # the state and the saved point say which one this phone means.
+        "state": state or "",
+        "lat": lat,
+        "lon": lon,
         "language": language or "en",
         "persona": persona or "general",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -238,10 +244,18 @@ def broadcast(payload: dict[str, Any], district: str = "") -> dict[str, Any]:
     coverage numbers must come from what actually happened, not from a guess.
     """
     targets = subscriptions(district)
+    # A payload for one state's district never reaches the namesake district
+    # in another state. Old subscriptions without a state still get it.
+    only_state = (payload or {}).get("state") or ""
+    if only_state:
+        targets = [s for s in targets if not s.get("state") or s.get("state") == only_state]
+    # Each phone gets the wording in its own language when the payload has it.
+    i18n = (payload or {}).get("i18n") or {}
+    base = {k: v for k, v in (payload or {}).items() if k != "i18n"}
     delivered, gone, failed = 0, [], 0
     results = []
     for sub in targets:
-        ok, reason = send_one(sub, payload)
+        ok, reason = send_one(sub, {**base, **(i18n.get(sub.get("language") or "en") or {})})
         results.append({"device": sub.get("endpoint", ""), "delivered": ok, "reason": reason})
         if ok:
             delivered += 1

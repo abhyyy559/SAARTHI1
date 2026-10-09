@@ -63,6 +63,13 @@ async def v1_impact(lat1: float, lon1: float, lat2: float, lon2: float, user_typ
     return {**data, "provenance": prov, "generated_at": iso_now()}
 
 
+_STATE_ALERTS_NOTE = {
+    "en": "Note: {n} official state-level alerts are active in your state, but none is verified for {district} specifically.",
+    "hi": "ध्यान दें: आपके राज्य में {n} आधिकारिक चेतावनियाँ लागू हैं, लेकिन {district} के लिए कोई नहीं है।",
+    "te": "గమనిక: మీ రాష్ట్రంలో {n} అధికారిక హెచ్చరికలు అమలులో ఉన్నాయి, కానీ {district}కు ఏదీ లేదు.",
+}
+
+
 @router.get("/advisories")
 async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: str = "general",
                         language: str = "en", district: Optional[str] = None,
@@ -127,8 +134,10 @@ async def v1_advisories(severity: str = "GREEN", hazard: str = "", user_type: st
             # `cap_relevant` because when an alert IS relevant to this district
             # the line above already reported it, and appending "none is
             # verified for <district>" would contradict the alert list.
-            advice = (f"{advice} Note: {nearby_count} official state-level alerts "
-                      f"are active in your state, but none is verified for {district} specifically.")
+            # In the reader's language: this line used to be English inside a
+            # Telugu or Hindi advisory.
+            note = _STATE_ALERTS_NOTE.get(language, _STATE_ALERTS_NOTE["en"])
+            advice = f"{advice} {note.format(n=nearby_count, district=district)}"
         return {
             "advisory": advice + _rule_extra,
             "weather_basis": _weather_basis,

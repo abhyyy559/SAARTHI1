@@ -38,9 +38,13 @@ function SosSheet({ onClose }) {
     const url = `https://maps.google.com/?q=${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
     const text = `${t(lang, 'sosMsg', { url })} (${loc.district})`;
     setSending(false);
-    try {
-      if (navigator.share) { await navigator.share({ text }); return; }
-    } catch { /* cancelled: fall back to SMS */ }
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; } catch (e) {
+        // The person closed the share sheet: respect that. Any other failure
+        // falls through to a plain SMS.
+        if (e && e.name === 'AbortError') return;
+      }
+    }
     window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
   };
 

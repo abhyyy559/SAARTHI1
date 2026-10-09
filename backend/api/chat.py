@@ -19,8 +19,10 @@ from ..rules.weather_rules import WeatherRules
 from ..services.advisory_service import advisory_for
 from ..services.alert_service import gather_alerts
 from ..services.imd_service import IMDService
-from ..services.llm_service import LLMService, build_evidence_package, in_language, _template_answer
+from ..services.llm_service import (RAINY_DAY_MM, LLMService, build_evidence_package, in_language,
+                                    _template_answer)
 from ..services.location_service import LocationService
+from ..services.place_parser import asked_place
 from ..services.response_validator import validate as validate_answer
 from ..services.validation_service import ValidationService
 from ..services.verdict_service import build_verdict
@@ -91,9 +93,17 @@ def _llm_warning_view(verified_dict: dict, verdict: dict) -> dict:
     prevent. So an explicit, self-describing object is sent instead of None.
     """
     if verdict.get("basis") == "cap_alert":
-        return {**(verified_dict or {}), "verified": True,
+        # The official alert IS the confirmation. Carrying the IMD call's
+        # "warning_service: unavailable" alongside "verified: True" made the
+        # model write that the warning "could not be confirmed".
+        base = {k: v for k, v in (verified_dict or {}).items() if k not in ("warning_service", "note")}
+        view = {**base, "verified": True,
                 "severity": verdict.get("severity"), "hazard": verdict.get("hazard"),
                 "source": verdict.get("source")}
+        if (verified_dict or {}).get("warning_service") == "unavailable":
+            view["note"] = ("Confirmed by an official NDMA SACHET alert for this place. The IMD "
+                            "district service was not reachable; that does not change this warning.")
+        return view
     if verdict.get("basis") == "unavailable":
         return {
             "verified": False,
@@ -148,6 +158,14 @@ _LEADING_YESNO_RE = re.compile(rf"^{_YESNO}", re.I)
 
 
 # A rain word with an amount ("వర్షం ... 0.6 mm") already answers the question.
+# An IMD category in the opening ("Very light rain is expected tomorrow")
+# already answers the question: adding our own line said it twice.
+_RAIN_CATEGORY_RE = re.compile(
+    r"\b(?:no|very light|light|moderate|heavy|very heavy|extremely heavy)\s+rain\b"
+    r"|बहुत हल्की बारिश|हल्की बारिश|मध्यम बारिश|भारी बारिश|बारिश की उम्मीद नहीं|बारिश नहीं"
+    r"|చాలా తేలికపాటి వర్షం|తేలికపాటి వర్షం|మోస్తరు వర్షం|భారీ వర్షం|వర్షం అంచనా లేదు|వర్షం లేదు",
+    re.I)
+
 _RAIN_AMOUNT_RE = re.compile(
     r"(?:rain|barish|वर्षा|వర్షం|బారిష్|बारिश|వర్షపాతం)[\s\S]{0,60}?\d+(?:\.\d+)?\s*(?:mm|మి\.?మీ|मिमी|millimet)",
     re.I)
@@ -166,15 +184,20 @@ def _answer_already_given(answer: str) -> bool:
         return True
     if _RAIN_AMOUNT_RE.search(head):
         return True
+    if _RAIN_CATEGORY_RE.search(head):
+        return True
     return bool(_LEADING_YESNO_RE.match(_LEADING_MARKUP_RE.sub("", answer or "")))
 
 
 # Rain lead lines in the user's language — the guaranteed yes/no must obey the
 # same language contract as the rest of the answer.
 _RAIN_LEAD = {
-    "en": ("Yes — rain likely tomorrow ({rain} mm).", "No rain expected tomorrow."),
-    "hi": ("हाँ — कल बारिश की संभावना है ({rain} मिमी)।", "कल बारिश की उम्मीद नहीं है।"),
-    "te": ("అవును — రేపు వర్షం పడే అవకాశం ఉంది ({rain} మిమీ).", "రేపు వర్షం అంచనా లేదు."),
+    "en": ("Yes — rain likely tomorrow ({rain} mm).", "No rain expected tomorrow.",
+           "Only very light rain expected tomorrow ({rain} mm), not a rainy day."),
+    "hi": ("हाँ — कल बारिश की संभावना है ({rain} मिमी)।", "कल बारिश की उम्मीद नहीं है।",
+           "कल सिर्फ़ बहुत हल्की बारिश ({rain} मिमी) की उम्मीद है, बारिश वाला दिन नहीं।"),
+    "te": ("అవును — రేపు వర్షం పడే అవకాశం ఉంది ({rain} మిమీ).", "రేపు వర్షం అంచనా లేదు.",
+           "రేపు చాలా తేలికపాటి వర్షం మాత్రమే ({rain} మిమీ), వర్షపు రోజు కాదు."),
 }
 
 
@@ -205,8 +228,14 @@ def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str, lan
     fc_rain = (tomorrow or {}).get("rainfall")
     if fc_rain is None:
         return answer
-    lead_yes, lead_no = _RAIN_LEAD.get(language, _RAIN_LEAD["en"])
-    line = lead_yes.format(rain=fc_rain) if fc_rain > 0 else lead_no
+    lead_yes, lead_no, lead_trace = _RAIN_LEAD.get(language, _RAIN_LEAD["en"])
+    # IMD: a rainy day is 2.5 mm or more. A trace is said as a trace, never "yes".
+    if fc_rain >= RAINY_DAY_MM:
+        line = lead_yes.format(rain=fc_rain)
+    elif fc_rain > 0:
+        line = lead_trace.format(rain=fc_rain)
+    else:
+        line = lead_no
     if line in answer:
         return answer
     if _answer_already_given(answer):
@@ -423,6 +452,42 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
     return current_dict, forecast_dict, verified_dict, ev, notes
 
 
+# "Is this year hotter than usual?" is a climate question (PS feature 7): it is
+# answered from 20 years of ERA5 reanalysis, the same series as the app's
+# "20 years at this place" card, never from the 3-day forecast.
+_CLIMATE_RE = re.compile(
+    r"\b(?:usual|normal|average|climate|last year|past years?|previous years?|hotter|colder|"
+    r"wetter|drier|trend|history|historical)\b|सामान्य|औसत|पिछले साल|जलवायु|సాధారణ|సగటు|"
+    r"గత సంవత్సర|వాతావరణ మార్పు", re.I)
+
+
+async def _climate_evidence(lat: float, lon: float) -> tuple[dict | str, list[float]]:
+    """Climate block for the phrasing layer, and its numbers for the validator."""
+    from . import climate as climate_api
+    try:
+        d = await climate_api.climate_trends(lat, lon)
+    except Exception:  # noqa: BLE001 - a climate question must not break the chat
+        return "unavailable", []
+    tr = d.get("trends") or {}
+    years = tr.get("yearly") or []
+    base_r, last_r = tr.get("baseline_rain_mm"), tr.get("latest_rain_mm")
+    if len(years) < 6 or base_r in (None, 0) or last_r is None:
+        return "unavailable", []
+    pct = round((last_r - base_r) / base_r * 100)
+    block = {
+        "source": "ERA5 reanalysis (Open-Meteo archive)",
+        "last_complete_year": years[-1]["year"],
+        "normal_period": f"{years[0]['year']}-{years[max(0, len(years) - 6)]['year']}",
+        "rain_last_year_mm": last_r, "rain_normal_mm": base_r, "rain_change_percent": pct,
+        "mean_temp_last_year_c": tr.get("latest_temp_c"), "mean_temp_normal_c": tr.get("baseline_temp_c"),
+        "temp_difference_c": tr.get("temp_anomaly_c"),
+        "temp_trend_c_per_decade": round((tr.get("temp_trend_c_per_year") or 0) * 10, 2),
+        "note": "Complete calendar years only; the current year is not included.",
+    }
+    nums = [float(v) for v in block.values() if isinstance(v, (int, float))]
+    return block, nums
+
+
 async def _prepare(req: ChatRequest) -> dict:
     """Run everything before the LLM call. Returns a ctx dict.
 
@@ -434,7 +499,10 @@ async def _prepare(req: ChatRequest) -> dict:
     """
     rules = WeatherRules()
     rules.parse(req.message)
-    loc = LocationService().resolve(req.latitude, req.longitude)
+    home = LocationService().resolve(req.latitude, req.longitude)
+    # "Will it rain in Patna?" is about Patna, whatever the saved place is.
+    asked = asked_place(req.message, req.history, home)
+    loc = asked or home
     lat, lon = loc["latitude"], loc["longitude"]
 
     if config.DEMO_MODE:
@@ -480,6 +548,17 @@ async def _prepare(req: ChatRequest) -> dict:
         verified=llm_verified, risk=risk, user_type=req.user_type,
         source_name=notes.get("source_name", "IMD"),
     )
+    if asked:
+        evidence["asked_place"] = f"{loc.get('district')}, {loc.get('state')}"
+    if req.history:
+        evidence["earlier_questions"] = req.history
+    climate_numbers: list[float] = []
+    if _CLIMATE_RE.search(req.message or ""):
+        evidence["climate_trend"], climate_numbers = await _climate_evidence(lat, lon)
+        if climate_numbers:
+            # The answer's "Based on" line must name the series the numbers came from.
+            ev = [*ev, {"source": "ERA5 (Open-Meteo archive)", "type": "climate_trend",
+                        "provenance": "LIVE"}]
 
     # Numbers the post-LLM response validator (§10, §43) may check.
     numbers: list[float] = []
@@ -493,6 +572,8 @@ async def _prepare(req: ChatRequest) -> dict:
             for v in (day or {}).values():
                 if isinstance(v, (int, float)):
                     numbers.append(float(v))
+
+    numbers.extend(climate_numbers)
 
     weather_block = {"current": current_dict, "forecast_days": (forecast_dict or {}).get("days", [])[:3]}
     return {

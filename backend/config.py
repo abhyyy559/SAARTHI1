@@ -193,3 +193,7 @@ DEFAULT_LON = float(_get("DEFAULT_LON", "78.4867"))
 # FRONTEND_ORIGINS="https://saarthi.vercel.app,https://app.example.com".
 # Local dev origins (Vite etc.) are always allowed.
 FRONTEND_ORIGINS = _get("FRONTEND_ORIGINS", "")
+# A test push to every subscriber of a district is an operator action: it
+# needs this token in the X-Admin-Token header. Empty = disabled. A device
+# can always send a test push to itself (by its own endpoint).
+PUSH_ADMIN_TOKEN = _get("PUSH_ADMIN_TOKEN", "")

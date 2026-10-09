@@ -15,8 +15,9 @@ const MAX_HISTORY = 40;
 const CHIPS = {
   general: [['rain', 'qRain'], ['warning', 'qWarn'], ['heat', 'qHeat']],
   farmer: [['rain', 'qRain'], ['farmer', 'qCrop'], ['warning', 'qWarn']],
-  fisherman: [['boat', 'qSea'], ['warning', 'qWarn'], ['wind', 'qRain']],
+  fisherman: [['boat', 'qSea'], ['warning', 'qWarn'], ['rain', 'qRain']],
   driver: [['truck', 'qRoad'], ['warning', 'qWarn'], ['rain', 'qRain']],
+  'outdoor-worker': [['heat', 'qHeat'], ['warning', 'qWarn'], ['rain', 'qRain']],
 };
 
 // Plain text from markdown-ish answers (bold, headings, bullets).
@@ -53,6 +54,9 @@ export default function Ask() {
   const [busy, setBusy] = useState(false);
   const listEnd = useRef(null);
   const abort = useRef(null);
+  // The latest thread for ask(), which is memoised without it.
+  const msgsRef = useRef(msgs);
+  useEffect(() => { msgsRef.current = msgs; });
   const screen = useRef(null);
   const composer = useRef(null);
 
@@ -101,12 +105,18 @@ export default function Ask() {
     let failed = false;
     let sources = [];
     let ruleBased = false;
+    let place = null;
+    // Earlier questions let a follow-up ("what about tomorrow there?") keep its place.
+    const history = msgsRef.current.filter((x) => x.role === 'user').slice(-4).map((x) => x.text);
     try {
       for await (const ev of api.chatStream({
-        message: q, language: lang, user_type: persona, latitude: loc.lat, longitude: loc.lon,
+        message: q, language: lang, user_type: persona, latitude: loc.lat, longitude: loc.lon, history,
       }, ctrl.signal)) {
         if (ev.type === 'meta') {
           verdict = ev.verdict || null;
+          // "Will it rain in Patna?" is answered for Patna: say so on the bubble.
+          const d = ev.location?.district;
+          place = d && d !== loc.district ? [d, ev.location.state].filter(Boolean).join(', ') : null;
           sources = [...new Set([...(verdict?.checked_sources || []), ...(ev.evidence || []).map((e) => e.source)]
             .map(sourceLabel).filter((s) => s && !/^(LIVE|CACHED|DEMO)$/.test(s)))];
         }
@@ -115,7 +125,7 @@ export default function Ask() {
         else if (ev.type === 'final') text = ev.answer || text;
         if (ev.type !== 'done') {
           const snap = text;
-          setMsgs((m) => m.map((x) => (x.id === botId ? { ...x, text: snap, verdict } : x)));
+          setMsgs((m) => m.map((x) => (x.id === botId ? { ...x, text: snap, verdict, place } : x)));
         }
       }
     } catch {
@@ -127,7 +137,7 @@ export default function Ask() {
       text = off.text;
     }
     setMsgs((m) => {
-      const next = m.map((x) => (x.id === botId ? { ...x, text, verdict, sources, ruleBased, pending: false, offline: failed } : x));
+      const next = m.map((x) => (x.id === botId ? { ...x, text, verdict, place, sources, ruleBased, pending: false, offline: failed } : x));
       persist(next);
       return next;
     });
@@ -168,6 +178,7 @@ export default function Ask() {
           <div key={m.id} className="bubble me"><p>{m.text}</p></div>
         ) : (
           <div key={m.id} className={`bubble bot ${m.verdict ? `edge-${toneOf(m.verdict)}` : ''} ${m.offline ? 'is-offline' : ''}`}>
+            {m.place ? <p className="bubble-place"><Icon name="pin" size={15} /> {m.place}</p> : null}
             {m.pending && !m.text ? <div className="typing"><i /><i /><i /></div> : <Answer text={m.text} />}
             {!m.pending && !m.offline && (m.sources?.length || m.ruleBased) ? (
               <div className="grd">
