@@ -14,7 +14,7 @@ from .utils.time import iso_now
 
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
-                  push, notifications)
+                  push, notifications, mesh)
 from .api import map as map_api
 from .utils.logging import RequestLoggingMiddleware
 
@@ -117,6 +117,8 @@ def _cors_origins() -> list:
     origins = {
         "http://localhost:5173", "http://127.0.0.1:5173",
         "http://localhost:3000", "http://127.0.0.1:3000",
+        # The Android app (Capacitor) serves its pages from these origins.
+        "https://localhost", "http://localhost", "capacitor://localhost",
     }
     for raw in config.FRONTEND_ORIGINS.split(","):
         raw = raw.strip()
@@ -174,6 +176,7 @@ app.include_router(advisory.router)
 app.include_router(v1.router)
 app.include_router(push.router)
 app.include_router(notifications.router)
+app.include_router(mesh.router)
 
 # Ack/telemetry ingest (Round2 T3.3: POST /api/ack, GET /api/coverage). Guarded
 # so a telemetry-only failure can never prevent the app from serving alerts.

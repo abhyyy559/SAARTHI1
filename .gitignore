@@ -46,3 +46,7 @@ tools/
 
 # Demo-day logs (scripts/demo-https.ps1).
 logs/
+
+# Bluetooth mesh: server signing key and relayed SOS (runtime state).
+mesh_server_key.pem
+mesh_relay.json

@@ -1,7 +1,16 @@
 // Backend client. VITE_API_URL points at a separately hosted backend; empty
 // means same origin (Vite dev proxy, or FastAPI serving the built app).
-const BASE = (import.meta.env?.VITE_API_URL || '').replace(/\/$/, '');
-const full = (p) => `${BASE}${p}`;
+const BUILT_BASE = (import.meta.env?.VITE_API_URL || '').replace(/\/$/, '');
+// The Android app has no backend of its own: it uses the server address saved
+// in Settings (lib/serverBase.js), else the build-time one, else same origin.
+export function apiBase() {
+  try {
+    const saved = (localStorage.getItem('wgpt.server') || '').trim();
+    if (saved) return saved.replace(/\/$/, '');
+  } catch { /* storage blocked */ }
+  return BUILT_BASE;
+}
+const full = (p) => `${apiBase()}${p}`;
 
 export const TIMEOUT_MS = 25000;
 
@@ -79,4 +88,9 @@ export const api = {
     return request(`/api/voice/transcribe?${q({ language })}`, { method: 'POST', body: fd }, 30000);
   },
   chatStream,
+  // Bluetooth mesh gateway (src/mesh/meshClient.js): hand carried SOS messages
+  // to the server; fetch official alerts the server signed for the mesh.
+  meshRelay: (messages) => post('/api/mesh/relay', { messages }),
+  meshAlerts: (district) => get(`/api/mesh/alerts?${q({ district })}`),
+  meshIncidents: () => get('/api/mesh/sos'),
 };

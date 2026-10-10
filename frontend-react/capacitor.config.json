@@ -1,0 +1,12 @@
+{
+  "appId": "in.saarthi.weathergpt",
+  "appName": "WeatherGPT",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

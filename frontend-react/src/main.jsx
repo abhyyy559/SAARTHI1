@@ -23,7 +23,10 @@ try {
   else document.fonts.addEventListener('loadingdone', (e) => { if (e.fontfaces.some(isBubbledot)) mark(); });
 } catch { /* no Font Loading API: fallback spacing */ }
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// Not inside the Android app: its files already ship in the APK, and a worker
+// there would keep serving the previous version's files after an update.
+const insideAndroidApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+if ('serviceWorker' in navigator && import.meta.env.PROD && !insideAndroidApp) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => { /* app still works online */ });
   });

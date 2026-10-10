@@ -198,6 +198,11 @@ DEFAULT_LON = float(_get("DEFAULT_LON", "78.4867"))
 # FRONTEND_ORIGINS="https://saarthi.vercel.app,https://app.example.com".
 # Local dev origins (Vite etc.) are always allowed.
 FRONTEND_ORIGINS = _get("FRONTEND_ORIGINS", "")
+
+# Signing key for alerts relayed phone to phone (PEM). Empty: one is made and
+# kept in the store directory (services/mesh_service.py).
+MESH_PRIVATE_KEY = _get("MESH_PRIVATE_KEY", "")
+
 # A test push to every subscriber of a district is an operator action: it
 # needs this token in the X-Admin-Token header. Empty = disabled. A device
 # can always send a test push to itself (by its own endpoint).
