@@ -62,6 +62,20 @@ export function transition(prev, next, district = '') {
   return null;
 }
 
+/**
+ * transition() for a verdict stream that can change district.
+ *
+ * `prev` is the last { verdict, district } seen (or null). A verdict is only
+ * ever compared with the previous one for the SAME district: switching from a
+ * place under an ORANGE warning to a calm one is not "the warning ended", and
+ * compared across districts it announced exactly that, naming the new place.
+ * A new district starts a new history — its first verdict is a first sighting.
+ */
+export function transitionInDistrict(prev, next, district = '') {
+  const same = prev && prev.district === district ? prev.verdict : null;
+  return transition(same, next, district);
+}
+
 /** Stable per event, so the same warning is announced once and not on every poll. */
 export function tagFor(change) {
   if (!change) return '';

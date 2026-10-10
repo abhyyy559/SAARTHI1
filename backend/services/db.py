@@ -81,8 +81,16 @@ def _ssl_options(url: str) -> dict[str, Any]:
 
 
 async def _get_pool():
-    """The asyncpg pool, created once. Returns None on any failure (JSON mode)."""
-    global _POOL, _PG_WARNED
+    """The asyncpg pool, created once. Returns None on any failure (JSON mode).
+
+    Must run on the store_bridge loop: an asyncpg pool belongs to the event loop
+    that created it (see store_bridge.run / run_async).
+    """
+    # _BACKEND must be declared here: without it the "json" assignment below
+    # only bound a local, the backend stayed "postgres", and every later store
+    # call retried the unusable database (paying its connect timeout each time)
+    # instead of settling on the JSON fallback once.
+    global _POOL, _PG_WARNED, _BACKEND
     if _POOL is not None:
         return _POOL
     if backend_name() != "postgres":

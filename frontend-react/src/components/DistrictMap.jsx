@@ -11,6 +11,7 @@ import { api } from '../api';
 import { DISTRICTS, t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
+import { isPastAlert } from './inboxLogic';
 
 const COORDS_KEY = 'wgpt-dist-coords-v1';
 
@@ -29,8 +30,9 @@ function districtOf(a) {
   return String(a.district || a.areaDesc || a.area || '').trim();
 }
 
+// Ended, cancelled, or past its expiry: never colours the map.
 function isEnded(a) {
-  return String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
+  return isPastAlert(a);
 }
 
 // Map labels use a short form so long names (e.g. "Medchal Malkajgiri")

@@ -27,7 +27,7 @@ import AviationBriefing from './AviationBriefing';
 import WeatherCard from './WeatherCard';
 import { USER_TYPES } from './Advisor';
 import { isDemoAlert, isOfficialSource } from './AlertsList';
-import { mergeAlerts, relTime } from './inboxLogic';
+import { isPastAlert, mergeAlerts, relTime } from './inboxLogic';
 import { SevStamp } from './ui';
 import Icon from './icons';
 
@@ -78,7 +78,8 @@ function AboutYou() {
 // AlertsList (official CAP warnings + demo-store alerts), the same dedup and
 // official-source admission, then ACTIVE ONLY, top 3. Each row is a link into
 // the Alerts view via the store's selectedAlert — detail lives there.
-const endedState = (a) => String(a.lifecycle_state || a.state || '').toUpperCase() === 'ENDED';
+// Ended, cancelled, or an official bulletin past its expiry (inboxLogic).
+const endedState = (a) => isPastAlert(a);
 
 function HomeAlerts() {
   const { lang, loc, locReady, syncTick, setView, setSelectedAlert, demoMode } = useApp();

@@ -179,10 +179,14 @@ class _RawWebSocket:
         data = await self._r.readexactly(n)
         return data
 
-    async def send_text(self, text: str) -> None:
-        payload = text.encode("utf-8")
+    @staticmethod
+    def _frame(opcode: int, payload: bytes) -> bytes:
+        """One FIN frame, masked: RFC 6455 §5.3 requires EVERY client-to-server
+        frame to be masked, control frames included. The pong and close used to
+        go out unmasked, which a conforming server answers by failing the
+        connection (1002) — so the first server ping killed a long dictation."""
         mask = os.urandom(4)
-        frame = bytearray([0x81])
+        frame = bytearray([0x80 | opcode])
         n = len(payload)
         if n < 126:
             frame.append(0x80 | n)
@@ -194,11 +198,15 @@ class _RawWebSocket:
             frame += n.to_bytes(8, "big")
         frame += mask
         frame += bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
-        self._w.write(bytes(frame))
+        return bytes(frame)
+
+    async def send_text(self, text: str) -> None:
+        self._w.write(self._frame(0x1, text.encode("utf-8")))
         await self._w.drain()
 
     async def _send_pong(self, payload: bytes) -> None:
-        self._w.write(bytes([0x8A, len(payload)]) + payload)
+        # Control-frame payloads are at most 125 bytes; echo what the ping sent.
+        self._w.write(self._frame(0xA, payload[:125]))
         await self._w.drain()
 
     async def recv_text(self) -> str:
@@ -234,7 +242,7 @@ class _RawWebSocket:
 
     async def close(self) -> None:
         try:
-            self._w.write(bytes([0x88, 0x00]))
+            self._w.write(self._frame(0x8, b""))
             await self._w.drain()
         except Exception:
             pass

@@ -124,12 +124,15 @@ async def _from_weatherintouch(lat: float, lon: float, district: str) -> list[di
     text = next((c.get("text") for c in content if c.get("type") == "text"), None)
     data = json.loads(text) if text else {}
     alerts = []
-    for a in data.get("alerts") or []:
+    for n, a in enumerate(data.get("alerts") or []):
         sev = _intouch_severity(a.get("severity"))
         alerts.append(_mk_alert(
             source=SOURCE_BY_NAME["weatherintouch"],
             official=True,  # official IMD CAP — allowed on the Alerts page
-            identifier=str(a.get("id") or a.get("identifier") or f"wit-{district}"),
+            # The fallback id must be unique per alert: gather_alerts de-duplicates
+            # on identifier, so a shared "wit-<district>" kept only the first of
+            # several id-less official alerts and silently dropped the rest.
+            identifier=str(a.get("id") or a.get("identifier") or f"wit-{district}-{n}"),
             hazard=str(a.get("event") or a.get("hazard") or "Weather alert"),
             severity=sev,
             headline=str(a.get("headline") or a.get("description") or ""),
@@ -225,20 +228,43 @@ async def _from_gdacs(lat: float, lon: float, district: str) -> list[dict[str, A
 # ------------------------------------------------------------------- chain
 async def get_alerts(lat: float, lon: float, district: str) -> tuple[list[dict[str, Any]], str]:
     """Run the priority chain. Returns (alerts, provenance). First live source
-    with alerts wins; UNAVAILABLE only when every source fails or is empty."""
+    with alerts wins; UNAVAILABLE only when every source fails or is empty.
+
+    The chain is up to three sequential provider calls; one answer per place
+    serves repeat requests for 90 s (utils/upstream_cache)."""
+    from ..utils.upstream_cache import remember
+
+    def _r(v):
+        try:
+            return round(float(v), 2)
+        except (TypeError, ValueError):
+            return None
+
+    key = ("alert-chain", _r(lat), _r(lon), (district or "").lower())
+    return await remember(key, 90, lambda: _get_alerts_uncached(lat, lon, district))
+
+
+async def _get_alerts_uncached(lat: float, lon: float, district: str) -> tuple[list[dict[str, Any]], str]:
     chain = [
         ("weatherintouch", _from_weatherintouch),
         ("weatherapi", _from_weatherapi),
         ("gdacs", _from_gdacs),
     ]
-    for name, fn in chain:
-        try:
-            alerts = await fn(lat, lon, district)
-            if alerts:
-                report(SOURCE_BY_NAME[name], LIVE, f"{len(alerts)} alert(s)")
-                return alerts, LIVE
-            report(SOURCE_BY_NAME[name], LIVE, "reachable, no active alerts")
-        except Exception as exc:  # noqa: BLE001 - chain must never raise
-            report(SOURCE_BY_NAME[name], ERROR, f"{type(exc).__name__}")
+    # The providers are independent, so they are asked together and the answer
+    # is still picked in priority order. Asked one after another, a slow
+    # provider (WeatherInTouch took 9 s once) held up the warnings endpoint and
+    # every chat answer behind it.
+    import asyncio
+
+    results = await asyncio.gather(*(fn(lat, lon, district) for _, fn in chain),
+                                   return_exceptions=True)
+    for (name, _fn), result in zip(chain, results):
+        if isinstance(result, BaseException):  # chain must never raise
+            report(SOURCE_BY_NAME[name], ERROR, f"{type(result).__name__}")
+            continue
+        if result:
+            report(SOURCE_BY_NAME[name], LIVE, f"{len(result)} alert(s)")
+            return result, LIVE
+        report(SOURCE_BY_NAME[name], LIVE, "reachable, no active alerts")
     # Chain found nothing: caller falls back to SACHET/fixtures upstream.
     return [], UNAVAILABLE

@@ -66,9 +66,23 @@ def analyze_series(daily_time: list[str], tmean: list[float | None], rain: list[
     }
 
 
+def _complete_years(today: date, years: int) -> tuple[date, date]:
+    """(start, end) spanning the last `years` COMPLETE calendar years.
+
+    The window used to end at today-5d, so the newest "year" was a partial one —
+    January to early October — and was then compared with full-year baselines:
+    its rainfall total read as a huge deficit (a quarter of the monsoon year
+    simply had not happened yet), its mean temperature skipped the cool months,
+    and both biased the trend lines. Only years ERA5 fully covers (it lags about
+    five days) are requested now.
+    """
+    available = today - timedelta(days=5)  # ERA5 lags a few days
+    last = available.year if available >= date(available.year, 12, 31) else available.year - 1
+    return date(last - years + 1, 1, 1), date(last, 12, 31)
+
+
 async def trends(latitude: float, longitude: float, years: int = 20) -> tuple[dict, str]:
-    end = now_ist().date() - timedelta(days=5)  # ERA5 lags a few days
-    start = date(end.year - years, 1, 1)
+    start, end = _complete_years(now_ist().date(), years)
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(BASE, params={

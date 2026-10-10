@@ -190,6 +190,8 @@ export function useOnline() {
 const HAZARDS = ['flood', 'thunderstorm', 'heatwave', 'cyclone'];
 
 // Pre-fetch emergency guidance while online so offline Q&A can answer from cache.
+// Merged per language: overwriting the whole entry on every language switch
+// threw away the English set that answerOffline() falls back to.
 export async function cacheGuidance(api, lang = 'en') {
   try {
     const all = {};
@@ -197,7 +199,8 @@ export async function cacheGuidance(api, lang = 'en') {
       const d = await api.guidance(h, lang);
       all[`${h}:${lang}`] = d.hits || [];
     }
-    saveCache('guidance', all);
+    const prev = (readCache().guidance || {}).data || {};
+    saveCache('guidance', { ...prev, ...all });
   } catch { /* ignore */ }
 }
 

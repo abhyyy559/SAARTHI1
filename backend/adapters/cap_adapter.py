@@ -253,28 +253,45 @@ async def _fetch_feed(client: "httpx.AsyncClient", url: str) -> list[dict[str, A
     return alerts
 
 
+# Every district asks the same feeds, so one fetch serves all of them for a
+# short window (utils/upstream_cache): bulletins are issued on the scale of
+# hours, and fetching three feeds plus their linked documents on every request
+# is what pushed the warnings endpoint past the app's timeout.
+_MEMO_SECONDS = 90
+
+
 async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
     urls = list(getattr(config, "CAP_FEED_URLS", None) or ([config.CAP_FEED_URL] if config.CAP_FEED_URL else []))
     if not urls:
         report("cap", UNCONFIGURED, "CAP_FEED_URL not set")
         raise AdapterUnavailable("CAP feed unconfigured (needs CAP_FEED_URL)")
+    from ..utils.upstream_cache import remember
+
+    # Only a live answer is remembered: a CACHED fallback is re-tried next time.
+    alerts, prov = await remember(("cap", tuple(urls)), _MEMO_SECONDS,
+                                  lambda: _fetch_alerts_uncached(urls),
+                                  keep=lambda r: r[1] == LIVE)
+    report("cap", prov, f"{len(alerts)} active alerts" if prov == LIVE else f"{len(alerts)} cached alerts (feeds failing)")
+    return alerts, prov
+
+
+async def _fetch_alerts_uncached(urls: list[str]) -> tuple[list[dict[str, Any]], str]:
     from datetime import timedelta
     try:
         alerts: list[dict[str, Any]] = []
         seen: set[str] = set()
         failed = 0
         async with httpx.AsyncClient(timeout=12.0) as client:
-            # Feeds are independent: fetch concurrently so latency is the
-            # slowest feed, not the sum. Order preserved per feed; dedup by
-            # identifier keeps the merged list identical to the serial version.
-            results = await asyncio.gather(
-                *(_fetch_feed(client, url) for url in urls), return_exceptions=True)
-            for url, res in zip(urls, results):
-                if isinstance(res, Exception):
-                    log.warning("cap feed failed (%s): %s: %s", url, type(res).__name__, res)
+            # The feeds are independent: fetched together, merged in config
+            # order so the de-duplication below keeps the same winner.
+            results = await asyncio.gather(*(_fetch_feed(client, url) for url in urls),
+                                           return_exceptions=True)
+            for url, result in zip(urls, results):
+                if isinstance(result, BaseException):
+                    log.warning("cap feed failed (%s): %s: %s", url, type(result).__name__, result)
                     failed += 1
                     continue  # one bad feed never kills the others
-                for a in res:
+                for a in result:
                     ident = a.get("identifier") or a.get("headline") or url
                     if ident not in seen:
                         seen.add(ident)
@@ -313,6 +330,42 @@ async def fetch_alerts() -> tuple[list[dict[str, Any]], str]:
     return [], LIVE
 
 
+_FIXTURE_TIME_KEYS = ("sent", "effective", "onset", "expires", "issued_at")
+
+
+def _refresh_fixture_times(alerts: list[dict[str, Any]]) -> None:
+    """Move a fixture's timeline to now, keeping its shape (in place).
+
+    cap_alert.json is stamped 2026-09-15 18:00 -> 2026-09-16 02:00, so after that
+    night the Hyderabad sample was always expired: the demo showed a weeks-old
+    bulletin. The location-switcher presets already use relative times
+    (district_demo._ts); this gives the generic sample the same treatment —
+    `sent` becomes an hour ago and every other stamp keeps its offset from it.
+    """
+    from datetime import timedelta
+
+    from ..utils.time import now_ist
+
+    anchor = now_ist() - timedelta(hours=1)
+
+    def _parse(value: Any) -> datetime | None:
+        try:
+            ts = datetime.fromisoformat(str(value))
+        except (TypeError, ValueError):
+            return None
+        return ts if ts.tzinfo else ts.replace(tzinfo=IST)
+
+    for a in alerts:
+        sent = _parse(a.get("sent"))
+        if sent is None:
+            continue
+        shift = anchor - sent
+        for key in _FIXTURE_TIME_KEYS:
+            ts = _parse(a.get(key)) if a.get(key) else None
+            if ts is not None:
+                a[key] = (ts + shift).isoformat()
+
+
 def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str]:
     """DEMO ONLY — simulated CAP-style alert, labelled.
 
@@ -344,6 +397,7 @@ def demo_fixture(district: str | None = None) -> tuple[list[dict[str, Any]], str
     except Exception as exc:  # noqa: BLE001 - bad fixture reads as empty, but log it
         log.warning("cap fixture load failed: %s: %s", type(exc).__name__, exc)
         alerts = []
+    _refresh_fixture_times(alerts)
     if district and district.lower() != "hyderabad":
         # Keep the state suffix truthful (fixture says Telangana): resolve it
         # from the local gazetteer, omit it if unknown. Lazy import avoids any

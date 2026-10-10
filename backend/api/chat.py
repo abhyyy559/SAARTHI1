@@ -19,7 +19,7 @@ from ..rules.weather_rules import WeatherRules
 from ..services.advisory_service import advisory_for
 from ..services.alert_service import gather_alerts
 from ..services.imd_service import IMDService
-from ..services.llm_service import LLMService, build_evidence_package, _template_answer
+from ..services.llm_service import LLMService, build_evidence_package, _template_answer, rain_sentence
 from ..services.location_service import LocationService
 from ..services.response_validator import validate as validate_answer
 from ..services.validation_service import ValidationService
@@ -145,13 +145,8 @@ def _answer_already_given(answer: str) -> bool:
     return bool(_LEADING_YESNO_RE.match(_LEADING_MARKUP_RE.sub("", answer or "")))
 
 
-# Rain lead lines in the user's language — the guaranteed yes/no must obey the
-# same language contract as the rest of the answer.
-_RAIN_LEAD = {
-    "en": ("Yes — rain likely tomorrow ({rain} mm).", "No rain expected tomorrow."),
-    "hi": ("हाँ — कल बारिश की संभावना है ({rain} मिमी)।", "कल बारिश की उम्मीद नहीं है।"),
-    "te": ("అవును — రేపు వర్షం పడే అవకాశం ఉంది ({rain} మిమీ).", "రేపు వర్షం అంచనా లేదు."),
-}
+# Rain lead lines come from llm_service.rain_sentence: the user's language, and
+# IMD's rain categories in words ("heavy rain") instead of millimetres.
 
 
 def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str, language: str = "en") -> str:
@@ -178,11 +173,9 @@ def _ensure_rain_lead(message: str, forecast_dict: dict | None, answer: str, lan
         return answer
     days = forecast_dict.get("days") or []
     tomorrow = days[1] if len(days) > 1 else (days[0] if days else {})
-    fc_rain = (tomorrow or {}).get("rainfall")
-    if fc_rain is None:
+    line = rain_sentence((tomorrow or {}).get("rainfall"), language)
+    if line is None:
         return answer
-    lead_yes, lead_no = _RAIN_LEAD.get(language, _RAIN_LEAD["en"])
-    line = lead_yes.format(rain=fc_rain) if fc_rain > 0 else lead_no
     if line in answer:
         return answer
     if _answer_already_given(answer):
@@ -227,9 +220,13 @@ def _build_response(loc, verified_dict, risk, current_dict, forecast_dict, answe
 
 async def _retrieve_demo(loc) -> tuple[dict, dict, dict, list, dict]:
     imd = IMDService(adapter="demo")
+    # The district picks the sample set, exactly as /api/weather/current and
+    # /forecast do. Without it chat answered every place from the Hyderabad
+    # sample: "will it rain tomorrow?" in Visakhapatnam said 22 mm while the
+    # Home screen showed 110 mm for the same place.
     current, forecast, warning = await asyncio.gather(
-        imd.get_current_weather(loc["latitude"], loc["longitude"]),
-        imd.get_forecast(loc["latitude"], loc["longitude"]),
+        imd.get_current_weather(loc["latitude"], loc["longitude"], district=loc.get("district")),
+        imd.get_forecast(loc["latitude"], loc["longitude"], district=loc.get("district")),
         imd.get_district_warning(loc["district"]),
     )
     val = ValidationService(imd)
@@ -327,10 +324,22 @@ async def _retrieve_live(loc, lat, lon) -> tuple[dict | None, dict | None, dict,
     # the chat verdict had never seen. Both now share one gatherer.
     cap_alerts = gathered["relevant"]
     nearby_alerts = gathered["nearby"]
+    # Same rule as /api/weather/warnings: SACHET answering live is a check of
+    # official warnings even when IMD's own API is down or unkeyed. Then the
+    # "unavailable" marker no longer applies, and the answer must not tell the
+    # user the warning service could not be reached.
+    if not warn_call_ok and gathered.get("official_checked"):
+        warn_call_ok = True
+        verified_dict = {k: v for k, v in verified_dict.items() if k != "warning_service"}
     for a in cap_alerts:
         ev.append({"source": a.get("provenance") or "NDMA-Sachet-CAP", "type": "cap_alert",
                    "issued_at": a.get("sent"), "valid_until": a.get("expires"),
                    "provenance": a.get("provenance") or gathered["provenance"]})
+    if gathered.get("official_checked") and not cap_alerts:
+        # Checked and nothing in force is still a source the answer rests on;
+        # the app lists it under the answer ("Based on ...").
+        ev.append({"source": "NDMA-Sachet-CAP", "type": "warning_check",
+                   "issued_at": None, "provenance": "LIVE"})
 
     # imd mode serves IMD facts or nothing, so the phrasing layer must not name
     # Open-Meteo as the source of an IMD observation (docs/SOURCE-MODES.md).
@@ -472,7 +481,7 @@ async def _handle(req: ChatRequest) -> ChatResponse:
         # naming the misconfiguration; the [WeatherGPT CONFIG ERROR] banner at
         # startup already shouted about it on stderr.
         model_error = str(exc)
-        answer, fallback = _template_answer(ctx["evidence"], ctx["language"]), True
+        answer, fallback = _template_answer(ctx["evidence"], ctx["language"], ctx["message"]), True
 
     # Post-LLM response validation (§10, §43): the gate before delivery.
     # NOTE: advisory is NOT appended to the chat answer. Chat is facts-only;
@@ -543,7 +552,7 @@ async def chat_stream(req: ChatRequest):
         if truncated or not raw.strip():
             # The live answer broke mid-flight: substitute the grounded template,
             # flagged as fallback — never deliver a half answer as if complete.
-            raw = _template_answer(ctx["evidence"], ctx["language"])
+            raw = _template_answer(ctx["evidence"], ctx["language"], ctx["message"])
             fallback = True
         answer, validated_fallback = _finalize_answer(ctx, raw)
         fallback = fallback or validated_fallback

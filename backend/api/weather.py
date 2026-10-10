@@ -147,8 +147,10 @@ async def advisory_current_observation(lat: float, lon: float) -> tuple[dict | N
     "UNAVAILABLE"). Never returns invented numbers.
     """
     if config.DEMO_MODE:
-        imd = _services()["imd"]
-        data = (await imd.get_current_weather(lat, lon)).model_dump(mode="json")
+        s = _services()
+        # Same sample set the Home weather card shows for this place.
+        district = s["loc"].resolve(lat, lon).get("district")
+        data = (await s["imd"].get_current_weather(lat, lon, district=district)).model_dump(mode="json")
         return data, "DEMO"
     try:
         return await _live_current(lat, lon)
@@ -374,8 +376,6 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
     except AdapterUnavailable:
         warning, verified_d, warn_prov = None, None, "UNAVAILABLE"
 
-    warning_service_available = warn_call_ok
-
     # A warning for a different district is context, not this district's warning.
     # The validation layer already ran the location check; read its verdict.
     warn_matches_location = (
@@ -390,6 +390,12 @@ async def warnings(district: str = "Hyderabad", lat: Optional[float] = None, lon
     cap_alerts = gathered["relevant"]
     nearby_alerts = gathered["nearby"]
     cap_prov = gathered["provenance"]
+    # Official warnings were checked if EITHER official source answered: IMD's
+    # district-warning API, or NDMA SACHET, the channel IMD publishes its
+    # warnings through. Requiring IMD alone meant that without an IMD key every
+    # calm district read "the warning service could not be reached", although
+    # SACHET had just answered for it.
+    warning_service_available = warn_call_ok or bool(gathered.get("official_checked"))
 
     # Truly nothing to report AND we could not check: honest unavailable.
     # If the service answered and simply had nothing, that is a reachable, calm

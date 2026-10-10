@@ -21,8 +21,8 @@ import './WeatherCard.css';
 // direction — the cell says so honestly instead of guessing.
 const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
 function compassPoint(deg) {
-  const n = Number(deg);
-  if (!Number.isFinite(n)) return null;
+  const n = finiteNum(deg);
+  if (n === null) return null;
   return COMPASS[Math.round((((n % 360) + 360) % 360) / 22.5) % 16];
 }
 
@@ -41,10 +41,15 @@ function conditionIcon(cond) {
   return 'cloud';
 }
 
-const finiteNum = (v) => {
+// A missing value stays missing. Number(null) and Number('') are 0, so the
+// bare coercion turned "no reading" into a reading of zero: every card showed
+// wind "N · 0°" (no source reports a direction at all), and a station that
+// skipped its temperature would have shown 0°.
+function finiteNum(v) {
+  if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
-};
+}
 
 export default function WeatherCard() {
   const { lang, loc, locReady, syncTick } = useApp();

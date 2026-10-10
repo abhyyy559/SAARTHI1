@@ -25,10 +25,17 @@ def test_coastal_districts_present():
         assert coastal in names, f"missing coastal district: {coastal}"
 
 
-def test_owm_fallback_on_openmeteo_429(monkeypatch):
+def test_owm_fallback_on_openmeteo_429(monkeypatch, tmp_path):
     """Open-Meteo 429 -> AdapterUnavailable -> OWM current fills in (LIVE)."""
     from backend.adapters import openmeteo_adapter, owm_adapter
     from backend.adapters.registry import AdapterUnavailable
+    import backend.api.weather as weather_mod
+    from backend.services.cache_service import CacheService
+
+    # _live_current caches what it serves. Without this the fake 28°C reading
+    # below landed in the developer's real weathergpt_cache.json, ready to be
+    # served as a CACHED observation by the next live run.
+    monkeypatch.setattr(weather_mod, "cache", CacheService(str(tmp_path / "cache.json")))
 
     async def om_fail(lat, lon):
         raise AdapterUnavailable("open-meteo unreachable: 429 Too Many Requests")

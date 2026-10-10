@@ -33,3 +33,12 @@ os.environ["EMERGENCY_STORE_FILE"] = os.path.join(_TMP, "emergency_store.json")
 # Keep the real store out of reach even if something resolves a path before
 # SAARTHI_STORE_DIR is consulted.
 os.environ.pop("DATABASE_URL", None)
+
+# The app defaults to the public SACHET feeds when CAP_FEED_URLS is unset.
+# Tests stay offline and deterministic: an explicitly empty value turns the
+# default off (tests that need feeds monkeypatch the adapter).
+os.environ.setdefault("CAP_FEED_URLS", "")
+
+# Upstream answers are memoized for a short window in the app; tests swap the
+# upstreams between cases, so every call must reach the (faked) source.
+os.environ["UPSTREAM_CACHE_SECONDS"] = "0"

@@ -102,6 +102,35 @@ export function relTime(iso, nowMs = Date.now()) {
   } catch { return ''; }
 }
 
+// Lifecycle state of an alert row (UPCOMING / PRE-ALERT / ACTIVE / UPDATED /
+// EXTENDED / ENDED / CANCELLED). Demo-store alerts run their own state machine
+// and carry it in `state`. Official feed alerts (SACHET / IMD) carry none: they
+// are issued bulletins, in force from onset until expiry. Defaulting them to
+// UPCOMING labelled every live official warning "Upcoming · not started yet",
+// and kept expired backlog bulletins under the active "Emergency alerts"
+// heading while the verdict (which ignores expired alerts) said otherwise.
+// Not a severity — severity is never derived here.
+export function alertState(a, nowMs = Date.now()) {
+  const own = String((a && (a.lifecycle_state || a.state)) || '').toUpperCase();
+  if (own) return own;
+  const at = (v) => {
+    const ms = Date.parse(v || '');
+    return Number.isNaN(ms) ? null : ms;
+  };
+  const end = at(a && (a.expires || a.valid_until));
+  if (end !== null && end <= nowMs) return 'ENDED';
+  const start = at(a && (a.onset || a.effective));
+  if (start !== null && start > nowMs) return 'UPCOMING';
+  return 'ACTIVE';
+}
+
+// Over: ended, or withdrawn by its issuer. A CANCELLED alert listed under
+// "Emergency alerts" read as a live emergency.
+export function isPastAlert(a, nowMs = Date.now()) {
+  const s = alertState(a, nowMs);
+  return s === 'ENDED' || s === 'CANCELLED';
+}
+
 // Merge official CAP alerts and demo alerts into one list, official first,
 // each tagged with its origin so the row can label it honestly.
 export function mergeAlerts(official, demo) {

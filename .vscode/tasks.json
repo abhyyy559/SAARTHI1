@@ -5,7 +5,7 @@
       "label": "SAARTHI: Install backend dependencies",
       "type": "shell",
       "command": "python -m pip install -r backend/requirements.txt",
-      "options": { "cwd": "${workspaceFolder}/weathergpt" },
+      "options": { "cwd": "${workspaceFolder}" },
       "inAgents": true,
       "runOptions": { "runOn": "worktreeCreated" },
       "problemMatcher": []
@@ -14,7 +14,7 @@
       "label": "SAARTHI: Install frontend dependencies",
       "type": "shell",
       "command": "npm.cmd install",
-      "options": { "cwd": "${workspaceFolder}/weathergpt/frontend-react" },
+      "options": { "cwd": "${workspaceFolder}/frontend-react" },
       "inAgents": true,
       "runOptions": { "runOn": "worktreeCreated" },
       "problemMatcher": []
@@ -24,7 +24,7 @@
       "type": "shell",
       "command": "python -m uvicorn backend.main:app --host 127.0.0.1 --port 8003 --reload",
       "options": {
-        "cwd": "${workspaceFolder}/weathergpt",
+        "cwd": "${workspaceFolder}",
         "env": { "DEMO_MODE": "false", "IMD_ADAPTER": "live" }
       },
       "inAgents": true,
@@ -34,7 +34,7 @@
       "label": "SAARTHI: Frontend",
       "type": "shell",
       "command": "npm.cmd run dev -- --host 127.0.0.1 --port 5173 --strictPort",
-      "options": { "cwd": "${workspaceFolder}/weathergpt/frontend-react" },
+      "options": { "cwd": "${workspaceFolder}/frontend-react" },
       "inAgents": true,
       "problemMatcher": []
     }

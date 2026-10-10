@@ -33,8 +33,16 @@ function alertLabel(a) {
 // Canonical share id: official CAP alerts carry `identifier`, demo alerts
 // carry `id`. Dropping identifier-only alerts here was the "QR not
 // generating" bug — the list on screen never reached the picker.
+// The IMD warning carries no id field at all and SACHET bulletins can carry an
+// empty identifier, so an id-only key hid exactly those: the Alerts page showed
+// an active alert while this picker said "no saved alert to share". They get a
+// stable content key instead (buildEnvelope derives the wire id itself).
 function alertId(a) {
-  return String((a && (a.id || a.alert_id || a.identifier)) || '');
+  if (!a) return '';
+  const own = a.id || a.alert_id || a.identifier;
+  if (own) return String(own);
+  return ['content', a.source, a.hazard || a.event, a.headline || a.title || a.message,
+    a.sent || a.issued_at].map((v) => String(v || '')).join('|');
 }
 
 export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', initialHops = 0, relayEnvelope = null, bare = false }) {
@@ -45,7 +53,7 @@ export default function QrRelay({ alerts = [], lang = 'en', deviceLabel = '', in
   const [mode, setMode] = useState('simple');
 
   const pickable = useMemo(
-    () => (alerts || []).filter((a) => a && (a.id || a.alert_id || a.identifier)),
+    () => (alerts || []).filter((a) => a && typeof a === 'object'),
     [alerts],
   );
   useEffect(() => {

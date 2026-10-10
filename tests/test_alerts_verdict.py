@@ -50,7 +50,7 @@ def _cap(severity, area="Hyderabad district, Telangana", identifier="cap-1",
 
 
 def _install_live(monkeypatch, *, imd_raises=False, imd_warning=None,
-                  caps=(), chain=()):
+                  caps=(), chain=(), cap_live=True):
     """Force the live branch with deterministic, offline sources."""
     monkeypatch.setattr(config, "DEMO_MODE", False)
 
@@ -62,6 +62,10 @@ def _install_live(monkeypatch, *, imd_raises=False, imd_warning=None,
     monkeypatch.setattr(IMDService, "get_district_warning", fake_warning)
 
     async def fake_fetch():
+        # SACHET answering live IS a check of official warnings (it carries
+        # IMD's own warnings), so "we could not check" needs it down as well.
+        if not cap_live:
+            raise AdapterUnavailable("CAP feeds unreachable")
         return list(caps), "LIVE"
 
     monkeypatch.setattr(cap_adapter, "fetch_alerts", fake_fetch)
@@ -99,7 +103,7 @@ def test_live_cap_orange_imd_down_is_high(monkeypatch):
 
 # 2. REGRESSION: nothing found AND we could not check -> UNKNOWN, never LOW.
 def test_live_imd_down_nothing_found_is_unknown(monkeypatch):
-    _install_live(monkeypatch, imd_raises=True)
+    _install_live(monkeypatch, imd_raises=True, cap_live=False)
     data = _get(district="Hyderabad", lat=17.385, lon=78.4867)
     v = data["verdict"]
     assert v["level"] == "UNKNOWN", v
@@ -113,7 +117,7 @@ def test_live_imd_down_nothing_found_is_unknown(monkeypatch):
 def test_nearby_alerts_never_calm_the_district(monkeypatch):
     nearby = [_cap("ORANGE", area="Warangal district, Telangana",
                    identifier=f"near-{i}") for i in range(5)]
-    _install_live(monkeypatch, imd_raises=True, chain=nearby)
+    _install_live(monkeypatch, imd_raises=True, chain=nearby, cap_live=False)
     data = _get(district="Hyderabad", lat=17.385, lon=78.4867)
     v = data["verdict"]
     assert v["level"] == "UNKNOWN", v
@@ -139,7 +143,7 @@ def test_status_key_present_in_every_branch(monkeypatch):
         demo = _get(path, district="Hyderabad")
         assert "status" in demo and "verdict" in demo, (path, demo)
 
-    _install_live(monkeypatch, imd_raises=True)
+    _install_live(monkeypatch, imd_raises=True, cap_live=False)
     for path in ("/api/v1/warnings", "/api/weather/warnings"):
         unreachable = _get(path, district="Hyderabad", lat=17.385, lon=78.4867)
         assert unreachable["status"] == "unavailable"
@@ -163,15 +167,34 @@ def test_verified_yellow_is_moderate(monkeypatch):
     assert data["status"] == "ok"
 
 
-# v1 regression: a live CAP feed must not make an unreachable IMD look checked.
-def test_advisories_reports_unreachable_when_only_cap_feed_is_live(monkeypatch):
+# IMD's own API down, SACHET (which carries IMD's warnings) answered live:
+# official warnings WERE checked. Nothing for this district is a confirmed
+# calm, and the state-level alert stays a note, never this district's warning.
+def test_live_sachet_answer_counts_as_a_warning_check(monkeypatch):
+    _install_live(monkeypatch, imd_raises=True)
+    data = _get(district="Hyderabad", lat=17.385, lon=78.4867)
+    assert data["status"] == "ok", data
+    assert data["verdict"]["level"] == "LOW" and data["verdict"]["confirmed"] is True, data["verdict"]
+
+
+def test_advisories_with_only_the_cap_feed_live(monkeypatch):
     _install_live(monkeypatch, imd_raises=True,
                   caps=[_cap("ORANGE", area="Warangal district, Telangana")])
     r = TestClient(app).get("/api/v1/advisories",
                             params={"district": "Hyderabad", "lat": 17.385, "lon": 78.4867})
     assert r.status_code == 200, r.text
     body = r.json()
-    assert "unreachable" in body["advisory"].lower(), body["advisory"]
+    assert "unreachable" not in body["advisory"].lower(), body["advisory"]
+    assert "Note: 1 official state-level alerts" in body["advisory"], body["advisory"]
+    assert body["verdict"]["level"] == "LOW", body["verdict"]
+
+
+def test_advisories_report_unreachable_when_every_official_source_is_down(monkeypatch):
+    _install_live(monkeypatch, imd_raises=True, cap_live=False)
+    r = TestClient(app).get("/api/v1/advisories",
+                            params={"district": "Hyderabad", "lat": 17.385, "lon": 78.4867})
+    assert r.status_code == 200, r.text
+    assert "unreachable" in r.json()["advisory"].lower(), r.json()["advisory"]
 
 
 # v1 note stays driven by the verdict's nearby_count.

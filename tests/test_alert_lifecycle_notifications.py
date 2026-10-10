@@ -143,7 +143,8 @@ def official_chain(monkeypatch):
 
     async def fake_gather(lat=None, lon=None, district="", state=""):
         return {"relevant": list(feeds["alerts"]), "nearby": [],
-                "available": feeds["available"]}
+                "available": feeds["available"],
+                "official_checked": feeds["available"]}
 
     def fake_broadcast(payload, district=""):
         broadcast_calls.append(payload)

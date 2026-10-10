@@ -50,6 +50,7 @@ async def analyze_route(lat1: float, lon1: float, lat2: float, lon2: float,
 
     # Official warnings at origin/destination districts (best effort, never blocking)
     warn_notes = []
+    official = False
     imd = IMDService()
     for label, plc in (("origin", o), ("destination", d)):
         try:
@@ -58,17 +59,33 @@ async def analyze_route(lat1: float, lon1: float, lat2: float, lon2: float,
                 v = ValidationService(imd).validate_warning(w, plc.get("district", ""))
                 if v and v.verified:
                     warn_notes.append(f"{label}: {v.severity} {v.hazard}")
-                    if _RANK(v.severity) > _RANK(level):
-                        level, reason = v.severity, f"official {v.severity} warning at {label}"
+                    # Official severity maps onto the risk scale once, the same
+                    # way the verdict does (RED -> CRITICAL ...). Assigning the
+                    # colour itself left `level` = "RED", which the checks below
+                    # did not recognise: a route with an official RED warning
+                    # came back affected=False, "No weather blockers found".
+                    # GREEN is not a hazard and never replaces UNKNOWN.
+                    mapped = _OFFICIAL_LEVEL.get(str(v.severity or "").upper())
+                    if mapped and _RANK(mapped) > _RANK(level):
+                        level, reason = mapped, f"official {v.severity} warning at {label}"
+                        official = True
         except AdapterUnavailable:
             warn_notes.append(f"{label}: warning data unavailable")
 
+    affected = level in ("CRITICAL", "HIGH", "MODERATE")
+    if not affected:
+        advisory = "No weather blockers found; still verify before departure."
+    elif official:
+        advisory = ("An official warning is in force on this route; follow official "
+                    "guidance and verify again before departure.")
+    else:
+        advisory = "Consider travelling before the heavy-rain period; verify again before departure."
+
     assessment = ImpactAssessment(
         hazard="Route weather", severity=",".join(n for n in warn_notes) or "none-verified",
-        affected=level in ("HIGH", "MODERATE"), method="route",
+        affected=affected, method="route",
         risk_level=level, reason=reason,
-        advisory=("Consider travelling before the heavy-rain period; verify again before departure."
-                  if level in ("HIGH", "MODERATE") else "No weather blockers found; still verify before departure."),
+        advisory=advisory,
         provenance="LIVE" if provenances == {"LIVE"} else ("CACHED" if "LIVE" not in provenances and "CACHED" in provenances else "PARTIAL"),
     )
     return {
@@ -78,6 +95,10 @@ async def analyze_route(lat1: float, lon1: float, lat2: float, lon2: float,
         "assessment": assessment.model_dump(mode="json"),
         "disclaimer": "Risk interpretation, not a safety guarantee. Verify before travelling.",
     }, assessment.provenance
+
+
+# Official severity -> route risk level (same mapping as verdict_service).
+_OFFICIAL_LEVEL = {"RED": "CRITICAL", "ORANGE": "HIGH", "YELLOW": "MODERATE"}
 
 
 def _RANK(level: str) -> int:

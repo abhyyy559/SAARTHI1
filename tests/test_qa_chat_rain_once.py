@@ -17,7 +17,7 @@ from backend.main import app
 
 RAIN_FORECAST = {"source": "IMD", "days": [{"rainfall": 1.0}, {"rainfall": 22.0}]}
 DRY_FORECAST = {"source": "IMD", "days": [{"rainfall": 0.0}, {"rainfall": 0.0}]}
-LEAD = "Yes — rain likely tomorrow (22.0 mm)."
+LEAD = "Yes — moderate rain is likely tomorrow."
 
 
 # ---------------------------------------------------------------------------

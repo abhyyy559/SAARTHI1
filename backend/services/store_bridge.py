@@ -66,6 +66,20 @@ def run(coro: Coroutine[Any, Any, Any]) -> Any:
     return asyncio.run_coroutine_threadsafe(coro, _get_loop()).result()
 
 
+async def run_async(coro: Coroutine[Any, Any, Any]) -> Any:
+    """Await one db coroutine on the bridge loop from inside another event loop.
+
+    Code that already runs on an event loop (the app lifespan, an endpoint) must
+    still hand db work to the bridge: the asyncpg pool belongs to the loop that
+    created it. Awaiting `db.*` directly on the server loop either created the
+    pool there — after which every store call from the bridge failed with
+    "attached to a different loop" and quietly fell back to the JSON files a
+    redeploy wipes — or tried to use the bridge's pool from the wrong loop.
+    Unlike run(), this does not block the calling loop while it waits.
+    """
+    return await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(coro, _get_loop()))
+
+
 def close() -> None:
     """Stop the bridge loop (tests / shutdown)."""
     global _loop

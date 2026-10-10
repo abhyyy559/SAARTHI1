@@ -29,7 +29,13 @@ SYSTEM_RULES = (
     "Lead with the safety picture: the warning status and any hazard. Never open the\n"
     "answer with temperature, and never let temperature be the most prominent number.\n"
     "The reader is deciding whether it is safe to go out, farm or put to sea.\n"
-    "When discussing an emergency warning include: hazard, affected location, validity, source.\n"
+    "When discussing an emergency warning include the hazard, the place, and until when (in words).\n"
+    # --- PLAIN LANGUAGE. Read by people who are not weather experts. ---
+    "Use plain, everyday words. Use at most TWO numbers in the whole answer, rounded to\n"
+    "whole numbers. Never quote millimetres, decimals, timestamps or percentages; say\n"
+    "rain as light / moderate / heavy (use tomorrow_rain_words when present).\n"
+    "Do not mention data sources, 'verified data', fallbacks, models or how the answer\n"
+    "was produced: the app shows the sources under the answer.\n"
     "Never present AI-generated advice as an official government instruction.\n"
     "NEVER give advice, recommendations, instructions, tips, suggestions, or practical actions of any kind.\n"
     "NEVER tell the user what they should do, avoid, prepare for, wear, carry, check, or cancel.\n"
@@ -44,7 +50,7 @@ SYSTEM_RULES = (
     # NOTE: the server does NOT append an advisory block to chat answers.
     # Chat answers are facts-only; advisory guidance travels separately in the
     # 'advisory' field of the /api/chat response (the app's Advisory tab).
-    "LENGTH: at most 180 words total. This is a hard limit, not a target.\n"
+    "LENGTH: at most 70 words total. This is a hard limit, not a target.\n"
     "Open with the safety answer itself - the hazard or the yes/no - in one short\n"
     "sentence of at most 20 words. Never open with 'Great question', 'Certainly',\n"
     "a restatement of what was asked, or a heading.\n"
@@ -65,7 +71,7 @@ SYSTEM_RULES = (
     "lines. You may use '## ' at the start of a line for a section heading, '**' around\n"
     "a few key words, and lines starting with '- ' for a short list (max 4 items).\n"
     "No other markdown, no tables, no code blocks.\n"
-    "When asked 'will it rain tomorrow' or similar rain query, answer Yes/No first with mm amount from tomorrow_rainfall_mm. If data missing, say 'rainfall forecast unavailable'.\n"
+    "When asked 'will it rain tomorrow' or similar rain query, answer Yes/No first and say how much in words (tomorrow_rain_words), never in mm. If data missing, say 'rainfall forecast unavailable'.\n"
     "Answer the rain yes/no ONCE, in that opening sentence. Do not add a second\n"
     "'yes it will rain' later in the answer."
 )
@@ -117,113 +123,171 @@ def build_evidence_package(*, location: dict, current: dict, forecast: dict, ver
         "weathergpt_risk": risk.get("level"),
         "user_type": user_type,
         "tomorrow_rainfall_mm": tomorrow_rainfall_mm,
+        # The same amount as IMD's rain category in words (none / a few drops /
+        # light / moderate / heavy ...): what the answer should say.
+        "tomorrow_rain_words": (rain_category(tomorrow_rainfall_mm) or "").replace("_", " ") or None,
         "tomorrow_rainfall_prob": tomorrow_rainfall_prob,
     }
 
 
-# Template phrasing per language. The rule-based answer must respect the user's
-# language even when the LLM is disabled — a Hindi user must never receive an
-# English-only answer. English strings are unchanged from the original template.
-_TEMPLATE_PHRASES = {
+# --- Plain-language rain -------------------------------------------------------
+# IMD's own daily rainfall categories, so an answer can say "heavy rain" instead
+# of "72.4 mm". Below 2.5 mm IMD does not even count a rainy day, so that is
+# never a "yes".
+_RAIN_WORDS = {
+    "en": {"light": "light", "moderate": "moderate", "heavy": "heavy",
+           "very_heavy": "very heavy", "extreme": "extremely heavy"},
+    "hi": {"light": "हल्की", "moderate": "मध्यम", "heavy": "भारी",
+           "very_heavy": "बहुत भारी", "extreme": "अत्यधिक भारी"},
+    "te": {"light": "తేలికపాటి", "moderate": "మోస్తరు", "heavy": "భారీ",
+           "very_heavy": "అతి భారీ", "extreme": "అత్యంత భారీ"},
+}
+_RAIN_SENTENCES = {
+    "en": {"yes": "Yes — {word} rain is likely tomorrow.",
+           "drops": "Mostly dry tomorrow — only a few drops are possible.",
+           "no": "No rain expected tomorrow."},
+    "hi": {"yes": "हाँ — कल {word} बारिश की संभावना है।",
+           "drops": "कल ज़्यादातर सूखा रहेगा — बस कुछ बूँदें गिर सकती हैं।",
+           "no": "कल बारिश की उम्मीद नहीं है।"},
+    "te": {"yes": "అవును — రేపు {word} వర్షం పడే అవకాశం ఉంది.",
+           "drops": "రేపు దాదాపు పొడిగా ఉంటుంది — కొన్ని చినుకులు మాత్రమే పడవచ్చు.",
+           "no": "రేపు వర్షం అంచనా లేదు."},
+}
+
+
+def rain_category(mm) -> str | None:
+    """IMD category for a day's rainfall: none | drops | light ... | extreme."""
+    if not isinstance(mm, (int, float)) or isinstance(mm, bool):
+        return None
+    if mm < 0.1:
+        return "none"
+    if mm < 2.5:
+        return "drops"
+    if mm < 15.6:
+        return "light"
+    if mm < 64.5:
+        return "moderate"
+    if mm < 115.6:
+        return "heavy"
+    if mm < 204.5:
+        return "very_heavy"
+    return "extreme"
+
+
+def rain_sentence(mm, language: str = "en") -> str | None:
+    """Tomorrow's rain in words, in the user's language; None without data."""
+    cat = rain_category(mm)
+    if cat is None:
+        return None
+    lang = language if language in _RAIN_SENTENCES else "en"
+    s = _RAIN_SENTENCES[lang]
+    if cat == "none":
+        return s["no"]
+    if cat == "drops":
+        return s["drops"]
+    return s["yes"].format(word=_RAIN_WORDS[lang][cat])
+
+
+_ASK_RAIN = ("rain", "barish", "baarish", "shower", "drizzle", "umbrella",
+             "वर्षा", "बारिश", "వర్షం", "వాన")
+_ASK_HEAT = ("hot", "heat", "cold", "temperature", "temp", "warm", "degree",
+             "गर्मी", "ठंड", "तापमान", "వేడి", "చలి", "ఉష్ణోగ్రత")
+
+
+def _round(v):
+    return int(round(v)) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+# Short answer phrasing per language. The rule-based answer must respect the
+# user's language even when the LLM is disabled — a Hindi user must never
+# receive an English-only answer. Kept plain on purpose: the direct answer
+# first, one line on official warnings, few numbers, no explanation of where
+# the data came from (the app shows the sources under the answer).
+_SHORT_PHRASES = {
     "en": {
-        "active_warning": "There is an active official warning for {loc}: {severity} — {hazard}.",
-        "valid_until": "It is valid until {valid_until}.",
-        "unreachable": ("The official warning service for {loc} could not be reached, so we cannot "
-                        "confirm whether a warning is active. Please check IMD or local authorities directly."),
-        "no_warning": "No active severe weather warning was found for {loc}.",
-        "rain_yes": "Rain is possible tomorrow in {loc} according to the latest {src} forecast (expected rainfall: {rain} mm).",
-        "rain_no": "The {src} forecast shows no significant rainfall expected tomorrow.",
-        "rain_na": "Tomorrow's forecast rainfall information is not available from the current data.",
-        "temp": "Tomorrow's temperature range: {tmin}–{tmax}°C.",
-        "risk": "WeatherGPT Risk Interpretation for you ({user_type}): {risk}.",
-        "risk_note": "This is our interpretation, not an IMD rating.",
-        "advisory_note": "For safety guidance, check the Advisory tab in the app.",
+        "active_warning": "Official warning for {loc}: {severity} — {hazard}.",
+        "unreachable": "Official warnings could not be checked right now — please confirm with IMD or local officials.",
+        "no_warning": "No official weather warning for {loc} right now.",
+        "now": "Right now in {loc}: {temp}°C, {cond}.",
+        "now_temp": "Right now in {loc}: {temp}°C.",
+        "tomorrow_temp": "Tomorrow: {tmin} to {tmax}°C.",
+        "rain_na": "Tomorrow's rain forecast is not available right now.",
     },
     "hi": {
-        "active_warning": "{loc} के लिए सक्रिय आधिकारिक चेतावनी है: {severity} — {hazard}।",
-        "valid_until": "यह {valid_until} तक वैध है।",
-        "unreachable": ("{loc} की आधिकारिक चेतावनी सेवा से संपर्क नहीं हो सका, इसलिए हम पुष्टि "
-                        "नहीं कर सकते कि कोई चेतावनी सक्रिय है या नहीं। कृपया IMD या स्थानीय प्रशासन से सीधे जाँचें।"),
-        "no_warning": "{loc} के लिए कोई सक्रिय गंभीर मौसम चेतावनी नहीं मिली।",
-        "rain_yes": "ताज़ा {src} पूर्वानुमान के अनुसार कल {loc} में बारिश संभव है (अनुमानित वर्षा: {rain} मिमी)।",
-        "rain_no": "{src} पूर्वानुमान के अनुसार कल कोई खास बारिश की उम्मीद नहीं है।",
-        "rain_na": "कल की वर्षा की जानकारी वर्तमान आंकड़ों में उपलब्ध नहीं है।",
-        "temp": "कल का तापमान: {tmin}–{tmax}°C।",
-        "risk": "आपके लिए WeatherGPT जोखिम व्याख्या ({user_type}): {risk}।",
-        "risk_note": "यह हमारी व्याख्या है, IMD की रेटिंग नहीं।",
-        "advisory_note": "सुरक्षा सलाह के लिए ऐप में Advisory टैब देखें।",
+        "active_warning": "{loc} के लिए आधिकारिक चेतावनी: {severity} — {hazard}।",
+        "unreachable": "आधिकारिक चेतावनी अभी जाँची नहीं जा सकी — कृपया IMD या स्थानीय अधिकारियों से पुष्टि करें।",
+        "no_warning": "{loc} के लिए अभी कोई आधिकारिक मौसम चेतावनी नहीं है।",
+        "now": "{loc} में अभी: {temp}°C, {cond}।",
+        "now_temp": "{loc} में अभी: {temp}°C।",
+        "tomorrow_temp": "कल: {tmin} से {tmax}°C।",
+        "rain_na": "कल की बारिश का पूर्वानुमान अभी उपलब्ध नहीं है।",
     },
     "te": {
-        "active_warning": "{loc} కోసం క్రియాశీల అధికారిక హెచ్చరిక ఉంది: {severity} — {hazard}.",
-        "valid_until": "ఇది {valid_until} వరకు చెల్లుతుంది.",
-        "unreachable": ("{loc} యొక్క అధికారిక హెచ్చరిక సేవను చేరుకోలేకపోయాం, కాబట్టి హెచ్చరిక "
-                        "క్రియాశీలంగా ఉందో లేదో నిర్ధారించలేము. దయచేసి IMD లేదా స్థానిక అధికారులను నేరుగా సంప్రదించండి."),
-        "no_warning": "{loc} కోసం క్రియాశీల తీవ్ర వాతావరణ హెచ్చరిక ఏదీ కనిపించలేదు.",
-        "rain_yes": "తాజా {src} అంచనా ప్రకారం రేపు {loc}లో వర్షం పడే అవకాశం ఉంది (అంచనా వర్షపాతం: {rain} మిమీ).",
-        "rain_no": "{src} అంచనా ప్రకారం రేపు గణనీయమైన వర్షం అంచనా లేదు.",
-        "rain_na": "రేపటి వర్షపాత సమాచారం ప్రస్తుత డేటాలో అందుబాటులో లేదు.",
-        "temp": "రేపటి ఉష్ణోగ్రత పరిధి: {tmin}–{tmax}°C.",
-        "risk": "మీ కోసం WeatherGPT ప్రమాద వివరణ ({user_type}): {risk}.",
-        "risk_note": "ఇది మా వివరణ, IMD రేటింగ్ కాదు.",
-        "advisory_note": "భద్రతా మార్గదర్శనం కోసం యాప్‌లోని Advisory ట్యాబ్ చూడండి.",
+        "active_warning": "{loc}కు అధికారిక హెచ్చరిక: {severity} — {hazard}.",
+        "unreachable": "అధికారిక హెచ్చరికలను ఇప్పుడు తనిఖీ చేయలేకపోయాం — దయచేసి IMD లేదా స్థానిక అధికారులతో నిర్ధారించుకోండి.",
+        "no_warning": "{loc}కు ఇప్పుడు అధికారిక వాతావరణ హెచ్చరిక లేదు.",
+        "now": "{loc}లో ఇప్పుడు: {temp}°C, {cond}.",
+        "now_temp": "{loc}లో ఇప్పుడు: {temp}°C.",
+        "tomorrow_temp": "రేపు: {tmin} నుండి {tmax}°C.",
+        "rain_na": "రేపటి వర్ష అంచనా ఇప్పుడు అందుబాటులో లేదు.",
     },
 }
 
 
-def _phrases(language: str) -> dict:
-    return _TEMPLATE_PHRASES.get(language, _TEMPLATE_PHRASES["en"])
+def _template_answer(evidence: dict, language: str = "en", question: str = "") -> str:
+    """Rule-based grounded answer. Used when the LLM is disabled or unreachable.
 
-
-def _template_answer(evidence: dict, language: str = "en") -> str:
-    """Rule-based grounded answer. Used when the LLM is disabled or unreachable."""
-    verified = evidence.get("verified_warning", {})
-    forecast = evidence.get("forecast", {})
-    risk = evidence.get("weathergpt_risk", "LOW")
-    location_name = evidence.get("location", {}).get("city") or evidence.get("location", {}).get("district")
-    loc = location_name or "your area"
-    user_type = evidence.get("user_type", "general")
-    src = evidence.get("source_name", evidence.get("source", "IMD"))
+    Short and plain on purpose: the direct answer to what was asked first, one
+    line on official warnings, rounded numbers only where they help, and nothing
+    about how the answer was produced or where the data came from (the app shows
+    the sources under every answer). An active official warning still comes
+    first: safety before the forecast.
+    """
+    verified = evidence.get("verified_warning") or {}
+    forecast = evidence.get("forecast") or {}
+    current = evidence.get("current_weather") or {}
+    location = evidence.get("location") or {}
+    loc = location.get("city") or location.get("district") or "your area"
+    lang = language if language in _SHORT_PHRASES else "en"
+    P = _SHORT_PHRASES[lang]
 
     days = forecast.get("days") or []
     tomorrow = days[1] if len(days) > 1 else (days[0] if days else {})
-    fc_rain = tomorrow.get("rainfall")
-    fc_min = tomorrow.get("min_temperature")
-    fc_max = tomorrow.get("max_temperature")
+    rain_line = rain_sentence((tomorrow or {}).get("rainfall"), lang) or P["rain_na"]
+    tmin = _round((tomorrow or {}).get("min_temperature"))
+    tmax = _round((tomorrow or {}).get("max_temperature"))
+    temp_now = _round(current.get("temperature"))
+    cond = str(current.get("condition") or "").strip().lower()
 
-    lines = []
-    warn = verified.get("verified", False)
-    P = _phrases(language)
+    q = (question or "").lower()
+    asks_rain = any(w in q for w in _ASK_RAIN)
+    asks_heat = any(w in q for w in _ASK_HEAT)
+
+    answer: list[str] = []
+    if asks_rain:
+        answer.append(rain_line)
+    elif asks_heat:
+        if temp_now is not None:
+            answer.append(P["now_temp"].format(loc=loc, temp=temp_now))
+        if tmin is not None and tmax is not None:
+            answer.append(P["tomorrow_temp"].format(tmin=tmin, tmax=tmax))
+        if not answer:
+            answer.append(rain_line)
+    else:
+        if temp_now is not None:
+            answer.append((P["now"] if cond else P["now_temp"]).format(loc=loc, temp=temp_now, cond=cond))
+        answer.append(rain_line)
+
     # Honesty: "we could not check" is a different statement from "there is no
-    # warning". Saying "no warning was found" while the warning service is down
-    # is a false all-clear — the one thing this product must never emit.
-    service_unreachable = verified.get("warning_service") == "unavailable"
-
-    if warn:
-        lines.append(
-            P["active_warning"].format(loc=loc, severity=verified.get('severity'), hazard=verified.get('hazard'))
-        )
-        if verified.get("valid_until"):
-            lines.append(P["valid_until"].format(valid_until=verified.get('valid_until')))
-    elif service_unreachable:
-        lines.append(P["unreachable"].format(loc=loc))
-    else:
-        lines.append(P["no_warning"].format(loc=loc))
-
-    if fc_rain is not None and fc_rain > 0:
-        lines.append(P["rain_yes"].format(loc=loc, src=src, rain=fc_rain))
-    elif fc_rain == 0:
-        lines.append(P["rain_no"].format(src=src))
-    else:
-        lines.append(P["rain_na"])
-
-    if fc_min is not None and fc_max is not None:
-        lines.append(P["temp"].format(tmin=fc_min, tmax=fc_max))
-
-    lines.append(P["risk"].format(user_type=user_type, risk=risk))
-    lines.append(P["risk_note"])
-    # Facts only on the chat surface: no advice here — guidance lives in the Advisory tab.
-    lines.append(P["advisory_note"])
-    return " ".join(lines)
+    # warning". Saying "no warning" while the warning service is down is a
+    # false all-clear — the one thing this product must never emit.
+    if verified.get("verified"):
+        warning = P["active_warning"].format(
+            loc=loc, severity=verified.get("severity"), hazard=verified.get("hazard") or "")
+        return " ".join([warning, *answer])
+    if verified.get("warning_service") == "unavailable":
+        return " ".join([*answer, P["unreachable"]])
+    return " ".join([*answer, P["no_warning"].format(loc=loc)])
 
 
 class LLMService:
@@ -241,7 +305,7 @@ class LLMService:
         rule-based template — the user still gets a grounded answer.
         """
         if not self.enabled:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, language, question), True
 
         if not config.LLM_MODEL_KNOWN:
             # FAIL LOUD: a misconfigured model name used to degrade silently into the
@@ -285,11 +349,11 @@ class LLMService:
                 resp.raise_for_status()
                 content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
         except Exception:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, language, question), True
 
         content = _strip_think_blocks(content)
         if not content:
-            return _template_answer(evidence, language), True
+            return _template_answer(evidence, language, question), True
         return content, False
 
     async def generate_stream(self, evidence: dict, question: str, language: str):
@@ -304,7 +368,7 @@ class LLMService:
         can never leak into the visible stream.
         """
         if not self.enabled:
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, language, question)}
             yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             return
         if not config.LLM_MODEL_KNOWN:
@@ -313,7 +377,7 @@ class LLMService:
                 "configured endpoint. Fix LLM_MODEL (default: 'openai/gpt-oss-120b') "
                 "or unset it to use the default."
             )
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, language, question)}
             yield {"type": "end", "fallback": True, "model_error": model_error, "truncated": False}
             return
 
@@ -401,13 +465,13 @@ class LLMService:
                         yield {"type": "token", "text": buf}
         except Exception:
             if not sent_any:
-                yield {"type": "token", "text": _template_answer(evidence, language)}
+                yield {"type": "token", "text": _template_answer(evidence, language, question)}
                 yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             else:
                 yield {"type": "end", "fallback": True, "model_error": "", "truncated": True}
             return
         if not sent_any:
-            yield {"type": "token", "text": _template_answer(evidence, language)}
+            yield {"type": "token", "text": _template_answer(evidence, language, question)}
             yield {"type": "end", "fallback": True, "model_error": "", "truncated": False}
             return
         yield {"type": "end", "fallback": False, "model_error": "", "truncated": False}

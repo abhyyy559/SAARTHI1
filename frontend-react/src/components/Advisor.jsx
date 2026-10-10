@@ -19,13 +19,23 @@ import './Advisor2.css';
 // backend renders advisories in EN/HI/TE (advisory_for), so avoidance words
 // are matched in all three languages: a sentence matching nothing stays in
 // Do this now.
+//
+// Word edges are spelled out with Unicode lookarounds. JS `\b` only knows
+// ASCII word characters, so it never fires beside Devanagari or Telugu letters
+// (or their vowel signs): with `\b` no Hindi or Telugu avoidance line was ever
+// recognised, and the Avoid section never appeared in those languages.
+const EDGE_L = '(?<![\\p{L}\\p{M}\\p{N}_])';
+const EDGE_R = '(?![\\p{L}\\p{M}\\p{N}_])';
 const AVOID_RE = new RegExp(
-  '\\b(' +
+  EDGE_L + '(' +
     // English
     'avoid|don[\'\\u2019]t|do\\s+not|never|stay\\s+away|keep\\s+away|not\\s+safe|cancel|postpone|hold\\s+off|skip|refrain|delay' +
     '|बचें|बचे|न\\s*करें|टालें|रद्द|स्थगित|मत\\s*जाएं|नहीं\\s*जाना' +
     '|మానుకోండి|చేయవద్దు|వద్దు|రద్దు|వాయిదా|వెళ్లవద్దు' +
-  ')\\b', 'i');
+  ')' + EDGE_R +
+  // Telugu negative imperatives are a -వద్దు suffix on the verb ("don't
+  // drive" = నడపవద్దు), so that one also matches at the end of a word.
+  '|వద్దు' + EDGE_R, 'iu');
 
 export function splitDoAvoid(bullets) {
   const list = Array.isArray(bullets) ? bullets : [];

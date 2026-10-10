@@ -30,7 +30,13 @@ def _condition(code: int | None) -> str:
     return WMO_CODE_MAP.get(int(code) if code is not None else -1, "Unknown")
 
 
-async def _fetch(params: dict) -> dict:
+# Open-Meteo steps its models every 15 minutes; asking it again within 5 minutes
+# returns the same numbers, so repeat questions are answered from memory (see
+# utils/upstream_cache). Coordinates are rounded to ~1 km for the key.
+_MEMO_SECONDS = 300
+
+
+async def _fetch_uncached(params: dict) -> dict:
     try:
         async with httpx.AsyncClient(timeout=12.0) as client:
             resp = await client.get(BASE, params=params)
@@ -39,6 +45,15 @@ async def _fetch(params: dict) -> dict:
     except Exception as exc:  # network down, DNS, 5xx — never invent numbers
         report("open-meteo", OFFLINE, f"fetch failed: {type(exc).__name__}")
         raise AdapterUnavailable(f"open-meteo unreachable: {exc}") from exc
+
+
+async def _fetch(params: dict) -> dict:
+    from ..utils.upstream_cache import remember
+
+    key = ("open-meteo",) + tuple(sorted(
+        (k, round(v, 2) if isinstance(v, float) else v) for k, v in params.items()))
+    rounded = {k: (round(v, 2) if isinstance(v, float) else v) for k, v in params.items()}
+    return await remember(key, _MEMO_SECONDS, lambda: _fetch_uncached(rounded))
 
 
 async def get_current(latitude: float, longitude: float) -> tuple[WeatherObservation, str]:

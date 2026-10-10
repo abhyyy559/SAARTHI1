@@ -280,13 +280,13 @@ def _ask(monkeypatch, answer, message="Will it rain tomorrow?"):
 
 def test_endpoint_does_not_answer_the_rain_question_twice(monkeypatch):
     answer = _ask(monkeypatch, "**Yes**, it will rain tomorrow.\n\nAround 22 mm is expected.")
-    assert "Yes — rain likely tomorrow" not in answer, answer
+    assert "rain is likely tomorrow" not in answer, answer
     assert answer.lower().count("yes") == 1, answer
 
 
 def test_endpoint_still_adds_the_rain_lead_when_the_answer_buries_it(monkeypatch):
     answer = _ask(monkeypatch, "Temperatures will reach 31 C with high humidity.")
-    assert answer.startswith("Yes — rain likely tomorrow (22.0 mm)."), answer
+    assert answer.startswith("Yes — moderate rain is likely tomorrow."), answer
 
 
 # ---------------------------------------------------------------------------
