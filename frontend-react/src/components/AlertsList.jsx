@@ -18,6 +18,7 @@ import { SevStamp } from './ui';
 import { relTime, mergeAlerts, isPastAlert } from './inboxLogic';
 import AlertDetails from './AlertDetails';
 import DistrictMap from './DistrictMap';
+import { districtsOfAlert } from './mapLogic';
 import QrRelay from './QrRelay';
 import QrScan from './QrScan';
 import { readCache, saveCache } from '../offline';
@@ -322,16 +323,18 @@ export default function AlertsList({ initialAlertId = null }) {
         </div>
       );
   });
-  // Map tap → expand that district's first active alert inline (reuses the
-  // row-expansion machinery; no new navigation, no new state).
+  // Map tap → expand that district's first alert inline (reuses the
+  // row-expansion machinery; no new navigation, no new state). The map also
+  // shows official alerts for nearby districts, so look there second.
   const openDistrictFirst = (name) => {
-    const want = String(name || '').toLowerCase();
-    const hit = activeAlerts.find((a) => String(a.district || a.areaDesc || a.area || '').toLowerCase() === want);
-    if (hit) {
+    for (const [list, section] of [[activeAlerts, 'active'], [nearbyAlerts, 'nearby']]) {
+      const hit = list.find((a) => districtsOfAlert(a, [name]).length > 0);
+      if (!hit) continue;
       setOpenId(alertKey(hit));
       requestAnimationFrame(() => {
-        document.getElementById(`alert-row-active-${activeAlerts.indexOf(hit)}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        document.getElementById(`alert-row-${section}-${list.indexOf(hit)}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       });
+      return;
     }
   };
 
@@ -342,7 +345,7 @@ export default function AlertsList({ initialAlertId = null }) {
           <Icon name="offline" size={14} /> {t(lang, 'alertsCachedNote')}
         </p>
       )}
-      <DistrictMap alerts={activeAlerts} onSelectDistrict={openDistrictFirst} />
+      <DistrictMap alerts={[...activeAlerts, ...nearbyAlerts]} onSelectDistrict={openDistrictFirst} />
       <div className="alert-sec-title">
         <span className="kicker">{t(lang, 'alertsEmergencyTitle')}</span>
       </div>

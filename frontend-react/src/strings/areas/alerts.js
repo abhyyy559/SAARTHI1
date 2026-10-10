@@ -14,6 +14,14 @@
 // only owns the words the Alerts page and the emergency panel need.
 export default {
   en: {
+    // --- warning map
+    mapNearMe: 'Near me',
+    mapAllIndia: 'All India',
+    mapYou: 'You',
+    mapOpenAlert: 'Open alert',
+    mapNoAlertHere: 'No active alert here.',
+    mapAlertedTitle: 'Districts with alerts',
+    mapClose: 'Close',
     // --- page + cards -------------------------------------------------
     alertsTitle: 'Alerts',
     alertsLoading: 'Checking…',
@@ -136,6 +144,14 @@ export default {
     stCancelled: 'Cancelled',
   },
   hi: {
+    // --- warning map
+    mapNearMe: 'मेरे पास',
+    mapAllIndia: 'पूरा भारत',
+    mapYou: 'आप',
+    mapOpenAlert: 'अलर्ट खोलें',
+    mapNoAlertHere: 'यहाँ कोई सक्रिय अलर्ट नहीं।',
+    mapAlertedTitle: 'अलर्ट वाले जिले',
+    mapClose: 'बंद करें',
     alertsTitle: 'चेतावनी',
     alertsLoading: 'जाँच हो रही है…',
     alertsRetry: 'फिर जाँचें',
@@ -247,6 +263,14 @@ export default {
     stCancelled: 'रद्द',
   },
   te: {
+    // --- warning map
+    mapNearMe: 'నా దగ్గర',
+    mapAllIndia: 'భారత్ అంతా',
+    mapYou: 'మీరు',
+    mapOpenAlert: 'అలర్ట్ తెరవండి',
+    mapNoAlertHere: 'ఇక్కడ యాక్టివ్ అలర్ట్ లేదు.',
+    mapAlertedTitle: 'అలర్ట్ ఉన్న జిల్లాలు',
+    mapClose: 'మూసివేయండి',
     alertsTitle: 'హెచ్చరికలు',
     alertsLoading: 'తనిఖీ చేస్తున్నాం…',
     alertsRetry: 'మళ్లీ తనిఖీ చేయండి',
