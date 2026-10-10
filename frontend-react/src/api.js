@@ -4,8 +4,18 @@
 // backend (e.g. https://saarthi-api.onrender.com). Default '' = same origin,
 // which works both when the Vite dev proxy forwards /api to the FastAPI
 // backend (127.0.0.1:8000) and when the built dist is served by FastAPI itself.
-const BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
-const full = (p) => (p.startsWith('/api') ? `${BASE}${p}` : p);
+const BUILT_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+// The Android app is this same build served from https://localhost, which has
+// no backend: it saves a server address in Settings (serverBase.js), so the
+// base is read on every call rather than once.
+export function apiBase() {
+  try {
+    const saved = (localStorage.getItem('wgpt.server') || '').trim();
+    if (saved) return saved;
+  } catch { /* no storage: use the built-in address */ }
+  return BUILT_BASE;
+}
+const full = (p) => (p.startsWith('/api') ? `${apiBase()}${p}` : p);
 
 let offlineSim = false;
 export const setOfflineSim = (v) => { offlineSim = v; };
@@ -204,6 +214,11 @@ export const api = {
   sos: (payload) => post(`${V}/emergency/messages`, payload),
   inbox: () => j(`${V}/emergency/messages`),
   syncEmergency: () => post(`${V}/emergency/sync`, {}),
+  // Bluetooth mesh gateway (src/mesh/meshClient.js): hand carried SOS messages
+  // to the server; fetch official alerts the server signed for the mesh.
+  meshRelay: (messages) => post('/api/mesh/relay', { messages }),
+  meshAlerts: (district) => j(`/api/mesh/alerts?district=${encodeURIComponent(district)}`),
+  meshIncidents: () => j('/api/mesh/sos'),
   simulateRelay: (payload) => post(`${V}/emergency/simulate`, payload),
   report: (payload) => post(`${V}/reports`, payload),
   reports: (district = '') => j(`${V}/reports?district=${encodeURIComponent(district)}`),

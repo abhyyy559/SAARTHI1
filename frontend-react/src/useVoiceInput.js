@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from './api';
+import { api, apiBase } from './api';
 import { t } from './i18n';
 import { useOnline } from './offline';
 import { getVoiceStatus } from './store';
@@ -62,7 +62,7 @@ export function useVoiceInput(lang, onText, onPartial) {
   }
 
   function wsBase() {
-    const base = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+    const base = apiBase();
     if (!base) return `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`;
     return base.replace(/^http/, 'ws');
   }

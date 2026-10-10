@@ -33,6 +33,8 @@ import { Card } from './ui';
 // The persona picker (card tap → store setPersona) lives here now — it moved
 // out of Advisory; the data-tour hook moved with it.
 import { USER_TYPES, RoleCard } from './Advisor';
+import { MeshSettings, ServerSettings } from './MeshSettings';
+import { isNativeApp } from '../serverBase';
 
 function Row({ icon, title, children }) {
   return (
@@ -257,6 +259,17 @@ export default function SettingsPanel() {
         </div>
         <p className="sub" style={{ margin: '6px 0 0' }}>{t(lang, 'setPlaceNote')}</p>
       </Row>
+
+      <Row icon="bluetooth" title={t(lang, 'meshSettingsTitle')}>
+        <MeshSettings />
+      </Row>
+
+      {/* Only the Android app needs this: the website is served by its own backend. */}
+      {isNativeApp() && (
+        <Row icon="globe" title={t(lang, 'meshServerTitle')}>
+          <ServerSettings />
+        </Row>
+      )}
 
       <Row icon="translate" title={t(lang, 'setLanguage')}>
         <div className="segmented langseg" role="group" aria-label={t(lang, 'setLanguage')}>

@@ -17,6 +17,7 @@ import {
   guideKeys,
 } from '../src/permGuide.js';
 import chrome from '../src/strings/areas/chrome.js';
+import mesh from '../src/strings/areas/mesh.js';
 
 // --- harness ----------------------------------------------------------------
 const realNavigatorDesc = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
@@ -164,7 +165,7 @@ test('chrome.js EN/HI/TE key parity, no Tamil script', () => {
 });
 
 // --- SettingsPanel key coverage ----------------------------------------------------
-test('every string key SettingsPanel renders exists in chrome.js or the base allowlist', () => {
+test('every string key SettingsPanel renders exists in chrome.js, mesh.js or the base allowlist', () => {
   const src = readFileSync(new URL('../src/components/SettingsPanel.jsx', import.meta.url), 'utf8');
   // Keys reach t() three ways here: t(lang, 'literal'), titleKey="permXxx"
   // props, and the STATE_META table / ternaries — targeted sweeps for each.
@@ -175,7 +176,8 @@ test('every string key SettingsPanel renders exists in chrome.js or the base all
   assert.ok(keys.length > 20, 'expected many string references');
   // Pre-existing base-dictionary keys this panel already used before Crew G.
   const base = new Set(['setRole', 'setPlace', 'useMyLocation', 'setLanguage', 'setAlerts', 'setAlertsSub', 'setPushBg', 'setPushInAppWhy']);
-  const missing = [...new Set(keys)].filter((k) => !base.has(k) && !chrome.en[k]);
+  // The Bluetooth relay rows (2026-10-10) take their titles from the mesh area.
+  const missing = [...new Set(keys)].filter((k) => !base.has(k) && !chrome.en[k] && !mesh.en[k]);
   assert.deepEqual(missing, [], `SettingsPanel references missing strings: ${missing.join(', ')}`);
 });
 

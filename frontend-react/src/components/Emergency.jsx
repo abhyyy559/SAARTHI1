@@ -15,6 +15,8 @@ import { t } from '../i18n';
 import { useApp } from '../store';
 import Icon from './icons';
 import QrRelay from './QrRelay';
+import { emergencyToMesh, safePayload, sosPayload } from '../mesh/meshLogic';
+import { currentPosition, getMesh, myName, send as meshSend } from '../mesh/meshClient';
 
 // One glyph and one short word per message type - the picture is the label.
 const EMG_ICON = {
@@ -93,6 +95,15 @@ export default function Emergency() {
   // no nav. A fully-offline phone can hand its SOS to a nearby phone via
   // rotating QR frames, straight from the SOS console.
   const [showQr, setShowQr] = useState(false);
+  // GPS for the Bluetooth SOS, fetched as soon as the console opens so the
+  // send never waits on it. A district centre is not a place to send help to,
+  // so without a fix (or a GPS-set location) the SOS goes without one.
+  const [here, setHere] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    currentPosition().then((p) => { if (alive && p) setHere(p); });
+    return () => { alive = false; };
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -114,21 +125,40 @@ export default function Emergency() {
   const hidden = new Set(hiddenIds);
   const mine = inbox.filter((m) => m.sender_id === sid && !hidden.has(m.message_id));
 
+  // Bluetooth first: phone to phone needs no network at all, so the SOS is
+  // on its way before the server is even tried.
+  async function sendByBluetooth(type) {
+    const pos = here || (loc.source === 'gps' ? { lat: loc.lat, lon: loc.lon } : null);
+    const map = emergencyToMesh(type, form.medical_required);
+    const where = { lat: pos && pos.lat, lon: pos && pos.lon, acc: pos && pos.acc };
+    const payload = map.type === 'sos'
+      ? sosPayload({ need: map.need, note: form.text, name: myName(), people: form.people_count, ...where })
+      : map.type === 'safe'
+        ? safePayload({ name: myName(), ...where })
+        : { kind: map.kind, ...(form.text ? { note: String(form.text).slice(0, 140) } : {}), ...(pos ? { lat: pos.lat, lon: pos.lon } : {}) };
+    await meshSend(map.type, payload);
+    return t(lang, (getMesh().status.peers || 0) > 0 ? 'meshSentBt' : 'meshSentKept');
+  }
+
   async function send(messageType) {
     if (sending) return;
     setSending(true);
+    const type = messageType || form.message_type;
+    let btNote = '';
+    try { btNote = await sendByBluetooth(type); } catch { /* the relay shows its own state */ }
     try {
       const r = await api.sos({
         sender_id: sid,
         ...form,
-        message_type: messageType || form.message_type,
+        message_type: type,
         people_count: Number(form.people_count) || 1,
         location: { latitude: loc.lat, longitude: loc.lon },
       });
-      setNote(t(lang, 'emgQueued').replace('{id}', r.message_id).replace('{tr}', r.transport));
+      setNote([btNote, t(lang, 'emgQueued').replace('{id}', r.message_id).replace('{tr}', r.transport)].filter(Boolean).join(' '));
       refresh();
     } catch {
-      setNote(t(lang, 'emgNotSent'));
+      // No server: if Bluetooth took it, that is the honest status.
+      setNote(btNote || t(lang, 'emgNotSent'));
     } finally {
       setSending(false);
     }

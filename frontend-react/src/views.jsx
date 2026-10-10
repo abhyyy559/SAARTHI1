@@ -16,6 +16,7 @@ import SourceStrip from './components/SourceStrip';
 import CityOpsPanel from './components/CityOpsPanel';
 import HowItWorks from './components/HowItWorks';
 import SettingsPanel from './components/SettingsPanel';
+import Nearby from './components/Nearby';
 import { useApp } from './store';
 import { t } from './i18n';
 import { useEffect, useState } from 'react';
@@ -179,6 +180,16 @@ export function SettingsView() {
     <>
       <ViewHead titleKey="navSettings" subKey="viewSettingsSub" />
       <SettingsPanel />
+    </>
+  );
+}
+
+// Nearby SOS: help calls that reached this phone phone-to-phone (Bluetooth).
+export function NearbyView() {
+  return (
+    <>
+      <ViewHead titleKey="navNearby" subKey="viewNearbySub" />
+      <Nearby />
     </>
   );
 }

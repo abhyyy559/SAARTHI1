@@ -1,7 +1,7 @@
 // App shell — the SIGNAL BOARD console.
 // White desktop rail (248px) with full-bleed yellow active blocks,
-// a utility top bar, hazard-stripe demo/offline banners, exactly four
-// mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet.
+// a utility top bar, hazard-stripe demo/offline banners, and a mobile bar of
+// Home · Alerts · SOS · Advice · More with a More bottom sheet.
 // Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
 import { HIDDEN_VIEWS, NAV, PRIMARY_VIEWS, t } from '../i18n';
@@ -14,7 +14,8 @@ import InstallPrompt from './InstallPrompt';
 import NotificationsPanel from './NotificationsPanel';
 import OnboardingTour from './OnboardingTour';
 import SosSheet, { SosFab } from './SosSheet';
-import QuickActions from './QuickActions';
+import IncomingSos from './IncomingSos';
+import { MeshBridge, useOpenSosCount } from './Nearby';
 
 const NAV_ICONS = {
   home: 'home',
@@ -33,6 +34,8 @@ const NAV_ICONS = {
 // Notifications are NOT a More-sheet row: the topbar bell opens the
 // notifications side panel, which is the one and only notifications home.
 const MORE_ROWS = [
+  // Phone-to-phone SOS over Bluetooth: who near you needs help.
+  { view: 'nearby', labelKey: 'navNearby', icon: 'bluetooth' },
   { view: 'settings', labelKey: 'navSettings', icon: 'list' },
 ];
 // NOTE: the old admin row was removed from MORE_ROWS on purpose — admin
@@ -82,29 +85,34 @@ function StatusBanner({ kind, children }) {
   );
 }
 
-function MobileNav({ current, onPick, moreOpen }) {
+function MobileNav({ current, onPick, moreOpen, onSos, sosCount }) {
   const { lang, setView } = useApp();
   const tabs = [
     { view: 'home', label: t(lang, 'navHome'), icon: 'home' },
     { view: 'alerts', label: t(lang, 'navAlerts'), icon: 'alert' },
     { view: 'advisory', label: t(lang, 'navAdvisory'), icon: 'sun' },
   ];
+  const tabButton = (tb) => (
+    <button
+      key={tb.view}
+      type="button"
+      className={`mnav-item${current === tb.view ? ' is-active' : ''}`}
+      data-tour={tb.view === 'alerts' ? 'nav-alerts' : undefined}
+      aria-current={current === tb.view ? 'page' : undefined}
+      onClick={() => setView(tb.view)}
+    >
+      <Icon name={tb.icon} size={22} />
+      <span>{tb.label}</span>
+    </button>
+  );
+  // Home · Alerts · SOS · Advice · More. SOS sits IN the bar (centre slot),
+  // not floating over the page, so it can never cover content.
   return (
     <nav className="mobile-nav" aria-label={t(lang, 'navLabel')}>
       <div className="mnav-inner">
-        {tabs.map((tb) => (
-          <button
-            key={tb.view}
-            type="button"
-            className={`mnav-item${current === tb.view ? ' is-active' : ''}`}
-            data-tour={tb.view === 'alerts' ? 'nav-alerts' : undefined}
-            aria-current={current === tb.view ? 'page' : undefined}
-            onClick={() => setView(tb.view)}
-          >
-            <Icon name={tb.icon} size={22} />
-            <span>{tb.label}</span>
-          </button>
-        ))}
+        {tabs.slice(0, 2).map(tabButton)}
+        <SosFab variant="nav" onOpen={onSos} count={sosCount} />
+        {tabs.slice(2).map(tabButton)}
         <button
           type="button"
           className={`mnav-item${moreOpen ? ' is-active' : ''}`}
@@ -120,7 +128,7 @@ function MobileNav({ current, onPick, moreOpen }) {
   );
 }
 
-function MoreSheet({ open, onClose }) {
+function MoreSheet({ open, onClose, sosCount }) {
   const { lang, setView, unreadCount } = useApp();
   useEffect(() => {
     if (!open) return undefined;
@@ -143,6 +151,9 @@ function MoreSheet({ open, onClose }) {
           <button key={r.view} type="button" className="more-row" onClick={() => go(r.view)}>
             <span className="rail-icon"><Icon name={r.icon} size={20} /></span>
             <span>{t(lang, r.labelKey)}</span>
+            {r.view === 'nearby' && sosCount > 0 && (
+              <span className="nav-badge is-sos">{sosCount > 99 ? '99+' : sosCount}</span>
+            )}
             {r.view === 'notifications' && unreadCount > 0 && (
               <span className="nav-badge" aria-label={`${unreadCount} unread`}>
                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -174,10 +185,37 @@ export default function Shell({ children }) {
   const [unread, setUnread] = useState(0);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+  const sosCount = useOpenSosCount();
 
   useEffect(() => {
     document.documentElement.setAttribute('lang', lang);
   }, [lang]);
+
+  // Back button (Android's, and the browser's): one history entry per screen,
+  // so Back returns to the previous screen instead of closing the app.
+  const viewRef = useRef(view);
+  const fromPop = useRef(false);
+  useEffect(() => {
+    const first = viewRef.current === view && !fromPop.current && !window.history.state;
+    viewRef.current = view;
+    try {
+      if (first) window.history.replaceState({ view }, '');
+      else if (fromPop.current) fromPop.current = false;
+      else if (!window.history.state || window.history.state.view !== view) {
+        window.history.pushState({ view }, '', `?view=${view}`);
+      }
+    } catch { /* sandboxed frame: Back simply leaves */ }
+  }, [view]);
+  useEffect(() => {
+    const onPop = (e) => {
+      const target = (e.state && e.state.view) || 'home';
+      if (target === viewRef.current) return;
+      fromPop.current = true;
+      setView(target);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [setView]);
 
   // The bell badge: the server's unread count for this device. Refreshed on
   // district/device/sync changes; while the panel is open the panel reports
@@ -253,6 +291,7 @@ export default function Shell({ children }) {
           </span>
         </div>
         <nav className="rail-nav">
+          <SosFab variant="rail" onOpen={() => setSosOpen(true)} count={sosCount} />
           {/* Team-only views (HIDDEN_VIEWS) never appear in the public nav.
               Three primary tabs, then the More sheet's rows as a section. */}
           {PRIMARY_VIEWS.map((id) => {
@@ -288,6 +327,9 @@ export default function Shell({ children }) {
             >
               <span className="rail-icon"><Icon name={r.icon} size={20} /></span>
               <span>{t(lang, r.labelKey)}</span>
+              {r.view === 'nearby' && sosCount > 0 && (
+                <span className="nav-badge rail-sub-badge is-sos">{sosCount > 99 ? '99+' : sosCount}</span>
+              )}
               {r.view === 'notifications' && unreadCount > 0 && (
                 <span className="nav-badge rail-sub-badge" aria-label={`${unreadCount} unread`}>
                   {unreadCount > 99 ? '99+' : unreadCount}
@@ -415,8 +457,14 @@ export default function Shell({ children }) {
         </footer>
       </div>
 
-      <MobileNav current={view} moreOpen={moreOpen} onPick={() => setMoreOpen(true)} />
-      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <MobileNav
+        current={view}
+        moreOpen={moreOpen}
+        onPick={() => setMoreOpen(true)}
+        onSos={() => setSosOpen(true)}
+        sosCount={sosCount}
+      />
+      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} sosCount={sosCount} />
       <NotificationsPanel open={panelOpen} onClose={() => setPanelOpen(false)} onUnread={setUnread} />
       <InstallPrompt />
       <OnboardingTour />
@@ -426,12 +474,14 @@ export default function Shell({ children }) {
           {toast.text}
         </div>
       )}
-      {/* Floating SOS: safety-critical, so it is never buried in a view.
-          The button floats above every route; tapping it opens the full
-          mayday console in a modal sheet. */}
-      <SosFab onOpen={() => setSosOpen(true)} />
-      <QuickActions />
+      {/* SOS is safety-critical, so it is on every view — but docked, never
+          floating: the centre slot of the mobile bar, the top of the desktop
+          rail (SosFab above). Both open the mayday console in a sheet. The
+          old floating quick actions duplicated the bell and the Alerts tab
+          and covered page content, so they are gone. */}
       <SosSheet open={sosOpen} onClose={() => setSosOpen(false)} />
+      <IncomingSos />
+      <MeshBridge />
       {/* One alert mention for the whole app: a slim overlay on top of every
           page, visible only while alerts are active. The Alerts view stays
           the single full home; per-page alert blocks were removed. */}

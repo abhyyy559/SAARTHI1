@@ -93,7 +93,7 @@ export function AppProvider({ children }) {
   const [view, setView] = useState(() => {
     try {
       const v = new URLSearchParams(window.location.search).get('view');
-      return ['home', 'alerts', 'advisory', 'notifications', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
+      return ['home', 'alerts', 'advisory', 'notifications', 'trust', 'settings', 'nearby', 'admin'].includes(v) ? v : 'home';
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));

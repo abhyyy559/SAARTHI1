@@ -1,0 +1,125 @@
+/* Nearby SOS (phone-to-phone mesh). Everything wraps; nothing is fixed or
+   floating, so nothing on this screen can overlap anything else. */
+.nearby { display: grid; gap: 16px; min-width: 0; }
+
+.relay {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px; border: 2px solid var(--ink); border-radius: var(--radius);
+  background: var(--card); min-width: 0;
+}
+.relay[data-on="yes"] { border-left: 8px solid var(--sea); }
+.relay[data-on="no"] { border-left: 8px solid var(--sev-unknown); }
+.relay-icon {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--paper); color: var(--sea);
+}
+.relay[data-on="no"] .relay-icon { color: var(--sev-unknown); }
+.relay-text { flex: 1 1 180px; min-width: 0; display: grid; gap: 2px; font-size: 14px; }
+.relay-text b { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; }
+.relay-note { color: var(--ink-soft); font-size: 13px; }
+.relay-tag {
+  font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px;
+  background: var(--tint-amber); color: var(--sev-amber); border: 1px solid currentColor;
+}
+.relay-action { flex: 0 0 auto; margin-left: auto; }
+.relay.is-compact { padding: 8px 10px; }
+.relay.is-compact .relay-icon { width: 30px; height: 30px; }
+.relay-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: -8px; }
+
+.nearby-sec { display: grid; gap: 10px; min-width: 0; }
+.nearby-h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 19px; }
+.nearby-count {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px;
+  padding: 0 8px; border-radius: 999px; background: var(--sev-red); color: #fff; font-size: 13px; font-weight: 800;
+}
+.nearby-count.is-muted { background: var(--line); color: var(--ink); }
+.nearby-empty { margin: 0; color: var(--ink-soft); }
+.nearby-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: var(--tap);
+  border: 0; background: none; padding: 0; font: inherit; font-weight: 700; font-size: 17px;
+  color: var(--ink); cursor: pointer; text-align: left;
+}
+.nearby-toggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
+
+.sos-list { display: grid; gap: 10px; }
+.sos-card {
+  display: grid; gap: 8px; min-width: 0; padding: 12px;
+  border: 2px solid var(--ink); border-left: 8px solid var(--sev-red);
+  border-radius: var(--radius); background: var(--card);
+}
+.sos-card.is-mine { border-left-color: var(--brand); }
+.sos-card.is-closed { border-left-color: var(--sev-green); opacity: 0.85; }
+.sos-card-head { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.sos-card-icon {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--tint-red); color: var(--sev-red);
+}
+.sos-card.is-closed .sos-card-icon { background: var(--tint-green); color: var(--sev-green); }
+.sos-card-title { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.sos-card-title b { font-size: 16px; overflow-wrap: anywhere; }
+.sos-card-title span { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.sos-card-place {
+  flex: 0 0 auto; max-width: 42%; display: inline-flex; align-items: center; gap: 4px;
+  font-weight: 800; font-size: 14px; text-align: right; white-space: nowrap;
+}
+.sos-noplace, .sos-state { white-space: normal; font-weight: 700; font-size: 12px; color: var(--ink-soft); }
+.sos-card-note {
+  margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--paper);
+  font-size: 15px; overflow-wrap: anywhere;
+}
+.sos-card-meta { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.sos-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sos-card-actions .btn { flex: 1 1 auto; justify-content: center; min-width: 0; }
+
+.safe-form { display: flex; flex-wrap: wrap; gap: 8px; }
+.safe-form .input { flex: 1 1 160px; min-width: 0; }
+.safe-form .btn { flex: 0 0 auto; }
+.safe-list, .relayed-alerts { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.safe-list li {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; min-width: 0;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--sev-green);
+}
+.safe-name { flex: 1 1 auto; min-width: 0; color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
+.safe-when { flex: 0 0 auto; font-size: 13px; color: var(--ink-soft); }
+.relayed-alerts li {
+  display: grid; gap: 2px; padding: 10px; border: 2px solid var(--ink);
+  border-left: 8px solid var(--sev, var(--ink)); border-radius: 8px; background: var(--card);
+}
+.relayed-alerts li span { font-size: 13px; color: var(--ink-soft); }
+
+/* The "SOS nearby" popup: a modal card, centered, above everything. */
+.sos-pop-scrim {
+  position: fixed; inset: 0; z-index: 140; border: 0; padding: 0; width: 100%;
+  background: rgba(22, 19, 12, 0.55); cursor: default;
+}
+.sos-pop {
+  position: fixed; z-index: 141; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto;
+  display: grid; gap: 10px; padding: 16px;
+  background: var(--card); border: 3px solid var(--sev-red); border-radius: 16px;
+  box-shadow: 0 18px 48px rgba(22, 19, 12, 0.35);
+}
+.sos-pop-head { display: flex; align-items: center; gap: 10px; color: var(--sev-red); }
+.sos-pop-head h2 { margin: 0; font-size: 22px; }
+.sos-pop-body { display: grid; gap: 4px; }
+.sos-pop-body b { font-size: 17px; }
+.sos-pop-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sos-pop-actions .btn { flex: 1 1 120px; justify-content: center; }
+
+/* The SOS sheet's link to this screen. */
+.nearby-link {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px;
+  padding: 8px 12px; margin: 0 0 12px; border: 2px solid var(--ink); border-radius: var(--radius);
+  background: var(--card); color: var(--ink); font: inherit; font-weight: 700; text-align: left; cursor: pointer;
+}
+.nearby-link[data-active="yes"] { border-left: 8px solid var(--sev-red); }
+.nearby-link > span:nth-child(2) { flex: 1 1 auto; min-width: 0; }
+.mesh-sent { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: var(--tint-blue); font-size: 14px; }
+
+/* Settings: relay + server address rows. */
+.set-field { display: grid; gap: 6px; margin-top: 12px; min-width: 0; }
+.set-field > span:first-child { font-weight: 700; }
+.set-inline { display: flex; flex-wrap: wrap; gap: 8px; }
+.set-inline .input { flex: 1 1 200px; min-width: 0; }

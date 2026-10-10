@@ -529,6 +529,8 @@ export const NAV = [
   // nav row: it lives in the quiet app footer (Shell.jsx) + ?view=trust.
   { id: 'trust', icon: 'shield', label: 'navTrustSources' },
   { id: 'settings', icon: 'list', label: 'navSettings' },
+  // Phone-to-phone SOS (More sheet + rail; also the SOS sheet's link).
+  { id: 'nearby', icon: 'bluetooth', label: 'navNearby' },
   { id: 'admin', icon: 'layers', label: 'navAdmin' },
 ];
 

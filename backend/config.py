@@ -230,3 +230,8 @@ DEFAULT_LON = float(_get("DEFAULT_LON", "78.4867"))
 # FRONTEND_ORIGINS="https://saarthi.vercel.app,https://app.example.com".
 # Local dev origins (Vite etc.) are always allowed.
 FRONTEND_ORIGINS = _get("FRONTEND_ORIGINS", "")
+
+# Phone-to-phone mesh: the server signs official alerts with this P-256 key
+# (PEM). Unset = one is generated and kept in mesh_server_key.pem beside the
+# cache file. Set it when several server instances must share one key.
+MESH_PRIVATE_KEY = _get("MESH_PRIVATE_KEY", "")

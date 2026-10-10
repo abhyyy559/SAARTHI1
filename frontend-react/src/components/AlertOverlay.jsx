@@ -67,11 +67,21 @@ export default function AlertOverlay() {
   const items = useActiveAlerts();
   const [dismissedKey, setDismissedKey] = useState(null);
 
-  if (items.length === 0) return null;
   // One identity per alert set: dismissing hides the pill only until the
   // set itself changes (new alert, alert ended), never forever.
   const setKey = items.map((a) => a.identifier || a.id || '').sort().join('|');
-  if (dismissedKey === setKey) return null;
+  const visible = items.length > 0 && dismissedKey !== setKey;
+  // The strip is docked above the bottom bar; while it shows, the page gets
+  // matching bottom padding (styles.css) so the last card is never under it.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (visible) root.setAttribute('data-alert-strip', 'on');
+    else root.removeAttribute('data-alert-strip');
+    return () => root.removeAttribute('data-alert-strip');
+  }, [visible]);
+
+  if (items.length === 0) return null;
+  if (!visible) return null; // dismissed for this alert set
 
   const top = items[0];
   const sev = String(top.severity || 'UNKNOWN').toUpperCase();
