@@ -14,7 +14,7 @@ from .utils.time import iso_now
 
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
-                  push, demo_alerts, notifications, aviation, mesh)
+                  push, demo_alerts, notifications, aviation, mesh, maps)
 from .utils.logging import RequestLoggingMiddleware
 
 log = logging.getLogger("weathergpt.main")
@@ -125,6 +125,7 @@ app.include_router(demo_alerts.router)
 app.include_router(notifications.router)
 app.include_router(aviation.router)
 app.include_router(mesh.router)
+app.include_router(maps.router)
 
 # Ack/telemetry ingest (Round2 T3.3: POST /api/ack, GET /api/coverage). Guarded
 # so a telemetry-only failure can never prevent the app from serving alerts.

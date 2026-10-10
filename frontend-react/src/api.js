@@ -188,6 +188,7 @@ export const api = {
   // geography — cached in localStorage by the caller, so the map renders
   // offline after the first load.
   districtCoords: () => j('/api/location/districts').then((d) => d.districts || []),
+  mapGrid: () => j('/api/map/grid', undefined, 25000),
   current: (lat, lon) => up(`${V}/weather/current?lat=${lat}&lon=${lon}`),
   forecast: (lat, lon) => up(`${V}/weather/forecast?lat=${lat}&lon=${lon}`),
   warnings: (district, lat, lon) =>
