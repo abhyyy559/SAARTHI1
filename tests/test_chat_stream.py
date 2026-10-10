@@ -70,8 +70,30 @@ def _norm(s):
     return re.sub(r"\d{2}:\d{2}:\d{2}(?:\.\d+)?", "<time>", s)
 
 
-def test_stream_answer_matches_non_streaming():
-    """The streamed answer and /api/chat must agree — one pipeline, one truth."""
+def test_stream_answer_matches_non_streaming(monkeypatch):
+    """The streamed answer and /api/chat must agree — one pipeline, one truth.
+
+    The LLM itself is deliberately NOT called here: two live model calls never
+    return byte-identical text, so comparing them would test the provider's
+    determinism instead of the pipeline. A fixed fake answer through both
+    paths pins exactly what this test owns — same validation, same rain-lead,
+    same final text.
+    """
+    import backend.api.chat as chat_mod
+
+    text = ("Yes — moderate rain is likely tomorrow.\n\n"
+            "A yellow thunderstorm warning is active today; allow extra travel time.")
+
+    async def fake_generate(self, evidence, question, language, history=None):
+        return text, False
+
+    async def fake_stream(self, evidence, question, language, history=None):
+        yield {"type": "token", "text": text[:24]}
+        yield {"type": "token", "text": text[24:]}
+        yield {"type": "end", "fallback": False, "model_error": "", "truncated": False}
+
+    monkeypatch.setattr(chat_mod.LLMService, "generate", fake_generate)
+    monkeypatch.setattr(chat_mod.LLMService, "generate_stream", fake_stream)
     client = TestClient(app)
     body = {"message": "Will it rain tomorrow?", "language": "en"}
     lines = _stream_lines(client, body)

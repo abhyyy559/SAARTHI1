@@ -18,6 +18,7 @@ import { useVoiceInput } from '../useVoiceInput';
 import Icon from './icons';
 import { sanitizeForTTS } from '../chatText';
 import ChatMessage from './ChatMessage';
+import { chatHistory } from '../chatHistory';
 import VoiceMode from './VoiceMode';
 import './HomeChat.css';
 
@@ -42,6 +43,10 @@ export default function HomeChat({
   onVoiceState = () => {},
 }) {
   const [log, setLog] = useState([]);
+  // Read inside ask() without making every log change re-create ask().
+  const logStateRef = useRef(log);
+  logStateRef.current = log;
+  const { profile } = useApp();
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [popOpen, setPopOpen] = useState(false);
@@ -153,6 +158,8 @@ export default function HomeChat({
       longitude: loc && loc.lon,
       language: lang,
       user_type: persona || 'general',
+      profile: profile || {},
+      history: chatHistory(logStateRef.current),
     };
     const addBotFromResponse = (r) => {
       const bot = {
@@ -247,7 +254,7 @@ export default function HomeChat({
       setLog((l) => l.map((m) => (m.id === botId ? { ...m, fallback: true } : m)));
     }
     if (voiceTurn && fullText) speakFor({ id: botId, text: fullText });
-  }, [input, busy, netState, onAsk, apiClient, loc, lang, persona, enqueueOffline, speakFor]);
+  }, [input, busy, netState, onAsk, apiClient, loc, lang, persona, profile, enqueueOffline, speakFor]);
 
   // The store's ask()/pendingAsk one-shot hand-off, owned by this component:
   // - registerAsk publishes this chat's submit so any mounted caller (e.g.

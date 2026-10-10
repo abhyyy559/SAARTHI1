@@ -31,40 +31,62 @@ SYSTEM_RULES = (
     "The reader is deciding whether it is safe to go out, farm or put to sea.\n"
     "When discussing an emergency warning include the hazard, the place, and until when (in words).\n"
     # --- PLAIN LANGUAGE. Read by people who are not weather experts. ---
-    "Use plain, everyday words. Use at most TWO numbers in the whole answer, rounded to\n"
-    "whole numbers. Never quote millimetres, decimals, timestamps or percentages; say\n"
-    "rain as light / moderate / heavy (use tomorrow_rain_words when present).\n"
+    "Use plain, everyday words. Use few numbers, rounded to whole numbers; prefer the\n"
+    "words given in the data (light / moderate / heavy rain, wind_words, sea_words,\n"
+    "uv_words, tomorrow_rain_words). Never quote millimetres, decimals or timestamps,\n"
+    "and say rain chance in words (low / some / high chance) unless NUMBERS ALLOWED\n"
+    "says otherwise below.\n"
     "Do not mention data sources, 'verified data', fallbacks, models or how the answer\n"
     "was produced: the app shows the sources under the answer.\n"
-    "Never present AI-generated advice as an official government instruction.\n"
-    "NEVER give advice, recommendations, instructions, tips, suggestions, or practical actions of any kind.\n"
-    "NEVER tell the user what they should do, avoid, prepare for, wear, carry, check, or cancel.\n"
-    "NEVER phrase a fact as an instruction (e.g. 'expect heavy rain' is a fact; 'stay indoors' is forbidden advice).\n"
-    "If the user asks what to do or for guidance, give the facts and say: "
-    "'For guidance, check the Advisory tab in the app.' That tab is the ONLY place for guidance.\n"
     "Keep it short and simple - the listener may be a fisherman or farmer with a basic phone.\n"
+    # --- ADVICE. Users asked for answers they can act on, not facts alone. ---
+    # The chat used to refuse all advice and point to the Advisory tab, so a
+    # farmer asking "can I spray today?" got a forecast and no answer. Advice is
+    # now given, but only as WeatherGPT guidance that follows from the data,
+    # never as an official order, and never weaker than the rule-based
+    # app_guidance or an official warning.
+    "GIVE ADVICE. The user wants to know what to do. After the safety picture, give\n"
+    "clear, practical advice for THEIR role and profile: what to do, the best and the\n"
+    "worst time for it (use parts_of_day), and what to watch for. Answer 'can I / should\n"
+    "I / is it safe' questions directly with a clear yes, no, or 'only if ...'.\n"
+    "Every piece of advice must follow from a fact in the data. Do not invent hazards.\n"
+    "app_guidance is the app's rule-based guidance for this user: stay consistent with\n"
+    "it and never be less cautious than it.\n"
+    "If an official warning is active, put it first and tell the user to follow IMD and\n"
+    "local authority instructions; your advice comes after and must not contradict it.\n"
+    "Never call anything safe (going to sea, travel, field work, outdoor work) when a\n"
+    "warning is active, when the warning status could not be checked, or when the data\n"
+    "shows strong wind or worse, rough sea or worse, heavy rain, or thunderstorms.\n"
+    "Your advice is WeatherGPT guidance, not an official government instruction: never\n"
+    "present it as one, and never write 'government orders' or 'official instruction'.\n"
+    "If the data needed for a decision is missing, say so and give the cautious option.\n"
+    "When a profile is given, the advice MUST use it exactly as written: name their\n"
+    "crop and its stage, their boat or their vehicle, and fit their work hours. Only\n"
+    "when the profile lists a health need (elderly, children, asthma, heart, pregnancy)\n"
+    "add one line for that person; never invent profile details that are not given.\n"
+    "When the warning status could not be checked, the opening sentence must say the\n"
+    "plan cannot be confirmed safe, and no later line may call it safe, good,\n"
+    "suitable or favourable. Every rule here applies equally in Hindi and Telugu.\n"
     # --- BREVITY. The answer is READ ALOUD to someone deciding whether to go out. ---
     # Without these rules the model padded every answer with a restatement of the
     # question, a summary of its own summary, and a second copy of practical
     # advice - roughly 1000 characters where ~350 carries the same facts.
-    # NOTE: the server does NOT append an advisory block to chat answers.
-    # Chat answers are facts-only; advisory guidance travels separately in the
-    # 'advisory' field of the /api/chat response (the app's Advisory tab).
-    "LENGTH: at most 70 words total. This is a hard limit, not a target.\n"
-    "Open with the safety answer itself - the hazard or the yes/no - in one short\n"
-    "sentence of at most 20 words. Never open with 'Great question', 'Certainly',\n"
+    "LENGTH: at most 110 words total, in every language, and at most 4 list items in\n"
+    "total. This is a hard limit, not a target. Talk only about the time asked about.\n"
+    "Open with the direct answer - the hazard, the yes/no, or the can/cannot - in one\n"
+    "short sentence of at most 20 words. Never open with 'Great question', 'Certainly',\n"
     "a restatement of what was asked, or a heading.\n"
-    "DO NOT give practical actions, precautions, or 'what you can do' advice: that\n"
-    "is delivered separately as the advisory and would be duplicated. State facts\n"
-    "and the safety picture only.\n"
     "DO NOT repeat yourself. Say each fact once. No closing summary.\n"
-    "Use at most 2 short sections, and at most 3 list items in total.\n"
     "If the user's occupation needs the sea or coast but VERIFIED BACKEND DATA shows\n"
     "their district is not coastal, say so plainly before any other advice.\n"
     "Format the answer for a simple screen reader: short paragraphs separated by blank\n"
-    "lines. You may use '## ' at the start of a line for a section heading, '**' around\n"
-    "a few key words, and lines starting with '- ' for a short list (max 4 items).\n"
-    "No other markdown, no tables, no code blocks.\n"
+    "lines. You may use '**' around a few key words and lines starting with '- ' for a\n"
+    "short list (used for the advice). No headings, bold section titles such as\n"
+    "'Advice:' or 'Weather:', tables or code blocks.\n"
+    "If the question asks about a different day or time of day, answer for that time\n"
+    "from parts_of_day / outlook, not for right now.\n"
+    "Earlier turns of this conversation come before the question: use them to\n"
+    "understand follow-ups, but take every fact from the current data only.\n"
     "When asked 'will it rain tomorrow' or similar rain query, answer Yes/No first and say how much in words (tomorrow_rain_words), never in mm. If data missing, say 'rainfall forecast unavailable'.\n"
     "Answer the rain yes/no ONCE, in that opening sentence. Do not add a second\n"
     "'yes it will rain' later in the answer."
@@ -275,13 +297,107 @@ def _template_answer(evidence: dict, language: str = "en", question: str = "") -
     # Honesty: "we could not check" is a different statement from "there is no
     # warning". Saying "no warning" while the warning service is down is a
     # false all-clear — the one thing this product must never emit.
+    # Advice the user asked for ("can I spray?", "is it safe to go out?") comes
+    # from the rule-based advisory the app already built for this persona, so
+    # the fallback still answers the question instead of only stating facts.
+    advice = _guidance_lines(evidence.get("app_guidance"), q)
     if verified.get("verified"):
         warning = P["active_warning"].format(
             loc=loc, severity=verified.get("severity"), hazard=verified.get("hazard") or "")
-        return " ".join([warning, *answer])
+        return " ".join([warning, *answer, *advice])
     if verified.get("warning_service") == "unavailable":
-        return " ".join([*answer, P["unreachable"]])
-    return " ".join([*answer, P["no_warning"].format(loc=loc)])
+        return " ".join([*answer, P["unreachable"], *advice])
+    return " ".join([*answer, P["no_warning"].format(loc=loc), *advice])
+
+
+_ASK_ADVICE = ("should", "can i", "could i", "safe", "advice", "advise", "what to do",
+               "what do i", "what should", "ok to", "okay to", "good time", "best time",
+               "suggest", "recommend", "go out", "go to sea", "spray", "irrigat", "harvest",
+               "sow", "travel", "drive", "umbrella", "carry", "wear", "plan",
+               "क्या करूं", "क्या करें", "सलाह", "सुरक्षित", "जाऊं", "जा सकता",
+               "ఏం చేయాలి", "సలహా", "సురక్షిత", "వెళ్ల")
+
+
+def _guidance_lines(guidance, question: str, limit: int = 2) -> list[str]:
+    """Up to `limit` sentences of app guidance when the question asks for advice."""
+    if not guidance or not isinstance(guidance, str):
+        return []
+    q = (question or "").lower()
+    if not any(w in q for w in _ASK_ADVICE):
+        return []
+    sentences = [x.strip() for x in re.split(r"(?<=[.!?।])\s+", guidance.strip()) if x.strip()]
+    return sentences[:limit]
+
+
+def _models() -> list[str]:
+    """The configured model, then the rate-limit fallback (its own minute budget)."""
+    models = [config.LLM_MODEL]
+    fb = getattr(config, "LLM_FALLBACK_MODEL", "")
+    if fb and fb != config.LLM_MODEL:
+        models.append(fb)
+    return models
+
+
+def _payload(model: str, messages: list[dict], stream: bool = False) -> dict:
+    body = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.2,
+        # ~110 words of answer plus a short reasoning pass on gpt-oss models.
+        "max_tokens": 480,
+    }
+    if model.startswith("openai/gpt-oss"):
+        # Low effort keeps reasoning short: faster first token and fewer tokens
+        # against the per-minute budget, with no loss on a data-bound answer.
+        body["reasoning_effort"] = "low"
+    if stream:
+        body["stream"] = True
+    return body
+
+
+def build_messages(evidence: dict, question: str, language: str,
+                   history: list | None = None) -> list[dict]:
+    """System rules + who the user is + earlier turns + the data and question."""
+    from .chat_context import NUMERIC_PERSONAS, PERSONA_FOCUS
+
+    user_type = evidence.get("user_type") or "general"
+    directive = LANG_DIRECTIVE.get(language, LANG_DIRECTIVE["en"])
+    role = user_type.replace("_", " ").replace("-", " ")
+    parts = [
+        SYSTEM_RULES,
+        directive,
+        f"The user is a {role}. What matters to them: "
+        f"{PERSONA_FOCUS.get(user_type, PERSONA_FOCUS['general'])}",
+    ]
+    if evidence.get("profile"):
+        parts.append("Their own details are in 'profile' (from their settings): tailor the answer "
+                     "and the advice to them.")
+    if user_type in NUMERIC_PERSONAS:
+        parts.append("NUMBERS ALLOWED: up to five rounded numbers, e.g. wind and gusts in km/h, "
+                     "wave height in metres, rain chance as a percentage.")
+    else:
+        parts.append("NUMBERS ALLOWED: at most three rounded numbers (temperature or wind), "
+                     "no percentages.")
+    asked = evidence.get("asked_place")
+    if asked:
+        parts.append(f"This question is about {asked}, not the user's home area "
+                     f"({evidence.get('home_place') or 'their location'}). Answer for {asked}.")
+    focus = evidence.get("time_focus")
+    if focus:
+        parts.append(f"The question is about: {focus.replace('_', ' ')}.")
+
+    messages = [{"role": "system", "content": "\n".join(parts)}]
+    for turn in history or []:
+        if turn.get("role") in ("user", "assistant") and turn.get("text"):
+            messages.append({"role": turn["role"], "content": turn["text"]})
+    messages.append({"role": "user", "content": (
+        "VERIFIED BACKEND DATA (the only source of facts):\n"
+        f"{json.dumps(evidence, ensure_ascii=False, default=str)}\n\n"
+        f"USER QUESTION: {question}\n"
+        "Answer from the data above and give advice for this user. If a fact is missing, "
+        "say it is not available."
+    )})
+    return messages
 
 
 class LLMService:
@@ -292,7 +408,8 @@ class LLMService:
         """Rule-based answer (sync path kept for tests/offline). (answer, structured_fallback)"""
         return _template_answer(evidence), not self.enabled
 
-    async def generate(self, evidence: dict, question: str, language: str) -> tuple[str, bool]:
+    async def generate(self, evidence: dict, question: str, language: str,
+                       history: list | None = None) -> tuple[str, bool]:
         """Real LLM answer in the user's language, grounded in evidence only.
 
         Returns (answer, structured_fallback). Any failure falls back to the
@@ -310,38 +427,26 @@ class LLMService:
                 "or unset it to use the default."
             )
 
-        user_type = evidence.get("user_type", "general")
-        directive = LANG_DIRECTIVE.get(language, LANG_DIRECTIVE["en"])
-        system = (
-            f"{SYSTEM_RULES}\n{directive}\n"
-            f"The user is a {user_type}: keep the facts simple and relevant to them, but give no advice."
-        )
-        user = (
-            "VERIFIED BACKEND DATA (the only source of facts):\n"
-            f"{json.dumps(evidence, ensure_ascii=False, default=str)}\n\n"
-            f"USER QUESTION: {question}\n"
-            "Answer from the data above. If a fact is missing, say it is not available."
-        )
-        try:
-            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
-                resp = await client.post(
-                    f"{config.LLM_BASE_URL}/chat/completions",
-                    headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
-                    json={
-                        "model": config.LLM_MODEL,
-                        "messages": [
-                            {"role": "system", "content": system},
-                            {"role": "user", "content": user},
-                        ],
-                        "temperature": 0.2,
-                        # ~240 tokens is a comfortable ceiling for a 120-word
-                        # answer plus headings; 400 invited padding.
-                        "max_tokens": 240,
-                    },
-                )
-                resp.raise_for_status()
-                content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
-        except Exception:
+        messages = build_messages(evidence, question, language, history)
+        content = ""
+        for model in _models():
+            try:
+                async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
+                    resp = await client.post(
+                        f"{config.LLM_BASE_URL}/chat/completions",
+                        headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
+                        json=_payload(model, messages),
+                    )
+                    resp.raise_for_status()
+                    content = (resp.json().get("choices") or [{}])[0].get("message", {}).get("content", "")
+                break
+            except httpx.HTTPStatusError as exc:
+                if exc.response is not None and exc.response.status_code == 429:
+                    continue  # this model's minute budget is spent: try the next
+                return _template_answer(evidence, language, question), True
+            except Exception:
+                return _template_answer(evidence, language, question), True
+        else:
             return _template_answer(evidence, language, question), True
 
         content = _strip_think_blocks(content)
@@ -349,7 +454,8 @@ class LLMService:
             return _template_answer(evidence, language, question), True
         return content, False
 
-    async def generate_stream(self, evidence: dict, question: str, language: str):
+    async def generate_stream(self, evidence: dict, question: str, language: str,
+                              history: list | None = None):
         """Yield {"type": "token", "text": delta} as the model produces them, then
         {"type": "end", "fallback": bool, "model_error": str, "truncated": bool}.
 
@@ -374,88 +480,72 @@ class LLMService:
             yield {"type": "end", "fallback": True, "model_error": model_error, "truncated": False}
             return
 
-        user_type = evidence.get("user_type", "general")
-        directive = LANG_DIRECTIVE.get(language, LANG_DIRECTIVE["en"])
-        system = (
-            f"{SYSTEM_RULES}\n{directive}\n"
-            f"The user is a {user_type}: keep the facts simple and relevant to them, but give no advice."
-        )
-        user = (
-            "VERIFIED BACKEND DATA (the only source of facts):\n"
-            f"{json.dumps(evidence, ensure_ascii=False, default=str)}\n\n"
-            f"USER QUESTION: {question}\n"
-            "Answer from the data above. If a fact is missing, say it is not available."
-        )
-        payload = {
-            "model": config.LLM_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "temperature": 0.2,
-            "max_tokens": 240,
-            "stream": True,
-        }
+        messages = build_messages(evidence, question, language, history)
         sent_any = False
+        models = _models()
         try:
-            async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
-                async with client.stream(
-                    "POST",
-                    f"{config.LLM_BASE_URL}/chat/completions",
-                    headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
-                    json=payload,
-                ) as resp:
-                    resp.raise_for_status()
-                    buf = ""
-                    thinking = False
-                    async for line in resp.aiter_lines():
-                        s = line.strip()
-                        if not s.startswith("data:"):
-                            continue
-                        data = s[5:].strip()
-                        if data == "[DONE]":
-                            break
-                        try:
-                            obj = json.loads(data)
-                        except Exception:
-                            continue
-                        delta = (obj.get("choices") or [{}])[0].get("delta", {}).get("content") or ""
-                        if not delta:
-                            continue
-                        buf += delta
-                        # Incremental <think> filter: hold everything from an
-                        # opening tag until its close tag; drop the span.
-                        out = []
-                        while buf:
-                            if not thinking:
-                                i = buf.find("<think>")
-                                if i < 0:
-                                    # Hold a trailing partial tag ("<", "<th", …)
-                                    # so a tag split across chunks can't leak.
-                                    hold = 0
-                                    for k in range(1, min(len(buf), 7) + 1):
-                                        if buf[-k:] == "<think>"[:k]:
-                                            hold = k
-                                    out.append(buf[:len(buf) - hold] if hold else buf)
-                                    buf = buf[len(buf) - hold:] if hold else ""
+            for attempt, model in enumerate(models):
+                async with httpx.AsyncClient(timeout=config.LLM_TIMEOUT) as client:
+                    async with client.stream(
+                        "POST",
+                        f"{config.LLM_BASE_URL}/chat/completions",
+                        headers={"Authorization": f"Bearer {config.LLM_API_KEY}"},
+                        json=_payload(model, messages, stream=True),
+                    ) as resp:
+                        if resp.status_code == 429 and attempt + 1 < len(models):
+                            continue  # minute budget spent on this model: next one
+                        resp.raise_for_status()
+                        buf = ""
+                        thinking = False
+                        async for line in resp.aiter_lines():
+                            s = line.strip()
+                            if not s.startswith("data:"):
+                                continue
+                            data = s[5:].strip()
+                            if data == "[DONE]":
+                                break
+                            try:
+                                obj = json.loads(data)
+                            except Exception:
+                                continue
+                            delta = (obj.get("choices") or [{}])[0].get("delta", {}).get("content") or ""
+                            if not delta:
+                                continue
+                            buf += delta
+                            # Incremental <think> filter: hold everything from an
+                            # opening tag until its close tag; drop the span.
+                            out = []
+                            while buf:
+                                if not thinking:
+                                    i = buf.find("<think>")
+                                    if i < 0:
+                                        # Hold a trailing partial tag ("<", "<th", …)
+                                        # so a tag split across chunks can't leak.
+                                        hold = 0
+                                        for k in range(1, min(len(buf), 7) + 1):
+                                            if buf[-k:] == "<think>"[:k]:
+                                                hold = k
+                                        out.append(buf[:len(buf) - hold] if hold else buf)
+                                        buf = buf[len(buf) - hold:] if hold else ""
+                                    else:
+                                        out.append(buf[:i])
+                                        buf = buf[i:]
+                                        thinking = True
                                 else:
-                                    out.append(buf[:i])
-                                    buf = buf[i:]
-                                    thinking = True
-                            else:
-                                j = buf.find("</think>")
-                                if j < 0:
-                                    break  # hold until the close tag (or EOS)
-                                buf = buf[j + len("</think>"):]
-                                thinking = False
-                        if out:
+                                    j = buf.find("</think>")
+                                    if j < 0:
+                                        break  # hold until the close tag (or EOS)
+                                    buf = buf[j + len("</think>"):]
+                                    thinking = False
+                            if out:
+                                sent_any = True
+                                yield {"type": "token", "text": "".join(out)}
+                        # Flush the tail; an unclosed <think> at EOS means a
+                        # reasoning fragment — dropped, never shown.
+                        if not thinking and buf:
                             sent_any = True
-                            yield {"type": "token", "text": "".join(out)}
-                    # Flush the tail; an unclosed <think> at EOS means a
-                    # reasoning fragment — dropped, never shown.
-                    if not thinking and buf:
-                        sent_any = True
-                        yield {"type": "token", "text": buf}
+                            yield {"type": "token", "text": buf}
+                break  # one complete answer: do not ask the next model
         except Exception:
             if not sent_any:
                 yield {"type": "token", "text": _template_answer(evidence, language, question)}

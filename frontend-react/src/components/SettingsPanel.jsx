@@ -33,6 +33,7 @@ import { Card } from './ui';
 // The persona picker (card tap → store setPersona) lives here now — it moved
 // out of Advisory; the data-tour hook moved with it.
 import { USER_TYPES, RoleCard } from './Advisor';
+import ProfileDetails from './ProfileDetails';
 
 function Row({ icon, title, children }) {
   return (
@@ -246,6 +247,10 @@ export default function SettingsPanel() {
             <RoleCard key={ut.id} ut={ut} active={persona === ut.id} onPick={setPersona} />
           ))}
         </div>
+      </Row>
+
+      <Row icon="list" title={t(lang, 'pfTitle')}>
+        <ProfileDetails />
       </Row>
 
       <Row icon="pin" title={t(lang, 'setPlace')}>

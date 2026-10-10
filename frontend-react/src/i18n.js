@@ -413,10 +413,13 @@ const S = {
 
 // Shared by Home and Ask so a profile change updates both entry points.
 export const PERSONA_QUESTIONS = {
-  fisherman: ['q2', 'q1', 'q3'], farmer: ['q4', 'q1', 'q3'],
+  // The first chip asks for advice the chat can now give for this role.
+  fisherman: ['q2', 'qSeaTomorrow', 'q3'], farmer: ['qSpray', 'q4', 'q1'],
   driver: ['qDriver', 'q1', 'q3'], researcher: ['qResearch', 'q1', 'q3'],
   aviation: ['qAviation', 'q1', 'q3'],
-  disaster_manager: ['qEmergency', 'q3', 'q1'], general: ['q1', 'q3'],
+  commuter: ['qCommute', 'q1', 'q3'], employee: ['qCommute', 'q1', 'q3'],
+  student: ['qSchool', 'q1', 'q3'], 'outdoor-worker': ['qOutdoor', 'q1', 'q3'],
+  disaster_manager: ['qEmergency', 'q3', 'q1'], general: ['qUmbrella', 'q1', 'q3'],
 };
 
 const EXTRA = {
