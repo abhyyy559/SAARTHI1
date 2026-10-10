@@ -35,6 +35,7 @@ import { Card } from './ui';
 import { USER_TYPES, RoleCard } from './Advisor';
 import { MeshSettings, ServerSettings } from './MeshSettings';
 import { isNativeApp } from '../serverBase';
+import ProfileDetails from './ProfileDetails';
 
 function Row({ icon, title, children }) {
   return (
@@ -248,6 +249,10 @@ export default function SettingsPanel() {
             <RoleCard key={ut.id} ut={ut} active={persona === ut.id} onPick={setPersona} />
           ))}
         </div>
+      </Row>
+
+      <Row icon="list" title={t(lang, 'pfTitle')}>
+        <ProfileDetails />
       </Row>
 
       <Row icon="pin" title={t(lang, 'setPlace')}>

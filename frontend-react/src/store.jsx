@@ -111,6 +111,23 @@ export function AppProvider({ children }) {
     } catch { return null; }
   });
   const pendingAskRef = useRef(null); // Home → Ask one-shot hand-off (ref: no effect setState)
+  // Settings "About you": crop, boat, vehicle, work hours, health ... Sent with
+  // every chat question so answers and advice fit this person. Kept on this
+  // phone only; the backend whitelists and caps each field.
+  const [profile, setProfileState] = useState(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem('wgpt.profile') || '{}');
+      return p && typeof p === 'object' && !Array.isArray(p) ? p : {};
+    } catch { return {}; }
+  });
+  const setProfile = useCallback((patch) => {
+    setProfileState((prev) => {
+      const next = { ...prev, ...patch };
+      Object.keys(next).forEach((k) => { if (!next[k]) delete next[k]; });
+      try { localStorage.setItem('wgpt.profile', JSON.stringify(next)); } catch { /* storage unavailable */ }
+      return next;
+    });
+  }, []);
   // Single light theme: no theme state, no switcher, no data-theme attribute.
   // Truthful until /api/mode answers: the backend decides the mode, not a guess.
   // Three modes, not two — see docs/SOURCE-MODES.md. `sourceMode` is the truth
@@ -752,6 +769,7 @@ export function AppProvider({ children }) {
     view, setView,
     lang, setLang,
     persona, setPersona,
+    profile, setProfile,
     demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, setSources,
     conn, connectionPill, offline, online, simOffline, setSimOffline,
     pipe, setPipe, result, handleResult,
@@ -767,7 +785,7 @@ export function AppProvider({ children }) {
     publishVerdict,
     notifyOn, notifyPerm, pushReady: pushMode === 'background', pushMode, pushReason, toggleNotify, enableNotify, simulateAlert, simulateClear, sendTestPush,
     unreadCount,
-  }), [view, lang, persona, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
+  }), [view, lang, persona, profile, setProfile, demoMode, sourceMode, modeInfo, setBackendMode, backendState, sources, conn, connectionPill, offline, online,
     simOffline, pipe, result, handleResult, selectedAlert,
     disaster, ask, registerAsk, speak, stopSpeaking, speechState, speechNote, listenState, setListenState, setPendingAsk,
     loc, setDistrict, districts, locStatus, locNote, requestLocation,

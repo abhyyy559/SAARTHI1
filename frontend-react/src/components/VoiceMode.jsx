@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { t } from '../i18n';
 import { api as defaultApi } from '../api';
+import { useApp } from '../store';
 import { useVoiceInput } from '../useVoiceInput';
 import { sanitizeForTTS } from '../chatText';
 import Icon from './icons';
@@ -57,6 +58,10 @@ export default function VoiceMode({
   const voiceRef = useRef(null);
 
   const apiClient = api || defaultApi;
+  // Same personal context as HomeChat: the Settings profile, plus the turns
+  // of this voice session so a spoken follow-up keeps its context.
+  const { profile } = useApp();
+  const turnsRef = useRef([]);
 
   // The answer fetch — the same ask path HomeChat uses (see its ask()):
   // injected onAsk keeps the non-streaming contract; the default backend call
@@ -74,6 +79,8 @@ export default function VoiceMode({
       longitude: loc && loc.lon,
       language: lang,
       user_type: persona || 'general',
+      profile: profile || {},
+      history: turnsRef.current.slice(-6),
     };
     const aborter = new AbortController();
     abortRef.current = aborter;
@@ -123,6 +130,8 @@ export default function VoiceMode({
       return;
     }
     setAnswerText(fullText);
+    turnsRef.current = [...turnsRef.current,
+      { role: 'user', text: q.slice(0, 400) }, { role: 'assistant', text: fullText.slice(0, 400) }].slice(-6);
     if (isSoundOff()) {
       // Sound-off: show the answer as text, no auto-loop.
       setPhase('soundoff');
@@ -130,7 +139,7 @@ export default function VoiceMode({
     }
     setPhase('speaking');
     speak(sanitizeForTTS(fullText));
-  }, [netState, onAsk, apiClient, loc, lang, persona, speak]);
+  }, [netState, onAsk, apiClient, loc, lang, persona, profile, speak]);
 
   const handleFinal = useCallback((text) => {
     if (!activeRef.current) return;

@@ -9,6 +9,12 @@ class ChatRequest(BaseModel):
     longitude: float = 78.4867
     language: str = "en"
     user_type: str = "general"
+    # Settings "About you": crop, boat, vehicle, work hours, health notes ...
+    # Whitelisted and capped by services/chat_context.clean_profile.
+    profile: dict[str, Any] = Field(default_factory=dict)
+    # The last few turns of this conversation ({role: user|assistant, text}),
+    # so a follow-up like "and tomorrow evening?" keeps its context.
+    history: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ChatResponse(BaseModel):

@@ -180,6 +180,10 @@ LLM_BASE_URL = _get("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"
 # openai/gpt-oss-120b and qwen/qwen3.6-27b.)
 LLM_MODEL = _get("LLM_MODEL", "openai/gpt-oss-120b")
 LLM_TIMEOUT = float(_get("LLM_TIMEOUT", "25"))
+# Groq's free tier limits tokens per minute PER MODEL. When the main model
+# answers 429, the same request is retried once on this one (its own bucket)
+# before the answer drops to the rule-based template. Empty disables it.
+LLM_FALLBACK_MODEL = _get("LLM_FALLBACK_MODEL", "openai/gpt-oss-20b")
 
 # Model IDs we know Groq actually serves. A custom LLM_BASE_URL means custom
 # model names, so the check only applies to the default Groq endpoint.

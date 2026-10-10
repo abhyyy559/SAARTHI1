@@ -16,6 +16,7 @@ from .. import config
 from ..adapters.registry import AdapterUnavailable
 from ..models.chat import ChatRequest, ChatResponse
 from ..rules.weather_rules import WeatherRules
+from ..services import chat_context
 from ..services.advisory_service import advisory_for
 from ..services.alert_service import gather_alerts
 from ..services.imd_service import IMDService
@@ -363,13 +364,28 @@ async def _prepare(req: ChatRequest) -> dict:
     """
     rules = WeatherRules()
     rules.parse(req.message)
-    loc = LocationService().resolve(req.latitude, req.longitude)
+    profile = chat_context.clean_profile(req.profile)
+    history = chat_context.clean_history(req.history)
+    home = LocationService().resolve(req.latitude, req.longitude)
+    loc = home
+    # "Will it rain in Chennai?" is about Chennai, not wherever the phone is.
+    # A short follow-up ("and tomorrow?") keeps the place the last question named.
+    asked = chat_context.place_for_turn(req.message, history)
+    if asked and (asked.get("district"), asked.get("state")) != (home.get("district"), home.get("state")):
+        loc = asked
     lat, lon = loc["latitude"], loc["longitude"]
 
     if config.DEMO_MODE:
         current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_demo(loc)
+        detail = None
     else:
-        current_dict, forecast_dict, verified_dict, ev, notes = await _retrieve_live(loc, lat, lon)
+        # The hourly detail (rain timing, wind, waves) is fetched alongside the
+        # main chain, so it adds no wait on a healthy network.
+        marine = bool(loc.get("coastal")) and chat_context.wants_sea(req.message, req.user_type)
+        (current_dict, forecast_dict, verified_dict, ev, notes), detail = await asyncio.gather(
+            _retrieve_live(loc, lat, lon),
+            chat_context.weather_detail(lat, lon, marine=marine),
+        )
     # Severity is decided once, here, by verdict_service — the same call the
     # Alerts page makes, so one payload can never carry two verdicts.
     verdict = _chat_verdict(verified_dict, notes)
@@ -409,6 +425,20 @@ async def _prepare(req: ChatRequest) -> dict:
         verified=llm_verified, risk=risk, user_type=req.user_type,
         source_name=notes.get("source_name", "IMD"),
     )
+    # Who is asking and what they need: their own details, the part of the day
+    # they asked about, the hourly/sea detail, and the app's rule-based
+    # guidance for them (which the answer's advice must not undercut).
+    focus = chat_context.time_focus(req.message)
+    if profile:
+        evidence["profile"] = profile
+    if focus:
+        evidence["time_focus"] = focus
+    if detail:
+        evidence["detail"] = chat_context.trim_detail(detail, focus)
+    evidence["app_guidance"] = advisory
+    if loc is not home:
+        evidence["asked_place"] = loc.get("city") or loc.get("district")
+        evidence["home_place"] = home.get("city") or home.get("district")
 
     # Numbers the post-LLM response validator (§10, §43) may check.
     numbers: list[float] = []
@@ -422,6 +452,7 @@ async def _prepare(req: ChatRequest) -> dict:
             for v in (day or {}).values():
                 if isinstance(v, (int, float)):
                     numbers.append(float(v))
+    numbers += chat_context.detail_numbers(evidence.get("detail"))
 
     weather_block = {"current": current_dict, "forecast_days": (forecast_dict or {}).get("days", [])[:3]}
     return {
@@ -441,6 +472,7 @@ async def _prepare(req: ChatRequest) -> dict:
         "llm_verified": llm_verified,
         "numbers": numbers,
         "message": req.message,
+        "history": history,
     }
 
 
@@ -474,7 +506,8 @@ async def _handle(req: ChatRequest) -> ChatResponse:
     llm = LLMService()
     model_error = ""
     try:
-        answer, fallback = await llm.generate(ctx["evidence"], ctx["message"], ctx["language"])
+        answer, fallback = await llm.generate(ctx["evidence"], ctx["message"], ctx["language"],
+                                              **_history_kw(ctx))
     except RuntimeError as exc:
         # Honest degradation: an invalid LLM_MODEL must never 500 /api/chat.
         # The user gets the grounded template answer with a visible model_error
@@ -494,6 +527,11 @@ async def _handle(req: ChatRequest) -> ChatResponse:
                            ctx["weather_block"], ctx["ev"], fallback,
                            user_type=ctx["user_type"], verdict=ctx["verdict"],
                            response_time_ms=response_time_ms, model_error=model_error)
+
+
+def _history_kw(ctx: dict) -> dict:
+    """Earlier turns for the LLM call, passed only when there are any."""
+    return {"history": ctx["history"]} if ctx.get("history") else {}
 
 
 def _ndjson(obj: dict) -> bytes:
@@ -538,7 +576,8 @@ async def chat_stream(req: ChatRequest):
         fallback = False
         model_error = ""
         truncated = False
-        async for ev in llm.generate_stream(ctx["evidence"], ctx["message"], ctx["language"]):
+        async for ev in llm.generate_stream(ctx["evidence"], ctx["message"], ctx["language"],
+                                            **_history_kw(ctx)):
             if ev.get("type") == "token":
                 text = ev.get("text", "")
                 parts.append(text)

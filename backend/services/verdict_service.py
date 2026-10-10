@@ -223,7 +223,14 @@ def build_verdict(
     #     closed its window cannot tell us whether a warning is in force now.
     #     Reporting "no active warning" here would be a calm built on stale data,
     #     which is the one thing this product must never emit.
-    if expired_cap and not active_cap:
+    #     Only OFFICIAL alerts can make the feed look stale. A lapsed item from a
+    #     third-party aggregator (GDACS, WeatherAPI: `official: False`) says
+    #     nothing about whether SACHET is current: a year-old GDACS cyclone kept
+    #     every coastal Andhra district at "status unconfirmed", and the chat told
+    #     each user that warnings "could not be checked" while SACHET was live.
+    expired_official = [a for a in expired_cap if a.get("official") is not False]
+    if expired_official and not active_cap:
+        expired_cap = expired_official
         newest = max(expired_cap, key=_expiry_raw)
         return {
             "level": "UNKNOWN",

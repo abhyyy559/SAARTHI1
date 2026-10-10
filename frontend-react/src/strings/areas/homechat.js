@@ -1,14 +1,16 @@
 // HomeChat strings: the Home-screen chat board (Ask merged into Home).
 //
-// Facts-only vocabulary: this chat answers from official bulletins and NEVER
-// gives guidance. Every string here is a label, not advice — the one escape
-// to guidance is the "Open My advice" pill, which navigates to Advisory.
+// The chat answers from official warnings and live data AND gives advice for
+// the user's role and profile (2026-10-10: facts-only left people without an
+// answer to "can I spray / go to sea?"). The copy says plainly that advice is
+// the app's guidance, never an official order. "Open My advice" still leads to
+// the full checklist on Advisory.
 export default {
   en: {
     hcRegion: 'Ask SAARTHI',
-    hcFactsTitle: 'Facts only',
-    hcFactsBody: 'Answers come from official bulletins. I never guess, and I never give advice here.',
-    hcFactsEscape: 'Need guidance instead? Open My advice',
+    hcFactsTitle: 'Answers and advice for you',
+    hcFactsBody: 'Answers come from official warnings and live weather data, with advice for your role and profile. Advice is guidance from the app, not an official order — always follow IMD and local officials.',
+    hcFactsEscape: 'Want the full checklist? Open My advice',
     hcFactsMore: 'About this chat',
     hcFactsClose: 'Close',
     hcAs: 'Answering as',
@@ -30,7 +32,7 @@ export default {
     hcSuggestionsHint: 'Try one',
     hcReadMore: 'Read more',
     hcReadLess: 'Show less',
-    hcEmptyLine: 'Ask about your work or plans — answers stay in facts mode.',
+    hcEmptyLine: 'Ask about your work or plans — you get the facts and what to do.',
     // --- Crew B (voice-first rebuild, 2026-09-21): voice-UX states ----------
     // Exact screen copy, per the voice-UX spec: the mic button tap lands on
     // "Listening...", a pause/finalize lands on "Understanding your text...",
@@ -44,13 +46,13 @@ export default {
     hcMicBlockedOpen: 'Open Settings',
     // --- Worker 3 (home-ask-focus, 2026-09-21): Ask is the hero of Home -----
     askHeroTitle: 'Ask about your weather',
-    askHeroSub: 'Answers from official data — type or speak.',
+    askHeroSub: 'Answers and advice for you — type or speak.',
   },
   hi: {
     hcRegion: 'SAARTHI से पूछें',
-    hcFactsTitle: 'केवल तथ्य',
+    hcFactsTitle: 'आपके लिए उत्तर और सलाह',
     hcFactsBody: 'उत्तर आधिकारिक बुलेटिनों से आते हैं। मैं अंदाज़ा नहीं लगाता, और यहाँ सलाह नहीं देता।',
-    hcFactsEscape: 'मार्गदर्शन चाहिए? मेरी सलाह खोलें',
+    hcFactsEscape: 'पूरी सूची चाहिए? मेरी सलाह खोलें',
     hcFactsMore: 'इस चैट के बारे में',
     hcFactsClose: 'बंद करें',
     hcAs: 'उत्तर दे रहा है',
@@ -72,7 +74,7 @@ export default {
     hcSuggestionsHint: 'एक आज़माएँ',
     hcReadMore: 'और पढ़ें',
     hcReadLess: 'छिपाएँ',
-    hcEmptyLine: 'अपने काम या योजना के बारे में पूछें — उत्तर तथ्य मोड में ही रहेंगे।',
+    hcEmptyLine: 'अपने काम या योजना के बारे में पूछें — तथ्य और क्या करना है, दोनों मिलेंगे।',
     // --- Crew B (voice-first rebuild, 2026-09-21): voice-UX states ----------
     hcListening: 'सुन रहा हूँ…',
     hcUnderstanding: 'आपका टेक्स्ट समझ रहा हूँ…',
@@ -83,13 +85,13 @@ export default {
     hcMicBlockedOpen: 'सेटिंग्स खोलें',
     // --- Worker 3 (home-ask-focus, 2026-09-21): Ask is the hero of Home -----
     askHeroTitle: 'अपने मौसम के बारे में पूछें',
-    askHeroSub: 'आधिकारिक आंकड़ों पर आधारित उत्तर — टाइप करें या बोलें।',
+    askHeroSub: 'आपके लिए उत्तर और सलाह — टाइप करें या बोलें।',
   },
   te: {
     hcRegion: 'SAARTHIని అడగండి',
-    hcFactsTitle: 'వాస్తవాలు మాత్రమే',
+    hcFactsTitle: 'మీ కోసం సమాధానాలు, సలహా',
     hcFactsBody: 'సమాధానాలు అధికారిక బులెటిన్ల నుండే వస్తాయి. నేను ఊహించను, ఇక్కడ సలహా ఇవ్వను.',
-    hcFactsEscape: 'మార్గదర్శనం కావాలా? నా సలహా తెరవండి',
+    hcFactsEscape: 'పూర్తి జాబితా కావాలా? నా సలహా తెరవండి',
     hcFactsMore: 'ఈ చాట్ గురించి',
     hcFactsClose: 'మూసివేయండి',
     hcAs: 'సమాధానం ఇస్తోంది',
@@ -111,7 +113,7 @@ export default {
     hcSuggestionsHint: 'ఒకటి ప్రయత్నించండి',
     hcReadMore: 'మరింత చదవండి',
     hcReadLess: 'దాచండి',
-    hcEmptyLine: 'మీ పని లేదా ప్రణాళిక గురించి అడగండి — సమాధానాలు వాస్తవ మోడ్‌లోనే ఉంటాయి.',
+    hcEmptyLine: 'మీ పని లేదా ప్రణాళిక గురించి అడగండి — వాస్తవాలు, ఏం చేయాలో రెండూ వస్తాయి.',
     // --- Crew B (voice-first rebuild, 2026-09-21): voice-UX states ----------
     hcListening: 'వింటున్నాను…',
     hcUnderstanding: 'మీ టెక్స్ట్ అర్థం చేసుకుంటున్నాను…',
@@ -122,6 +124,6 @@ export default {
     hcMicBlockedOpen: 'సెట్టింగ్‌లు తెరవండి',
     // --- Worker 3 (home-ask-focus, 2026-09-21): Ask is the hero of Home -----
     askHeroTitle: 'మీ వాతావరణం గురించి అడగండి',
-    askHeroSub: 'అధికారిక డేటా నుండి సమాధానాలు — టైప్ చేయండి లేదా మాట్లాడండి.',
+    askHeroSub: 'మీ కోసం సమాధానాలు, సలహా — టైప్ చేయండి లేదా మాట్లాడండి.',
   },
 };

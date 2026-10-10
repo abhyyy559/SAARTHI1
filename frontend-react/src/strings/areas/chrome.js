@@ -26,6 +26,7 @@ export default {
     // --- settings: profile + permissions control center (Crew G) ---
     setProfile: 'Your profile',
     setRoleNote: 'Pick your role once — Home, chat and advice all follow it.',
+    pfTitle: 'About you',
     setRoleGo: 'Choose your role in Advisory',
     setPlaceNote: 'Type your district on the Home hero, or use GPS here.',
     setPermTitle: 'Permissions',
@@ -90,6 +91,7 @@ export default {
     // --- settings: profile + permissions control center (Crew G) ---
     setProfile: 'आपकी प्रोफ़ाइल',
     setRoleNote: 'अपनी भूमिका एक बार चुनें — होम, चैट और सलाह सब उसी के अनुसार बदलेंगे।',
+    pfTitle: 'आपके बारे में',
     setRoleGo: 'Advisory में भूमिका चुनें',
     setPlaceNote: 'होम हीरो पर अपना जिला लिखें, या यहाँ GPS इस्तेमाल करें।',
     setPermTitle: 'अनुमतियाँ',
@@ -154,6 +156,7 @@ export default {
     // --- settings: profile + permissions control center (Crew G) ---
     setProfile: 'మీ ప్రొఫైల్',
     setRoleNote: 'మీ పాత్రను ఒకసారి ఎంచుకోండి — హోమ్, చాట్, సలహా అన్నీ దాని ప్రకారం మారతాయి.',
+    pfTitle: 'మీ గురించి',
     setRoleGo: 'Advisoryలో పాత్రను ఎంచుకోండి',
     setPlaceNote: 'హోమ్ హీరోపై మీ జిల్లాను టైప్ చేయండి, లేదా ఇక్కడ GPS వాడండి.',
     setPermTitle: 'అనుమతులు',
