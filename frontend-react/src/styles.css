@@ -829,7 +829,8 @@ button.chip:active { transform: translateY(1px); }
     background: var(--card); border-top: 2px solid var(--ink);
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .mnav-inner { display: grid; grid-template-columns: repeat(4, 1fr); }
+  /* Four primary tabs + the More trigger fill the bar evenly. */
+  .mnav-inner { display: grid; grid-template-columns: repeat(5, 1fr); }
   .mnav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     min-height: 64px; border: 0; background: none; color: var(--ink);

@@ -86,14 +86,14 @@ const readDevice = () => {
 
 export function AppProvider({ children }) {
   // One-way deep link. IA dedup (2026-09-20): the only public views are
-  // home · alerts · advisory + the More sheet's notifications · trust ·
+  // home · alerts · advisory · map + the More sheet's notifications · trust ·
   // settings. No offline/aviation view (background capabilities only).
   // admin stays hidden (PIN-gated direct URL).
   // (Initial state only — in-app navigation stays via setView.)
   const [view, setView] = useState(() => {
     try {
       const v = new URLSearchParams(window.location.search).get('view');
-      return ['home', 'alerts', 'advisory', 'notifications', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
+      return ['home', 'alerts', 'advisory', 'map', 'notifications', 'trust', 'settings', 'admin'].includes(v) ? v : 'home';
     } catch { return 'home'; }
   });
   const [lang, setLang] = useState(() => readPref('wgpt.lang', 'en'));

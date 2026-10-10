@@ -448,6 +448,17 @@ const ALERTS_REDESIGN = {
     mapSub: 'Every district, one dot — coloured by its worst active alert. Tap a district to open its first alert.',
     mapSchematic: 'Schematic — positions approximate, not to scale. Colour is the alert severity, never a forecast.',
     mapNoAlerts: 'No active alerts anywhere right now.',
+    // --- AlertHeatmap (Map view) ---
+    hmSub: 'Alert severity, observed temperature, and the health risk derived from it — pick a layer. Each dot keeps its exact numbers.',
+    hmLayers: 'Heat layers',
+    hmAlerts: 'Alerts',
+    hmWeather: 'Weather',
+    hmHealth: 'Health',
+    hmUnavailable: 'The map could not load alert and weather layers right now. This is not an all-clear — it is an unread sky.',
+    hmRelativeNote: 'Heat is relative to the districts shown ({lo}°–{hi}°C).',
+    hmSchemaNote: 'Heat sits on district centres, not boundaries — a spread of colour reads as "districts in this direction", never a precise edge. A district with no data for the active layer is simply absent from it.',
+    hmHeatMissing: 'The blur layer could not load, so only the exact-value dots are shown.',
+    hmTileError: 'Map tiles unavailable — the district values still apply.',
     commSecTitle: 'Community reports — not official',
     commSecSub: 'Observations from people nearby. These are not official warnings and never become one.',
     commReportType: 'Report',
@@ -469,7 +480,17 @@ const ALERTS_REDESIGN = {
     mapTitle: 'चेतावनी मानचित्र',
     mapSub: 'हर जिला, एक बिंदु — सबसे गंभीर सक्रिय अलर्ट के रंग में। पहला अलर्ट खोलने के लिए जिले पर दबाएँ।',
     mapSchematic: 'योजनाबद्ध — स्थिति अनुमानित, पैमाने पर नहीं। रंग अलर्ट की गंभीरता है, पूर्वानुमान नहीं।',
-    mapNoAlerts: 'अभी कहीं कोई सक्रिय अलर्ट नहीं।',
+    mapNoAlerts: 'अभी कहीं कोी सक्रिय अलर्ट नहीं।',
+    hmSub: 'अलर्ट की गंभीरता, देखा गया तापमान, और उससे निकला स्वास्थ्य जोखिम — एक परत चुनें। हर बिंदु अपने सही आंकड़े रखता है।',
+    hmLayers: 'गर्मी परतें',
+    hmAlerts: 'अलर्ट',
+    hmWeather: 'मौसम',
+    hmHealth: 'स्वास्थ्य',
+    hmUnavailable: 'मानचित्र पर अलर्ट और मौसम की परतें अभी नहीं लोड हो सकीं। यह "सब ठीक है" नहीं है — यह अनपढ़ा आसमान है।',
+    hmRelativeNote: 'गर्मी दिखाए गए जिलों के अपेक्षाकृत है ({lo}°–{hi}°C)।',
+    hmSchemaNote: 'गर्मी जिले के केंद्र पर है, सीमा पर नहीं — फैला रंग का अर्थ "इस दिशा के जिले", कभी सटीक किनारा नहीं। जिस जिले का डेटा नहीं है वह चुनी हुई परत में बिल्कुल नहीं दिखता।',
+    hmHeatMissing: 'धुंधली परत लोड नहीं हो सकी, इसलिए सिर्फ सही आंकड़े वाले बिंदु दिख रहे हैं।',
+    hmTileError: 'मानचित्र टाइल उपलब्ध नहीं — जिलों के आंकड़े फिर भी लागू हैं।',
     commSecTitle: 'सामुदायिक रिपोर्ट — सरकारी नहीं',
     commSecSub: 'आस-पास के लोगों की देखी जानकारी। ये सरकारी चेतावनी नहीं हैं और कभी नहीं बनतीं।',
     commReportType: 'रिपोर्ट',
@@ -492,6 +513,16 @@ const ALERTS_REDESIGN = {
     mapSub: 'ప్రతి జిల్లా, ఒక చుక్క — అత్యంత తీవ్రమైన యాక్టివ్ అలర్ట్ రంగులో. మొదటి అలర్ట్ తెరవడానికి జిల్లాపై నొక్కండి.',
     mapSchematic: 'స్కీమాటిక్ — స్థానాలు సుమారుగా, స్కేలు ప్రకారం కాదు. రంగు అలర్ట్ తీవ్రత, అంచనా కాదు.',
     mapNoAlerts: 'ప్రస్తుతం ఎక్కడా యాక్టివ్ అలర్ట్‌లు లేవు.',
+    hmSub: 'అలర్ట్ తీవ్రత, గమనించిన ఉష్ణోగ్రత, అందులో నుంచి వచ్చిన ఆరోగ్య ప్రమాదం — ఒక పొర ఎంచుకోండి. ప్రతి చుక్క తన ఖచ్చిత సంఖ్యలను ఉంచుతుంది.',
+    hmLayers: 'వెపొర పొరలు',
+    hmAlerts: 'అలర్ట్‌లు',
+    hmWeather: 'వాతావరణం',
+    hmHealth: 'ఆరోగ్యం',
+    hmUnavailable: 'మాప్‌పై అలర్ట్, వాతావరణ పొరలు ఇప్పటికి లోడ్ కాలేదు. ఇది "అంతా సరి" కాదు — ఇది చదవని ఆకాశం.',
+    hmRelativeNote: 'వెపొర చూపిన జిల్లాల సాపేక్షంగా ఉంది ({lo}°–{hi}°C).',
+    hmSchemaNote: 'వెపొర జిల్లా కేంద్రంపై ఉంది, సరిహేల పట్టి మీద కాదు — వ్యాపించిన రంగు అర్థం "ఈ దిశలోని జిల్లాలు", ఖచ్చిత అంచు కాదు. దత్తాంశం లేని జిల్లా ఎంచుకున్న పొరలో పూర్తిగా కనిపించదు.',
+    hmHeatMissing: 'మసక పొర లోడ్ కాలేదు, కాబట్టి ఖచ్చిత విలువల చుక్కలు మాత్రం కనిపిస్తున్నాయి.',
+    hmTileError: 'మాప్ టైల్స్ అందుబాటులో లేవు — జిల్లాల విలువలు ఇంకా వర్తిస్తాయి.',
     commSecTitle: 'ప్రజల నివేదికలు — అధికారికం కాదు',
     commSecSub: 'సమీప ప్రజల పరిశీలనలు. ఇవి అధికారిక హెచ్చరికలు కావు, ఎప్పటికీ కావు.',
     commReportType: 'నివేదిక',
@@ -523,6 +554,9 @@ export const NAV = [
   { id: 'home', icon: 'home', label: 'navHome' },
   { id: 'alerts', icon: 'alert', label: 'navAlerts' },
   { id: 'advisory', icon: 'sun', label: 'navAdvisory' },
+  // The heatmap view: a primary tab on desktop, a More-sheet row on mobile
+  // (the mobile tab bar stays three + More; five tabs crowds the bar).
+  { id: 'map', icon: 'map', label: 'navMap' },
   // Secondary views: reachable from the More sheet only (never a primary tab).
   { id: 'notifications', icon: 'bell', label: 'navNotifications' },
   // Trust stays in NAV so ViewHead resolves the view title, but it is NOT a
@@ -532,8 +566,9 @@ export const NAV = [
   { id: 'admin', icon: 'layers', label: 'navAdmin' },
 ];
 
-// The three primary tabs (mobile bottom nav + desktop rail head).
-export const PRIMARY_VIEWS = ['home', 'alerts', 'advisory'];
+// Primary tabs: rendered on the desktop rail head (Shell.jsx PRIMARY_VIEWS map).
+// The mobile bottom bar builds its own three-item list separately.
+export const PRIMARY_VIEWS = ['home', 'alerts', 'advisory', 'map'];
 
 // Non-public views: reachable only by typing the URL (/?view=admin).
 export const HIDDEN_VIEWS = ['admin'];

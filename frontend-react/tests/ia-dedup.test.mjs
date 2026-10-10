@@ -1,7 +1,8 @@
 // IA dedup + 360px regression tests (2026-09-20).
 //
-// The public IA is Home · Alerts · Advisory · the bell (notifications panel)
-// · More (Settings, tour replay) · the quiet app footer (Trust & sources).
+// The public IA is Home · Alerts · Advisory · Map (the heat view) · the bell
+// (notifications panel) · More (Settings, tour replay) · the quiet app footer
+// (Trust & sources).
 // Ask / Advisor / Details / Sources / Offline-P2P routes are gone; their
 // content was folded in (P2P's QR relay remains a background capability with
 // no page). Trust left the nav menu for the footer and stays reachable via
@@ -9,6 +10,9 @@
 // Aviation is a PROFILE, not a menu row — its briefing renders on Home for
 // the aviation persona. Everything must render without horizontal overflow at
 // 320–360px.
+// The Map view (2026-10-10) is a fourth primary tab on desktop AND mobile: it
+// is the only place the alert/weather/health heat layers exist, so burying it
+// in the More sheet would have made the feature unreachable on a phone.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -24,12 +28,22 @@ const app = read('../src/App.jsx');
 const tour = read('../src/components/OnboardingTour.jsx');
 
 // --- IA shape --------------------------------------------------------------
-test('public IA is exactly Home · Alerts · Advisory · More', () => {
+test('public IA is exactly Home · Alerts · Advisory · Map · More', () => {
   // Primary registry
-  assert.match(read('../src/i18n.js'), /PRIMARY_VIEWS = \['home', 'alerts', 'advisory'\]/);
-  // Mobile: three tabs + a More sheet trigger
-  assert.match(shell, /\{ view: 'home'[\s\S]*?\{ view: 'alerts'[\s\S]*?\{ view: 'advisory'/);
+  assert.match(read('../src/i18n.js'), /PRIMARY_VIEWS = \['home', 'alerts', 'advisory', 'map'\]/);
+  // Mobile: four tabs + a More sheet trigger
+  assert.match(shell, /\{ view: 'home'[\s\S]*?\{ view: 'alerts'[\s\S]*?\{ view: 'advisory'[\s\S]*?\{ view: 'map'/);
   assert.match(shell, /menuMore/);
+  // The Map view is the only home for the heat layers, so it must be a real
+  // reachable route on BOTH surfaces — never a ?view= deep link alone.
+  assert.match(app, /\bmap: MapView\b/, 'App.jsx registers the map view');
+  assert.match(views, /export function MapView/, 'views.jsx exports the map view');
+});
+
+test('the mobile tab bar fits the four primaries plus More without wrapping', () => {
+  // five equal columns: home, alerts, advisory, map, more
+  assert.match(css, /\.mnav-inner \{ display: grid; grid-template-columns: repeat\(5, 1fr\); \}/,
+    'the mobile bar must declare five columns for four tabs + More');
 });
 
 test('More sheet lists the deduped destinations; notifications moved to the bell panel', () => {

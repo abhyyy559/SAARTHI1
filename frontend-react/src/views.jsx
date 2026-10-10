@@ -3,6 +3,7 @@
 // · topbar bell → notifications side panel (the one and only notifications
 // home) · More sheet → Offline & P2P · Aviation · Trust & sources ·
 // Settings · Tour replay. Admin is hidden, PIN-gated, direct URL only.
+import { lazy } from 'react';
 import Home from './components/Home';
 import AlertsList from './components/AlertsList';
 import Advisor from './components/Advisor';
@@ -21,6 +22,12 @@ import { t } from './i18n';
 import { useEffect, useState } from 'react';
 import { Card } from './components/ui';
 import Icon from './components/icons';
+
+// The heat view pulls Leaflet, react-leaflet and the heat plugin — a large
+// slab of code for one route. It is loaded on demand so a user who never
+// opens the map never downloads it; App.jsx already renders every view inside
+// a Suspense boundary, so the lazy import needs no extra fallback here.
+const AlertHeatmap = lazy(() => import('./components/AlertHeatmap'));
 
 // Authorities-only gate for the admin console. This is a DEMO gate, not
 // authentication: it keeps the official-alert publishing controls out of the
@@ -131,6 +138,18 @@ export function NotificationsView() {
     setView('home');
   }, [setView]);
   return null;
+}
+
+// Map: the heat view. Alert severity, observed temperature, and the health
+// risk derived from that temperature, as toggleable heat layers. The schematic
+// DistrictMap on Home stays as it is — this is the geographic view.
+export function MapView() {
+  return (
+    <>
+      <ViewHead titleKey="viewMap" subKey="hmSub" />
+      <AlertHeatmap />
+    </>
+  );
 }
 
 // Advisory: ONE route. The persona grid on top (pick your world by picture),

@@ -14,7 +14,7 @@ from .utils.time import iso_now
 
 from . import config
 from .api import (weather, chat, voice, location, sources, climate, advisory, v1,
-                  push, demo_alerts, notifications, aviation)
+                  push, demo_alerts, notifications, aviation, map as map_api)
 from .utils.logging import RequestLoggingMiddleware
 
 log = logging.getLogger("weathergpt.main")
@@ -128,6 +128,14 @@ app.include_router(push.router)
 app.include_router(demo_alerts.router)
 app.include_router(notifications.router)
 app.include_router(aviation.router)
+
+# Heat layers for the map view. Guarded like the telemetry routers: the map is
+# an additive surface, and a failure importing it must never stop the console
+# serving alerts.
+try:
+    app.include_router(map_api.router)
+except Exception:  # noqa: BLE001 - the map surface is optional
+    log.warning("map router unavailable; /api/map/layers disabled")
 
 # Ack/telemetry ingest (Round2 T3.3: POST /api/ack, GET /api/coverage). Guarded
 # so a telemetry-only failure can never prevent the app from serving alerts.

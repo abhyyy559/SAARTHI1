@@ -3,7 +3,7 @@ import { AppProvider, useApp } from './store';
 import { t } from './i18n';
 import Shell from './components/Shell';
 import FirstRunOnboarding from './components/FirstRunOnboarding';
-import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, SettingsView } from './views';
+import { HomeView, AlertsView, NotificationsView, AdvisoryView, AdminView, TrustSourcesView, SettingsView, MapView } from './views';
 import { Loading } from './components/ui';
 
 // Every id the store's `?view=` whitelist accepts must be registered here.
@@ -17,6 +17,7 @@ const VIEWS = {
   alerts: AlertsView,
   notifications: NotificationsView,
   advisory: AdvisoryView,
+  map: MapView,
   trust: TrustSourcesView,
   settings: SettingsView,
   admin: AdminView,

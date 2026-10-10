@@ -174,6 +174,9 @@ export const api = {
   // geography — cached in localStorage by the caller, so the map renders
   // offline after the first load.
   districtCoords: () => j('/api/location/districts').then((d) => d.districts || []),
+  // Heat layers for the map view: alerts + weather + health, all districts,
+  // one round trip. Slow timeout because the weather leg is a batch fetch.
+  mapLayers: () => j('/api/map/layers', undefined, SLOW_TIMEOUT_MS),
   current: (lat, lon) => j(`${V}/weather/current?lat=${lat}&lon=${lon}`),
   forecast: (lat, lon) => j(`${V}/weather/forecast?lat=${lat}&lon=${lon}`),
   warnings: (district, lat, lon) =>

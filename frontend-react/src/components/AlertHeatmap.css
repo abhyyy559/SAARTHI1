@@ -1,0 +1,120 @@
+/* AlertHeatmap — the Map view. Harbour Signal: 2px ink borders, paper background,
+   brand-yellow active state, sentence case. Leaflet's own defaults are restyled
+   to match the console rather than the other way round. */
+
+.hm-layers {
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.hm-chip.is-active {
+  background: var(--brand);
+  color: var(--on-brand);
+  font-weight: 800;
+}
+
+.hm-prov {
+  margin-left: auto;
+  display: inline-flex;
+}
+
+.hm-map-wrap {
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--paper);
+}
+
+/* Leaflet sets its own height through the container class; the parent wraps it
+   with the console border so tiles stay inside the ink frame. */
+.hm-map {
+  width: 100%;
+  height: clamp(360px, 62vh, 620px);
+  background: var(--paper);
+}
+
+.hm-map .leaflet-control-attribution {
+  font-size: 11px;
+  background: var(--paper);
+  color: var(--ink-soft);
+}
+
+.hm-map .leaflet-control-attribution a {
+  color: var(--ink);
+}
+
+/* Zoom control in console colours so it does not read as a stray widget. */
+.hm-map .leaflet-bar a,
+.hm-map .leaflet-bar a:hover {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.hm-popup strong {
+  font-size: 15px;
+}
+
+.hm-popup-state {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.hm-popup dl {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.hm-popup dl > div {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.hm-popup dt {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.hm-popup dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.hm-popup-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.hm-foot {
+  margin-top: 10px;
+}
+
+.hm-tile-note {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 500;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Keep the note anchored inside the map box rather than the viewport. */
+.hm-map-wrap { position: relative; }

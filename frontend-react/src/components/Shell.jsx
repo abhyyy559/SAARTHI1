@@ -1,7 +1,7 @@
 // App shell — the SIGNAL BOARD console.
 // White desktop rail (248px) with full-bleed yellow active blocks,
-// a utility top bar, hazard-stripe demo/offline banners, exactly four
-// mobile tabs (Home · Ask · Alerts · More) with a More bottom sheet.
+// a utility top bar, hazard-stripe demo/offline banners, four mobile tabs
+// (Home · Alerts · Advice · Map) with a More bottom sheet.
 // Single light theme: no theme switcher.
 import { useEffect, useRef, useState } from 'react';
 import { HIDDEN_VIEWS, NAV, PRIMARY_VIEWS, t } from '../i18n';
@@ -20,6 +20,7 @@ const NAV_ICONS = {
   home: 'home',
   alerts: 'alert',
   advisory: 'sun',
+  map: 'map',
   offline: 'offline',
   aviation: 'send',
   trust: 'shield',
@@ -84,10 +85,13 @@ function StatusBanner({ kind, children }) {
 
 function MobileNav({ current, onPick, moreOpen }) {
   const { lang, setView } = useApp();
+  // Same four primaries the desktop rail shows, in the same order. The grid
+  // below is repeat(5, 1fr): these four plus the More trigger.
   const tabs = [
     { view: 'home', label: t(lang, 'navHome'), icon: 'home' },
     { view: 'alerts', label: t(lang, 'navAlerts'), icon: 'alert' },
     { view: 'advisory', label: t(lang, 'navAdvisory'), icon: 'sun' },
+    { view: 'map', label: t(lang, 'navMap'), icon: 'map' },
   ];
   return (
     <nav className="mobile-nav" aria-label={t(lang, 'navLabel')}>
@@ -235,8 +239,8 @@ export default function Shell({ children }) {
 
   const demoLive = sourceMode === 'demo';
   // The demo-data banner only belongs where demo/sample content can appear:
-  // never on Admin or Trust chrome.
-  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'notifications', 'trust']);
+  // never on Admin or Trust chrome. The map renders alerts, so it is in scope.
+  const demoBannerViews = new Set(['home', 'alerts', 'advisory', 'map', 'notifications', 'trust']);
   const showDemoBanner = demoLive && demoBannerViews.has(view);
 
   return (

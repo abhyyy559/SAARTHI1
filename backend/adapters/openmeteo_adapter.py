@@ -67,6 +67,63 @@ async def get_current(latitude: float, longitude: float) -> tuple[WeatherObserva
     return obs, LIVE
 
 
+async def get_current_many(locations: list[tuple[float, float]]) -> list[WeatherObservation | None]:
+    """Current observation for many locations in ONE request.
+
+    Open-Meteo accepts comma-separated coordinates and answers with a JSON
+    array carrying `location_id` for alignment, so a 33-district heatmap costs
+    a single round trip instead of 33 — and one rate-limit bucket instead of
+    33. `locations` is a list of (latitude, longitude) pairs; the result is
+    aligned by index, with None in any slot the provider left empty. A slot is
+    never backfilled with a neighbour's numbers.
+
+    Raises AdapterUnavailable when the fetch itself fails, exactly as
+    get_current() does: an unreachable feed is a state to report.
+    """
+    if not locations:
+        return []
+    lats = ",".join(repr(la) for la, _ in locations)
+    lons = ",".join(repr(lo) for _, lo in locations)
+    data = await _fetch({
+        "latitude": lats, "longitude": lons,
+        "current": "temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m",
+        "timezone": "Asia/Kolkata",
+    })
+    # A single pair answers with one object; several pairs answer with an
+    # array indexed by location_id. Normalise both to the array shape.
+    chunks = data if isinstance(data, list) else [data]
+    out: list[WeatherObservation | None] = [None] * len(locations)
+    for chunk in chunks:
+        if not isinstance(chunk, dict):
+            continue
+        slot = chunk.get("location_id", 0)
+        try:
+            slot = int(slot)
+        except (TypeError, ValueError):
+            slot = 0
+        if not 0 <= slot < len(locations):
+            continue
+        cur = chunk.get("current") or {}
+        try:
+            observed = datetime.fromisoformat(cur.get("time")) if cur.get("time") else datetime.now(IST)
+        except ValueError:
+            observed = datetime.now(IST)
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=IST)
+        out[slot] = WeatherObservation(
+            source=SOURCE,
+            temperature=cur.get("temperature_2m"),
+            humidity=cur.get("relative_humidity_2m"),
+            rainfall=cur.get("precipitation"),
+            wind_speed=cur.get("wind_speed_10m"),
+            condition=_condition(cur.get("weather_code")),
+            observed_at=observed,
+        )
+    filled = sum(1 for o in out if o is not None)
+    report("open-meteo", LIVE, f"batch current {filled}/{len(locations)} locations")
+    return out
+
+
 async def get_forecast(latitude: float, longitude: float) -> tuple[WeatherForecast, str]:
     data = await _fetch({
         "latitude": latitude, "longitude": longitude,
