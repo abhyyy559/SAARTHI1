@@ -15,7 +15,9 @@ def _get(key: str, default: str = "") -> str:
     return os.environ.get(key, default)
 
 
-IMD_API_KEY = _get("IMD_API_KEY", "")
+IMD_API_KEY = _get("IMD_API_KEY", "") or _get("IMD_KEY", "")
+# IMD_KEY is the legacy alias some checkouts already use in their .env; the
+# canonical name stays IMD_API_KEY (documented in .env.example).
 # Portal-issued JWT for api.imd.gov.in (see the auth note below). The hex API
 # key alone can never pass the gateway — both values are required for IMD.
 # Paste a fresh access_token here, or set IMD_API_EMAIL/PASSWORD below and the
